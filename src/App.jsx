@@ -17,7 +17,8 @@ const BG = new Image(); BG.src = '/bg/bg.jpg'
 const STONE = new Image(); STONE.src = '/misc/stone.png'
 
 const HERO_X = 90
-const SCROLL = 140                                   // 전진 속도 (px/s)
+const SPEED = 1.3                                     // 전역 속도 배율 (0.3배속 상향)
+const SCROLL = 140 * SPEED                            // 전진 속도 (px/s)
 const PUNCH = { hitAt: 0.12, total: 0.3, range: 95 } // 4족 주먹질
 const THROW = { windupEnd: 0.14, releaseEnd: 0.30, total: 0.42, range: 340 }
 
@@ -124,7 +125,7 @@ export default function App() {
   const S = useRef({})
   S.current = {
     atk: (STAT_DEFS.atk.base + STAT_DEFS.atk.add * lv.atk * (1 + lv.atk * 0.02)) * EVOS[evo].mult * (1 + skill.atk * 0.08),
-    cd: 1000 / (STAT_DEFS.aspd.base + STAT_DEFS.aspd.add * lv.aspd),
+    cd: 1000 / (STAT_DEFS.aspd.base + STAT_DEFS.aspd.add * lv.aspd) / SPEED,
     maxHp, wave, phase,
     mode: EVOS[evo].mode,
     critMult: 2 + skill.crit * 0.15,     // 치명타 배율
@@ -186,7 +187,7 @@ export default function App() {
     window.addEventListener('resize', resize)
 
     function startWave(n) {
-      w.enemies = []; w.stones = []; w.dmgTexts = []; w.particles = []
+      w.enemies = []; w.stones = []; w.dmgTexts = []; w.particles = []; w.pools = []
       const boss = n % 5 === 0
       w.spawnLeft = boss ? 5 : 5 + Math.min(n, 15)
       w.total = w.spawnLeft
@@ -214,11 +215,21 @@ export default function App() {
     }
 
     function addDmg(x, y, val, crit, miss) { w.dmgTexts.push({ x, y, val: typeof val === 'number' ? fmt(val) : val, life: 0.8, crit, miss }) }
-    function burst(x, y, color, n = 10) {
+    function burst(x, y, color, n = 10, blood = false) {
       for (let i = 0; i < n; i++) {
-        const a = Math.random() * Math.PI * 2, sp = 60 + Math.random() * 160
-        w.particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 60, life: 0.5, color })
+        const a = blood ? -Math.PI / 2 + (Math.random() - 0.5) * 2.2 : Math.random() * Math.PI * 2
+        const sp = blood ? 80 + Math.random() * 240 : 60 + Math.random() * 160
+        w.particles.push({
+          x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - (blood ? 40 : 60),
+          life: blood ? 0.4 + Math.random() * 0.4 : 0.5,
+          r: blood ? 1.5 + Math.random() * 3 : 2,
+          color, blood,
+        })
       }
+    }
+    function bloodPool(x, y) {
+      w.pools = w.pools || []
+      w.pools.push({ x, y, r: 4, max: 14 + Math.random() * 10, life: 1.2 })
     }
     function dealDamage(t, st) {
       // 명중 판정: 적 회피율 − 내 명중 보너스
@@ -234,7 +245,7 @@ export default function App() {
       t.x += 8
       const ty = w.groundY - t.h * 0.55
       addDmg(t.x, ty - t.h * 0.5 - 12, Math.round(dmg), crit)
-      burst(t.x, ty, '#ffd54f', crit ? 16 : 8)
+      burst(t.x, ty, '#c81818', crit ? 20 : 10, true)   // 빨간 피 튀김
       w.shake = Math.max(w.shake, crit ? 5 : 2)
       if (t.hp <= 0 && !t.dead) {
         t.dead = true
@@ -243,7 +254,8 @@ export default function App() {
         w.killExp = (w.killExp || 0) + t.exp
         w.gainQueue = w.gainQueue || []
         w.gainQueue.push({ meat: Math.floor(t.meat * st.meatMult), exp: t.exp })
-        burst(t.x, ty, t.color, 14)
+        burst(t.x, ty, '#a01010', 24, true)              // 처치 시 대량 피
+        bloodPool(t.x, w.groundY - 4)                     // 바닥 핏자국
       }
     }
 
@@ -272,8 +284,8 @@ export default function App() {
           e.flash = Math.max(0, e.flash - dt * 5)
           const stopX = HERO_X + 45 + e.h * 0.4
           if (e.x > stopX) {
-            e.x -= (e.speed + scroll) * dt
-            e.animT += dt * (1 + scroll / SCROLL * 0.4)
+            e.x -= (e.speed * SPEED + scroll) * dt
+            e.animT += dt * SPEED * (1 + scroll / SCROLL * 0.4)
           } else {
             e.cd -= dt * 1000
             if (e.cd <= 0) {
@@ -283,7 +295,7 @@ export default function App() {
                 hero.hp -= e.dmg
                 hero.flash = 0.2
                 w.shake = 4
-                burst(HERO_X + 15, w.groundY - 70, '#e05a4e', 6)
+                burst(HERO_X + 15, w.groundY - 70, '#c81818', 8, true)
               } else {
                 addDmg(HERO_X, w.groundY - 130, 'DODGE', false, true)
               }
@@ -301,14 +313,14 @@ export default function App() {
         hero.cd -= dt * 1000
         hero.flash = Math.max(0, hero.flash - dt)
         if (hero.state === 'move') {
-          hero.animT += dt
+          hero.animT += dt * SPEED
           const target = w.enemies.find(e => !e.dead && e.x - HERO_X < atkRange)
           if (hero.cd <= 0 && target) {
             hero.state = 'attack'; hero.t = 0; hero.did = false
             hero.cd = st.cd
           }
         } else if (hero.state === 'attack') {
-          hero.t += dt
+          hero.t += dt * SPEED
           if (st.mode === 'quad') {
             if (!hero.did && hero.t >= PUNCH.hitAt) {
               hero.did = true
@@ -342,7 +354,7 @@ export default function App() {
             if (!p.target) { p.dead = true; continue }
           }
           const t = p.target
-          p.t += dt
+          p.t += dt * SPEED
           const k = Math.min(1, p.t / p.T)
           const ty = w.groundY - t.h * 0.55
           p.x = p.sx + (t.x - p.sx) * k
@@ -379,8 +391,12 @@ export default function App() {
 
       for (const d of w.dmgTexts) { d.life -= dt; d.y -= 45 * dt }
       w.dmgTexts = w.dmgTexts.filter(d => d.life > 0)
-      for (const p of w.particles) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 500 * dt }
+      for (const p of w.particles) { p.life -= dt; p.x += p.vx * dt * SPEED; p.y += p.vy * dt * SPEED; p.vy += 600 * dt }
       w.particles = w.particles.filter(p => p.life > 0)
+      if (w.pools) {
+        for (const pl of w.pools) { pl.life -= dt; pl.r = Math.min(pl.max, pl.r + 40 * dt) }
+        w.pools = w.pools.filter(pl => pl.life > 0)
+      }
       w.shake = Math.max(0, w.shake - dt * 25)
 
       draw(ctx, now)
@@ -429,11 +445,11 @@ export default function App() {
         ctx.beginPath(); ctx.ellipse(0, -e.h * 0.5, e.h * 0.6, e.h * 0.4, 0, 0, Math.PI * 2); ctx.fill()
       }
       ctx.restore()
-      const bw = Math.min(80, e.h * 1.4)
-      ctx.fillStyle = 'rgba(0,0,0,0.5)'
-      ctx.fillRect(e.x - bw / 2, y - e.h - 12, bw, 5)
-      ctx.fillStyle = '#e05a4e'
-      ctx.fillRect(e.x - bw / 2, y - e.h - 12, bw * Math.max(0, e.hp / e.maxHp), 5)
+      const bw = Math.min(52, e.h * 0.9)
+      ctx.fillStyle = 'rgba(0,0,0,0.55)'
+      ctx.fillRect(e.x - bw / 2, y - e.h - 12, bw, 4)
+      ctx.fillStyle = '#d51616'
+      ctx.fillRect(e.x - bw / 2, y - e.h - 12, bw * Math.max(0, e.hp / e.maxHp), 4)
     }
 
     function draw(ctx, now) {
@@ -451,6 +467,14 @@ export default function App() {
       } else {
         ctx.fillStyle = '#3a2f1d'; ctx.fillRect(0, 0, w.W, w.H)
       }
+
+      // 바닥 핏자국 (배경 위, 캐릭터 아래)
+      if (w.pools) for (const pl of w.pools) {
+        ctx.globalAlpha = Math.min(0.55, pl.life * 0.5)
+        ctx.fillStyle = '#5c0d0d'
+        ctx.beginPath(); ctx.ellipse(pl.x, pl.y, pl.r, pl.r * 0.35, 0, 0, Math.PI * 2); ctx.fill()
+      }
+      ctx.globalAlpha = 1
 
       // 주인공
       const hero = w.hero
@@ -485,9 +509,13 @@ export default function App() {
       }
 
       for (const p of w.particles) {
-        ctx.globalAlpha = Math.max(0, p.life * 2)
+        ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 3))
         ctx.fillStyle = p.color
-        ctx.fillRect(p.x - 2, p.y - 2, 4, 4)
+        if (p.blood) {
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill()
+        } else {
+          ctx.fillRect(p.x - 2, p.y - 2, 4, 4)
+        }
       }
       ctx.globalAlpha = 1
 
