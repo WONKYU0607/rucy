@@ -305,6 +305,11 @@ export default function App() {
       const fi = Math.floor(hero.animT * 10) % ANIM[key].srcs.length
       return [key, fi]
     }
+    function safeImg(key, fi) {
+      const arr = AIMG[key]
+      if (!arr || !arr.length) return AIMG.idle[0]
+      return arr[fi] || arr[0]
+    }
 
     function drawEnemy(ctx, e) {
       const y = w.groundY
@@ -356,7 +361,7 @@ export default function App() {
       const hero = w.hero
       const [key, fi] = heroAnim(hero, S.current)
       const a = ANIM[key]
-      const im = AIMG[key][fi]
+      const im = safeImg(key, fi)
       if (im.complete && im.naturalWidth > 0) {
         const hh = a.h
         const hw = hh * (im.naturalWidth / im.naturalHeight)
