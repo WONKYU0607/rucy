@@ -11,6 +11,7 @@ const FRAMES = {
 const IMG = {}
 for (const k in FRAMES) { const im = new Image(); im.src = FRAMES[k].src; IMG[k] = im }
 const BG = new Image(); BG.src = '/bg.jpg'
+const STONE = new Image(); STONE.src = '/stone.png'
 
 const HERO_X = 70
 const HERO_H = 130
@@ -185,8 +186,8 @@ export default function App() {
               const d = Math.hypot(target.x - sx, (w.groundY - target.size) - sy)
               w.stones.push({
                 sx, sy, x: sx, y: sy, target, t: 0,
-                T: Math.min(0.6, Math.max(0.22, d / 700)),   // 거리 비례 비행시간
-                arc: Math.min(70, 25 + d * 0.18),            // 포물선 높이
+                T: Math.min(0.45, Math.max(0.18, d / 900)),  // 거리 비례 비행시간 (빠르게)
+                arc: Math.min(40, 15 + d * 0.12),            // 포물선 높이 (낮게)
                 rot: 0,
               })
             }
@@ -330,15 +331,18 @@ export default function App() {
       // 적
       for (const e of w.enemies) drawEnemy(ctx, e)
 
-      // 돌 투사체
+      // 돌 투사체 (시트에서 추출한 실제 돌 이미지)
       for (const p of w.stones) {
         ctx.save()
         ctx.translate(p.x, p.y)
         ctx.rotate(p.rot)
-        ctx.fillStyle = '#9e9384'
-        ctx.beginPath(); ctx.ellipse(0, 0, 7, 5, 0, 0, Math.PI * 2); ctx.fill()
-        ctx.fillStyle = 'rgba(0,0,0,0.25)'
-        ctx.beginPath(); ctx.ellipse(2, 2, 3, 2, 0, 0, Math.PI * 2); ctx.fill()
+        if (STONE.complete && STONE.naturalWidth > 0) {
+          const sw = 18, sh = sw * (STONE.naturalHeight / STONE.naturalWidth)
+          ctx.drawImage(STONE, -sw / 2, -sh / 2, sw, sh)
+        } else {
+          ctx.fillStyle = '#b09a72'
+          ctx.beginPath(); ctx.ellipse(0, 0, 8, 6, 0, 0, Math.PI * 2); ctx.fill()
+        }
         ctx.restore()
       }
 
@@ -395,6 +399,7 @@ export default function App() {
   }
 
   return (
+    <div style={st.outer}>
     <div style={st.root}>
       <div style={st.topBar}>
         <div>고기 <b style={{ color: '#f0b060' }}>{fmt(meat)}</b></div>
@@ -458,12 +463,18 @@ export default function App() {
         )}
       </div>
     </div>
+    </div>
   )
 }
 
 const st = {
+  outer: {
+    position: 'fixed', inset: 0, background: '#000',
+    display: 'flex', justifyContent: 'center',
+  },
   root: {
-    position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column',
+    width: '100%', maxWidth: 420, height: '100%',
+    position: 'relative', display: 'flex', flexDirection: 'column',
     background: '#1a120b', color: '#f5ead9',
     fontFamily: "'Pretendard', -apple-system, 'Noto Sans KR', sans-serif",
   },
