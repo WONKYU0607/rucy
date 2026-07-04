@@ -5,11 +5,12 @@ const DEBUG = true
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
-  quad:  { srcs: ['/hero/quad/quad_1.png', '/hero/quad/quad_2.png', '/hero/quad/quad_3.png'], h: 85,  flip: false },
-  walk:  { srcs: ['/hero/walk/walk_1.png', '/hero/walk/walk_2.png', '/hero/walk/walk_3.png'], h: 130, flip: false },
+  quad:  { srcs: ['/hero/quad/quad_1.png', '/hero/quad/quad_2.png', '/hero/quad/quad_3.png', '/hero/quad/quad_4.png'], h: 95,  flip: false },
+  walk:  { srcs: ['/hero/walk/walk_1.png', '/hero/walk/walk_2.png', '/hero/walk/walk_3.png', '/hero/walk/walk_4.png'], h: 130, flip: false },
+  run:   { srcs: ['/hero/run/run_1.png', '/hero/run/run_2.png', '/hero/run/run_3.png', '/hero/run/run_4.png'], h: 130, flip: false },
   punch: { srcs: ['/hero/punch/punch_1.png', '/hero/punch/punch_2.png', '/hero/punch/punch_3.png'], h: 125, flip: false },
   throw: { srcs: ['/hero/throw/hero_windup.png', '/hero/throw/hero_release.png', '/hero/throw/hero_recovery.png'], h: 130, flip: false },
-  idle:  { srcs: ['/hero/misc/hero_idle.png'], h: 130, flip: false },
+  idle:  { srcs: ['/hero/idle/idle_1.png'], h: 130, flip: false },
 }
 const AIMG = {}
 for (const k in ANIM) AIMG[k] = ANIM[k].srcs.map(s => { const i = new Image(); i.src = s; return i })
@@ -70,6 +71,8 @@ const STAT_LIST = {
   expUp:    { name: '경험치 획득량', icon: '📖', per: 5,  suffix: '%', cost: 20, growth: 1.15 },
   acc:      { name: '명중률',       icon: '◎', per: 3,  suffix: '%', cost: 30, growth: 1.18 },
   eva:      { name: '회피율',       icon: '➰', per: 2,  suffix: '%', cost: 30, growth: 1.18 },
+  aspd:     { name: '공격 속도',    icon: '⚡', per: 4,  suffix: '%', cost: 25, growth: 1.18, cap: 200 },
+  mspd:     { name: '이동 속도',    icon: '👟', per: 4,  suffix: '%', cost: 25, growth: 1.18, cap: 200 },
 }
 const STAT_KEYS = Object.keys(STAT_LIST)
 const statInit = () => STAT_KEYS.reduce((o, k) => (o[k] = 0, o), {})
@@ -129,20 +132,23 @@ export default function App() {
   // 스탯 총 레벨 = 강화(고기) + 스킬(SP), 효과는 STAT_LIST.per 기준
   const tot = k => (lv[k] || 0) + (skill[k] || 0)
   const ATK_BASE = 10, HP_BASE = 100, ASPD = 1.0
+  const aspdMult = 1 + Math.min(200, tot('aspd') * STAT_LIST.aspd.per) / 100   // 공격속도 배율
+  const mspdMult = 1 + Math.min(200, tot('mspd') * STAT_LIST.mspd.per) / 100   // 이동속도 배율
   const maxHp = HP_BASE * (1 + tot('hp') * STAT_LIST.hp.per / 100)
   const S = useRef({})
   S.current = {
     atk: ATK_BASE * EVOS[evo].mult * (1 + tot('atk') * STAT_LIST.atk.per / 100),
-    cd: 1000 / ASPD / SPEED,
+    cd: 1000 / (ASPD * aspdMult) / SPEED,
+    aspdMult, mspdMult,
     maxHp, wave, phase,
     mode: EVOS[evo].mode,
-    critRate: Math.min(1, tot('critRate') * STAT_LIST.critRate.per / 100),  // 치명타 확률 (0~1)
-    critMult: 2 + tot('critDmg') * STAT_LIST.critDmg.per / 100,             // 치명타 배율
-    regen: tot('regen') * STAT_LIST.regen.per,                             // 초당 회복
+    critRate: Math.min(1, tot('critRate') * STAT_LIST.critRate.per / 100),
+    critMult: 2 + tot('critDmg') * STAT_LIST.critDmg.per / 100,
+    regen: tot('regen') * STAT_LIST.regen.per,
     meatMult: 1 + tot('meatUp') * STAT_LIST.meatUp.per / 100,
     expMult: 1 + tot('expUp') * STAT_LIST.expUp.per / 100,
-    acc: tot('acc') * STAT_LIST.acc.per / 100,                             // 명중 보너스
-    eva: tot('eva') * STAT_LIST.eva.per / 100,                             // 회피 보너스
+    acc: tot('acc') * STAT_LIST.acc.per / 100,
+    eva: tot('eva') * STAT_LIST.eva.per / 100,
   }
 
   useEffect(() => {
@@ -280,7 +286,7 @@ export default function App() {
 
       // 배경 스크롤: 이동 상태일 때만 전진
       const moving = (st.phase === 'fighting' || st.phase === 'cleared') && hero.state === 'move'
-      const scroll = moving ? SCROLL : 0
+      const scroll = moving ? SCROLL * st.mspdMult : 0
       w.scrollX += scroll * dt
 
       if (st.phase === 'fighting') {
@@ -325,14 +331,14 @@ export default function App() {
         hero.cd -= dt * 1000
         hero.flash = Math.max(0, hero.flash - dt)
         if (hero.state === 'move') {
-          hero.animT += dt * SPEED
+          hero.animT += dt * SPEED * st.mspdMult
           const target = w.enemies.find(e => !e.dead && e.x - HERO_X < atkRange)
           if (hero.cd <= 0 && target) {
             hero.state = 'attack'; hero.t = 0; hero.did = false
             hero.cd = st.cd
           }
         } else if (hero.state === 'attack') {
-          hero.t += dt * SPEED
+          hero.t += dt * SPEED * st.aspdMult
           if (st.mode === 'quad') {
             if (!hero.did && hero.t >= PUNCH.hitAt) {
               hero.did = true
