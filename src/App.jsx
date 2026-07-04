@@ -17,13 +17,23 @@ const HERO_X = 70
 const HERO_H = 130
 const THROW = { windupEnd: 0.14, releaseEnd: 0.30, total: 0.42 } // 초 단위, releaseEnd 시작 시 돌 발사
 
-// ── 적 정의 ──
+// ── 디버그 모드: 업그레이드 비용 무료 (출시 전 false로) ──
+const DEBUG = true
+
+// ── 적 정의 (스프라이트 시트 추출 프레임, flip: 진행방향 반전) ──
 const ENEMY_TYPES = {
-  boar:  { name: '멧돼지', hp: 25,  speed: 55, dmg: 6,  reward: 5,  size: 26, color: '#8d6e63' },
-  wolf:  { name: '늑대',   hp: 45,  speed: 75, dmg: 10, reward: 9,  size: 30, color: '#78909c' },
-  hyena: { name: '하이에나', hp: 90, speed: 48, dmg: 16, reward: 15, size: 34, color: '#a1887f' },
-  tiger: { name: '검치호', hp: 800, speed: 38, dmg: 45, reward: 200, size: 60, color: '#ef9a3c' },
+  rabbit:   { name: '토끼', hp: 20, speed: 85, dmg: 5,  reward: 4,  h: 34, color: '#a1887f', flip: true,
+              frames: ['/rabbit_1.png', '/rabbit_2.png', '/rabbit_3.png'] },
+  antelope: { name: '영양', hp: 45, speed: 65, dmg: 10, reward: 8,  h: 60, color: '#c98a4b', flip: true,
+              frames: ['/antelope_1.png', '/antelope_2.png', '/antelope_3.png'] },
+  deer:     { name: '사슴', hp: 90, speed: 50, dmg: 16, reward: 14, h: 72, color: '#b5794a', flip: true,
+              frames: ['/deer_1.png', '/deer_2.png', '/deer_3.png'] },
 }
+const EIMG = {}
+for (const k in ENEMY_TYPES) {
+  EIMG[k] = ENEMY_TYPES[k].frames.map(src => { const i = new Image(); i.src = src; return i })
+}
+const WAVE_CYCLE = ['rabbit', 'antelope', 'deer']
 
 const STAT_DEFS = {
   atk:  { name: '공격력',   base: 10, add: 4,    cost: 15, growth: 1.13 },
@@ -117,19 +127,16 @@ export default function App() {
     }
 
     function spawnEnemy(n) {
-      let key
-      if (w.bossPending && w.spawnLeft === 1) key = 'tiger'
-      else {
-        const pool = n < 3 ? ['boar'] : n < 6 ? ['boar','wolf'] : ['boar','wolf','hyena']
-        key = pool[Math.floor(Math.random() * pool.length)]
-      }
+      const key = WAVE_CYCLE[(w.waveNum - 1) % WAVE_CYCLE.length]
+      const boss = w.bossPending && w.spawnLeft === 1
       const t = ENEMY_TYPES[key]
-      const sc = 1 + 0.4 * (w.waveNum - 1)
+      const sc = (1 + 0.4 * (w.waveNum - 1)) * (boss ? 12 : 1)
       w.enemies.push({
-        type: key, x: w.W + 40, hp: t.hp * sc, maxHp: t.hp * sc,
-        speed: t.speed * (0.9 + Math.random() * 0.2), dmg: t.dmg * (1 + 0.1 * (w.waveNum - 1)),
-        reward: Math.floor(t.reward * (1 + 0.2 * (w.waveNum - 1))),
-        size: t.size, color: t.color, cd: 0, flash: 0, legT: Math.random() * 10,
+        type: key, boss, x: w.W + 40, hp: t.hp * sc, maxHp: t.hp * sc,
+        speed: t.speed * (boss ? 0.6 : 0.9 + Math.random() * 0.2),
+        dmg: t.dmg * (1 + 0.1 * (w.waveNum - 1)) * (boss ? 3 : 1),
+        reward: Math.floor(t.reward * (1 + 0.2 * (w.waveNum - 1))) * (boss ? 15 : 1),
+        h: t.h * (boss ? 1.9 : 1), color: t.color, cd: 0, flash: 0, animT: Math.random() * 10,
       })
     }
 
@@ -159,9 +166,9 @@ export default function App() {
         const meleeX = HERO_X + 50
         for (const e of w.enemies) {
           e.flash = Math.max(0, e.flash - dt * 5)
-          if (e.x > meleeX + e.size * 0.6) {
+          if (e.x > meleeX + e.h * 0.5) {
             e.x -= e.speed * dt
-            e.legT += dt * 10
+            e.animT += dt
           } else {
             e.cd -= dt * 1000
             if (e.cd <= 0) {
@@ -183,7 +190,7 @@ export default function App() {
             const target = w.enemies.find(e => !e.dead)
             if (target) {
               const sx = HERO_X + 32, sy = w.groundY - HERO_H * 0.78
-              const d = Math.hypot(target.x - sx, (w.groundY - target.size) - sy)
+              const d = Math.hypot(target.x - sx, (w.groundY - target.h * 0.55) - sy)
               w.stones.push({
                 sx, sy, x: sx, y: sy, target, t: 0,
                 T: Math.min(0.45, Math.max(0.18, d / 900)),  // 거리 비례 비행시간 (빠르게)
@@ -210,7 +217,7 @@ export default function App() {
           const t = p.target
           p.t += dt
           const k = Math.min(1, p.t / p.T)
-          const ty = w.groundY - t.size
+          const ty = w.groundY - t.h * 0.55
           p.x = p.sx + (t.x - p.sx) * k
           p.y = p.sy + (ty - p.sy) * k - p.arc * Math.sin(Math.PI * k)
           p.rot += dt * 10
@@ -221,7 +228,7 @@ export default function App() {
             t.hp -= dmg
             t.flash = 1
             t.x += 6
-            addDmg(t.x, ty - t.size - 16, dmg, crit)
+            addDmg(t.x, ty - t.h * 0.5 - 12, dmg, crit)
             burst(t.x, ty, '#ffd54f', crit ? 16 : 8)
             w.shake = Math.max(w.shake, crit ? 5 : 2)
             if (t.hp <= 0) {
@@ -275,27 +282,28 @@ export default function App() {
 
     function drawEnemy(ctx, e) {
       const y = w.groundY
-      const s = e.size
+      const t = ENEMY_TYPES[e.type]
+      const imgs = EIMG[e.type]
+      const fi = Math.floor(e.animT * 8) % imgs.length // 8fps 걷기 사이클
+      const im = imgs[fi]
       ctx.save()
       ctx.translate(e.x, y)
       if (e.flash > 0.5) ctx.filter = 'brightness(3)'
-      ctx.strokeStyle = e.color; ctx.lineWidth = s * 0.16; ctx.lineCap = 'round'
-      const sw = Math.sin(e.legT) * s * 0.25
-      ctx.beginPath()
-      ctx.moveTo(-s * 0.5, -s * 0.7); ctx.lineTo(-s * 0.5 + sw, 0)
-      ctx.moveTo(s * 0.5, -s * 0.7); ctx.lineTo(s * 0.5 - sw, 0)
-      ctx.stroke()
-      ctx.fillStyle = e.color
-      ctx.beginPath(); ctx.ellipse(0, -s * 0.9, s, s * 0.55, 0, 0, Math.PI * 2); ctx.fill()
-      ctx.beginPath(); ctx.arc(-s * 0.95, -s * 1.05, s * 0.42, 0, Math.PI * 2); ctx.fill()
-      ctx.fillStyle = '#fff'
-      ctx.beginPath(); ctx.arc(-s * 1.1, -s * 1.12, s * 0.08, 0, Math.PI * 2); ctx.fill()
+      if (im.complete && im.naturalWidth > 0) {
+        const eh = e.h
+        const ew = eh * (im.naturalWidth / im.naturalHeight)
+        if (t.flip) ctx.scale(-1, 1)
+        ctx.drawImage(im, -ew / 2, -eh, ew, eh)
+      } else {
+        ctx.fillStyle = e.color
+        ctx.beginPath(); ctx.ellipse(0, -e.h * 0.5, e.h * 0.6, e.h * 0.4, 0, 0, Math.PI * 2); ctx.fill()
+      }
       ctx.restore()
-      const bw = s * 2
+      const bw = Math.min(80, e.h * 1.4)
       ctx.fillStyle = 'rgba(0,0,0,0.5)'
-      ctx.fillRect(e.x - bw / 2, y - s * 2 - 10, bw, 5)
+      ctx.fillRect(e.x - bw / 2, y - e.h - 12, bw, 5)
       ctx.fillStyle = '#e05a4e'
-      ctx.fillRect(e.x - bw / 2, y - s * 2 - 10, bw * Math.max(0, e.hp / e.maxHp), 5)
+      ctx.fillRect(e.x - bw / 2, y - e.h - 12, bw * Math.max(0, e.hp / e.maxHp), 5)
     }
 
     function draw(ctx, now) {
@@ -373,14 +381,14 @@ export default function App() {
   }, [])
 
   function buyStat(k) {
-    const c = statCost(k, lv[k])
+    const c = DEBUG ? 0 : statCost(k, lv[k])
     if (meat < c) return
     setMeat(m => m - c)
     setLv(v => ({ ...v, [k]: v[k] + 1 }))
   }
   function evolve() {
     if (evo >= EVOS.length - 1) return
-    const c = EVOS[evo + 1].cost
+    const c = DEBUG ? 0 : EVOS[evo + 1].cost
     if (meat < c) return
     setMeat(m => m - c)
     setEvo(v => v + 1)
@@ -435,7 +443,7 @@ export default function App() {
       <div style={st.panel}>
         {tab === '강화' && Object.keys(STAT_DEFS).map(k => {
           const c = statCost(k, lv[k])
-          const ok = meat >= c
+          const ok = DEBUG || meat >= c
           return (
             <div key={k} style={st.row}>
               <div style={{ flex: 1 }}>
@@ -457,7 +465,7 @@ export default function App() {
               </div>
             </div>
             {evo < EVOS.length - 1
-              ? <button style={{ ...st.costBtn, opacity: meat >= EVOS[evo + 1].cost ? 1 : 0.4 }} onClick={evolve}>{fmt(EVOS[evo + 1].cost)}</button>
+              ? <button style={{ ...st.costBtn, opacity: DEBUG || meat >= EVOS[evo + 1].cost ? 1 : 0.4 }} onClick={evolve}>{fmt(EVOS[evo + 1].cost)}</button>
               : <div style={{ fontSize: 12, opacity: 0.6 }}>최종 단계</div>}
           </div>
         )}
