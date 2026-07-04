@@ -23,7 +23,7 @@ const DEBUG = true
 // ── 적 정의 (스프라이트 시트 추출 프레임, flip: 진행방향 반전) ──
 const ENEMY_TYPES = {
   rabbit:   { name: '토끼', hp: 20, speed: 85, dmg: 5,  reward: 4,  h: 34, color: '#a1887f', flip: true,
-              frames: ['/rabbit_1.png', '/rabbit_2.png', '/rabbit_3.png'] },
+              frames: ['/rabbit_1.png', '/rabbit_2.png', '/rabbit_3.png', '/rabbit_4.png'] },
   antelope: { name: '영양', hp: 45, speed: 65, dmg: 10, reward: 8,  h: 60, color: '#c98a4b', flip: true,
               frames: ['/antelope_1.png', '/antelope_2.png', '/antelope_3.png'] },
   deer:     { name: '사슴', hp: 90, speed: 50, dmg: 16, reward: 14, h: 72, color: '#b5794a', flip: true,
@@ -284,10 +284,14 @@ export default function App() {
       const y = w.groundY
       const t = ENEMY_TYPES[e.type]
       const imgs = EIMG[e.type]
-      const fi = Math.floor(e.animT * 8) % imgs.length // 8fps 걷기 사이클
+      const gall = e.animT * 9
+      const fi = Math.floor(gall / Math.PI) % imgs.length      // 프레임 사이클
+      const bounce = Math.abs(Math.sin(gall)) * e.h * 0.08     // 질주 상하 바운스
+      const rock = Math.sin(gall) * 0.06                       // 몸통 앞뒤 흔들림
       const im = imgs[fi]
       ctx.save()
-      ctx.translate(e.x, y)
+      ctx.translate(e.x, y - bounce)
+      ctx.rotate(rock)
       if (e.flash > 0.5) ctx.filter = 'brightness(3)'
       if (im.complete && im.naturalWidth > 0) {
         const eh = e.h
