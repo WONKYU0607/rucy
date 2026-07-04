@@ -29,12 +29,18 @@ const ENEMY_TYPES = {
               frames: ['/monster/antelope/antelope_1.png', '/monster/antelope/antelope_2.png', '/monster/antelope/antelope_3.png'] },
   deer:     { name: '사슴', hp: 90, speed: 50, dmg: 16, reward: 14, h: 72, color: '#b5794a', flip: true,
               frames: ['/monster/deer/deer_1.png', '/monster/deer/deer_2.png', '/monster/deer/deer_3.png'] },
+  boar:     { name: '멧돼지', hp: 70, speed: 60, dmg: 14, reward: 12, h: 62, color: '#7a6a52', flip: true,
+              frames: ['/monster/boar/boar_1.png', '/monster/boar/boar_2.png', '/monster/boar/boar_3.png', '/monster/boar/boar_4.png'] },
+  wolf:     { name: '늑대', hp: 40, speed: 120, dmg: 12, reward: 10, h: 56, color: '#9a8f7a', flip: true,
+              frames: ['/monster/wolf/wolf_1.png', '/monster/wolf/wolf_2.png', '/monster/wolf/wolf_3.png', '/monster/wolf/wolf_4.png'] },
+  hyena:    { name: '하이에나', hp: 110, speed: 55, dmg: 20, reward: 18, h: 68, color: '#b0a15f', flip: true,
+              frames: ['/monster/hyena/hyena_1.png', '/monster/hyena/hyena_2.png', '/monster/hyena/hyena_3.png', '/monster/hyena/hyena_4.png'] },
 }
 const EIMG = {}
 for (const k in ENEMY_TYPES) {
   EIMG[k] = ENEMY_TYPES[k].frames.map(src => { const i = new Image(); i.src = src; return i })
 }
-const WAVE_CYCLE = ['rabbit', 'antelope', 'deer']
+const WAVE_CYCLE = ['rabbit', 'antelope', 'deer', 'boar', 'wolf', 'hyena']
 
 const STAT_DEFS = {
   atk:  { name: '공격력',   base: 10, add: 4,    cost: 15, growth: 1.13 },
