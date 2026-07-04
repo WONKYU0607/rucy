@@ -35,12 +35,20 @@ const ENEMY_TYPES = {
               frames: ['/monster/wolf/wolf_1.png', '/monster/wolf/wolf_2.png', '/monster/wolf/wolf_3.png', '/monster/wolf/wolf_4.png'] },
   hyena:    { name: '하이에나', hp: 110, speed: 55, dmg: 20, reward: 18, h: 68, color: '#b0a15f', flip: true,
               frames: ['/monster/hyena/hyena_1.png', '/monster/hyena/hyena_2.png', '/monster/hyena/hyena_3.png', '/monster/hyena/hyena_4.png'] },
+  bear:     { name: '동굴곰', hp: 260, speed: 40, dmg: 32, reward: 35, h: 88, color: '#6b4f35', flip: true,
+              frames: ['/monster/bear/bear_1.png', '/monster/bear/bear_2.png', '/monster/bear/bear_3.png', '/monster/bear/bear_4.png'] },
+  rhino:    { name: '털코뿔소', hp: 450, speed: 45, dmg: 40, reward: 55, h: 82, color: '#9c988f', flip: true,
+              frames: ['/monster/rhino/rhino_1.png', '/monster/rhino/rhino_2.png', '/monster/rhino/rhino_3.png', '/monster/rhino/rhino_4.png'] },
+  mammoth:  { name: '매머드', hp: 900, speed: 32, dmg: 55, reward: 110, h: 100, color: '#5f4a34', flip: true,
+              frames: ['/monster/mammoth/mammoth_1.png', '/monster/mammoth/mammoth_2.png', '/monster/mammoth/mammoth_3.png', '/monster/mammoth/mammoth_4.png'] },
+  tiger:    { name: '검치호', hp: 600, speed: 80, dmg: 60, reward: 130, h: 84, color: '#c68a3c', flip: true,
+              frames: ['/monster/tiger/tiger_1.png', '/monster/tiger/tiger_2.png', '/monster/tiger/tiger_3.png', '/monster/tiger/tiger_4.png'] },
 }
 const EIMG = {}
 for (const k in ENEMY_TYPES) {
   EIMG[k] = ENEMY_TYPES[k].frames.map(src => { const i = new Image(); i.src = src; return i })
 }
-const WAVE_CYCLE = ['rabbit', 'antelope', 'deer', 'boar', 'wolf', 'hyena']
+const WAVE_CYCLE = ['rabbit', 'antelope', 'deer', 'boar', 'wolf', 'hyena', 'bear', 'rhino', 'tiger', 'mammoth']
 
 const STAT_DEFS = {
   atk:  { name: '공격력',   base: 10, add: 4,    cost: 15, growth: 1.13 },
