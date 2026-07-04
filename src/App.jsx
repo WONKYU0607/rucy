@@ -10,7 +10,7 @@ const FRAMES = {
 }
 const IMG = {}
 for (const k in FRAMES) { const im = new Image(); im.src = FRAMES[k].src; IMG[k] = im }
-const BG = new Image(); BG.src = '/bg.png'
+const BG = new Image(); BG.src = '/bg.jpg'
 
 const HERO_X = 70
 const HERO_H = 130
@@ -181,7 +181,14 @@ export default function App() {
             hero.thrown = true
             const target = w.enemies.find(e => !e.dead)
             if (target) {
-              w.stones.push({ x: HERO_X + 30, y: w.groundY - HERO_H * 0.75, target, speed: 520, rot: 0 })
+              const sx = HERO_X + 32, sy = w.groundY - HERO_H * 0.78
+              const d = Math.hypot(target.x - sx, (w.groundY - target.size) - sy)
+              w.stones.push({
+                sx, sy, x: sx, y: sy, target, t: 0,
+                T: Math.min(0.6, Math.max(0.22, d / 700)),   // 거리 비례 비행시간
+                arc: Math.min(70, 25 + d * 0.18),            // 포물선 높이
+                rot: 0,
+              })
             }
           }
           if (hero.t >= THROW.total) { hero.state = 'idle'; hero.t = 0; hero.thrown = false }
@@ -193,14 +200,20 @@ export default function App() {
           hero.cd = st.cd
         }
 
-        // 돌 투사체 (유도 + 회전)
+        // 돌 투사체 (포물선 아치, 목표 추적 보간 → 부드러운 궤적)
         for (const p of w.stones) {
+          if (!p.target || p.target.dead) {
+            p.target = w.enemies.find(e => !e.dead) || null
+            if (!p.target) { p.dead = true; continue }
+          }
           const t = p.target
-          if (!t || t.dead) { p.dead = true; continue }
+          p.t += dt
+          const k = Math.min(1, p.t / p.T)
           const ty = w.groundY - t.size
-          const dx = t.x - p.x, dy = ty - p.y
-          const d = Math.hypot(dx, dy) || 1
-          if (d < t.size * 0.8 + 8) {
+          p.x = p.sx + (t.x - p.sx) * k
+          p.y = p.sy + (ty - p.sy) * k - p.arc * Math.sin(Math.PI * k)
+          p.rot += dt * 10
+          if (k >= 1) {
             p.dead = true
             const crit = Math.random() < 0.15
             const dmg = st.atk * (crit ? 2 : 1)
@@ -216,10 +229,6 @@ export default function App() {
               w.killMeat = (w.killMeat || 0) + t.reward
               burst(t.x, ty, t.color, 14)
             }
-          } else {
-            p.x += (dx / d) * p.speed * dt
-            p.y += (dy / d) * p.speed * dt
-            p.rot += dt * 12
           }
         }
 
@@ -297,7 +306,7 @@ export default function App() {
       if (BG.complete && BG.naturalWidth > 0) {
         const scale = Math.max(w.W / BG.naturalWidth, w.H / BG.naturalHeight)
         const bw = BG.naturalWidth * scale, bh = BG.naturalHeight * scale
-        ctx.drawImage(BG, (w.W - bw) / 2, w.H - bh + 30, bw, bh)
+        ctx.drawImage(BG, (w.W - bw) / 2, w.H - bh, bw, bh)
       } else {
         ctx.fillStyle = '#3a2f1d'; ctx.fillRect(0, 0, w.W, w.H)
       }
