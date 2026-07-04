@@ -1,12 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react'
 
-// ── 진화 단계 (분리한 3마리) ──
-const EVOS = [
-  { name: '오스트랄로피테쿠스', img: '/ape1.png', mult: 1 },
-  { name: '진화한 오스트랄로피테쿠스', img: '/ape2.png', mult: 3, cost: 1500 },
-  { name: '각성한 오스트랄로피테쿠스', img: '/ape3.png', mult: 9, cost: 30000 },
-]
-const IMGS = EVOS.map(e => { const im = new Image(); im.src = e.img; return im })
+// ── 스프라이트 프레임 (flip: 좌우 반전 여부 — 방향 틀리면 여기만 수정) ──
+const FRAMES = {
+  idle:     { src: '/hero_idle.png',     flip: true  },
+  windup:   { src: '/hero_windup.png',   flip: false },
+  release:  { src: '/hero_release.png',  flip: false },
+  recovery: { src: '/hero_recovery.png', flip: false },
+  hit:      { src: '/hero_hit.png',      flip: false },
+}
+const IMG = {}
+for (const k in FRAMES) { const im = new Image(); im.src = FRAMES[k].src; IMG[k] = im }
+const BG = new Image(); BG.src = '/bg.png'
+
+const HERO_X = 70
+const HERO_H = 130
+const THROW = { windupEnd: 0.14, releaseEnd: 0.30, total: 0.42 } // 초 단위, releaseEnd 시작 시 돌 발사
 
 // ── 적 정의 ──
 const ENEMY_TYPES = {
@@ -16,13 +24,18 @@ const ENEMY_TYPES = {
   tiger: { name: '검치호', hp: 800, speed: 38, dmg: 45, reward: 200, size: 60, color: '#ef9a3c' },
 }
 
-// ── 강화 항목 ──
 const STAT_DEFS = {
-  atk:  { name: '공격력',   base: 10, add: 4,   cost: 15, growth: 1.13 },
+  atk:  { name: '공격력',   base: 10, add: 4,    cost: 15, growth: 1.13 },
   aspd: { name: '공격 속도', base: 1.0, add: 0.04, cost: 25, growth: 1.18 },
-  hp:   { name: '체력',     base: 100, add: 25,  cost: 20, growth: 1.15 },
+  hp:   { name: '체력',     base: 100, add: 25,   cost: 20, growth: 1.15 },
 }
 const statCost = (k, lv) => Math.floor(STAT_DEFS[k].cost * Math.pow(STAT_DEFS[k].growth, lv))
+
+const EVOS = [
+  { name: '오스트랄로피테쿠스', mult: 1 },
+  { name: '진화한 오스트랄로피테쿠스', mult: 3, cost: 1500 },
+  { name: '각성한 오스트랄로피테쿠스', mult: 9, cost: 30000 },
+]
 
 const SAVE_KEY = 'paleoDefSave_v2'
 function loadSave() {
@@ -32,7 +45,6 @@ function loadSave() {
   } catch (e) {}
   return { meat: 0, wave: 1, lv: { atk: 0, aspd: 0, hp: 0 }, evo: 0 }
 }
-
 const fmt = n => n >= 1e8 ? (n/1e8).toFixed(1)+'억' : n >= 1e4 ? (n/1e4).toFixed(1)+'만' : Math.floor(n).toLocaleString()
 
 export default function App() {
@@ -49,13 +61,12 @@ export default function App() {
   const [heroHpUI, setHeroHpUI] = useState(100)
   const [progress, setProgress] = useState(0)
 
-  // 파생 스탯 (루프는 ref로 접근 — 클로저 방지)
   const maxHp = STAT_DEFS.hp.base + STAT_DEFS.hp.add * lv.hp * (1 + lv.hp * 0.02)
   const S = useRef({})
   S.current = {
     atk: (STAT_DEFS.atk.base + STAT_DEFS.atk.add * lv.atk * (1 + lv.atk * 0.02)) * EVOS[evo].mult,
     cd: 1000 / (STAT_DEFS.aspd.base + STAT_DEFS.aspd.add * lv.aspd),
-    maxHp, wave, phase, evo,
+    maxHp, wave, phase,
   }
 
   useEffect(() => {
@@ -65,8 +76,8 @@ export default function App() {
   const world = useRef(null)
   if (!world.current) {
     world.current = {
-      enemies: [], dmgTexts: [], particles: [],
-      hero: { hp: maxHp, cd: 0, anim: 0, animT: 0 }, // anim: 0=idle 1=attack
+      enemies: [], stones: [], dmgTexts: [], particles: [],
+      hero: { hp: maxHp, cd: 0, state: 'idle', t: 0, thrown: false },
       spawnLeft: 0, spawnTimer: 0, killed: 0, total: 1,
       shake: 0, needStart: true, W: 0, H: 0, groundY: 0,
     }
@@ -75,6 +86,7 @@ export default function App() {
   useEffect(() => {
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
+    ctx.imageSmoothingEnabled = false // 도트 그래픽 선명 유지
     const w = world.current
     let raf = 0, last = performance.now()
 
@@ -84,16 +96,15 @@ export default function App() {
       canvas.width = r.width * dpr; canvas.height = r.height * dpr
       canvas.style.width = r.width + 'px'; canvas.style.height = r.height + 'px'
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      ctx.imageSmoothingEnabled = false
       w.W = r.width; w.H = r.height
-      w.groundY = w.H - 40
+      w.groundY = w.H - 36
     }
     resize()
     window.addEventListener('resize', resize)
 
-    const HERO_X = 70, HERO_H = 110
-
     function startWave(n) {
-      w.enemies = []; w.dmgTexts = []; w.particles = []
+      w.enemies = []; w.stones = []; w.dmgTexts = []; w.particles = []
       const boss = n % 5 === 0
       w.spawnLeft = boss ? 5 : 5 + Math.min(n, 15)
       w.total = w.spawnLeft
@@ -121,9 +132,7 @@ export default function App() {
       })
     }
 
-    function addDmg(x, y, val, crit) {
-      w.dmgTexts.push({ x, y, val: fmt(val), life: 0.8, crit })
-    }
+    function addDmg(x, y, val, crit) { w.dmgTexts.push({ x, y, val: fmt(val), life: 0.8, crit }) }
     function burst(x, y, color, n = 10) {
       for (let i = 0; i < n; i++) {
         const a = Math.random() * Math.PI * 2, sp = 60 + Math.random() * 160
@@ -138,15 +147,15 @@ export default function App() {
       const hero = w.hero
 
       if (st.phase === 'fighting') {
-        if (w.needStart) { startWave(st.wave); w.needStart = false; hero.hp = st.maxHp }
+        if (w.needStart) { startWave(st.wave); w.needStart = false; hero.hp = st.maxHp; hero.state = 'idle'; hero.t = 0 }
 
         if (w.spawnLeft > 0) {
           w.spawnTimer -= dt * 1000
           if (w.spawnTimer <= 0) { spawnEnemy(w.waveNum); w.spawnLeft--; w.spawnTimer = 700 }
         }
 
-        // 적 이동/공격
-        const meleeX = HERO_X + 55
+        // 적 이동/근접 공격
+        const meleeX = HERO_X + 50
         for (const e of w.enemies) {
           e.flash = Math.max(0, e.flash - dt * 5)
           if (e.x > meleeX + e.size * 0.6) {
@@ -157,43 +166,65 @@ export default function App() {
             if (e.cd <= 0) {
               hero.hp -= e.dmg
               w.shake = 4
-              burst(HERO_X + 20, w.groundY - 60, '#e05a4e', 6)
+              burst(HERO_X + 15, w.groundY - 70, '#e05a4e', 6)
+              if (hero.state === 'idle') { hero.state = 'hit'; hero.t = 0 }
               e.cd = 1200
             }
           }
         }
 
-        // 주인공 공격 (근접, 가장 가까운 적)
+        // 주인공: 돌 던지기 상태머신
         hero.cd -= dt * 1000
-        if (hero.anim === 1) {
-          hero.animT += dt
-          if (!hero.hitDone && hero.animT > 0.12) {
-            hero.hitDone = true
-            const t = w.enemies.find(e => !e.dead && e.x < meleeX + 140)
-            if (t) {
-              const crit = Math.random() < 0.15
-              const dmg = st.atk * (crit ? 2 : 1)
-              t.hp -= dmg
-              t.flash = 1
-              t.x += 8
-              addDmg(t.x, w.groundY - t.size * 2 - 20, dmg, crit)
-              burst(t.x, w.groundY - t.size, '#ffd54f', crit ? 16 : 8)
-              w.shake = Math.max(w.shake, crit ? 5 : 2)
-              if (t.hp <= 0) {
-                t.dead = true
-                w.killed++
-                w.killMeat = (w.killMeat || 0) + t.reward
-                burst(t.x, w.groundY - t.size, t.color, 14)
-              }
+        if (hero.state === 'throw') {
+          hero.t += dt
+          if (!hero.thrown && hero.t >= THROW.windupEnd) {
+            hero.thrown = true
+            const target = w.enemies.find(e => !e.dead)
+            if (target) {
+              w.stones.push({ x: HERO_X + 30, y: w.groundY - HERO_H * 0.75, target, speed: 520, rot: 0 })
             }
           }
-          if (hero.animT > 0.28) { hero.anim = 0; hero.animT = 0; hero.hitDone = false }
-        } else if (hero.cd <= 0 && w.enemies.some(e => !e.dead && e.x < meleeX + 140)) {
-          hero.anim = 1; hero.animT = 0; hero.hitDone = false
+          if (hero.t >= THROW.total) { hero.state = 'idle'; hero.t = 0; hero.thrown = false }
+        } else if (hero.state === 'hit') {
+          hero.t += dt
+          if (hero.t >= 0.22) { hero.state = 'idle'; hero.t = 0 }
+        } else if (hero.cd <= 0 && w.enemies.some(e => !e.dead)) {
+          hero.state = 'throw'; hero.t = 0; hero.thrown = false
           hero.cd = st.cd
         }
 
+        // 돌 투사체 (유도 + 회전)
+        for (const p of w.stones) {
+          const t = p.target
+          if (!t || t.dead) { p.dead = true; continue }
+          const ty = w.groundY - t.size
+          const dx = t.x - p.x, dy = ty - p.y
+          const d = Math.hypot(dx, dy) || 1
+          if (d < t.size * 0.8 + 8) {
+            p.dead = true
+            const crit = Math.random() < 0.15
+            const dmg = st.atk * (crit ? 2 : 1)
+            t.hp -= dmg
+            t.flash = 1
+            t.x += 6
+            addDmg(t.x, ty - t.size - 16, dmg, crit)
+            burst(t.x, ty, '#ffd54f', crit ? 16 : 8)
+            w.shake = Math.max(w.shake, crit ? 5 : 2)
+            if (t.hp <= 0) {
+              t.dead = true
+              w.killed++
+              w.killMeat = (w.killMeat || 0) + t.reward
+              burst(t.x, ty, t.color, 14)
+            }
+          } else {
+            p.x += (dx / d) * p.speed * dt
+            p.y += (dy / d) * p.speed * dt
+            p.rot += dt * 12
+          }
+        }
+
         w.enemies = w.enemies.filter(e => !e.dead)
+        w.stones = w.stones.filter(p => !p.dead)
 
         if (w.killMeat) { const g = w.killMeat; w.killMeat = 0; setMeat(m => m + g) }
         const prog = w.total ? w.killed / w.total : 0
@@ -212,12 +243,9 @@ export default function App() {
         if (w.clearTimer <= 0) { w.needStart = true; setWave(v => v + 1); setPhase('fighting') }
       }
 
-      // 이펙트 갱신
       for (const d of w.dmgTexts) { d.life -= dt; d.y -= 45 * dt }
       w.dmgTexts = w.dmgTexts.filter(d => d.life > 0)
-      for (const p of w.particles) {
-        p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 500 * dt
-      }
+      for (const p of w.particles) { p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 500 * dt }
       w.particles = w.particles.filter(p => p.life > 0)
       w.shake = Math.max(0, w.shake - dt * 25)
 
@@ -225,33 +253,34 @@ export default function App() {
       raf = requestAnimationFrame(loop)
     }
 
+    function heroFrameKey(hero) {
+      if (hero.state === 'hit') return 'hit'
+      if (hero.state === 'throw') {
+        if (hero.t < THROW.windupEnd) return 'windup'
+        if (hero.t < THROW.releaseEnd) return 'release'
+        return 'recovery'
+      }
+      return 'idle'
+    }
+
     function drawEnemy(ctx, e) {
       const y = w.groundY
       const s = e.size
       ctx.save()
       ctx.translate(e.x, y)
-      if (e.flash > 0.5) { ctx.filter = 'brightness(3)' }
-      // 다리 (걷기 모션)
+      if (e.flash > 0.5) ctx.filter = 'brightness(3)'
       ctx.strokeStyle = e.color; ctx.lineWidth = s * 0.16; ctx.lineCap = 'round'
       const sw = Math.sin(e.legT) * s * 0.25
       ctx.beginPath()
       ctx.moveTo(-s * 0.5, -s * 0.7); ctx.lineTo(-s * 0.5 + sw, 0)
       ctx.moveTo(s * 0.5, -s * 0.7); ctx.lineTo(s * 0.5 - sw, 0)
       ctx.stroke()
-      // 몸통
       ctx.fillStyle = e.color
-      ctx.beginPath()
-      ctx.ellipse(0, -s * 0.9, s, s * 0.55, 0, 0, Math.PI * 2)
-      ctx.fill()
-      // 머리 (왼쪽 = 진행 방향)
-      ctx.beginPath()
-      ctx.arc(-s * 0.95, -s * 1.05, s * 0.42, 0, Math.PI * 2)
-      ctx.fill()
-      // 눈
+      ctx.beginPath(); ctx.ellipse(0, -s * 0.9, s, s * 0.55, 0, 0, Math.PI * 2); ctx.fill()
+      ctx.beginPath(); ctx.arc(-s * 0.95, -s * 1.05, s * 0.42, 0, Math.PI * 2); ctx.fill()
       ctx.fillStyle = '#fff'
       ctx.beginPath(); ctx.arc(-s * 1.1, -s * 1.12, s * 0.08, 0, Math.PI * 2); ctx.fill()
       ctx.restore()
-      // 체력바
       const bw = s * 2
       ctx.fillStyle = 'rgba(0,0,0,0.5)'
       ctx.fillRect(e.x - bw / 2, y - s * 2 - 10, bw, 5)
@@ -264,39 +293,45 @@ export default function App() {
       ctx.save()
       if (w.shake > 0.3) ctx.translate((Math.random() - 0.5) * w.shake, (Math.random() - 0.5) * w.shake)
 
-      // 배경: 하늘 + 원경 언덕
-      const g = ctx.createLinearGradient(0, 0, 0, w.H)
-      g.addColorStop(0, '#2c3e57'); g.addColorStop(0.6, '#5a4a35'); g.addColorStop(1, '#3a2f1d')
-      ctx.fillStyle = g; ctx.fillRect(-10, -10, w.W + 20, w.H + 20)
-      ctx.fillStyle = 'rgba(30,40,55,0.6)'
-      ctx.beginPath()
-      ctx.moveTo(-10, w.groundY - 90)
-      for (let x = 0; x <= w.W + 20; x += 40) ctx.lineTo(x, w.groundY - 90 - Math.sin(x * 0.01 + 2) * 35)
-      ctx.lineTo(w.W + 10, w.groundY); ctx.lineTo(-10, w.groundY); ctx.fill()
-      // 지면
-      ctx.fillStyle = '#4a3a24'; ctx.fillRect(-10, w.groundY, w.W + 20, w.H - w.groundY + 10)
-      ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(-10, w.groundY, w.W + 20, 4)
+      // 배경 이미지 (cover, 하단 기준 정렬 — 지면과 맞춤)
+      if (BG.complete && BG.naturalWidth > 0) {
+        const scale = Math.max(w.W / BG.naturalWidth, w.H / BG.naturalHeight)
+        const bw = BG.naturalWidth * scale, bh = BG.naturalHeight * scale
+        ctx.drawImage(BG, (w.W - bw) / 2, w.H - bh + 30, bw, bh)
+      } else {
+        ctx.fillStyle = '#3a2f1d'; ctx.fillRect(0, 0, w.W, w.H)
+      }
 
-      // 주인공 (진화 단계 이미지 + 대기 바운스/공격 돌진)
+      // 주인공 (프레임 애니메이션)
       const hero = w.hero
-      const im = IMGS[S.current.evo]
-      const bob = hero.anim === 0 ? Math.sin(now * 0.004) * 3 : 0
-      const lunge = hero.anim === 1 ? Math.sin((hero.animT / 0.28) * Math.PI) * 26 : 0
-      const HERO_H = 110
+      const key = heroFrameKey(hero)
+      const fr = FRAMES[key]
+      const im = IMG[key]
+      const bob = hero.state === 'idle' ? Math.sin(now * 0.004) * 2 : 0
       if (im.complete && im.naturalWidth > 0) {
         const hw = HERO_H * (im.naturalWidth / im.naturalHeight)
         ctx.save()
-        ctx.translate(70 + lunge, w.groundY + bob)
-        if (hero.anim === 1) ctx.rotate(0.12)
-        ctx.drawImage(im, -hw / 2, -HERO_H)
+        ctx.translate(HERO_X, w.groundY + bob)
+        if (fr.flip) ctx.scale(-1, 1)
+        if (key === 'hit') ctx.rotate(-0.08)
+        ctx.drawImage(im, -hw / 2, -HERO_H, hw, HERO_H)
         ctx.restore()
-      } else {
-        ctx.fillStyle = '#c9a06c'
-        ctx.fillRect(70 - 20 + lunge, w.groundY - HERO_H + bob, 40, HERO_H)
       }
 
       // 적
       for (const e of w.enemies) drawEnemy(ctx, e)
+
+      // 돌 투사체
+      for (const p of w.stones) {
+        ctx.save()
+        ctx.translate(p.x, p.y)
+        ctx.rotate(p.rot)
+        ctx.fillStyle = '#9e9384'
+        ctx.beginPath(); ctx.ellipse(0, 0, 7, 5, 0, 0, Math.PI * 2); ctx.fill()
+        ctx.fillStyle = 'rgba(0,0,0,0.25)'
+        ctx.beginPath(); ctx.ellipse(2, 2, 3, 2, 0, 0, Math.PI * 2); ctx.fill()
+        ctx.restore()
+      }
 
       // 파티클
       for (const p of w.particles) {
@@ -337,11 +372,7 @@ export default function App() {
     setMeat(m => m - c)
     setEvo(v => v + 1)
   }
-  function retry() {
-    const w = world.current
-    w.needStart = true
-    setPhase('fighting')
-  }
+  function retry() { world.current.needStart = true; setPhase('fighting') }
 
   const statValue = k =>
     k === 'atk' ? fmt(S.current.atk)
@@ -403,7 +434,7 @@ export default function App() {
         })}
         {tab === '진화' && (
           <div style={st.row}>
-            <img src={EVOS[evo].img} alt="" style={{ height: 64 }} />
+            <img src={FRAMES.idle.src} alt="" style={{ height: 64, transform: FRAMES.idle.flip ? 'scaleX(-1)' : 'none' }} />
             <div style={{ flex: 1, marginLeft: 12 }}>
               <div style={st.rowName}>{EVOS[evo].name}</div>
               <div style={st.rowVal}>
