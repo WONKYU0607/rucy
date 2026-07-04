@@ -380,6 +380,10 @@ export default function App() {
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize) }
   }, [])
 
+  function setStatLv(k, n) {
+    n = Math.max(0, Math.floor(Number(n) || 0))
+    setLv(v => ({ ...v, [k]: n }))
+  }
   function buyStat(k) {
     const c = DEBUG ? 0 : statCost(k, lv[k])
     if (meat < c) return
@@ -450,7 +454,19 @@ export default function App() {
                 <div style={st.rowName}>{STAT_DEFS[k].name} <span style={st.rowLv}>Lv.{lv[k]}</span></div>
                 <div style={st.rowVal}>{statValue(k)} <span style={{ color: '#7cb35c' }}>→ {statNext(k)}</span></div>
               </div>
-              <button style={{ ...st.costBtn, opacity: ok ? 1 : 0.4 }} onClick={() => buyStat(k)}>{fmt(c)}</button>
+              {DEBUG && (
+                <>
+                  <button style={st.dbgBtn} onClick={() => setStatLv(k, lv[k] - 1)}>−</button>
+                  <input
+                    style={st.dbgInput}
+                    type="number"
+                    inputMode="numeric"
+                    value={lv[k]}
+                    onChange={e => setStatLv(k, e.target.value)}
+                  />
+                </>
+              )}
+              <button style={{ ...st.costBtn, opacity: ok ? 1 : 0.4 }} onClick={() => buyStat(k)}>{DEBUG ? '+1' : fmt(c)}</button>
             </div>
           )
         })}
@@ -464,8 +480,9 @@ export default function App() {
                 {evo < EVOS.length - 1 && <span style={{ color: '#7cb35c' }}> → ×{EVOS[evo + 1].mult}</span>}
               </div>
             </div>
+            {DEBUG && <button style={st.dbgBtn} onClick={() => setEvo(v => Math.max(0, v - 1))}>−</button>}
             {evo < EVOS.length - 1
-              ? <button style={{ ...st.costBtn, opacity: DEBUG || meat >= EVOS[evo + 1].cost ? 1 : 0.4 }} onClick={evolve}>{fmt(EVOS[evo + 1].cost)}</button>
+              ? <button style={{ ...st.costBtn, opacity: DEBUG || meat >= EVOS[evo + 1].cost ? 1 : 0.4 }} onClick={evolve}>{DEBUG ? '+1' : fmt(EVOS[evo + 1].cost)}</button>
               : <div style={{ fontSize: 12, opacity: 0.6 }}>최종 단계</div>}
           </div>
         )}
@@ -524,6 +541,14 @@ const st = {
   rowName: { fontWeight: 700, fontSize: 14 },
   rowLv: { fontSize: 12, color: '#f0b060', marginLeft: 4 },
   rowVal: { fontSize: 12, opacity: 0.85, marginTop: 3 },
+  dbgBtn: {
+    width: 40, padding: '12px 0', borderRadius: 10, border: '1px solid #4a3822',
+    background: '#241a10', color: '#f5ead9', fontSize: 16, fontWeight: 800,
+  },
+  dbgInput: {
+    width: 54, padding: '10px 6px', borderRadius: 10, border: '1px solid #4a3822',
+    background: '#1a120b', color: '#f0b060', fontSize: 14, fontWeight: 700, textAlign: 'center',
+  },
   costBtn: {
     minWidth: 84, padding: '12px 10px', borderRadius: 10, border: 'none',
     background: '#c9772e', color: '#fff', fontSize: 14, fontWeight: 800,
