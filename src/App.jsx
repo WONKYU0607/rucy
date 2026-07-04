@@ -46,7 +46,14 @@ const ENEMY_TYPES = {
 }
 const EIMG = {}
 for (const k in ENEMY_TYPES) {
-  EIMG[k] = ENEMY_TYPES[k].frames.map(src => { const i = new Image(); i.src = src; return i })
+  const e = ENEMY_TYPES[k]
+  EIMG[k] = e.frames.map(src => { const i = new Image(); i.src = src; return i })
+  // reward를 고기 획득량으로, 경험치는 reward의 1.5배로 파생
+  e.meat = e.reward
+  e.exp = Math.round(e.reward * 1.5)
+  // 명중/회피: 빠른 동물일수록 회피↑, 큰 동물일수록 명중↑(피하기 어려움 대신 잘 맞음)
+  e.eva = Math.min(0.4, e.speed / 400)        // 회피율 (늑대 0.3, 매머드 0.08)
+  e.acc = Math.min(0.35, e.dmg / 200)         // 명중률 (강한 적일수록 잘 맞춤)
 }
 const WAVE_CYCLE = ['rabbit', 'antelope', 'deer', 'boar', 'wolf', 'hyena', 'bear', 'rhino', 'tiger', 'mammoth']
 
@@ -57,6 +64,21 @@ const STAT_DEFS = {
 }
 const statCost = (k, lv) => Math.floor(STAT_DEFS[k].cost * Math.pow(STAT_DEFS[k].growth, lv))
 
+// 스킬포인트로 올리는 스킬 7종 (레벨당 효과)
+const SKILL_DEFS = {
+  atk:     { name: '공격력',      desc: lv => `+${lv * 8}%`,        icon: '⚔' },
+  hp:      { name: '체력',        desc: lv => `+${lv * 10}%`,       icon: '❤' },
+  regen:   { name: '체력 회복',   desc: lv => `${lv * 2}/초`,        icon: '✚' },
+  crit:    { name: '치명타 공격력', desc: lv => `+${lv * 15}%`,       icon: '✦' },
+  meatUp:  { name: '고기 획득량',  desc: lv => `+${lv * 5}%`,        icon: '🍖' },
+  acc:     { name: '명중률',      desc: lv => `+${lv * 3}%`,         icon: '◎' },
+  eva:     { name: '회피율',      desc: lv => `+${lv * 2}%`,         icon: '➰' },
+}
+const SKILL_KEYS = Object.keys(SKILL_DEFS)
+const skillInit = () => SKILL_KEYS.reduce((o, k) => (o[k] = 0, o), {})
+// 히어로 레벨업 필요 경험치
+const heroExpReq = lv => Math.floor(50 * Math.pow(1.18, lv - 1))
+
 // mode: quad = 4족 질주 + 주먹질 / biped = 직립 보행 + 돌 던지기
 const EVOS = [
   { name: '오스트랄로피테쿠스', mult: 1, mode: 'quad' },
@@ -64,13 +86,18 @@ const EVOS = [
   { name: '각성한 오스트랄로피테쿠스', mult: 9, cost: 30000, mode: 'biped' },
 ]
 
-const SAVE_KEY = 'paleoDefSave_v2'
+const SAVE_KEY = 'paleoDefSave_v3'
 function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY))
-    if (s) return { meat: s.meat ?? 0, wave: s.wave ?? 1, lv: { atk: 0, aspd: 0, hp: 0, ...s.lv }, evo: s.evo ?? 0 }
+    if (s) return {
+      meat: s.meat ?? 0, wave: s.wave ?? 1,
+      lv: { atk: 0, aspd: 0, hp: 0, ...s.lv }, evo: s.evo ?? 0,
+      hlv: s.hlv ?? 1, hexp: s.hexp ?? 0, sp: s.sp ?? 0,
+      skill: { ...skillInit(), ...s.skill },
+    }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: { atk: 0, aspd: 0, hp: 0 }, evo: 0 }
+  return { meat: 0, wave: 1, lv: { atk: 0, aspd: 0, hp: 0 }, evo: 0, hlv: 1, hexp: 0, sp: 0, skill: skillInit() }
 }
 const fmt = n => n >= 1e8 ? (n/1e8).toFixed(1)+'억' : n >= 1e4 ? (n/1e4).toFixed(1)+'만' : Math.floor(n).toLocaleString()
 
@@ -83,23 +110,50 @@ export default function App() {
   const [wave, setWave] = useState(init.wave)
   const [lv, setLv] = useState(init.lv)
   const [evo, setEvo] = useState(init.evo)
+  const [hlv, setHlv] = useState(init.hlv)     // 히어로 레벨
+  const [hexp, setHexp] = useState(init.hexp)  // 히어로 경험치
+  const [sp, setSp] = useState(init.sp)        // 스킬포인트
+  const [skill, setSkill] = useState(init.skill)
   const [tab, setTab] = useState('강화')
   const [phase, setPhase] = useState('fighting')
   const [heroHpUI, setHeroHpUI] = useState(100)
   const [progress, setProgress] = useState(0)
+  const [gains, setGains] = useState([])       // 획득 팝업 리스트
 
-  const maxHp = STAT_DEFS.hp.base + STAT_DEFS.hp.add * lv.hp * (1 + lv.hp * 0.02)
+  const maxHp = (STAT_DEFS.hp.base + STAT_DEFS.hp.add * lv.hp * (1 + lv.hp * 0.02)) * (1 + skill.hp * 0.10)
   const S = useRef({})
   S.current = {
-    atk: (STAT_DEFS.atk.base + STAT_DEFS.atk.add * lv.atk * (1 + lv.atk * 0.02)) * EVOS[evo].mult,
+    atk: (STAT_DEFS.atk.base + STAT_DEFS.atk.add * lv.atk * (1 + lv.atk * 0.02)) * EVOS[evo].mult * (1 + skill.atk * 0.08),
     cd: 1000 / (STAT_DEFS.aspd.base + STAT_DEFS.aspd.add * lv.aspd),
     maxHp, wave, phase,
     mode: EVOS[evo].mode,
+    critMult: 2 + skill.crit * 0.15,     // 치명타 배율
+    regen: skill.regen * 2,               // 초당 체력 회복
+    meatMult: 1 + skill.meatUp * 0.05,    // 고기 획득 배율
+    acc: skill.acc * 0.03,                // 명중률 보너스
+    eva: skill.eva * 0.02,                // 회피율 보너스
   }
 
   useEffect(() => {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo }))
-  }, [meat, wave, lv, evo])
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill }))
+  }, [meat, wave, lv, evo, hlv, hexp, sp, skill])
+
+  // 히어로 레벨업: 경험치가 필요량 넘으면 레벨↑ + 스킬포인트 지급
+  useEffect(() => {
+    let cl = hlv, ce = hexp, gained = 0
+    while (ce >= heroExpReq(cl)) { ce -= heroExpReq(cl); cl++; gained++ }
+    if (gained > 0) { setHlv(cl); setHexp(ce); setSp(s => s + gained) }
+  }, [hexp])
+
+  // 획득 팝업 자동 소멸 (1.2초)
+  useEffect(() => {
+    if (!gains.length) return
+    const t = setInterval(() => {
+      const now = performance.now()
+      setGains(g => g.filter(x => now - x.born < 1200))
+    }, 300)
+    return () => clearInterval(t)
+  }, [gains.length])
 
   const world = useRef(null)
   if (!world.current) {
@@ -152,12 +206,14 @@ export default function App() {
         type: key, boss, x: w.W + 40, hp: t.hp * sc, maxHp: t.hp * sc,
         speed: t.speed * (boss ? 0.6 : 0.9 + Math.random() * 0.2),
         dmg: t.dmg * (1 + 0.1 * (w.waveNum - 1)) * (boss ? 3 : 1),
-        reward: Math.floor(t.reward * (1 + 0.2 * (w.waveNum - 1))) * (boss ? 15 : 1),
+        meat: Math.floor(t.meat * (1 + 0.2 * (w.waveNum - 1))) * (boss ? 15 : 1),
+        exp: Math.floor(t.exp * (1 + 0.2 * (w.waveNum - 1))) * (boss ? 15 : 1),
+        acc: t.acc, eva: t.eva,
         h: t.h * (boss ? 1.9 : 1), color: t.color, cd: 0, flash: 0, animT: Math.random() * 10,
       })
     }
 
-    function addDmg(x, y, val, crit) { w.dmgTexts.push({ x, y, val: fmt(val), life: 0.8, crit }) }
+    function addDmg(x, y, val, crit, miss) { w.dmgTexts.push({ x, y, val: typeof val === 'number' ? fmt(val) : val, life: 0.8, crit, miss }) }
     function burst(x, y, color, n = 10) {
       for (let i = 0; i < n; i++) {
         const a = Math.random() * Math.PI * 2, sp = 60 + Math.random() * 160
@@ -165,19 +221,28 @@ export default function App() {
       }
     }
     function dealDamage(t, st) {
+      // 명중 판정: 적 회피율 − 내 명중 보너스
+      const missChance = Math.max(0, t.eva - st.acc)
+      if (Math.random() < missChance) {
+        addDmg(t.x, w.groundY - t.h - 20, 'MISS', false, true)
+        return
+      }
       const crit = Math.random() < 0.15
-      const dmg = st.atk * (crit ? 2 : 1)
+      const dmg = st.atk * (crit ? st.critMult : 1)
       t.hp -= dmg
       t.flash = 1
       t.x += 8
       const ty = w.groundY - t.h * 0.55
-      addDmg(t.x, ty - t.h * 0.5 - 12, dmg, crit)
+      addDmg(t.x, ty - t.h * 0.5 - 12, Math.round(dmg), crit)
       burst(t.x, ty, '#ffd54f', crit ? 16 : 8)
       w.shake = Math.max(w.shake, crit ? 5 : 2)
       if (t.hp <= 0 && !t.dead) {
         t.dead = true
         w.killed++
-        w.killMeat = (w.killMeat || 0) + t.reward
+        w.killMeat = (w.killMeat || 0) + Math.floor(t.meat * st.meatMult)
+        w.killExp = (w.killExp || 0) + t.exp
+        w.gainQueue = w.gainQueue || []
+        w.gainQueue.push({ meat: Math.floor(t.meat * st.meatMult), exp: t.exp })
         burst(t.x, ty, t.color, 14)
       }
     }
@@ -212,13 +277,24 @@ export default function App() {
           } else {
             e.cd -= dt * 1000
             if (e.cd <= 0) {
-              hero.hp -= e.dmg
-              hero.flash = 0.2
-              w.shake = 4
-              burst(HERO_X + 15, w.groundY - 70, '#e05a4e', 6)
+              // 회피 판정: 적 명중률 − 내 회피 보너스
+              const hitChance = Math.max(0.05, e.acc + 0.5 - st.eva)
+              if (Math.random() < hitChance) {
+                hero.hp -= e.dmg
+                hero.flash = 0.2
+                w.shake = 4
+                burst(HERO_X + 15, w.groundY - 70, '#e05a4e', 6)
+              } else {
+                addDmg(HERO_X, w.groundY - 130, 'DODGE', false, true)
+              }
               e.cd = 1200
             }
           }
+        }
+
+        // 히어로 체력 회복 (스킬)
+        if (st.regen > 0 && hero.hp < st.maxHp) {
+          hero.hp = Math.min(st.maxHp, hero.hp + st.regen * dt)
         }
 
         // 주인공 상태머신
@@ -279,6 +355,11 @@ export default function App() {
         w.stones = w.stones.filter(p => !p.dead)
 
         if (w.killMeat) { const g = w.killMeat; w.killMeat = 0; setMeat(m => m + g) }
+        if (w.killExp) { const e = w.killExp; w.killExp = 0; setHexp(x => x + e) }
+        if (w.gainQueue && w.gainQueue.length) {
+          const q = w.gainQueue; w.gainQueue = []
+          setGains(g => [...g, ...q.map(x => ({ ...x, id: w.gainId = (w.gainId || 0) + 1, born: now }))].slice(-6))
+        }
         const prog = w.total ? w.killed / w.total : 0
         if (prog !== w.shownProg) { w.shownProg = prog; setProgress(prog) }
         if (Math.ceil(hero.hp) !== w.shownHp) { w.shownHp = Math.ceil(hero.hp); setHeroHpUI(Math.max(0, w.shownHp)) }
@@ -413,8 +494,8 @@ export default function App() {
       ctx.textAlign = 'center'
       for (const d of w.dmgTexts) {
         ctx.globalAlpha = Math.min(1, d.life * 2.5)
-        ctx.font = (d.crit ? '900 22px' : '800 16px') + ' sans-serif'
-        ctx.fillStyle = d.crit ? '#ffca28' : '#fff'
+        ctx.font = (d.crit ? '900 22px' : d.miss ? '800 14px' : '800 16px') + ' sans-serif'
+        ctx.fillStyle = d.miss ? '#8ab4ff' : d.crit ? '#ffca28' : '#fff'
         ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 3
         ctx.strokeText(d.val, d.x, d.y)
         ctx.fillText(d.val, d.x, d.y)
@@ -445,6 +526,11 @@ export default function App() {
     setEvo(v => v + 1)
   }
   function retry() { world.current.needStart = true; setPhase('fighting') }
+  function upSkill(k) {
+    if (!DEBUG && sp <= 0) return
+    if (!DEBUG) setSp(s => s - 1)
+    setSkill(s => ({ ...s, [k]: s[k] + 1 }))
+  }
 
   const statValue = k =>
     k === 'atk' ? fmt(S.current.atk)
@@ -461,17 +547,35 @@ export default function App() {
     <div style={st.outer}>
     <div style={st.root}>
       <div style={st.topBar}>
-        <div>고기 <b style={{ color: '#f0b060' }}>{fmt(meat)}</b></div>
-        <div style={{ flex: 1, textAlign: 'center' }}>
-          웨이브 <b>{wave}</b>{wave % 5 === 0 && <span style={{ color: '#ef9a3c' }}> 보스</span>}
+        <img src="/hero/misc/face.png" alt="" style={st.avatar} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={st.nickRow}>
+            <span style={st.nick}>Australo_원규</span>
+            <span style={st.lvBadge}>Lv.{hlv}</span>
+          </div>
+          <div style={st.expOuter}>
+            <div style={{ ...st.expInner, width: Math.min(100, hexp / heroExpReq(hlv) * 100) + '%' }} />
+          </div>
         </div>
-        <div style={{ width: 90 }}>
-          <div style={st.progOuter}><div style={{ ...st.progInner, width: progress * 100 + '%' }} /></div>
+        <div style={st.currency}>
+          <div>🍖 <b style={{ color: '#f0b060' }}>{fmt(meat)}</b></div>
+          <div style={{ fontSize: 11, opacity: 0.85 }}>웨이브 {wave}{wave % 5 === 0 && <span style={{ color: '#ef9a3c' }}> 보스</span>}</div>
         </div>
+      </div>
+      <div style={st.waveProg}>
+        <div style={{ ...st.progInner, width: progress * 100 + '%' }} />
       </div>
 
       <div ref={wrapRef} style={st.canvasWrap}>
         <canvas ref={canvasRef} />
+        <div style={st.gainWrap}>
+          {gains.map(g => (
+            <div key={g.id} style={st.gainItem}>
+              <span style={{ color: '#8ab4ff' }}>EXP +{g.exp}</span>
+              <span style={{ color: '#f0b060' }}>🍖 +{g.meat}</span>
+            </div>
+          ))}
+        </div>
         <div style={st.heroHpWrap}>
           <div style={st.hpOuter}><div style={{ ...st.hpInner, width: Math.min(100, heroHpUI / maxHp * 100) + '%' }} /></div>
           <div style={{ fontSize: 10, opacity: 0.8, marginTop: 2 }}>{fmt(heroHpUI)} / {fmt(maxHp)}</div>
@@ -486,8 +590,10 @@ export default function App() {
       </div>
 
       <div style={st.tabs}>
-        {['강화', '진화'].map(t => (
-          <button key={t} style={{ ...st.tabBtn, ...(tab === t ? st.tabActive : {}) }} onClick={() => setTab(t)}>{t}</button>
+        {['강화', '진화', '스킬'].map(t => (
+          <button key={t} style={{ ...st.tabBtn, ...(tab === t ? st.tabActive : {}) }} onClick={() => setTab(t)}>
+            {t}{t === '스킬' && sp > 0 && <span style={st.spDot}>{sp}</span>}
+          </button>
         ))}
       </div>
 
@@ -537,6 +643,26 @@ export default function App() {
               : <div style={{ fontSize: 12, opacity: 0.6 }}>최종 단계</div>}
           </div>
         )}
+        {tab === '스킬' && (
+          <>
+            <div style={st.spBar}>스킬포인트 <b style={{ color: '#7ce0ff', fontSize: 18 }}>{sp}</b> <span style={{ opacity: 0.6, fontSize: 11 }}>· 레벨업 시 획득</span></div>
+            {SKILL_KEYS.map(k => {
+              const d = SKILL_DEFS[k]
+              const ok = DEBUG || sp > 0
+              return (
+                <div key={k} style={st.row}>
+                  <div style={st.skillIcon}>{d.icon}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={st.rowName}>{d.name} <span style={st.rowLv}>Lv.{skill[k]}</span></div>
+                    <div style={st.rowVal}>{d.desc(skill[k])} <span style={{ color: '#7cb35c' }}>→ {d.desc(skill[k] + 1)}</span></div>
+                  </div>
+                  {DEBUG && <button style={st.dbgBtn} onClick={() => setSkill(s => ({ ...s, [k]: Math.max(0, s[k] - 1) }))}>−</button>}
+                  <button style={{ ...st.spBtn, opacity: ok ? 1 : 0.4 }} onClick={() => upSkill(k)}>+1</button>
+                </div>
+              )
+            })}
+          </>
+        )}
       </div>
     </div>
     </div>
@@ -556,8 +682,35 @@ const st = {
   },
   topBar: {
     display: 'flex', alignItems: 'center', gap: 10,
-    padding: '10px 14px', paddingTop: 'max(10px, env(safe-area-inset-top))',
-    fontSize: 14, background: '#241a10', borderBottom: '1px solid #3a2c1c',
+    padding: '10px 14px', paddingTop: 'max(10px, env(safe-area-inset-top))',    fontSize: 14, background: '#241a10', borderBottom: '1px solid #3a2c1c',
+  },
+  avatar: { width: 40, height: 40, borderRadius: 8, border: '2px solid #6b4f35', background: '#1a120b', imageRendering: 'pixelated' },
+  nickRow: { display: 'flex', alignItems: 'center', gap: 6 },
+  nick: { fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  lvBadge: { fontSize: 11, fontWeight: 800, color: '#7ce0ff', background: '#12303a', padding: '1px 6px', borderRadius: 6, flexShrink: 0 },
+  expOuter: { height: 7, background: '#12222a', borderRadius: 4, overflow: 'hidden', marginTop: 4 },
+  expInner: { height: '100%', background: 'linear-gradient(90deg,#3ba7d0,#7ce0ff)', transition: 'width 0.2s' },
+  currency: { textAlign: 'right', fontSize: 13, whiteSpace: 'nowrap' },
+  waveProg: { height: 6, background: '#241a10', overflow: 'hidden' },
+  gainWrap: { position: 'absolute', left: 8, top: 44, display: 'flex', flexDirection: 'column', gap: 3, pointerEvents: 'none' },
+  gainItem: {
+    display: 'flex', gap: 8, fontSize: 12, fontWeight: 700,
+    background: 'rgba(10,6,3,0.6)', padding: '2px 8px', borderRadius: 6,
+    animation: 'none',
+  },
+  spBar: { padding: '4px 6px 8px', fontSize: 13 },
+  spBtn: {
+    minWidth: 56, padding: '12px 10px', borderRadius: 10, border: 'none',
+    background: '#2f8fb0', color: '#fff', fontSize: 14, fontWeight: 800,
+  },
+  spDot: {
+    marginLeft: 5, fontSize: 10, fontWeight: 800, color: '#fff',
+    background: '#e05a4e', borderRadius: 8, padding: '0 5px',
+  },
+  skillIcon: {
+    width: 38, height: 38, borderRadius: 8, background: '#241a10',
+    border: '1px solid #4a3822', display: 'flex', alignItems: 'center',
+    justifyContent: 'center', fontSize: 18, flexShrink: 0,
   },
   progOuter: { height: 8, background: '#3a2c1c', borderRadius: 4, overflow: 'hidden' },
   progInner: { height: '100%', background: '#f0b060', transition: 'width 0.2s' },
