@@ -5,16 +5,16 @@ const DEBUG = true
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
-  quad:  { srcs: ['/quad_1.png', '/quad_2.png', '/quad_3.png'], h: 85,  flip: false },
-  walk:  { srcs: ['/walk_1.png', '/walk_2.png', '/walk_3.png'], h: 130, flip: false },
-  punch: { srcs: ['/punch_1.png', '/punch_2.png', '/punch_3.png'], h: 125, flip: false },
-  throw: { srcs: ['/hero_windup.png', '/hero_release.png', '/hero_recovery.png'], h: 130, flip: false },
-  idle:  { srcs: ['/hero_idle.png'], h: 130, flip: false },
+  quad:  { srcs: ['/hero/quad/quad_1.png', '/hero/quad/quad_2.png', '/hero/quad/quad_3.png'], h: 85,  flip: false },
+  walk:  { srcs: ['/hero/walk/walk_1.png', '/hero/walk/walk_2.png', '/hero/walk/walk_3.png'], h: 130, flip: false },
+  punch: { srcs: ['/hero/punch/punch_1.png', '/hero/punch/punch_2.png', '/hero/punch/punch_3.png'], h: 125, flip: false },
+  throw: { srcs: ['/hero/throw/hero_windup.png', '/hero/throw/hero_release.png', '/hero/throw/hero_recovery.png'], h: 130, flip: false },
+  idle:  { srcs: ['/hero/misc/hero_idle.png'], h: 130, flip: false },
 }
 const AIMG = {}
 for (const k in ANIM) AIMG[k] = ANIM[k].srcs.map(s => { const i = new Image(); i.src = s; return i })
-const BG = new Image(); BG.src = '/bg.jpg'
-const STONE = new Image(); STONE.src = '/stone.png'
+const BG = new Image(); BG.src = '/bg/bg.jpg'
+const STONE = new Image(); STONE.src = '/misc/stone.png'
 
 const HERO_X = 90
 const SCROLL = 140                                   // 전진 속도 (px/s)
@@ -24,11 +24,11 @@ const THROW = { windupEnd: 0.14, releaseEnd: 0.30, total: 0.42, range: 340 }
 // ── 적 정의 ──
 const ENEMY_TYPES = {
   rabbit:   { name: '토끼', hp: 20, speed: 85, dmg: 5,  reward: 4,  h: 34, color: '#a1887f', flip: true,
-              frames: ['/rabbit_1.png', '/rabbit_2.png', '/rabbit_3.png', '/rabbit_4.png'] },
+              frames: ['/monster/rabbit/rabbit_1.png', '/monster/rabbit/rabbit_2.png', '/monster/rabbit/rabbit_3.png', '/monster/rabbit/rabbit_4.png'] },
   antelope: { name: '영양', hp: 45, speed: 65, dmg: 10, reward: 8,  h: 60, color: '#c98a4b', flip: true,
-              frames: ['/antelope_1.png', '/antelope_2.png', '/antelope_3.png'] },
+              frames: ['/monster/antelope/antelope_1.png', '/monster/antelope/antelope_2.png', '/monster/antelope/antelope_3.png'] },
   deer:     { name: '사슴', hp: 90, speed: 50, dmg: 16, reward: 14, h: 72, color: '#b5794a', flip: true,
-              frames: ['/deer_1.png', '/deer_2.png', '/deer_3.png'] },
+              frames: ['/monster/deer/deer_1.png', '/monster/deer/deer_2.png', '/monster/deer/deer_3.png'] },
 }
 const EIMG = {}
 for (const k in ENEMY_TYPES) {
@@ -506,7 +506,7 @@ export default function App() {
         {tab === '진화' && (
           <div style={st.row}>
             <img
-              src={EVOS[evo].mode === 'quad' ? '/quad_1.png' : '/hero_idle.png'}
+              src={EVOS[evo].mode === 'quad' ? '/hero/quad/quad_1.png' : '/hero/misc/hero_idle.png'}
               alt=""
               style={{ height: 64 }}
             />
