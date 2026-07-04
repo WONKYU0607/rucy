@@ -282,7 +282,7 @@ export default function App() {
         // 적: 접근 (전진 스크롤만큼 상대속도 가산) + 근접 공격
         for (const e of w.enemies) {
           e.flash = Math.max(0, e.flash - dt * 5)
-          const stopX = HERO_X + 45 + e.h * 0.4
+          const stopX = HERO_X + Math.min(atkRange - 15, 45 + e.h * 0.4)
           if (e.x > stopX) {
             e.x -= (e.speed * SPEED + scroll) * dt
             e.animT += dt * SPEED * (1 + scroll / SCROLL * 0.4)
