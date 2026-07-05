@@ -651,7 +651,10 @@ export default function App() {
         ctx.translate(HERO_X, w.groundY)
         if (hero.flash > 0) ctx.filter = 'brightness(2.5)'
         if (a.flip) ctx.scale(-1, 1)
+        // 스킬 프레임은 원본이 커서 축소율이 큼 → 스무딩으로 화질 보존
+        if (key.startsWith('s_')) ctx.imageSmoothingEnabled = true
         ctx.drawImage(im, -hw / 2, -hh, hw, hh)
+        ctx.imageSmoothingEnabled = false
         ctx.restore()
       }
 
