@@ -78,20 +78,21 @@ const STAT_LIST = {
   atk:      { name: '공격력',       icon: '⚔', per: 8,  suffix: '%', cost: 15, growth: 1.13 },
   hp:       { name: '체력',         icon: '❤', per: 10, suffix: '%', cost: 20, growth: 1.15 },
   regen:    { name: '체력 회복',    icon: '✚', per: 2,  suffix: '/초', cost: 25, growth: 1.16 },
-  critRate: { name: '치명타 확률',  icon: '✧', per: 1,  suffix: '%', cost: 30, growth: 1.20, cap: 100 },
+  critRate: { name: '치명타 확률',  icon: '✧', per: 0.1, suffix: '%', cost: 30, growth: 1.20, cap: 100 },
   critDmg:  { name: '치명타 공격력', icon: '✦', per: 15, suffix: '%', cost: 25, growth: 1.17 },
   meatUp:   { name: '고기 획득량',  icon: '🍖', per: 5,  suffix: '%', cost: 20, growth: 1.15 },
   expUp:    { name: '경험치 획득량', icon: '📖', per: 5,  suffix: '%', cost: 20, growth: 1.15 },
   acc:      { name: '명중률',       icon: '◎', per: 3,  suffix: '%', cost: 30, growth: 1.18 },
   eva:      { name: '회피율',       icon: '➰', per: 2,  suffix: '%', cost: 30, growth: 1.18 },
-  aspd:     { name: '공격 속도',    icon: '⚡', per: 4,  suffix: '%', cost: 25, growth: 1.18, cap: 200 },
-  mspd:     { name: '이동 속도',    icon: '👟', per: 4,  suffix: '%', cost: 25, growth: 1.18, cap: 200 },
+  aspd:     { name: '공격 속도',    icon: '⚡', per: 0.1, suffix: '%', cost: 25, growth: 1.18, cap: 200 },
+  mspd:     { name: '이동 속도',    icon: '👟', per: 0.1, suffix: '%', cost: 25, growth: 1.18, cap: 200 },
 }
 const STAT_KEYS = Object.keys(STAT_LIST)
 const statInit = () => STAT_KEYS.reduce((o, k) => (o[k] = 0, o), {})
 const statText = (k, lv) => {
   const d = STAT_LIST[k]
-  const v = d.cap ? Math.min(d.cap, lv * d.per) : lv * d.per
+  let v = d.cap ? Math.min(d.cap, lv * d.per) : lv * d.per
+  v = Math.round(v * 10) / 10
   return d.suffix === '/초' ? `${v}/초` : `+${v}%`
 }
 // 강화(고기) 비용
