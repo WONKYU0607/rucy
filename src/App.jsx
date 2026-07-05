@@ -23,10 +23,12 @@ const ROCKS = new Image(); ROCKS.src = '/skill/meteor/rocks.png'
 
 // 스킬 3종: 쿨타임(초), 시전시간, 데미지배율, 효과
 const SKILLS = [
-  { key: 'dash',   name: '대시 펀치', anim: 's_dash',   icon: '👊', cd: 5,  cast: 0.7, hitAt: 0.45, dmgMult: 3, aoe: false, maxTargets: 3, desc: '돌진, 적 3마리 강타' },
-  { key: 'roar',   name: '포효',     anim: 's_roar',   icon: '🗣', cd: 10, cast: 0.9, hitAt: 0.5,  dmgMult: 2, aoe: true, stun: 2, desc: '전체 적 타격 + 기절' },
+  { key: 'dash',   name: '대시 펀치', anim: 's_dash',   icon: '👊', cd: 5,  cast: 1.1, hitAt: 0.5, dmgMult: 3, aoe: false, maxTargets: 3, desc: '돌진, 적 3마리 강타' },
+  { key: 'roar',   name: '포효',     anim: 's_roar',   icon: '🗣', cd: 13, cast: 0.9, hitAt: 0.5,  dmgMult: 2, aoe: true, stun: 2, desc: '전체 적 타격 + 기절' },
   { key: 'meteor', name: '낙석',     anim: 's_meteor', icon: '☄', cd: 20, cast: 1.0, hitAt: 0.55, dmgMult: 5, aoe: true, desc: '하늘에서 돌덩이 낙하, 전체 강타' },
 ]
+// 대시 프레임 타이밍: 0=기모으기 앞부분 짧게, 주먹뻗기(3,4번) 길게
+const DASH_FRAME_T = [0.15, 0.30, 0.55, 0.85, 1.0]  // 각 프레임 끝나는 비율
 
 const HERO_X = 90
 const SPEED = 1                                      // 전역 속도 배율
@@ -217,7 +219,7 @@ export default function App() {
     window.addEventListener('resize', resize)
 
     function startWave(n) {
-      w.enemies = []; w.stones = []; w.dmgTexts = []; w.particles = []; w.pools = []; w.rocks = []; w.skill = null; w.skillT = 0
+      w.enemies = []; w.stones = []; w.dmgTexts = []; w.particles = []; w.pools = []; w.rocks = []; w.waves = []; w.skill = null; w.skillT = 0
       const boss = n % 5 === 0
       w.spawnLeft = boss ? 5 : 5 + Math.min(n, 15)
       w.total = w.spawnLeft
@@ -372,6 +374,11 @@ export default function App() {
                 w.rocks.push({ x: 100 + Math.random() * (w.W - 120), y: -40 - Math.random() * 120, vy: 420 + Math.random() * 160, hit: false })
               }
             }
+            if (sk.key === 'roar') {
+              // 음파 링 3개 (시차를 두고 사방 확산)
+              w.waves = w.waves || []
+              for (let n = 0; n < 3; n++) w.waves.push({ x: HERO_X + 30, y: w.groundY - 80, r: 10, delay: n * 0.12, life: 0.6 })
+            }
             // 데미지 적용
             const dmg = st.atk * sk.dmgMult
             if (sk.aoe) {
@@ -396,6 +403,16 @@ export default function App() {
           if (rk.y >= w.groundY - 10) { rk.hit = true; rk.life = 0.3; burst(rk.x, w.groundY, '#9e9384', 8) }
         }
         w.rocks = w.rocks.filter(rk => !rk.hit || rk.life > 0)
+
+        // 음파 링 확산
+        if (w.waves) {
+          for (const wv of w.waves) {
+            if (wv.delay > 0) { wv.delay -= dt; continue }
+            wv.r += 260 * dt
+            wv.life -= dt
+          }
+          w.waves = w.waves.filter(wv => wv.life > 0)
+        }
 
         // 주인공 상태머신 (스킬 시전 중엔 일반 공격 안 함)
         hero.cd -= dt * 1000
@@ -497,7 +514,14 @@ export default function App() {
       if (w.skill != null) {
         const sk = SKILLS[w.skill]
         const arr = ANIM[sk.anim].srcs
-        const k = Math.min(arr.length - 1, Math.floor(w.skillT / sk.cast * arr.length))
+        const prog = w.skillT / sk.cast
+        let k
+        if (sk.key === 'dash') {
+          k = DASH_FRAME_T.findIndex(t => prog <= t)
+          if (k < 0) k = arr.length - 1
+        } else {
+          k = Math.min(arr.length - 1, Math.floor(prog * arr.length))
+        }
         return [sk.anim, k]
       }
       if (hero.state === 'attack') {
@@ -628,6 +652,16 @@ export default function App() {
         }
         ctx.restore()
       }
+
+      // 음파 링 (포효)
+      if (w.waves) for (const wv of w.waves) {
+        if (wv.delay > 0) continue
+        ctx.globalAlpha = Math.max(0, wv.life)
+        ctx.strokeStyle = '#ffe08a'
+        ctx.lineWidth = 3
+        ctx.beginPath(); ctx.arc(wv.x, wv.y, wv.r, 0, Math.PI * 2); ctx.stroke()
+      }
+      ctx.globalAlpha = 1
 
       // 낙석 (하늘에서 떨어지는 돌)
       for (const rk of w.rocks) {
