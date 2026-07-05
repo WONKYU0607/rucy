@@ -109,7 +109,8 @@ const EVOS = [
   { name: '각성한 오스트랄로피테쿠스', mult: 9, cost: 30000, mode: 'biped' },
 ]
 
-const SAVE_KEY = 'paleoDefSave_v4'
+const SAVE_KEY = 'paleoDefSave_v5'
+const SLOT_COUNT = 4
 function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY))
@@ -118,9 +119,10 @@ function loadSave() {
       lv: { ...statInit(), ...s.lv }, evo: s.evo ?? 0,
       hlv: s.hlv ?? 1, hexp: s.hexp ?? 0, sp: s.sp ?? 0,
       skill: { ...statInit(), ...s.skill },
+      equipped: Array.isArray(s.equipped) ? s.equipped.slice(0, SLOT_COUNT) : [null, null, null, null],
     }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit() }
+  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), equipped: [null, null, null, null] }
 }
 const fmt = n => n >= 1e8 ? (n/1e8).toFixed(1)+'억' : n >= 1e4 ? (n/1e4).toFixed(1)+'만' : Math.floor(n).toLocaleString()
 
@@ -144,6 +146,7 @@ export default function App() {
   const [progress, setProgress] = useState(0)
   const [gains, setGains] = useState([])       // 획득 팝업 리스트
   const [skillCdUI, setSkillCdUI] = useState(SKILLS.map(() => 0))  // 스킬 남은 쿨타임(초)
+  const [equipped, setEquipped] = useState(init.equipped)          // 장착 슬롯 (스킬 index or null)
 
   // 스탯 총 레벨 = 강화(고기) + 스킬(SP), 효과는 STAT_LIST.per 기준
   const tot = k => (lv[k] || 0) + (skill[k] || 0)
@@ -165,11 +168,12 @@ export default function App() {
     expMult: 1 + tot('expUp') * STAT_LIST.expUp.per / 100,
     acc: tot('acc') * STAT_LIST.acc.per / 100,
     eva: tot('eva') * STAT_LIST.eva.per / 100,
+    equipped,
   }
 
   useEffect(() => {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill }))
-  }, [meat, wave, lv, evo, hlv, hexp, sp, skill])
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, equipped }))
+  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, equipped])
 
   // 히어로 레벨업: 경험치가 필요량 넘으면 레벨↑ + 스킬포인트 지급
   useEffect(() => {
@@ -359,9 +363,13 @@ export default function App() {
         // ── 스킬 시스템 (자동 발동) ──
         for (let i = 0; i < SKILLS.length; i++) if (w.skillCd[i] > 0) w.skillCd[i] = Math.max(0, w.skillCd[i] - dt)
         if (w.skill == null) {
-          // 시전 중 아님: 쿨 끝난 스킬 중 첫 번째를 적이 있을 때 발동
+          // 시전 중 아님: 장착된 스킬 중 쿨 끝난 첫 번째를 적이 있을 때 발동
           if (w.enemies.some(e => !e.dead)) {
-            const ready = SKILLS.findIndex((s, i) => w.skillCd[i] <= 0)
+            const slots = st.equipped || []
+            let ready = -1
+            for (const si of slots) {
+              if (si != null && w.skillCd[si] <= 0) { ready = si; break }
+            }
             if (ready >= 0) { w.skill = ready; w.skillT = 0; w.skillDid = false; w.skillCd[ready] = SKILLS[ready].cd }
           }
         } else {
@@ -734,6 +742,17 @@ export default function App() {
     setEvo(v => v + 1)
   }
   function retry() { world.current.needStart = true; setPhase('fighting') }
+  function equipSkill(i) {
+    setEquipped(eq => {
+      if (eq.includes(i)) return eq
+      const slot = eq.indexOf(null)
+      if (slot < 0) return eq  // 슬롯 가득
+      const next = [...eq]; next[slot] = i; return next
+    })
+  }
+  function unequipSkill(slot) {
+    setEquipped(eq => { const next = [...eq]; next[slot] = null; return next })
+  }
 
   return (
     <div style={st.outer}>
@@ -854,20 +873,31 @@ export default function App() {
 
       {nav === '스킬' && (
         <div style={st.panel}>
-          <div style={st.spBar}>보유 스킬 · 쿨타임마다 자동 발동</div>
+          <div style={st.spBar}>장착 슬롯 · 올린 스킬만 자동 발동</div>
+          <div style={st.slotRow}>
+            {equipped.map((si, slot) => (
+              <button key={slot} style={st.slot} onClick={() => si != null && unequipSkill(slot)}>
+                {si != null ? <span style={{ fontSize: 22 }}>{SKILLS[si].icon}</span> : <span style={st.slotEmpty}>+</span>}
+              </button>
+            ))}
+          </div>
+          <div style={{ ...st.spBar, marginTop: 4 }}>보유 스킬 · 탭하여 장착</div>
           {SKILLS.map((s, i) => {
             const cd = skillCdUI[i] || 0
             const ready = cd <= 0
+            const eqSlot = equipped.indexOf(i)
+            const isEq = eqSlot >= 0
             return (
-              <div key={s.key} style={st.row}>
+              <div key={s.key} style={{ ...st.row, opacity: isEq ? 0.55 : 1 }} onClick={() => isEq ? unequipSkill(eqSlot) : equipSkill(i)}>
                 <div style={{ ...st.skillIcon, position: 'relative', overflow: 'hidden' }}>
                   {s.icon}
-                  {!ready && <div style={st.cdOverlay}>{cd.toFixed(1)}</div>}
+                  {isEq && !ready && <div style={st.cdOverlay}>{cd.toFixed(1)}</div>}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={st.rowName}>{s.name} <span style={{ ...st.rowLv, color: ready ? '#7ce0ff' : '#8a7a63' }}>{ready ? '준비됨' : '충전중'}</span></div>
+                  <div style={st.rowName}>{s.name} {isEq && <span style={{ ...st.rowLv, color: '#7ce0ff' }}>장착됨</span>}</div>
                   <div style={st.rowVal}>{s.desc} · 쿨 {s.cd}초 · 데미지 ×{s.dmgMult}</div>
                 </div>
+                <button style={{ ...st.spBtn, background: isEq ? '#6b4f35' : '#2f8fb0' }}>{isEq ? '해제' : '장착'}</button>
               </div>
             )
           })}
@@ -951,6 +981,12 @@ const st = {
     justifyContent: 'center', background: 'rgba(10,6,3,0.7)', fontSize: 12,
     fontWeight: 800, color: '#7ce0ff',
   },
+  slotRow: { display: 'flex', gap: 8, padding: '4px 2px 8px' },
+  slot: {
+    flex: 1, aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: '#312415', border: '2px solid #4a3822', borderRadius: 12, cursor: 'pointer',
+  },
+  slotEmpty: { fontSize: 26, color: '#5a4632' },
   skillIcon: {
     width: 32, height: 32, borderRadius: 8, background: '#241a10',
     border: '1px solid #4a3822', display: 'flex', alignItems: 'center',
