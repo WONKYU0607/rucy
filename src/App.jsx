@@ -547,12 +547,30 @@ export default function App() {
       ctx.fillRect(e.x - bw / 2, y - e.h - 12, bw, 4)
       ctx.fillStyle = '#d51616'
       ctx.fillRect(e.x - bw / 2, y - e.h - 12, bw * Math.max(0, e.hp / e.maxHp), 4)
-      // 기절 이모지 (머리 위, 좌우로 흔들림)
+      // 기절: 머리 위로 노란 별 3개 원 궤도 회전
       if (stunned) {
-        ctx.font = '18px sans-serif'
-        ctx.textAlign = 'center'
-        ctx.fillText('💫', e.x + Math.sin(now * 0.01) * 4, y - e.h - 18)
+        const cx = e.x, cy = y - e.h - 14, rad = 14
+        for (let s = 0; s < 3; s++) {
+          const ang = now * 0.005 + (s * Math.PI * 2 / 3)
+          const sx = cx + Math.cos(ang) * rad, sy = cy + Math.sin(ang) * rad * 0.5
+          drawStar(ctx, sx, sy, 5, 3, '#ffd42a')
+        }
       }
+    }
+    function drawStar(ctx, cx, cy, outer, inner, color) {
+      ctx.save()
+      ctx.translate(cx, cy)
+      ctx.fillStyle = color
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      for (let i = 0; i < 10; i++) {
+        const r = i % 2 === 0 ? outer : inner
+        const a = -Math.PI / 2 + i * Math.PI / 5
+        ctx[i === 0 ? 'moveTo' : 'lineTo'](Math.cos(a) * r, Math.sin(a) * r)
+      }
+      ctx.closePath(); ctx.fill(); ctx.stroke()
+      ctx.restore()
     }
 
     function draw(ctx, now) {
