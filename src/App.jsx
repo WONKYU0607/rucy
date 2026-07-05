@@ -498,9 +498,12 @@ export default function App() {
           setMeat(m => m + 15 + w.waveNum * 5)
           setPhase('cleared')
           w.clearTimer = 1200
+          hero.state = 'move'; hero.t = 0   // 시전/공격 중단하고 전진 자세로
+          w.skill = null; w.skillT = 0
         }
       } else if (st.phase === 'cleared') {
-        hero.animT += dt
+        hero.state = 'move'
+        hero.animT += dt * SPEED * st.mspdMult
         w.clearTimer -= dt * 1000
         if (w.clearTimer <= 0) { w.needStart = true; setWave(v => v + 1); setPhase('fighting') }
       }
