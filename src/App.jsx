@@ -9,7 +9,7 @@ const ANIM = {
   walk:  { srcs: ['/hero/walk/walk_1.png', '/hero/walk/walk_2.png', '/hero/walk/walk_3.png', '/hero/walk/walk_4.png'], h: 130, flip: false },
   run:   { srcs: ['/hero/run/run_1.png', '/hero/run/run_2.png', '/hero/run/run_3.png', '/hero/run/run_4.png'], h: 119, flip: false },
   punch: { srcs: ['/hero/punch/punch_1.png', '/hero/punch/punch_2.png', '/hero/punch/punch_3.png'], h: 102, flip: false },
-  throw: { srcs: ['/hero/throw/hero_windup.png', '/hero/throw/hero_release.png', '/hero/throw/hero_recovery.png'], h: 130, flip: false },
+  throw: { srcs: ['/hero/throw/hero_windup.png', '/hero/throw/hero_release.png'], h: 130, flip: false },
   idle:  { srcs: ['/hero/idle/idle_1.png'], h: 130, flip: false },
 }
 const AIMG = {}
@@ -427,7 +427,7 @@ export default function App() {
           const k = hero.t < PUNCH.hitAt ? 0 : hero.t < PUNCH.hitAt + 0.1 ? 1 : 2
           return ['punch', k]
         }
-        const k = hero.t < THROW.windupEnd ? 0 : hero.t < THROW.releaseEnd ? 1 : 2
+        const k = hero.t < THROW.windupEnd ? 0 : 1
         return ['throw', k]
       }
       const key = st.mode === 'quad' ? 'quad' : 'walk'
