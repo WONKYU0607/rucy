@@ -23,13 +23,13 @@ const ROCKS = new Image(); ROCKS.src = '/skill/meteor/rocks.png'
 
 // 스킬 3종: 쿨타임(초), 시전시간, 데미지배율, 효과
 const SKILLS = [
-  { key: 'dash',   name: '대시 펀치', anim: 's_dash',   icon: '👊', cd: 6,  cast: 0.7, hitAt: 0.45, dmgMult: 5, aoe: false, desc: '기를 모아 돌진, 단일 강타' },
-  { key: 'roar',   name: '포효',     anim: 's_roar',   icon: '🗣', cd: 10, cast: 0.9, hitAt: 0.5,  dmgMult: 2, aoe: true, stun: 1.5, desc: '전체 적 타격 + 기절' },
-  { key: 'meteor', name: '낙석',     anim: 's_meteor', icon: '☄', cd: 14, cast: 1.0, hitAt: 0.55, dmgMult: 4, aoe: true, desc: '하늘에서 돌덩이 낙하, 전체 강타' },
+  { key: 'dash',   name: '대시 펀치', anim: 's_dash',   icon: '👊', cd: 5,  cast: 0.7, hitAt: 0.45, dmgMult: 3, aoe: false, maxTargets: 3, desc: '돌진, 적 3마리 강타' },
+  { key: 'roar',   name: '포효',     anim: 's_roar',   icon: '🗣', cd: 10, cast: 0.9, hitAt: 0.5,  dmgMult: 2, aoe: true, stun: 2, desc: '전체 적 타격 + 기절' },
+  { key: 'meteor', name: '낙석',     anim: 's_meteor', icon: '☄', cd: 20, cast: 1.0, hitAt: 0.55, dmgMult: 5, aoe: true, desc: '하늘에서 돌덩이 낙하, 전체 강타' },
 ]
 
 const HERO_X = 90
-const SPEED = 1.3                                     // 전역 속도 배율 (0.3배속 상향)
+const SPEED = 1                                      // 전역 속도 배율
 const SCROLL = 140 * SPEED                            // 전진 속도 (px/s)
 const PUNCH = { hitAt: 0.12, total: 0.3, range: 95 } // 4족 주먹질
 const THROW = { windupEnd: 0.14, releaseEnd: 0.30, total: 0.42, range: 340 }
@@ -377,8 +377,9 @@ export default function App() {
             if (sk.aoe) {
               for (const t of w.enemies) if (!t.dead) { applySkillDmg(t, dmg); if (sk.stun) t.stun = sk.stun }
             } else {
-              const t = w.enemies.find(e => !e.dead)
-              if (t) applySkillDmg(t, dmg)
+              // 앞쪽 최대 maxTargets 마리
+              const targets = w.enemies.filter(e => !e.dead).sort((a, b) => a.x - b.x).slice(0, sk.maxTargets || 1)
+              for (const t of targets) applySkillDmg(t, dmg)
             }
             w.shake = 8
           }
@@ -517,14 +518,15 @@ export default function App() {
       return arr[fi] || arr[0]
     }
 
-    function drawEnemy(ctx, e) {
+    function drawEnemy(ctx, e, now) {
       const y = w.groundY
       const t = ENEMY_TYPES[e.type]
       const imgs = EIMG[e.type]
+      const stunned = e.stun > 0
       const gall = e.animT * 9
-      const fi = Math.floor(gall / Math.PI) % imgs.length
-      const bounce = Math.abs(Math.sin(gall)) * e.h * 0.08
-      const rock = Math.sin(gall) * 0.06
+      const fi = stunned ? 0 : Math.floor(gall / Math.PI) % imgs.length  // 기절 시 프레임 고정
+      const bounce = stunned ? 0 : Math.abs(Math.sin(gall)) * e.h * 0.08
+      const rock = stunned ? 0 : Math.sin(gall) * 0.06
       const im = imgs[fi]
       ctx.save()
       ctx.translate(e.x, y - bounce)
@@ -545,6 +547,12 @@ export default function App() {
       ctx.fillRect(e.x - bw / 2, y - e.h - 12, bw, 4)
       ctx.fillStyle = '#d51616'
       ctx.fillRect(e.x - bw / 2, y - e.h - 12, bw * Math.max(0, e.hp / e.maxHp), 4)
+      // 기절 이모지 (머리 위, 좌우로 흔들림)
+      if (stunned) {
+        ctx.font = '18px sans-serif'
+        ctx.textAlign = 'center'
+        ctx.fillText('💫', e.x + Math.sin(now * 0.01) * 4, y - e.h - 18)
+      }
     }
 
     function draw(ctx, now) {
@@ -587,7 +595,7 @@ export default function App() {
         ctx.restore()
       }
 
-      for (const e of w.enemies) drawEnemy(ctx, e)
+      for (const e of w.enemies) drawEnemy(ctx, e, now)
 
       for (const p of w.stones) {
         ctx.save()
