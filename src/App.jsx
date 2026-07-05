@@ -123,7 +123,8 @@ export default function App() {
   const [hexp, setHexp] = useState(init.hexp)  // 히어로 경험치
   const [sp, setSp] = useState(init.sp)        // 스킬포인트
   const [skill, setSkill] = useState(init.skill)
-  const [tab, setTab] = useState('강화')
+  const [nav, setNav] = useState('영웅')     // 하단 네비: 영웅/스킬/장비/동료/퀴즈/상점
+  const [tab, setTab] = useState('강화')      // 영웅 서브탭: 강화/성장/진화
   const [phase, setPhase] = useState('fighting')
   const [heroHpUI, setHeroHpUI] = useState(100)
   const [progress, setProgress] = useState(0)
@@ -632,10 +633,11 @@ export default function App() {
         )}
       </div>
 
+      {nav === '영웅' && <>
       <div style={st.tabs}>
-        {['강화', '진화', '스킬'].map(t => (
+        {['강화', '성장', '진화'].map(t => (
           <button key={t} style={{ ...st.tabBtn, ...(tab === t ? st.tabActive : {}) }} onClick={() => setTab(t)}>
-            {t}{t === '스킬' && sp > 0 && <span style={st.spDot}>{sp}</span>}
+            {t}{t === '성장' && sp > 0 && <span style={st.spDot}>{sp}</span>}
           </button>
         ))}
       </div>
@@ -678,7 +680,7 @@ export default function App() {
               : <div style={{ fontSize: 12, opacity: 0.6 }}>최종 단계</div>}
           </div>
         )}
-        {tab === '스킬' && (
+        {tab === '성장' && (
           <>
             <div style={st.spBar}>스킬포인트 <b style={{ color: '#7ce0ff', fontSize: 18 }}>{sp}</b> <span style={{ opacity: 0.6, fontSize: 11 }}>· 레벨업 시 획득</span></div>
             {STAT_KEYS.map(k => {
@@ -699,6 +701,24 @@ export default function App() {
             })}
           </>
         )}
+      </div>
+      </>}
+
+      {nav !== '영웅' && (
+        <div style={st.comingSoon}>
+          <div style={{ fontSize: 40, marginBottom: 10 }}>🔒</div>
+          <div style={{ fontSize: 16, fontWeight: 700 }}>{nav}</div>
+          <div style={{ fontSize: 13, opacity: 0.6, marginTop: 6 }}>준비 중입니다</div>
+        </div>
+      )}
+
+      <div style={st.bottomNav}>
+        {[['영웅', '🦍'], ['스킬', '✨'], ['장비', '⚔'], ['동료', '🤝'], ['퀴즈', '❓'], ['상점', '💰']].map(([n, ic]) => (
+          <button key={n} style={{ ...st.navBtn, ...(nav === n ? st.navActive : {}) }} onClick={() => setNav(n)}>
+            <div style={{ fontSize: 20 }}>{ic}</div>
+            <div style={{ fontSize: 10 }}>{n}</div>
+          </button>
+        ))}
       </div>
     </div>
     </div>
@@ -743,6 +763,19 @@ const st = {
     marginLeft: 5, fontSize: 10, fontWeight: 800, color: '#fff',
     background: '#e05a4e', borderRadius: 8, padding: '0 5px',
   },
+  bottomNav: {
+    display: 'flex', background: '#1a120b', borderTop: '1px solid #3a2c1c',
+    paddingBottom: 'env(safe-area-inset-bottom)',
+  },
+  navBtn: {
+    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+    padding: '8px 0', border: 'none', background: 'transparent', color: '#8a7a63', cursor: 'pointer',
+  },
+  navActive: { color: '#f0b060' },
+  comingSoon: {
+    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+    justifyContent: 'center', background: '#241a10', color: '#f5ead9',
+  },
   skillIcon: {
     width: 32, height: 32, borderRadius: 8, background: '#241a10',
     border: '1px solid #4a3822', display: 'flex', alignItems: 'center',
@@ -771,7 +804,7 @@ const st = {
   tabActive: { background: '#3a2c1a', color: '#f5ead9' },
   panel: {
     flex: 1, overflowY: 'auto', background: '#241a10',
-    padding: '10px 10px', paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
+    padding: '10px 10px 14px',
     display: 'flex', flexDirection: 'column', gap: 8,
   },
   row: {
