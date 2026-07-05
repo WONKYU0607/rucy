@@ -14,6 +14,9 @@ const ANIM = {
   s_dash:   { srcs: ['/skill/dash/dash_1.png','/skill/dash/dash_2.png','/skill/dash/dash_3.png','/skill/dash/dash_4.png','/skill/dash/dash_5.png'], h: 130, flip: false },
   s_roar:   { srcs: ['/skill/roar/roar_1.png','/skill/roar/roar_2.png','/skill/roar/roar_3.png','/skill/roar/roar_4.png','/skill/roar/roar_5.png'], h: 130, flip: false },
   s_meteor: { srcs: ['/skill/meteor/meteor_1.png','/skill/meteor/meteor_2.png','/skill/meteor/meteor_3.png'], h: 130, flip: false },
+  s_roll:   { srcs: ['/skill/roll/roll_1.png','/skill/roll/roll_2.png','/skill/roll/roll_3.png','/skill/roll/roll_4.png','/skill/roll/roll_5.png','/skill/roll/roll_6.png'], h: 76, flip: false },
+  s_kick:   { srcs: ['/skill/kick/kick_1.png','/skill/kick/kick_2.png','/skill/kick/kick_3.png','/skill/kick/kick_4.png','/skill/kick/kick_5.png'], h: 120, flip: false },
+  s_claw:   { srcs: ['/skill/claw/claw_1.png','/skill/claw/claw_2.png','/skill/claw/claw_3.png','/skill/claw/claw_4.png','/skill/claw/claw_5.png','/skill/claw/claw_6.png'], h: 130, flip: false },
 }
 const AIMG = {}
 for (const k in ANIM) AIMG[k] = ANIM[k].srcs.map(s => { const i = new Image(); i.src = s; return i })
@@ -26,6 +29,9 @@ const SKILLS = [
   { key: 'dash',   name: '대시 펀치', anim: 's_dash',   icon: '👊', cd: 5,  cast: 1.1, hitAt: 0.5, dmgMult: 3, aoe: false, maxTargets: 3, desc: '돌진, 적 3마리 강타' },
   { key: 'roar',   name: '포효',     anim: 's_roar',   icon: '🗣', cd: 13, cast: 0.9, hitAt: 0.5,  dmgMult: 2, aoe: true, stun: 2, desc: '전체 적 타격 + 기절' },
   { key: 'meteor', name: '낙석',     anim: 's_meteor', icon: '☄', cd: 20, cast: 1.0, hitAt: 0.55, dmgMult: 5, aoe: true, desc: '하늘에서 돌덩이 낙하, 전체 강타' },
+  { key: 'roll',   name: '앞구르기', anim: 's_roll',   icon: '🤸', cd: 6,  cast: 0.9, hitAt: 0.55, dmgMult: 2.5, aoe: false, maxTargets: 3, desc: '굴러서 앞 3마리 관통' },
+  { key: 'kick',   name: '로우킥',   anim: 's_kick',   icon: '🦵', cd: 4,  cast: 0.7, hitAt: 0.5,  dmgMult: 2.5, aoe: false, maxTargets: 1, desc: '발차기 단일 강타' },
+  { key: 'claw',   name: '할퀴기',   anim: 's_claw',   icon: '🪓', cd: 5,  cast: 0.9, hitAt: 0.75, dmgMult: 3, aoe: false, maxTargets: 1, desc: '할퀴어 단일 강타' },
 ]
 // 대시 프레임 타이밍: 0=기모으기 앞부분 짧게, 주먹뻗기(3,4번) 길게
 const DASH_FRAME_T = [0.15, 0.30, 0.55, 0.85, 1.0]  // 각 프레임 끝나는 비율
