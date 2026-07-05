@@ -11,11 +11,22 @@ const ANIM = {
   punch: { srcs: ['/hero/punch/punch_1.png', '/hero/punch/punch_2.png', '/hero/punch/punch_3.png'], h: 102, flip: false },
   throw: { srcs: ['/hero/throw/hero_windup.png', '/hero/throw/hero_release.png'], h: 130, flip: false },
   idle:  { srcs: ['/hero/idle/idle_1.png'], h: 130, flip: false },
+  s_dash:   { srcs: ['/skill/dash/dash_1.png','/skill/dash/dash_2.png','/skill/dash/dash_3.png','/skill/dash/dash_4.png','/skill/dash/dash_5.png'], h: 130, flip: false },
+  s_roar:   { srcs: ['/skill/roar/roar_1.png','/skill/roar/roar_2.png','/skill/roar/roar_3.png','/skill/roar/roar_4.png','/skill/roar/roar_5.png'], h: 130, flip: false },
+  s_meteor: { srcs: ['/skill/meteor/meteor_1.png','/skill/meteor/meteor_2.png','/skill/meteor/meteor_3.png'], h: 130, flip: false },
 }
 const AIMG = {}
 for (const k in ANIM) AIMG[k] = ANIM[k].srcs.map(s => { const i = new Image(); i.src = s; return i })
 const BG = new Image(); BG.src = '/bg/bg.jpg'
 const STONE = new Image(); STONE.src = '/misc/stone.png'
+const ROCKS = new Image(); ROCKS.src = '/skill/meteor/rocks.png'
+
+// 스킬 3종: 쿨타임(초), 시전시간, 데미지배율, 효과
+const SKILLS = [
+  { key: 'dash',   name: '대시 펀치', anim: 's_dash',   icon: '👊', cd: 6,  cast: 0.7, hitAt: 0.45, dmgMult: 5, aoe: false, desc: '기를 모아 돌진, 단일 강타' },
+  { key: 'roar',   name: '포효',     anim: 's_roar',   icon: '🗣', cd: 10, cast: 0.9, hitAt: 0.5,  dmgMult: 2, aoe: true, stun: 1.5, desc: '전체 적 타격 + 기절' },
+  { key: 'meteor', name: '낙석',     anim: 's_meteor', icon: '☄', cd: 14, cast: 1.0, hitAt: 0.55, dmgMult: 4, aoe: true, desc: '하늘에서 돌덩이 낙하, 전체 강타' },
+]
 
 const HERO_X = 90
 const SPEED = 1.3                                     // 전역 속도 배율 (0.3배속 상향)
@@ -129,6 +140,7 @@ export default function App() {
   const [heroHpUI, setHeroHpUI] = useState(100)
   const [progress, setProgress] = useState(0)
   const [gains, setGains] = useState([])       // 획득 팝업 리스트
+  const [skillCdUI, setSkillCdUI] = useState(SKILLS.map(() => 0))  // 스킬 남은 쿨타임(초)
 
   // 스탯 총 레벨 = 강화(고기) + 스킬(SP), 효과는 STAT_LIST.per 기준
   const tot = k => (lv[k] || 0) + (skill[k] || 0)
@@ -180,6 +192,7 @@ export default function App() {
       hero: { hp: maxHp, cd: 0, state: 'move', t: 0, did: false, flash: 0, animT: 0 },
       spawnLeft: 0, spawnTimer: 0, killed: 0, total: 1,
       shake: 0, scrollX: 0, needStart: true, W: 0, H: 0, groundY: 0,
+      skillCd: SKILLS.map(() => 0), skill: null, skillT: 0, skillDid: false, rocks: [],
     }
   }
 
@@ -204,7 +217,7 @@ export default function App() {
     window.addEventListener('resize', resize)
 
     function startWave(n) {
-      w.enemies = []; w.stones = []; w.dmgTexts = []; w.particles = []; w.pools = []
+      w.enemies = []; w.stones = []; w.dmgTexts = []; w.particles = []; w.pools = []; w.rocks = []; w.skill = null; w.skillT = 0
       const boss = n % 5 === 0
       w.spawnLeft = boss ? 5 : 5 + Math.min(n, 15)
       w.total = w.spawnLeft
@@ -264,18 +277,29 @@ export default function App() {
       addDmg(t.x, ty - t.h * 0.5 - 12, Math.round(dmg), crit)
       burst(t.x, ty, '#c81818', crit ? 20 : 10, true)   // 빨간 피 튀김
       w.shake = Math.max(w.shake, crit ? 5 : 2)
-      if (t.hp <= 0 && !t.dead) {
-        t.dead = true
-        w.killed++
-        const gm = Math.floor(t.meat * st.meatMult)
-        const ge = Math.floor(t.exp * st.expMult)
-        w.killMeat = (w.killMeat || 0) + gm
-        w.killExp = (w.killExp || 0) + ge
-        w.gainQueue = w.gainQueue || []
-        w.gainQueue.push({ meat: gm, exp: ge })
-        burst(t.x, ty, '#a01010', 24, true)              // 처치 시 대량 피
-        bloodPool(t.x, w.groundY - 4)                     // 바닥 핏자국
-      }
+      if (t.hp <= 0 && !t.dead) killEnemy(t, st)
+    }
+    function killEnemy(t, st) {
+      t.dead = true
+      w.killed++
+      const gm = Math.floor(t.meat * st.meatMult)
+      const ge = Math.floor(t.exp * st.expMult)
+      w.killMeat = (w.killMeat || 0) + gm
+      w.killExp = (w.killExp || 0) + ge
+      w.gainQueue = w.gainQueue || []
+      w.gainQueue.push({ meat: gm, exp: ge })
+      const ty = w.groundY - t.h * 0.55
+      burst(t.x, ty, '#a01010', 24, true)
+      bloodPool(t.x, w.groundY - 4)
+    }
+    // 스킬 데미지 (명중 무시, 항상 적중 + 큰 피 이펙트)
+    function applySkillDmg(t, dmg) {
+      t.hp -= dmg
+      t.flash = 1
+      const ty = w.groundY - t.h * 0.55
+      addDmg(t.x, ty - t.h * 0.5 - 12, Math.round(dmg), true)
+      burst(t.x, ty, '#ff6a2a', 18, true)
+      if (t.hp <= 0 && !t.dead) killEnemy(t, S.current)
     }
 
     function loop(now) {
@@ -301,6 +325,7 @@ export default function App() {
         // 적: 접근 (전진 스크롤만큼 상대속도 가산) + 근접 공격
         for (const e of w.enemies) {
           e.flash = Math.max(0, e.flash - dt * 5)
+          if (e.stun > 0) { e.stun -= dt; continue }  // 기절 중 정지
           const stopX = HERO_X + Math.min(atkRange - 15, 45 + e.h * 0.4)
           if (e.x > stopX) {
             e.x -= (e.speed * SPEED + scroll) * dt
@@ -328,10 +353,55 @@ export default function App() {
           hero.hp = Math.min(st.maxHp, hero.hp + st.regen * dt)
         }
 
-        // 주인공 상태머신
+        // ── 스킬 시스템 (자동 발동) ──
+        for (let i = 0; i < SKILLS.length; i++) if (w.skillCd[i] > 0) w.skillCd[i] = Math.max(0, w.skillCd[i] - dt)
+        if (w.skill == null) {
+          // 시전 중 아님: 쿨 끝난 스킬 중 첫 번째를 적이 있을 때 발동
+          if (w.enemies.some(e => !e.dead)) {
+            const ready = SKILLS.findIndex((s, i) => w.skillCd[i] <= 0)
+            if (ready >= 0) { w.skill = ready; w.skillT = 0; w.skillDid = false; w.skillCd[ready] = SKILLS[ready].cd }
+          }
+        } else {
+          const sk = SKILLS[w.skill]
+          w.skillT += dt * SPEED
+          if (!w.skillDid && w.skillT >= sk.cast * sk.hitAt) {
+            w.skillDid = true
+            if (sk.key === 'meteor') {
+              // 낙석 8개 생성 (화면 상단→적 위치로)
+              for (let n = 0; n < 8; n++) {
+                w.rocks.push({ x: 100 + Math.random() * (w.W - 120), y: -40 - Math.random() * 120, vy: 420 + Math.random() * 160, hit: false })
+              }
+            }
+            // 데미지 적용
+            const dmg = st.atk * sk.dmgMult
+            if (sk.aoe) {
+              for (const t of w.enemies) if (!t.dead) { applySkillDmg(t, dmg); if (sk.stun) t.stun = sk.stun }
+            } else {
+              const t = w.enemies.find(e => !e.dead)
+              if (t) applySkillDmg(t, dmg)
+            }
+            w.shake = 8
+          }
+          if (w.skillT >= sk.cast) { w.skill = null; w.skillT = 0 }
+        }
+        // UI 동기화 (0.2초 간격)
+        w.skillUiT = (w.skillUiT || 0) + dt
+        if (w.skillUiT > 0.15) { w.skillUiT = 0; setSkillCdUI([...w.skillCd]) }
+
+        // 낙석 업데이트
+        for (const rk of w.rocks) {
+          if (rk.hit) { rk.life -= dt; continue }
+          rk.y += rk.vy * dt
+          if (rk.y >= w.groundY - 10) { rk.hit = true; rk.life = 0.3; burst(rk.x, w.groundY, '#9e9384', 8) }
+        }
+        w.rocks = w.rocks.filter(rk => !rk.hit || rk.life > 0)
+
+        // 주인공 상태머신 (스킬 시전 중엔 일반 공격 안 함)
         hero.cd -= dt * 1000
         hero.flash = Math.max(0, hero.flash - dt)
-        if (hero.state === 'move') {
+        if (w.skill != null) {
+          // 스킬 시전 중: 상태 유지, 이동/공격 정지
+        } else if (hero.state === 'move') {
           hero.animT += dt * SPEED * st.mspdMult
           const target = w.enemies.find(e => !e.dead && e.x - HERO_X < atkRange)
           if (hero.cd <= 0 && target) {
@@ -423,6 +493,12 @@ export default function App() {
     }
 
     function heroAnim(hero, st) {
+      if (w.skill != null) {
+        const sk = SKILLS[w.skill]
+        const arr = ANIM[sk.anim].srcs
+        const k = Math.min(arr.length - 1, Math.floor(w.skillT / sk.cast * arr.length))
+        return [sk.anim, k]
+      }
       if (hero.state === 'attack') {
         if (st.mode === 'quad') {
           const k = hero.t < PUNCH.hitAt ? 0 : hero.t < PUNCH.hitAt + 0.1 ? 1 : 2
@@ -525,6 +601,17 @@ export default function App() {
           ctx.beginPath(); ctx.ellipse(0, 0, 8, 6, 0, 0, Math.PI * 2); ctx.fill()
         }
         ctx.restore()
+      }
+
+      // 낙석 (하늘에서 떨어지는 돌)
+      for (const rk of w.rocks) {
+        if (rk.hit) continue
+        if (STONE.complete && STONE.naturalWidth > 0) {
+          ctx.drawImage(STONE, rk.x - 12, rk.y - 12, 24, 24)
+        } else {
+          ctx.fillStyle = '#9e9384'
+          ctx.beginPath(); ctx.arc(rk.x, rk.y, 11, 0, Math.PI * 2); ctx.fill()
+        }
       }
 
       for (const p of w.particles) {
@@ -704,7 +791,29 @@ export default function App() {
       </div>
       </>}
 
-      {nav !== '영웅' && (
+      {nav === '스킬' && (
+        <div style={st.panel}>
+          <div style={st.spBar}>보유 스킬 · 쿨타임마다 자동 발동</div>
+          {SKILLS.map((s, i) => {
+            const cd = skillCdUI[i] || 0
+            const ready = cd <= 0
+            return (
+              <div key={s.key} style={st.row}>
+                <div style={{ ...st.skillIcon, position: 'relative', overflow: 'hidden' }}>
+                  {s.icon}
+                  {!ready && <div style={st.cdOverlay}>{cd.toFixed(1)}</div>}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={st.rowName}>{s.name} <span style={{ ...st.rowLv, color: ready ? '#7ce0ff' : '#8a7a63' }}>{ready ? '준비됨' : '충전중'}</span></div>
+                  <div style={st.rowVal}>{s.desc} · 쿨 {s.cd}초 · 데미지 ×{s.dmgMult}</div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {nav !== '영웅' && nav !== '스킬' && (
         <div style={st.comingSoon}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>🔒</div>
           <div style={{ fontSize: 16, fontWeight: 700 }}>{nav}</div>
@@ -775,6 +884,11 @@ const st = {
   comingSoon: {
     flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
     justifyContent: 'center', background: '#241a10', color: '#f5ead9',
+  },
+  cdOverlay: {
+    position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
+    justifyContent: 'center', background: 'rgba(10,6,3,0.7)', fontSize: 12,
+    fontWeight: 800, color: '#7ce0ff',
   },
   skillIcon: {
     width: 32, height: 32, borderRadius: 8, background: '#241a10',
