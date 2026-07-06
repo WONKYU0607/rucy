@@ -13,10 +13,14 @@ const ANIM = {
   idle:  { srcs: ['/hero/idle/idle_1.png'], h: 130, flip: false },
 }
 // 스킬 1~20 프레임 수 (시트 추출 결과)
-const SKILL_FRAME_COUNTS = [5, 5, 2, 8, 7, 7, 6, 6, 6, 7, 8, 7, 7, 4, 5, 6, 5, 10, 3, 6]
-SKILL_FRAME_COUNTS.forEach((n, i) => {
-  const id = i + 1
-  ANIM['s_' + id] = { srcs: Array.from({ length: n }, (_, j) => `/skill/s${id}/s${id}_${j + 1}.png`), h: 130, flip: false }
+// 스킬 정의 [id, 프레임수, 렌더높이] — 4,5,6,10,11 제거됨 (번호는 시트 기준 유지)
+const SKILL_SHEET = [
+  [1, 6, 280], [2, 5, 280], [3, 4, 179], [7, 6, 131], [8, 6, 146], [9, 6, 149],
+  [12, 7, 148], [13, 7, 131], [14, 4, 138], [15, 5, 131], [16, 6, 150], [17, 5, 133],
+  [18, 5, 205], [19, 4, 235], [20, 5, 171],
+]
+SKILL_SHEET.forEach(([id, n, h]) => {
+  ANIM['s_' + id] = { srcs: Array.from({ length: n }, (_, j) => `/skill/s${id}/s${id}_${j + 1}.png`), h, flip: false }
 })
 const AIMG = {}
 for (const k in ANIM) AIMG[k] = ANIM[k].srcs.map(s => { const i = new Image(); i.src = s; return i })
@@ -24,9 +28,9 @@ const BG = new Image(); BG.src = '/bg/bg.jpg'
 const STONE = new Image(); STONE.src = '/misc/stone.png'
 
 // 스킬 3종: 쿨타임(초), 시전시간, 데미지배율, 효과
-const SKILLS = SKILL_FRAME_COUNTS.map((n, i) => ({
-  key: 's' + (i + 1), name: '스킬 ' + (i + 1), anim: 's_' + (i + 1), icon: String(i + 1),
-  cd: 8, cast: Math.max(0.6, n * 0.13), hitAt: 0.5, dmgMult: 2, aoe: false, maxTargets: 1,
+const SKILLS = SKILL_SHEET.map(([id, n]) => ({
+  key: 's' + id, name: '스킬 ' + id, anim: 's_' + id, icon: String(id),
+  cd: 1, cast: Math.max(0.6, n * 0.13), hitAt: 0.5, dmgMult: 2, aoe: false, maxTargets: 1,
   desc: n + '프레임 · 임시값',
 }))
 // 대시 프레임 타이밍: 0=기모으기 앞부분 짧게, 주먹뻗기(3,4번) 길게
@@ -121,7 +125,7 @@ function loadSave() {
       lv: { ...statInit(), ...s.lv }, evo: s.evo ?? 0,
       hlv: s.hlv ?? 1, hexp: s.hexp ?? 0, sp: s.sp ?? 0,
       skill: { ...statInit(), ...s.skill },
-      equipped: Array.isArray(s.equipped) ? s.equipped.slice(0, SLOT_COUNT) : [null, null, null, null],
+      equipped: (Array.isArray(s.equipped) ? s.equipped.slice(0, SLOT_COUNT) : [null, null, null, null]).map(si => (si != null && si < SKILLS.length ? si : null)),
       cdConf: Array.isArray(s.cdConf) && s.cdConf.length === SKILLS.length ? s.cdConf : SKILLS.map(k => k.cd),
     }
   } catch (e) {}
