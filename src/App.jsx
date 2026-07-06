@@ -11,28 +11,24 @@ const ANIM = {
   punch: { srcs: ['/hero/punch/punch_1.png', '/hero/punch/punch_2.png', '/hero/punch/punch_3.png'], h: 102, flip: false },
   throw: { srcs: ['/hero/throw/hero_windup.png', '/hero/throw/hero_release.png'], h: 130, flip: false },
   idle:  { srcs: ['/hero/idle/idle_1.png'], h: 130, flip: false },
-  s_dash:   { srcs: ['/skill/dash/dash_1.png','/skill/dash/dash_2.png','/skill/dash/dash_3.png','/skill/dash/dash_4.png','/skill/dash/dash_5.png'], h: 130, flip: false },
-  s_roar:   { srcs: ['/skill/roar/roar_1.png','/skill/roar/roar_2.png','/skill/roar/roar_3.png','/skill/roar/roar_4.png','/skill/roar/roar_5.png'], h: 130, flip: false },
-  s_meteor: { srcs: ['/skill/meteor/meteor_1.png','/skill/meteor/meteor_2.png','/skill/meteor/meteor_3.png'], h: 130, flip: false },
-  s_roll:   { srcs: ['/skill/roll/roll_1.png','/skill/roll/roll_2.png','/skill/roll/roll_3.png','/skill/roll/roll_4.png','/skill/roll/roll_5.png','/skill/roll/roll_6.png'], h: 76, flip: false },
-  s_kick:   { srcs: ['/skill/kick/kick_1.png','/skill/kick/kick_2.png','/skill/kick/kick_3.png','/skill/kick/kick_4.png','/skill/kick/kick_5.png'], h: 120, flip: false },
-  s_claw:   { srcs: ['/skill/claw/claw_1.png','/skill/claw/claw_2.png','/skill/claw/claw_3.png','/skill/claw/claw_4.png','/skill/claw/claw_5.png','/skill/claw/claw_6.png'], h: 130, flip: false },
 }
+// 스킬 1~20 프레임 수 (시트 추출 결과)
+const SKILL_FRAME_COUNTS = [5, 5, 2, 8, 7, 7, 6, 6, 6, 7, 8, 7, 7, 4, 5, 6, 5, 10, 3, 6]
+SKILL_FRAME_COUNTS.forEach((n, i) => {
+  const id = i + 1
+  ANIM['s_' + id] = { srcs: Array.from({ length: n }, (_, j) => `/skill/s${id}/s${id}_${j + 1}.png`), h: 130, flip: false }
+})
 const AIMG = {}
 for (const k in ANIM) AIMG[k] = ANIM[k].srcs.map(s => { const i = new Image(); i.src = s; return i })
 const BG = new Image(); BG.src = '/bg/bg.jpg'
 const STONE = new Image(); STONE.src = '/misc/stone.png'
-const ROCKS = new Image(); ROCKS.src = '/skill/meteor/rocks.png'
 
 // 스킬 3종: 쿨타임(초), 시전시간, 데미지배율, 효과
-const SKILLS = [
-  { key: 'dash',   name: '대시 펀치', anim: 's_dash',   icon: '👊', cd: 5,  cast: 1.1, hitAt: 0.5, dmgMult: 3, aoe: false, maxTargets: 3, desc: '돌진, 적 3마리 강타' },
-  { key: 'roar',   name: '포효',     anim: 's_roar',   icon: '🗣', cd: 13, cast: 0.9, hitAt: 0.5,  dmgMult: 2, aoe: true, stun: 2, desc: '전체 적 타격 + 기절' },
-  { key: 'meteor', name: '낙석',     anim: 's_meteor', icon: '☄', cd: 20, cast: 1.0, hitAt: 0.55, dmgMult: 5, aoe: true, desc: '하늘에서 돌덩이 낙하, 전체 강타' },
-  { key: 'roll',   name: '앞구르기', anim: 's_roll',   icon: '🤸', cd: 6,  cast: 0.9, hitAt: 0.55, dmgMult: 2.5, aoe: false, maxTargets: 3, desc: '굴러서 앞 3마리 관통' },
-  { key: 'kick',   name: '로우킥',   anim: 's_kick',   icon: '🦵', cd: 4,  cast: 0.7, hitAt: 0.5,  dmgMult: 2.5, aoe: false, maxTargets: 1, desc: '발차기 단일 강타' },
-  { key: 'claw',   name: '할퀴기',   anim: 's_claw',   icon: '🪓', cd: 5,  cast: 0.9, hitAt: 0.75, dmgMult: 3, aoe: false, maxTargets: 1, desc: '할퀴어 단일 강타' },
-]
+const SKILLS = SKILL_FRAME_COUNTS.map((n, i) => ({
+  key: 's' + (i + 1), name: '스킬 ' + (i + 1), anim: 's_' + (i + 1), icon: String(i + 1),
+  cd: 8, cast: Math.max(0.6, n * 0.13), hitAt: 0.5, dmgMult: 2, aoe: false, maxTargets: 1,
+  desc: n + '프레임 · 임시값',
+}))
 // 대시 프레임 타이밍: 0=기모으기 앞부분 짧게, 주먹뻗기(3,4번) 길게
 const DASH_FRAME_T = [0.15, 0.30, 0.55, 0.85, 1.0]  // 각 프레임 끝나는 비율
 
@@ -126,9 +122,10 @@ function loadSave() {
       hlv: s.hlv ?? 1, hexp: s.hexp ?? 0, sp: s.sp ?? 0,
       skill: { ...statInit(), ...s.skill },
       equipped: Array.isArray(s.equipped) ? s.equipped.slice(0, SLOT_COUNT) : [null, null, null, null],
+      cdConf: Array.isArray(s.cdConf) && s.cdConf.length === SKILLS.length ? s.cdConf : SKILLS.map(k => k.cd),
     }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), equipped: [null, null, null, null] }
+  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), equipped: [null, null, null, null], cdConf: SKILLS.map(k => k.cd) }
 }
 const fmt = n => n >= 1e8 ? (n/1e8).toFixed(1)+'억' : n >= 1e4 ? (n/1e4).toFixed(1)+'만' : Math.floor(n).toLocaleString()
 
@@ -153,6 +150,7 @@ export default function App() {
   const [gains, setGains] = useState([])       // 획득 팝업 리스트
   const [skillCdUI, setSkillCdUI] = useState(SKILLS.map(() => 0))  // 스킬 남은 쿨타임(초)
   const [equipped, setEquipped] = useState(init.equipped)          // 장착 슬롯 (스킬 index or null)
+  const [cdConf, setCdConf] = useState(init.cdConf)                // 스킬별 쿨타임 설정(초, 직접입력)
 
   // 스탯 총 레벨 = 강화(고기) + 스킬(SP), 효과는 STAT_LIST.per 기준
   const tot = k => (lv[k] || 0) + (skill[k] || 0)
@@ -175,11 +173,12 @@ export default function App() {
     acc: tot('acc') * STAT_LIST.acc.per / 100,
     eva: tot('eva') * STAT_LIST.eva.per / 100,
     equipped,
+    cdConf,
   }
 
   useEffect(() => {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, equipped }))
-  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, equipped])
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf }))
+  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf])
 
   // 히어로 레벨업: 경험치가 필요량 넘으면 레벨↑ + 스킬포인트 지급
   useEffect(() => {
@@ -376,7 +375,7 @@ export default function App() {
             for (const si of slots) {
               if (si != null && w.skillCd[si] <= 0) { ready = si; break }
             }
-            if (ready >= 0) { w.skill = ready; w.skillT = 0; w.skillDid = false; w.skillCd[ready] = SKILLS[ready].cd }
+            if (ready >= 0) { w.skill = ready; w.skillT = 0; w.skillDid = false; w.skillCd[ready] = st.cdConf?.[ready] ?? SKILLS[ready].cd }
           }
         } else {
           const sk = SKILLS[w.skill]
@@ -904,8 +903,14 @@ export default function App() {
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={st.rowName}>{s.name} {isEq && <span style={{ ...st.rowLv, color: '#7ce0ff' }}>장착됨</span>}</div>
-                  <div style={st.rowVal}>{s.desc} · 쿨 {s.cd}초 · 데미지 ×{s.dmgMult}</div>
+                  <div style={st.rowVal}>{s.desc} · 데미지 ×{s.dmgMult}</div>
                 </div>
+                <span style={{ fontSize: 11, opacity: 0.7 }}>쿨</span>
+                <input
+                  style={st.dbgInput} type="number" inputMode="decimal" value={cdConf[i]}
+                  onClick={e => e.stopPropagation()}
+                  onChange={e => { const v = Math.max(0.1, Number(e.target.value) || 0.1); setCdConf(c => { const n = [...c]; n[i] = v; return n }) }}
+                />
                 <button style={{ ...st.spBtn, background: isEq ? '#6b4f35' : '#2f8fb0' }}>{isEq ? '해제' : '장착'}</button>
               </div>
             )
