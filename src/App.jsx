@@ -24,12 +24,11 @@ const SKILL_SHEET = [
   { id: 8, n: 6, h: 146, stage: 0 },
   { id: 12, n: 7, h: 148, stage: 0 },
   { id: 13, n: 7, h: 131, stage: 0 },
-  { id: 14, n: 4, h: 138, stage: 1 },
   { id: 15, n: 5, h: 131, stage: 1 },
   { id: 16, n: 6, h: 150, stage: 1, charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5, 6] } },
   { id: 17, n: 5, h: 133, stage: 1 },
   { id: 18, n: 5, h: 205, stage: 2, charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5] } },
-  { id: 19, n: 4, h: 235, stage: 2, charSeq: [1], fx: { type: 'proj', fly: [2, 3, 4], flyScale: 0.45 } },
+  { id: 19, n: 4, h: 235, stage: 2, charSeq: [1], fx: { type: 'proj', fly: [2, 3, 4], flyScale: 0.6 } },
   { id: 20, n: 5, h: 171, stage: 2, charSeq: [1, 2, 3, 5], fx: { type: 'proj', fly: [4], flyScale: 0.9 } },
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
@@ -341,7 +340,7 @@ export default function App() {
       t.flash = 1
       const ty = w.groundY - t.h * 0.55
       addDmg(t.x, ty - t.h * 0.5 - 12, Math.round(dmg), true)
-      burst(t.x, ty, '#ff6a2a', 18, true)
+      burst(t.x, ty, '#c81818', 18, true)
       if (t.hp <= 0 && !t.dead) killEnemy(t, S.current)
     }
 
@@ -371,7 +370,7 @@ export default function App() {
           if (e.stun > 0) { e.stun -= dt; continue }  // 기절 중 정지
           const stopX = HERO_X + Math.min(atkRange - 15, 45 + e.h * 0.4)
           if (e.x > stopX) {
-            e.x -= (e.speed * SPEED + scroll) * dt
+            e.x -= (e.speed * SPEED * 1.3 + scroll) * dt
             e.animT += dt * SPEED * (1 + scroll / SCROLL * 0.4)
           } else {
             e.cd -= dt * 1000
