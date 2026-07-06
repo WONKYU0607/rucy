@@ -19,7 +19,7 @@ const ANIM = {
 const SKILL_SHEET = [
   { id: 1, n: 6, h: 280, stage: 4, charSeq: [1, 2, 3, 4], fx: { type: 'strike', frames: [5, 6], fxH: 240 } },
   { id: 2, n: 5, h: 250, stage: 4, charSeq: [1, 2], fx: { type: 'proj', fly: [3, 4], impact: 5, fxH: 200 } },
-  { id: 3, n: 4, h: 235, stage: 4, charSeq: [1, 2, 3], fx: { type: 'proj', fly: [4], impact: 4, flyScale: 0.45, fxH: 200 } },
+  { id: 3, n: 4, h: 235, stage: 4, charSeq: [1, 2, 3], fx: { type: 'proj', fly: [4], impact: 4, flyScale: 0.3, fxH: 200 } },
   { id: 7, n: 6, h: 110, stage: 0 },
   { id: 8, n: 6, h: 140, stage: 0 },
   { id: 12, n: 7, h: 110, stage: 0 },
@@ -28,7 +28,7 @@ const SKILL_SHEET = [
   { id: 16, n: 6, h: 145, stage: 1, charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5, 6] } },
   { id: 17, n: 5, h: 133, stage: 1 },
   { id: 18, n: 5, h: 210, stage: 2, charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5] } },
-  { id: 19, n: 4, h: 220, stage: 2, charSeq: [1], fx: { type: 'proj', fly: [2, 3, 4, 4, 4], flyScale: 0.6 } },
+  { id: 19, n: 4, h: 220, stage: 2, charSeq: [1], fx: { type: 'proj', fly: [2, 3, 4, 4, 4], flyScale: 0.6, yOff: 0 } },
   { id: 20, n: 5, h: 195, stage: 2, charSeq: [1, 2, 3, 5], fx: { type: 'proj', fly: [4], flyScale: 0.9, yOff: 0 } },
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
