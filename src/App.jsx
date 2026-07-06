@@ -18,18 +18,18 @@ const ANIM = {
 // stage — 0:4족보행 1:직립보행 2:하빌리스 3:에렉투스 4:네안데르탈렌시스 5:사피엔스 6:인간
 const SKILL_SHEET = [
   { id: 1, n: 6, h: 280, stage: 4, charSeq: [1, 2, 3, 4], fx: { type: 'strike', frames: [5, 6] } },
-  { id: 2, n: 5, h: 280, stage: 4, charSeq: [1, 2], fx: { type: 'proj', fly: [3, 4], impact: 5 } },
+  { id: 2, n: 5, h: 250, stage: 4, charSeq: [1, 2], fx: { type: 'proj', fly: [3, 4], impact: 5 } },
   { id: 3, n: 4, h: 235, stage: 4, charSeq: [1, 2, 3], fx: { type: 'proj', fly: [4], impact: 4, flyScale: 0.45 } },
   { id: 7, n: 6, h: 110, stage: 0 },
   { id: 8, n: 6, h: 140, stage: 0 },
-  { id: 12, n: 7, h: 120, stage: 0 },
-  { id: 13, n: 7, h: 125, stage: 0 },
-  { id: 15, n: 5, h: 131, stage: 1 },
-  { id: 16, n: 6, h: 150, stage: 1, charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5, 6] } },
+  { id: 12, n: 7, h: 110, stage: 0 },
+  { id: 13, n: 7, h: 120, stage: 0 },
+  { id: 15, n: 5, h: 120, stage: 1 },
+  { id: 16, n: 6, h: 145, stage: 1, charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5, 6] } },
   { id: 17, n: 5, h: 133, stage: 1 },
-  { id: 18, n: 5, h: 205, stage: 2, charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5] } },
-  { id: 19, n: 4, h: 235, stage: 2, charSeq: [1], fx: { type: 'proj', fly: [2, 3, 4, 4, 4], flyScale: 0.6 } },
-  { id: 20, n: 5, h: 171, stage: 2, charSeq: [1, 2, 3, 5], fx: { type: 'proj', fly: [4], flyScale: 0.9, yOff: 0 } },
+  { id: 18, n: 5, h: 210, stage: 2, charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5] } },
+  { id: 19, n: 4, h: 220, stage: 2, charSeq: [1], fx: { type: 'proj', fly: [2, 3, 4, 4, 4], flyScale: 0.6 } },
+  { id: 20, n: 5, h: 195, stage: 2, charSeq: [1, 2, 3, 5], fx: { type: 'proj', fly: [4], flyScale: 0.9, yOff: 0 } },
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
 const SIMG = {}
