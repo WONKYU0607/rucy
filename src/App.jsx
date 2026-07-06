@@ -62,8 +62,23 @@ const SKILL_FRAME_T = {
   20: [0.15, 0.15, 0.15, 0.15],            // 토네이도 (4: 휘두르기3+복귀1)
 }
 // 이펙트 타이밍
-const STRIKE_DUR = 0.55   // 낙뢰/낙석 이펙트 재생 시간(초)
-const PROJ_FPS = 8        // 투사체 프레임 전환 속도(초당)
+const STRIKE_DUR = 0.55   // 낙뢰/낙석 이펙트 재생 시간(초) 기본값
+const PROJ_FPS = 8        // 투사체 프레임 전환 속도(초당) 기본값
+
+// ── 날아가는 이펙트(투사체) 프레임 시간 (초, 직접 수정) ──────────
+// fly 배열과 같은 길이. 순환 재생됨. 없는 스킬은 1/PROJ_FPS 균등.
+const FX_FRAME_T = {
+  2:  [0.12, 0.12],                       // 창 (fly 2프레임)
+  3:  [0.12],                             // 불덩이 (1)
+  19: [0.12, 0.12, 0.20, 0.20, 0.20],     // 화염 (빔,빔,곰,곰,곰)
+  20: [0.12],                             // 회오리 (1)
+}
+// 낙하/타격 이펙트 재생 시간 (초, 스킬별) — 없으면 STRIKE_DUR
+const STRIKE_DUR_BY = {
+  1: 0.55,    // 번개
+  16: 0.55,   // 낙석
+  18: 0.55,   // 점프낙석
+}
 
 const SKILLS = SKILL_SHEET.map(c => {
   const len = c.charSeq ? c.charSeq.length : c.n
@@ -442,12 +457,14 @@ export default function App() {
             const dmg = st.atk * sk.dmgMult
             if (sk.fx && sk.fx.type === 'proj') {
               // 투사체: 히어로 앞에서 생성, 명중 시 데미지
-              w.projs.push({ id: sk.id, fly: sk.fx.fly, impact: sk.fx.impact || null, x: HERO_X + 70, t: 0, dmg, h: sk.h, scale: sk.fx.flyScale || 1, yOff: sk.fx.yOff ?? 40 })
+              const ft = FX_FRAME_T[sk.id] || sk.fx.fly.map(() => 1 / PROJ_FPS)
+              const fe = []; let fa = 0; for (const t of ft) { fa += t; fe.push(fa) }
+              w.projs.push({ id: sk.id, fly: sk.fx.fly, impact: sk.fx.impact || null, x: HERO_X + 70, t: 0, dmg, h: sk.h, scale: sk.fx.flyScale || 1, yOff: sk.fx.yOff ?? 40, fe, feTotal: fa })
             } else if (sk.fx && sk.fx.type === 'strike') {
               // 낙하/타격: 살아있는 적 위치마다 (최대 5), 없으면 전방
               const ts = w.enemies.filter(e => !e.dead).slice(0, 5)
               const xs = ts.length ? ts.map(e => e.x) : [HERO_X + 260]
-              for (const x of xs) w.strikes.push({ id: sk.id, frames: sk.fx.frames, x, t: 0, dur: STRIKE_DUR, dmg, hitDone: false, h: sk.h })
+              for (const x of xs) w.strikes.push({ id: sk.id, frames: sk.fx.frames, x, t: 0, dur: STRIKE_DUR_BY[sk.id] ?? STRIKE_DUR, dmg, hitDone: false, h: sk.h })
             } else if (sk.aoe) {
               for (const t of w.enemies) if (!t.dead) { applySkillDmg(t, dmg); if (sk.stun) t.stun = sk.stun }
             } else {
@@ -761,7 +778,9 @@ export default function App() {
       }
       // 스킬 투사체 (몬스터 쪽으로 비행)
       for (const prj of w.projs) {
-        const im = SIMG[prj.id][prj.fly[Math.floor(prj.t * PROJ_FPS) % prj.fly.length] - 1]
+        const tm = prj.t % prj.feTotal
+        let pfi = prj.fe.findIndex(e => tm <= e); if (pfi < 0) pfi = prj.fly.length - 1
+        const im = SIMG[prj.id][prj.fly[pfi] - 1]
         if (im && im.complete && im.naturalWidth > 0) {
           const hh = prj.h * prj.scale
           const ww = hh * (im.naturalWidth / im.naturalHeight)
