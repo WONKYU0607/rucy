@@ -12,28 +12,43 @@ const ANIM = {
   throw: { srcs: ['/hero/throw/hero_windup.png', '/hero/throw/hero_release.png'], h: 130, flip: false },
   idle:  { srcs: ['/hero/idle/idle_1.png'], h: 130, flip: false },
 }
-// 스킬 1~20 프레임 수 (시트 추출 결과)
-// 스킬 정의 [id, 프레임수, 렌더높이, 진화단계] — 해당 단계에서만 사용 가능 (stage:-1 = 미배정)
-// 0:4족보행 1:직립보행 2:하빌리스 3:에렉투스 4:네안데르탈렌시스 5:사피엔스 6:인간
+// 스킬 정의 — charSeq: 히어로가 재생할 프레임(1-based, 없으면 전체), fx: 분리 이펙트
+//   fx proj  = 투사체: fly 프레임이 몬스터 쪽으로 날아가 명중 시 데미지(+impact 프레임)
+//   fx strike = 낙하/타격: 적 위치에 frames 재생, 중반에 데미지
+// stage — 0:4족보행 1:직립보행 2:하빌리스 3:에렉투스 4:네안데르탈렌시스 5:사피엔스 6:인간
 const SKILL_SHEET = [
-  [1, 6, 280, 4], [2, 5, 280, 4], [3, 4, 179, 4],
-  [7, 6, 131, 0], [8, 6, 146, 0], [9, 6, 149, 0], [12, 7, 148, 0], [13, 7, 131, 0],
-  [14, 4, 138, 1], [15, 5, 131, 1], [16, 6, 150, 1], [17, 5, 133, 1],
-  [18, 5, 205, 2], [19, 4, 235, 2], [20, 5, 171, 2],
+  { id: 1, n: 6, h: 280, stage: 4, charSeq: [1, 2, 3, 4], fx: { type: 'strike', frames: [5, 6] } },
+  { id: 2, n: 5, h: 280, stage: 4, charSeq: [1, 2], fx: { type: 'proj', fly: [3, 4], impact: 5 } },
+  { id: 3, n: 4, h: 179, stage: 4, charSeq: [1, 2, 3], fx: { type: 'proj', fly: [4], impact: 4, flyScale: 0.45 } },
+  { id: 7, n: 6, h: 131, stage: 0 },
+  { id: 8, n: 6, h: 146, stage: 0 },
+  { id: 12, n: 7, h: 148, stage: 0 },
+  { id: 13, n: 7, h: 131, stage: 0 },
+  { id: 14, n: 4, h: 138, stage: 1 },
+  { id: 15, n: 5, h: 131, stage: 1 },
+  { id: 16, n: 6, h: 150, stage: 1, charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5, 6] } },
+  { id: 17, n: 5, h: 133, stage: 1 },
+  { id: 18, n: 5, h: 205, stage: 2, charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5] } },
+  { id: 19, n: 4, h: 235, stage: 2, charSeq: [1], fx: { type: 'proj', fly: [2, 3, 4], flyScale: 0.8 } },
+  { id: 20, n: 5, h: 171, stage: 2, charSeq: [1, 2, 3, 5], fx: { type: 'proj', fly: [4], flyScale: 0.9 } },
 ]
-SKILL_SHEET.forEach(([id, n, h]) => {
-  ANIM['s_' + id] = { srcs: Array.from({ length: n }, (_, j) => `/skill/s${id}/s${id}_${j + 1}.png`), h, flip: false }
+// 스킬 전체 프레임 이미지 (이펙트 렌더용)
+const SIMG = {}
+SKILL_SHEET.forEach(c => {
+  SIMG[c.id] = Array.from({ length: c.n }, (_, j) => { const im = new Image(); im.src = `/skill/s${c.id}/s${c.id}_${j + 1}.png`; return im })
+  const seq = c.charSeq || Array.from({ length: c.n }, (_, j) => j + 1)
+  ANIM['s_' + c.id] = { srcs: seq.map(j => `/skill/s${c.id}/s${c.id}_${j}.png`), h: c.h, flip: false }
 })
 const AIMG = {}
 for (const k in ANIM) AIMG[k] = ANIM[k].srcs.map(s => { const i = new Image(); i.src = s; return i })
 const BG = new Image(); BG.src = '/bg/bg.jpg'
 const STONE = new Image(); STONE.src = '/misc/stone.png'
 
-// 스킬 3종: 쿨타임(초), 시전시간, 데미지배율, 효과
-const SKILLS = SKILL_SHEET.map(([id, n, _h, stage]) => ({
-  key: 's' + id, name: '스킬 ' + id, anim: 's_' + id, icon: String(id), stage,
-  cd: 1, cast: Math.max(0.6, n * 0.13), hitAt: 0.5, dmgMult: 2, aoe: false, maxTargets: 1,
-  desc: n + '프레임 · 임시값',
+const SKILLS = SKILL_SHEET.map(c => ({
+  key: 's' + c.id, id: c.id, name: '스킬 ' + c.id, anim: 's_' + c.id, icon: String(c.id), stage: c.stage,
+  h: c.h, fx: c.fx || null,
+  cd: 1, cast: Math.max(0.6, (c.charSeq ? c.charSeq.length : c.n) * 0.15), hitAt: 0.55, dmgMult: 2, aoe: false, maxTargets: 1,
+  desc: c.n + '프레임 · 임시값',
 }))
 // 대시 프레임 타이밍: 0=기모으기 앞부분 짧게, 주먹뻗기(3,4번) 길게
 const DASH_FRAME_T = [0.15, 0.30, 0.55, 0.85, 1.0]  // 각 프레임 끝나는 비율
@@ -220,7 +235,7 @@ export default function App() {
       hero: { hp: maxHp, cd: 0, state: 'move', t: 0, did: false, flash: 0, animT: 0 },
       spawnLeft: 0, spawnTimer: 0, killed: 0, total: 1,
       shake: 0, scrollX: 0, needStart: true, W: 0, H: 0, groundY: 0,
-      skillCd: SKILLS.map(() => 0), skill: null, skillT: 0, skillDid: false, rocks: [],
+      skillCd: SKILLS.map(() => 0), skill: null, skillT: 0, skillDid: false, rocks: [], projs: [], strikes: [],
     }
   }
 
@@ -245,7 +260,7 @@ export default function App() {
     window.addEventListener('resize', resize)
 
     function startWave(n) {
-      w.enemies = []; w.stones = []; w.dmgTexts = []; w.particles = []; w.pools = []; w.rocks = []; w.waves = []; w.skill = null; w.skillT = 0
+      w.enemies = []; w.stones = []; w.dmgTexts = []; w.particles = []; w.pools = []; w.rocks = []; w.waves = []; w.projs = []; w.strikes = []; w.skill = null; w.skillT = 0
       const boss = n % 5 === 0
       w.spawnLeft = boss ? 5 : 5 + Math.min(n, 15)
       w.total = w.spawnLeft
@@ -398,23 +413,18 @@ export default function App() {
           w.skillT += dt * SPEED
           if (!w.skillDid && w.skillT >= sk.cast * sk.hitAt) {
             w.skillDid = true
-            if (sk.key === 'meteor') {
-              // 낙석 8개 생성 (화면 상단→적 위치로)
-              for (let n = 0; n < 8; n++) {
-                w.rocks.push({ x: 100 + Math.random() * (w.W - 120), y: -40 - Math.random() * 120, vy: 420 + Math.random() * 160, hit: false })
-              }
-            }
-            if (sk.key === 'roar') {
-              // 음파 링 3개 (시차를 두고 사방 확산)
-              w.waves = w.waves || []
-              for (let n = 0; n < 3; n++) w.waves.push({ x: HERO_X + 30, y: w.groundY - 80, r: 10, delay: n * 0.12, life: 0.6 })
-            }
-            // 데미지 적용
             const dmg = st.atk * sk.dmgMult
-            if (sk.aoe) {
+            if (sk.fx && sk.fx.type === 'proj') {
+              // 투사체: 히어로 앞에서 생성, 명중 시 데미지
+              w.projs.push({ id: sk.id, fly: sk.fx.fly, impact: sk.fx.impact || null, x: HERO_X + 70, t: 0, dmg, h: sk.h, scale: sk.fx.flyScale || 1 })
+            } else if (sk.fx && sk.fx.type === 'strike') {
+              // 낙하/타격: 살아있는 적 위치마다 (최대 5), 없으면 전방
+              const ts = w.enemies.filter(e => !e.dead).slice(0, 5)
+              const xs = ts.length ? ts.map(e => e.x) : [HERO_X + 260]
+              for (const x of xs) w.strikes.push({ id: sk.id, frames: sk.fx.frames, x, t: 0, dur: 0.55, dmg, hitDone: false, h: sk.h })
+            } else if (sk.aoe) {
               for (const t of w.enemies) if (!t.dead) { applySkillDmg(t, dmg); if (sk.stun) t.stun = sk.stun }
             } else {
-              // 앞쪽 최대 maxTargets 마리
               const targets = w.enemies.filter(e => !e.dead).sort((a, b) => a.x - b.x).slice(0, sk.maxTargets || 1)
               for (const t of targets) applySkillDmg(t, dmg)
             }
@@ -425,6 +435,29 @@ export default function App() {
         // UI 동기화 (0.2초 간격)
         w.skillUiT = (w.skillUiT || 0) + dt
         if (w.skillUiT > 0.15) { w.skillUiT = 0; setSkillCdUI([...w.skillCd]) }
+
+        // 스킬 투사체: 전진, 적 명중 시 데미지 + 임팩트
+        for (const prj of w.projs) {
+          prj.t += dt
+          prj.x += 520 * dt * SPEED
+          const hit = w.enemies.find(e => !e.dead && Math.abs(e.x - prj.x) < 45)
+          if (hit) {
+            applySkillDmg(hit, prj.dmg)
+            if (prj.impact) w.strikes.push({ id: prj.id, frames: [prj.impact], x: hit.x, t: 0, dur: 0.35, dmg: 0, hitDone: true, h: prj.h })
+            prj.dead = true
+          } else if (prj.x > w.W + 100) prj.dead = true
+        }
+        w.projs = w.projs.filter(p => !p.dead)
+
+        // 스킬 타격(낙뢰/낙석): 재생 중반에 해당 위치 적 데미지
+        for (const stk of w.strikes) {
+          stk.t += dt
+          if (!stk.hitDone && stk.t >= stk.dur * 0.45) {
+            stk.hitDone = true
+            if (stk.dmg > 0) for (const e of w.enemies) if (!e.dead && Math.abs(e.x - stk.x) < 70) applySkillDmg(e, stk.dmg)
+          }
+        }
+        w.strikes = w.strikes.filter(s => s.t < s.dur)
 
         // 낙석 업데이트
         for (const rk of w.rocks) {
@@ -695,6 +728,26 @@ export default function App() {
         ctx.beginPath(); ctx.arc(wv.x, wv.y, wv.r, 0, Math.PI * 2); ctx.stroke()
       }
       ctx.globalAlpha = 1
+
+      // 스킬 타격 이펙트 (적 위치 낙뢰/낙석/임팩트)
+      for (const stk of w.strikes) {
+        const fi = Math.min(stk.frames.length - 1, Math.floor(stk.t / stk.dur * stk.frames.length))
+        const im = SIMG[stk.id][stk.frames[fi] - 1]
+        if (im && im.complete && im.naturalWidth > 0) {
+          const hh = stk.h
+          const ww = hh * (im.naturalWidth / im.naturalHeight)
+          ctx.drawImage(im, stk.x - ww / 2, w.groundY - hh, ww, hh)
+        }
+      }
+      // 스킬 투사체 (몬스터 쪽으로 비행)
+      for (const prj of w.projs) {
+        const im = SIMG[prj.id][prj.fly[Math.floor(prj.t * 8) % prj.fly.length] - 1]
+        if (im && im.complete && im.naturalWidth > 0) {
+          const hh = prj.h * prj.scale
+          const ww = hh * (im.naturalWidth / im.naturalHeight)
+          ctx.drawImage(im, prj.x - ww / 2, w.groundY - 40 - hh, ww, hh)
+        }
+      }
 
       // 낙석 (하늘에서 떨어지는 돌)
       for (const rk of w.rocks) {
