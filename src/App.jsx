@@ -13,11 +13,13 @@ const ANIM = {
   idle:  { srcs: ['/hero/idle/idle_1.png'], h: 130, flip: false },
 }
 // 스킬 1~20 프레임 수 (시트 추출 결과)
-// 스킬 정의 [id, 프레임수, 렌더높이] — 4,5,6,10,11 제거됨 (번호는 시트 기준 유지)
+// 스킬 정의 [id, 프레임수, 렌더높이, 진화단계] — 해당 단계에서만 사용 가능 (stage:-1 = 미배정)
+// 0:4족보행 1:직립보행 2:하빌리스 3:에렉투스 4:네안데르탈렌시스 5:사피엔스 6:인간
 const SKILL_SHEET = [
-  [1, 6, 280], [2, 5, 280], [3, 4, 179], [7, 6, 131], [8, 6, 146], [9, 6, 149],
-  [12, 7, 148], [13, 7, 131], [14, 4, 138], [15, 5, 131], [16, 6, 150], [17, 5, 133],
-  [18, 5, 205], [19, 4, 235], [20, 5, 171],
+  [1, 6, 280, 4], [2, 5, 280, 4], [3, 4, 179, 4],
+  [7, 6, 131, 0], [8, 6, 146, 0], [9, 6, 149, 0], [12, 7, 148, 0], [13, 7, 131, 0],
+  [14, 4, 138, 1], [15, 5, 131, 1], [16, 6, 150, 1], [17, 5, 133, 1],
+  [18, 5, 205, 2], [19, 4, 235, 2], [20, 5, 171, 2],
 ]
 SKILL_SHEET.forEach(([id, n, h]) => {
   ANIM['s_' + id] = { srcs: Array.from({ length: n }, (_, j) => `/skill/s${id}/s${id}_${j + 1}.png`), h, flip: false }
@@ -28,8 +30,8 @@ const BG = new Image(); BG.src = '/bg/bg.jpg'
 const STONE = new Image(); STONE.src = '/misc/stone.png'
 
 // 스킬 3종: 쿨타임(초), 시전시간, 데미지배율, 효과
-const SKILLS = SKILL_SHEET.map(([id, n]) => ({
-  key: 's' + id, name: '스킬 ' + id, anim: 's_' + id, icon: String(id),
+const SKILLS = SKILL_SHEET.map(([id, n, _h, stage]) => ({
+  key: 's' + id, name: '스킬 ' + id, anim: 's_' + id, icon: String(id), stage,
   cd: 1, cast: Math.max(0.6, n * 0.13), hitAt: 0.5, dmgMult: 2, aoe: false, maxTargets: 1,
   desc: n + '프레임 · 임시값',
 }))
@@ -110,9 +112,13 @@ const heroExpReq = lv => Math.floor(50 * Math.pow(1.18, lv - 1))
 
 // mode: quad = 4족 질주 + 주먹질 / biped = 직립 보행 + 돌 던지기
 const EVOS = [
-  { name: '오스트랄로피테쿠스', mult: 1, mode: 'quad' },
-  { name: '직립 오스트랄로피테쿠스', mult: 3, cost: 1500, mode: 'biped' },
-  { name: '각성한 오스트랄로피테쿠스', mult: 9, cost: 30000, mode: 'biped' },
+  { name: '오스트랄로피테쿠스 (4족보행)', mult: 1, mode: 'quad' },
+  { name: '오스트랄로피테쿠스 (직립보행)', mult: 3, cost: 1500, mode: 'biped' },
+  { name: '호모 하빌리스', mult: 9, cost: 30000, mode: 'biped' },
+  { name: '호모 에렉투스', mult: 27, cost: 300000, mode: 'biped' },
+  { name: '호모 네안데르탈렌시스', mult: 81, cost: 3000000, mode: 'biped' },
+  { name: '호모 사피엔스', mult: 243, cost: 30000000, mode: 'biped' },
+  { name: '인간', mult: 729, cost: 300000000, mode: 'biped' },
 ]
 
 const SAVE_KEY = 'paleoDefSave_v5'
@@ -169,6 +175,7 @@ export default function App() {
     aspdMult, mspdMult,
     maxHp, wave, phase,
     mode: EVOS[evo].mode,
+    evo,
     critRate: Math.min(1, tot('critRate') * STAT_LIST.critRate.per / 100),
     critMult: 2 + tot('critDmg') * STAT_LIST.critDmg.per / 100,
     regen: tot('regen') * STAT_LIST.regen.per,
@@ -183,6 +190,11 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf }))
   }, [meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf])
+
+  // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제
+  useEffect(() => {
+    setEquipped(eq => eq.map(si => (si != null && SKILLS[si].stage === evo ? si : null)))
+  }, [evo])
 
   // 히어로 레벨업: 경험치가 필요량 넘으면 레벨↑ + 스킬포인트 지급
   useEffect(() => {
@@ -377,7 +389,7 @@ export default function App() {
             const slots = st.equipped || []
             let ready = -1
             for (const si of slots) {
-              if (si != null && w.skillCd[si] <= 0) { ready = si; break }
+              if (si != null && SKILLS[si].stage === st.evo && w.skillCd[si] <= 0) { ready = si; break }
             }
             if (ready >= 0) { w.skill = ready; w.skillT = 0; w.skillDid = false; w.skillCd[ready] = st.cdConf?.[ready] ?? SKILLS[ready].cd }
           }
@@ -893,8 +905,9 @@ export default function App() {
               </button>
             ))}
           </div>
-          <div style={{ ...st.spBar, marginTop: 4 }}>보유 스킬 · 탭하여 장착</div>
+          <div style={{ ...st.spBar, marginTop: 4 }}>보유 스킬 · 탭하여 장착 <span style={{ opacity: 0.6, fontSize: 11 }}>· {EVOS[evo].name} 전용</span></div>
           {SKILLS.map((s, i) => {
+            if (s.stage !== evo) return null
             const cd = skillCdUI[i] || 0
             const ready = cd <= 0
             const eqSlot = equipped.indexOf(i)
