@@ -479,16 +479,19 @@ export default function App() {
         w.skillUiT = (w.skillUiT || 0) + dt
         if (w.skillUiT > 0.15) { w.skillUiT = 0; setSkillCdUI([...w.skillCd]) }
 
-        // 스킬 투사체: 전진, 적 명중 시 데미지 + 임팩트
+        // 스킬 투사체: 전진, 지나는 모든 적 관통 타격 (완전관통)
         for (const prj of w.projs) {
           prj.t += dt
           prj.x += 520 * dt * SPEED
-          const hit = w.enemies.find(e => !e.dead && Math.abs(e.x - prj.x) < 45)
-          if (hit) {
-            applySkillDmg(hit, prj.dmg)
-            if (prj.impact) w.strikes.push({ id: prj.id, frames: [prj.impact], x: hit.x, t: 0, dur: 0.35, dmg: 0, hitDone: true, h: prj.h })
-            prj.dead = true
-          } else if (prj.x > w.W + 100) prj.dead = true
+          prj.hitSet = prj.hitSet || new Set()
+          for (const e of w.enemies) {
+            if (!e.dead && !prj.hitSet.has(e) && Math.abs(e.x - prj.x) < 45) {
+              prj.hitSet.add(e)
+              applySkillDmg(e, prj.dmg)
+              if (prj.impact) w.strikes.push({ id: prj.id, frames: [prj.impact], x: e.x, t: 0, dur: 0.35, dmg: 0, hitDone: true, h: prj.h })
+            }
+          }
+          if (prj.x > w.W + 100) prj.dead = true
         }
         w.projs = w.projs.filter(p => !p.dead)
 
