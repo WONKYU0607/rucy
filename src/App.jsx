@@ -17,9 +17,9 @@ const ANIM = {
 //   fx strike = 낙하/타격: 적 위치에 frames 재생, 중반에 데미지
 // stage — 0:4족보행 1:직립보행 2:하빌리스 3:에렉투스 4:네안데르탈렌시스 5:사피엔스 6:인간
 const SKILL_SHEET = [
-  { id: 1, n: 6, h: 280, stage: 4, charSeq: [1, 2, 3, 4], fx: { type: 'strike', frames: [5, 6] } },
-  { id: 2, n: 5, h: 250, stage: 4, charSeq: [1, 2], fx: { type: 'proj', fly: [3, 4], impact: 5 } },
-  { id: 3, n: 4, h: 235, stage: 4, charSeq: [1, 2, 3], fx: { type: 'proj', fly: [4], impact: 4, flyScale: 0.45 } },
+  { id: 1, n: 6, h: 280, stage: 4, charSeq: [1, 2, 3, 4], fx: { type: 'strike', frames: [5, 6], fxH: 240 } },
+  { id: 2, n: 5, h: 250, stage: 4, charSeq: [1, 2], fx: { type: 'proj', fly: [3, 4], impact: 5, fxH: 200 } },
+  { id: 3, n: 4, h: 235, stage: 4, charSeq: [1, 2, 3], fx: { type: 'proj', fly: [4], impact: 4, flyScale: 0.45, fxH: 200 } },
   { id: 7, n: 6, h: 110, stage: 0 },
   { id: 8, n: 6, h: 140, stage: 0 },
   { id: 12, n: 7, h: 110, stage: 0 },
@@ -68,7 +68,7 @@ const PROJ_FPS = 8        // 투사체 프레임 전환 속도(초당) 기본값
 // ── 날아가는 이펙트(투사체) 프레임 시간 (초, 직접 수정) ──────────
 // fly 배열과 같은 길이. 순환 재생됨. 없는 스킬은 1/PROJ_FPS 균등.
 const FX_FRAME_T = {
-  2:  [0.12, 0.12],                       // 창 (fly 2프레임)
+  2:  [0.08, 0.08],                       // 창 (fly 2프레임)
   3:  [0.12],                             // 불덩이 (1)
   19: [0.06, 0.10, 0.20, 0.20, 0.20],     // 화염 (빔,빔,곰,곰,곰)
   20: [0.12],                             // 회오리 (1)
