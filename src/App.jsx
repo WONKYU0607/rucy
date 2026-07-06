@@ -28,8 +28,8 @@ const SKILL_SHEET = [
   { id: 16, n: 6, h: 150, stage: 1, charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5, 6] } },
   { id: 17, n: 5, h: 133, stage: 1 },
   { id: 18, n: 5, h: 205, stage: 2, charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5] } },
-  { id: 19, n: 4, h: 235, stage: 2, charSeq: [1], fx: { type: 'proj', fly: [2, 3, 4], flyScale: 0.6 } },
-  { id: 20, n: 5, h: 171, stage: 2, charSeq: [1, 2, 3, 5], fx: { type: 'proj', fly: [4], flyScale: 0.9 } },
+  { id: 19, n: 4, h: 235, stage: 2, charSeq: [1], fx: { type: 'proj', fly: [2, 3, 4, 4, 4], flyScale: 0.6 } },
+  { id: 20, n: 5, h: 171, stage: 2, charSeq: [1, 2, 3, 5], fx: { type: 'proj', fly: [4], flyScale: 0.9, yOff: 0 } },
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
 const SIMG = {}
@@ -415,7 +415,7 @@ export default function App() {
             const dmg = st.atk * sk.dmgMult
             if (sk.fx && sk.fx.type === 'proj') {
               // 투사체: 히어로 앞에서 생성, 명중 시 데미지
-              w.projs.push({ id: sk.id, fly: sk.fx.fly, impact: sk.fx.impact || null, x: HERO_X + 70, t: 0, dmg, h: sk.h, scale: sk.fx.flyScale || 1 })
+              w.projs.push({ id: sk.id, fly: sk.fx.fly, impact: sk.fx.impact || null, x: HERO_X + 70, t: 0, dmg, h: sk.h, scale: sk.fx.flyScale || 1, yOff: sk.fx.yOff ?? 40 })
             } else if (sk.fx && sk.fx.type === 'strike') {
               // 낙하/타격: 살아있는 적 위치마다 (최대 5), 없으면 전방
               const ts = w.enemies.filter(e => !e.dead).slice(0, 5)
@@ -744,7 +744,7 @@ export default function App() {
         if (im && im.complete && im.naturalWidth > 0) {
           const hh = prj.h * prj.scale
           const ww = hh * (im.naturalWidth / im.naturalHeight)
-          ctx.drawImage(im, prj.x - ww / 2, w.groundY - 40 - hh, ww, hh)
+          ctx.drawImage(im, prj.x - ww / 2, w.groundY - prj.yOff - hh, ww, hh)
         }
       }
 
