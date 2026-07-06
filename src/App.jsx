@@ -43,14 +43,41 @@ for (const k in ANIM) AIMG[k] = ANIM[k].srcs.map(s => { const i = new Image(); i
 const BG = new Image(); BG.src = '/bg/bg.jpg'
 const STONE = new Image(); STONE.src = '/misc/stone.png'
 
-const SKILLS = SKILL_SHEET.map(c => ({
-  key: 's' + c.id, id: c.id, name: '스킬 ' + c.id, anim: 's_' + c.id, icon: String(c.id), stage: c.stage,
-  h: c.h, fx: c.fx || null,
-  cd: 1, cast: Math.max(0.6, (c.charSeq ? c.charSeq.length : c.n) * 0.15), hitAt: 0.55, dmgMult: 2, aoe: false, maxTargets: 1,
-  desc: c.n + '프레임 · 임시값',
-}))
+// ── 스킬 프레임 시간 설정 (초, 직접 수정) ─────────────────────────
+// 각 원소 = 그 순서의 히어로 프레임 표시 시간. 배열 길이 = 히어로 프레임 수.
+// 시전 총 시간 = 합계. 없는 스킬은 프레임당 0.15초.
+const SKILL_FRAME_T = {
+  1:  [0.15, 0.15, 0.15, 0.15],           // 몽둥이번개 (4프레임)
+  2:  [0.20, 0.20],                        // 창던지기 (2)
+  3:  [0.15, 0.15, 0.15],                  // 불창 (3)
+  7:  [0.15, 0.15, 0.15, 0.15, 0.15, 0.15],       // (6)
+  8:  [0.15, 0.15, 0.15, 0.15, 0.15, 0.15],       // (6)
+  12: [0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15], // (7)
+  13: [0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15], // (7)
+  15: [0.15, 0.15, 0.15, 0.15, 0.15],      // (5)
+  16: [0.25, 0.25],                        // 낙석 시전 (2)
+  17: [0.15, 0.15, 0.15, 0.15, 0.15],      // (5)
+  18: [0.25, 0.25],                        // 점프낙석 시전 (2)
+  19: [0.60],                              // 화염 시전 (1)
+  20: [0.15, 0.15, 0.15, 0.15],            // 토네이도 (4: 휘두르기3+복귀1)
+}
+// 이펙트 타이밍
+const STRIKE_DUR = 0.55   // 낙뢰/낙석 이펙트 재생 시간(초)
+const PROJ_FPS = 8        // 투사체 프레임 전환 속도(초당)
+
+const SKILLS = SKILL_SHEET.map(c => {
+  const len = c.charSeq ? c.charSeq.length : c.n
+  const ft = SKILL_FRAME_T[c.id] || Array(len).fill(0.15)
+  const ends = []; let acc = 0
+  for (const t of ft) { acc += t; ends.push(acc) }
+  return {
+    key: 's' + c.id, id: c.id, name: '스킬 ' + c.id, anim: 's_' + c.id, icon: String(c.id), stage: c.stage,
+    h: c.h, fx: c.fx || null, frameEnds: ends,
+    cd: 1, cast: acc, hitAt: 0.55, dmgMult: 2, aoe: false, maxTargets: 1,
+    desc: c.n + '프레임 · 임시값',
+  }
+})
 // 대시 프레임 타이밍: 0=기모으기 앞부분 짧게, 주먹뻗기(3,4번) 길게
-const DASH_FRAME_T = [0.15, 0.30, 0.55, 0.85, 1.0]  // 각 프레임 끝나는 비율
 
 const HERO_X = 90
 const SPEED = 1                                      // 전역 속도 배율
@@ -420,7 +447,7 @@ export default function App() {
               // 낙하/타격: 살아있는 적 위치마다 (최대 5), 없으면 전방
               const ts = w.enemies.filter(e => !e.dead).slice(0, 5)
               const xs = ts.length ? ts.map(e => e.x) : [HERO_X + 260]
-              for (const x of xs) w.strikes.push({ id: sk.id, frames: sk.fx.frames, x, t: 0, dur: 0.55, dmg, hitDone: false, h: sk.h })
+              for (const x of xs) w.strikes.push({ id: sk.id, frames: sk.fx.frames, x, t: 0, dur: STRIKE_DUR, dmg, hitDone: false, h: sk.h })
             } else if (sk.aoe) {
               for (const t of w.enemies) if (!t.dead) { applySkillDmg(t, dmg); if (sk.stun) t.stun = sk.stun }
             } else {
@@ -579,14 +606,8 @@ export default function App() {
       if (w.skill != null) {
         const sk = SKILLS[w.skill]
         const arr = ANIM[sk.anim].srcs
-        const prog = w.skillT / sk.cast
-        let k
-        if (sk.key === 'dash') {
-          k = DASH_FRAME_T.findIndex(t => prog <= t)
-          if (k < 0) k = arr.length - 1
-        } else {
-          k = Math.min(arr.length - 1, Math.floor(prog * arr.length))
-        }
+        let k = sk.frameEnds.findIndex(e => w.skillT <= e)
+        if (k < 0 || k >= arr.length) k = arr.length - 1
         return [sk.anim, k]
       }
       if (hero.state === 'attack') {
@@ -740,7 +761,7 @@ export default function App() {
       }
       // 스킬 투사체 (몬스터 쪽으로 비행)
       for (const prj of w.projs) {
-        const im = SIMG[prj.id][prj.fly[Math.floor(prj.t * 8) % prj.fly.length] - 1]
+        const im = SIMG[prj.id][prj.fly[Math.floor(prj.t * PROJ_FPS) % prj.fly.length] - 1]
         if (im && im.complete && im.naturalWidth > 0) {
           const hh = prj.h * prj.scale
           const ww = hh * (im.naturalWidth / im.naturalHeight)
