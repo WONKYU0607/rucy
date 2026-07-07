@@ -80,6 +80,9 @@ const STRIKE_DUR_BY = {
   18: 0.55,   // 점프낙석
 }
 
+// 무기 7종 (각 10티어, /equip/w{종류}_{티어}.png)
+const WEAPON_TYPES = ['몽둥이', '창', '도끼', '망치', '활', '지팡이', '클로']
+
 const SKILLS = SKILL_SHEET.map(c => {
   const len = c.charSeq ? c.charSeq.length : c.n
   const ft = SKILL_FRAME_T[c.id] || Array(len).fill(0.15)
@@ -1034,7 +1037,26 @@ export default function App() {
         </div>
       )}
 
-      {nav !== '영웅' && nav !== '스킬' && (
+      {nav === '장비' && (
+        <div style={st.panel}>
+          <div style={st.spBar}>무기 · 7종 × 10티어 <span style={{ opacity: 0.6, fontSize: 11 }}>· 장착은 추후 구현</span></div>
+          {WEAPON_TYPES.map((wt, wi) => (
+            <div key={wi}>
+              <div style={{ fontSize: 12, fontWeight: 700, margin: '6px 2px 4px', opacity: 0.85 }}>{wt}</div>
+              <div style={st.equipGrid}>
+                {Array.from({ length: 10 }, (_, ti) => (
+                  <div key={ti} style={st.equipCell}>
+                    <img src={`/equip/w${wi + 1}_${ti + 1}.png`} alt="" style={st.equipImg} />
+                    <div style={st.equipTier}>{ti + 1}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {nav !== '영웅' && nav !== '스킬' && nav !== '장비' && (
         <div style={st.comingSoon}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>🔒</div>
           <div style={{ fontSize: 16, fontWeight: 700 }}>{nav}</div>
@@ -1117,6 +1139,17 @@ const st = {
     background: '#312415', border: '2px solid #4a3822', borderRadius: 12, cursor: 'pointer',
   },
   slotEmpty: { fontSize: 26, color: '#5a4632' },
+  equipGrid: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 },
+  equipCell: {
+    position: 'relative', aspectRatio: '1', background: '#312415',
+    border: '1px solid #4a3822', borderRadius: 10, display: 'flex',
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+  },
+  equipImg: { width: '78%', height: '78%', objectFit: 'contain', imageRendering: 'pixelated' },
+  equipTier: {
+    position: 'absolute', right: 3, bottom: 1, fontSize: 10, fontWeight: 800,
+    color: '#f0b060', textShadow: '0 0 3px #000',
+  },
   skillIcon: {
     width: 32, height: 32, borderRadius: 8, background: '#241a10',
     border: '1px solid #4a3822', display: 'flex', alignItems: 'center',
