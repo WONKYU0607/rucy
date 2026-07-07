@@ -211,6 +211,7 @@ export default function App() {
   const [nav, setNav] = useState('영웅')     // 하단 네비: 영웅/스킬/장비/동료/퀴즈/상점
   const [tab, setTab] = useState('강화')      // 영웅 서브탭: 강화/성장/진화
   const [phase, setPhase] = useState('fighting')
+  const [clearMsg, setClearMsg] = useState(null)   // 웨이브 클리어 배너 (멈춤 없음)
   const [heroHpUI, setHeroHpUI] = useState(100)
   const [progress, setProgress] = useState(0)
   const [gains, setGains] = useState([])       // 획득 팝업 리스트
@@ -251,6 +252,13 @@ export default function App() {
   useEffect(() => {
     setEquipped(eq => eq.map(si => (si != null && SKILLS[si].stage === evo ? si : null)))
   }, [evo])
+
+  // 클리어 배너 1.3초 후 소멸
+  useEffect(() => {
+    if (clearMsg == null) return
+    const t = setTimeout(() => setClearMsg(null), 1300)
+    return () => clearTimeout(t)
+  }, [clearMsg])
 
   // 히어로 레벨업: 경험치가 필요량 넘으면 레벨↑ + 스킬포인트 지급
   useEffect(() => {
@@ -301,7 +309,8 @@ export default function App() {
     window.addEventListener('resize', resize)
 
     function startWave(n) {
-      w.enemies = []; w.stones = []; w.dmgTexts = []; w.particles = []; w.pools = []; w.rocks = []; w.waves = []; w.projs = []; w.strikes = []; w.skill = null; w.skillT = 0
+      w.enemies = []; w.stones = []; w.rocks = []; w.waves = []
+      // 주의: dmgTexts/particles/pools/projs/strikes/skill은 유지 — 클리어 넘어갈 때 이펙트 끊김 방지
       const boss = n % 5 === 0
       w.spawnLeft = boss ? 5 : 5 + Math.min(n, 15)
       w.total = w.spawnLeft
@@ -594,18 +603,13 @@ export default function App() {
 
         if (hero.hp <= 0) setPhase('gameover')
         else if (w.spawnLeft === 0 && w.enemies.length === 0 && !w.clearedFlag) {
+          // 멈춤 없는 클리어: 배너만 띄우고 즉시 다음 웨이브 (히어로/이펙트/시전 유지)
           w.clearedFlag = true
           setMeat(m => m + 15 + w.waveNum * 5)
-          setPhase('cleared')
-          w.clearTimer = 1200
-          hero.state = 'move'; hero.t = 0   // 시전/공격 중단하고 전진 자세로
-          w.skill = null; w.skillT = 0
+          setClearMsg(w.waveNum)
+          setWave(v => v + 1)
+          w.needStart = true
         }
-      } else if (st.phase === 'cleared') {
-        hero.state = 'move'
-        hero.animT += dt * SPEED * st.mspdMult
-        w.clearTimer -= dt * 1000
-        if (w.clearTimer <= 0) { w.needStart = true; setWave(v => v + 1); setPhase('fighting') }
       }
 
       for (const d of w.dmgTexts) { d.life -= dt; d.y -= 45 * dt }
@@ -910,7 +914,7 @@ export default function App() {
           <div style={st.hpOuter}><div style={{ ...st.hpInner, width: Math.min(100, heroHpUI / maxHp * 100) + '%' }} /></div>
           <div style={{ fontSize: 10, opacity: 0.8, marginTop: 2 }}>{fmt(heroHpUI)} / {fmt(maxHp)}</div>
         </div>
-        {phase === 'cleared' && <div style={st.overlayText}>웨이브 {wave} 클리어!</div>}
+        {clearMsg != null && <div style={st.overlayText}>웨이브 {clearMsg} 클리어!</div>}
         {phase === 'gameover' && (
           <div style={st.overlay}>
             <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 12 }}>쓰러졌다...</div>
