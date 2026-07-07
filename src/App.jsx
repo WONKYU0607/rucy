@@ -85,6 +85,11 @@ const WEAPON_TYPES = ['몽둥이', '창', '도끼', '망치', '활', '지팡이'
 // 방어구 5종 (각 7티어, /equip/a{종류}_{티어}.png)
 const ARMOR_TYPES = ['방어구 1', '방어구 2', '방어구 3', '방어구 4', '방어구 5']
 
+// ── 오프라인 보상 설정 (직접 수정 가능) ─────────────────────────
+const OFFLINE_MIN_SEC = 60          // 이 시간 이상 부재 시에만 보상
+const OFFLINE_CAP_SEC = 8 * 3600    // 최대 인정 시간 (8시간)
+const OFFLINE_RATE = 0.5            // 온라인 대비 효율 (50%)
+
 const SKILLS = SKILL_SHEET.map(c => {
   const len = c.charSeq ? c.charSeq.length : c.n
   const ft = SKILL_FRAME_T[c.id] || Array(len).fill(0.15)
@@ -190,13 +195,13 @@ function loadSave() {
     if (s) return {
       meat: s.meat ?? 0, wave: s.wave ?? 1,
       lv: { ...statInit(), ...s.lv }, evo: s.evo ?? 0,
-      hlv: s.hlv ?? 1, hexp: s.hexp ?? 0, sp: s.sp ?? 0,
+      hlv: s.hlv ?? 1, hexp: s.hexp ?? 0, sp: s.sp ?? 0, ts: s.ts ?? null,
       skill: { ...statInit(), ...s.skill },
       equipped: (Array.isArray(s.equipped) ? s.equipped.slice(0, SLOT_COUNT) : [null, null, null, null]).map(si => (si != null && si < SKILLS.length ? si : null)),
       cdConf: Array.isArray(s.cdConf) && s.cdConf.length === SKILLS.length ? s.cdConf : SKILLS.map(k => k.cd),
     }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), equipped: [null, null, null, null], cdConf: SKILLS.map(k => k.cd) }
+  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), equipped: [null, null, null, null], cdConf: SKILLS.map(k => k.cd), ts: null }
 }
 const fmt = n => n >= 1e8 ? (n/1e8).toFixed(1)+'억' : n >= 1e4 ? (n/1e4).toFixed(1)+'만' : Math.floor(n).toLocaleString()
 
@@ -218,6 +223,33 @@ export default function App() {
   const [tab, setTab] = useState('강화')      // 영웅 서브탭: 강화/성장/진화
   const [phase, setPhase] = useState('fighting')
   const [clearMsg, setClearMsg] = useState(null)   // 웨이브 클리어 배너 (멈춤 없음)
+  const [offReward, setOffReward] = useState(null) // 오프라인 보상 팝업
+  const offDone = useRef(false)
+
+  // 오프라인 보상: 부재 시간 동안 나갈 당시 웨이브에서 무한 전투한 것으로 계산
+  useEffect(() => {
+    if (offDone.current) return
+    offDone.current = true
+    if (!init.ts) return
+    const away = Math.min(OFFLINE_CAP_SEC, (Date.now() - init.ts) / 1000)
+    if (away < OFFLINE_MIN_SEC) return
+    const types = Object.values(ENEMY_TYPES)
+    const avg = arr => arr.reduce((x, y) => x + y, 0) / arr.length
+    const wv = init.wave
+    const avgHp = avg(types.map(t => t.hp)) * (1 + 0.4 * (wv - 1))
+    const avgMeat = avg(types.map(t => Math.floor(t.meat * (1 + 0.2 * (wv - 1)))))
+    const avgExp = avg(types.map(t => Math.floor(t.exp * (1 + 0.2 * (wv - 1)))))
+    const st2 = S.current
+    const dps = st2.atk * (1000 / st2.cd)
+    const killT = Math.min(6, Math.max(1, avgHp / Math.max(1, dps) + 1.2))  // 마리당 처치+접근 시간
+    const kills = Math.floor(away * OFFLINE_RATE / killT)
+    if (kills <= 0) return
+    const gm = Math.floor(kills * avgMeat * st2.meatMult)
+    const ge = Math.floor(kills * avgExp * st2.expMult)
+    setMeat(m => m + gm)
+    setHexp(x => x + ge)
+    setOffReward({ sec: Math.floor(away), kills, meat: gm, exp: ge })
+  }, [])
   const [heroHpUI, setHeroHpUI] = useState(100)
   const [progress, setProgress] = useState(0)
   const [gains, setGains] = useState([])       // 획득 팝업 리스트
@@ -251,7 +283,7 @@ export default function App() {
   }
 
   useEffect(() => {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf }))
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, ts: Date.now() }))
   }, [meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf])
 
   // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제
@@ -1087,6 +1119,19 @@ export default function App() {
         </div>
       )}
 
+      {offReward && (
+        <div style={st.offOverlay}>
+          <div style={st.offBox}>
+            <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 8 }}>오프라인 보상</div>
+            <div style={{ fontSize: 13, opacity: 0.8, marginBottom: 10 }}>
+              {Math.floor(offReward.sec / 3600)}시간 {Math.floor(offReward.sec % 3600 / 60)}분 · 웨이브 {wave} · {fmt(offReward.kills)}마리 사냥
+            </div>
+            <div style={{ fontSize: 15, marginBottom: 14 }}>🍖 +{fmt(offReward.meat)} · <span style={{ color: '#8ab4ff' }}>EXP +{fmt(offReward.exp)}</span></div>
+            <button style={{ ...st.costBtn, width: '100%' }} onClick={() => setOffReward(null)}>받기</button>
+          </div>
+        </div>
+      )}
+
       <div style={st.bottomNav}>
         {[['영웅', '🦍'], ['스킬', '✨'], ['장비', '⚔'], ['동료', '🤝'], ['퀴즈', '❓'], ['상점', '💰']].map(([n, ic]) => (
           <button key={n} style={{ ...st.navBtn, ...(nav === n ? st.navActive : {}) }} onClick={() => setNav(n)}>
@@ -1172,6 +1217,14 @@ const st = {
   equipTier: {
     position: 'absolute', right: 3, bottom: 1, fontSize: 10, fontWeight: 800,
     color: '#f0b060', textShadow: '0 0 3px #000',
+  },
+  offOverlay: {
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 50,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  },
+  offBox: {
+    background: '#312415', border: '2px solid #6b4f35', borderRadius: 14,
+    padding: '20px 24px', textAlign: 'center', minWidth: 240, color: '#f5ead9',
   },
   skillIcon: {
     width: 32, height: 32, borderRadius: 8, background: '#241a10',
