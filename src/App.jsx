@@ -82,6 +82,8 @@ const STRIKE_DUR_BY = {
 
 // 무기 7종 (각 10티어, /equip/w{종류}_{티어}.png)
 const WEAPON_TYPES = ['몽둥이', '창', '도끼', '망치', '활', '지팡이', '클로']
+// 방어구 5종 (각 7티어, /equip/a{종류}_{티어}.png)
+const ARMOR_TYPES = ['방어구 1', '방어구 2', '방어구 3', '방어구 4', '방어구 5']
 
 const SKILLS = SKILL_SHEET.map(c => {
   const len = c.charSeq ? c.charSeq.length : c.n
@@ -212,6 +214,7 @@ export default function App() {
   const [sp, setSp] = useState(init.sp)        // 스킬포인트
   const [skill, setSkill] = useState(init.skill)
   const [nav, setNav] = useState('영웅')     // 하단 네비: 영웅/스킬/장비/동료/퀴즈/상점
+  const [equipTab, setEquipTab] = useState('무기')  // 장비 서브탭: 무기/방어구/유물
   const [tab, setTab] = useState('강화')      // 영웅 서브탭: 강화/성장/진화
   const [phase, setPhase] = useState('fighting')
   const [clearMsg, setClearMsg] = useState(null)   // 웨이브 클리어 배너 (멈춤 없음)
@@ -1039,20 +1042,40 @@ export default function App() {
 
       {nav === '장비' && (
         <div style={st.panel}>
-          <div style={st.spBar}>무기 · 7종 × 10티어 <span style={{ opacity: 0.6, fontSize: 11 }}>· 장착은 추후 구현</span></div>
-          {WEAPON_TYPES.map((wt, wi) => (
+          <div style={st.slotRow}>
+            {['무기', '방어구', '유물'].map(t => (
+              <button key={t} style={{ ...st.tabBtn, ...(equipTab === t ? st.tabActive : {}) }} onClick={() => setEquipTab(t)}>{t}</button>
+            ))}
+          </div>
+          {equipTab === '무기' && WEAPON_TYPES.map((wt, wi) => (
             <div key={wi}>
               <div style={{ fontSize: 12, fontWeight: 700, margin: '6px 2px 4px', opacity: 0.85 }}>{wt}</div>
               <div style={st.equipGrid}>
                 {Array.from({ length: 10 }, (_, ti) => (
                   <div key={ti} style={st.equipCell}>
-                    <img src={`/equip/w${wi + 1}_${ti + 1}.png`} alt="" style={st.equipImg} />
+                    <img src={`/equip/A/w${wi + 1}_${ti + 1}.png`} alt="" style={st.equipImg} />
                     <div style={st.equipTier}>{ti + 1}</div>
                   </div>
                 ))}
               </div>
             </div>
           ))}
+          {equipTab === '방어구' && ARMOR_TYPES.map((at, ai) => (
+            <div key={ai}>
+              <div style={{ fontSize: 12, fontWeight: 700, margin: '6px 2px 4px', opacity: 0.85 }}>{at}</div>
+              <div style={st.equipGrid}>
+                {Array.from({ length: 7 }, (_, ti) => (
+                  <div key={ti} style={st.equipCell}>
+                    <img src={`/equip/B/a${ai + 1}_${ti + 1}.png`} alt="" style={st.equipImg} />
+                    <div style={st.equipTier}>{ti + 1}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          {equipTab === '유물' && (
+            <div style={{ textAlign: 'center', opacity: 0.6, padding: '40px 0', fontSize: 14 }}>유물 · 준비 중입니다</div>
+          )}
         </div>
       )}
 
