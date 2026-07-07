@@ -62,7 +62,7 @@ const SKILL_FRAME_T = {
   20: [0.15, 0.15, 0.15, 0.15],            // 토네이도 (4: 휘두르기3+복귀1)
 }
 // 이펙트 타이밍
-const STRIKE_DUR = 0.55   // 낙뢰/낙석 이펙트 재생 시간(초) 기본값
+const STRIKE_DUR = 0.50   // 낙뢰/낙석 이펙트 재생 시간(초) 기본값
 const PROJ_FPS = 8        // 투사체 프레임 전환 속도(초당) 기본값
 
 // ── 날아가는 이펙트(투사체) 프레임 시간 (초, 직접 수정) ──────────
@@ -75,9 +75,9 @@ const FX_FRAME_T = {
 }
 // 낙하/타격 이펙트 재생 시간 (초, 스킬별) — 없으면 STRIKE_DUR
 const STRIKE_DUR_BY = {
-  1: 0.55,    // 번개
-  16: 0.55,   // 낙석
-  18: 0.55,   // 점프낙석
+  1: 0.50,    // 번개
+  16: 0.50,   // 낙석
+  18: 0.50,   // 점프낙석
 }
 
 // 무기 7종 (각 10티어, /equip/w{종류}_{티어}.png)
@@ -119,20 +119,20 @@ const ENEMY_TYPES = {
   boar:     { name: '멧돼지', hp: 70, speed: 60, dmg: 14, reward: 12, h: 70, color: '#7a6a52', flip: false, frames: ['/monster/boar/boar_1.png', '/monster/boar/boar_2.png', '/monster/boar/boar_3.png', '/monster/boar/boar_4.png', '/monster/boar/boar_5.png', '/monster/boar/boar_6.png', '/monster/boar/boar_7.png'] },
   wolf:     { name: '늑대', hp: 40, speed: 120, dmg: 12, reward: 10, h: 60, color: '#9a8f7a', flip: false, frames: ['/monster/wolf/wolf_1.png', '/monster/wolf/wolf_2.png', '/monster/wolf/wolf_3.png', '/monster/wolf/wolf_4.png', '/monster/wolf/wolf_5.png', '/monster/wolf/wolf_6.png', '/monster/wolf/wolf_7.png'] },
   hyena:    { name: '하이에나', hp: 110, speed: 55, dmg: 20, reward: 18, h: 66, color: '#b0a15f', flip: false, frames: ['/monster/hyena/hyena_1.png', '/monster/hyena/hyena_2.png', '/monster/hyena/hyena_3.png', '/monster/hyena/hyena_4.png', '/monster/hyena/hyena_5.png', '/monster/hyena/hyena_6.png', '/monster/hyena/hyena_7.png'] },
-  bear:     { name: '동굴곰', hp: 260, speed: 40, dmg: 32, reward: 35, h: 78, color: '#6b4f35', flip: false, frames: ['/monster/bear/bear_1.png', '/monster/bear/bear_2.png', '/monster/bear/bear_3.png', '/monster/bear/bear_4.png', '/monster/bear/bear_5.png', '/monster/bear/bear_6.png', '/monster/bear/bear_7.png'] },
+  bear:     { name: '동굴곰', hp: 260, speed: 40, dmg: 32, reward: 35, h: 80, color: '#6b4f35', flip: false, frames: ['/monster/bear/bear_1.png', '/monster/bear/bear_2.png', '/monster/bear/bear_3.png', '/monster/bear/bear_4.png', '/monster/bear/bear_5.png', '/monster/bear/bear_6.png', '/monster/bear/bear_7.png'] },
   rhino:    { name: '털코뿔소', hp: 450, speed: 45, dmg: 40, reward: 55, h: 76, color: '#9c988f', flip: false, frames: ['/monster/rhino/rhino_1.png', '/monster/rhino/rhino_2.png', '/monster/rhino/rhino_3.png', '/monster/rhino/rhino_4.png', '/monster/rhino/rhino_5.png', '/monster/rhino/rhino_6.png', '/monster/rhino/rhino_7.png'] },
-  mammoth:  { name: '매머드', hp: 900, speed: 32, dmg: 55, reward: 110, h: 120, color: '#5f4a34', flip: false, frames: ['/monster/mammoth/mammoth_1.png', '/monster/mammoth/mammoth_2.png', '/monster/mammoth/mammoth_3.png', '/monster/mammoth/mammoth_4.png', '/monster/mammoth/mammoth_5.png', '/monster/mammoth/mammoth_6.png', '/monster/mammoth/mammoth_7.png'] },
+  mammoth:  { name: '매머드', hp: 900, speed: 32, dmg: 55, reward: 110, h: 125, color: '#5f4a34', flip: false, frames: ['/monster/mammoth/mammoth_1.png', '/monster/mammoth/mammoth_2.png', '/monster/mammoth/mammoth_3.png', '/monster/mammoth/mammoth_4.png', '/monster/mammoth/mammoth_5.png', '/monster/mammoth/mammoth_6.png', '/monster/mammoth/mammoth_7.png'] },
   tiger:    { name: '검치호', hp: 600, speed: 80, dmg: 60, reward: 130, h: 65, color: '#c68a3c', flip: false, frames: ['/monster/tiger/tiger_1.png', '/monster/tiger/tiger_2.png', '/monster/tiger/tiger_3.png', '/monster/tiger/tiger_4.png', '/monster/tiger/tiger_5.png', '/monster/tiger/tiger_6.png', '/monster/tiger/tiger_7.png'] },
   // 신규 10종 (5프레임, 스탯 임시값)
-  monkey:   { name: '원숭이', hp: 30, speed: 100, dmg: 8,  reward: 6,  h: 65, color: '#8a6a4a', flip: false, frames: ['/monster/monkey/monkey_1.png', '/monster/monkey/monkey_2.png', '/monster/monkey/monkey_3.png', '/monster/monkey/monkey_4.png', '/monster/monkey/monkey_5.png'] },
+  monkey:   { name: '원숭이', hp: 30, speed: 90, dmg: 8,  reward: 6,  h: 65, color: '#8a6a4a', flip: false, frames: ['/monster/monkey/monkey_1.png', '/monster/monkey/monkey_2.png', '/monster/monkey/monkey_3.png', '/monster/monkey/monkey_4.png', '/monster/monkey/monkey_5.png'] },
   croc:     { name: '악어', hp: 200, speed: 45, dmg: 30, reward: 30, h: 45, color: '#5f7a3a', flip: false, frames: ['/monster/croc/croc_1.png', '/monster/croc/croc_2.png', '/monster/croc/croc_3.png', '/monster/croc/croc_4.png', '/monster/croc/croc_5.png'] },
-  elephant: { name: '코끼리', hp: 700, speed: 35, dmg: 50, reward: 90, h: 85, color: '#8d8d94', flip: false, frames: ['/monster/elephant/elephant_1.png', '/monster/elephant/elephant_2.png', '/monster/elephant/elephant_3.png', '/monster/elephant/elephant_4.png', '/monster/elephant/elephant_5.png'] },
-  giraffe:  { name: '기린', hp: 300, speed: 70, dmg: 25, reward: 45, h: 120, color: '#d0a04a', flip: false, frames: ['/monster/giraffe/giraffe_1.png', '/monster/giraffe/giraffe_2.png', '/monster/giraffe/giraffe_3.png', '/monster/giraffe/giraffe_4.png', '/monster/giraffe/giraffe_5.png'] },
-  ostrich:  { name: '타조', hp: 80, speed: 130, dmg: 15, reward: 16, h: 95, color: '#3a3a3a', flip: false, frames: ['/monster/ostrich/ostrich_1.png', '/monster/ostrich/ostrich_2.png', '/monster/ostrich/ostrich_3.png', '/monster/ostrich/ostrich_4.png', '/monster/ostrich/ostrich_5.png'] },
+  elephant: { name: '코끼리', hp: 700, speed: 35, dmg: 50, reward: 90, h: 90, color: '#8d8d94', flip: false, frames: ['/monster/elephant/elephant_1.png', '/monster/elephant/elephant_2.png', '/monster/elephant/elephant_3.png', '/monster/elephant/elephant_4.png', '/monster/elephant/elephant_5.png'] },
+  giraffe:  { name: '기린', hp: 300, speed: 70, dmg: 25, reward: 45, h: 135, color: '#d0a04a', flip: false, frames: ['/monster/giraffe/giraffe_1.png', '/monster/giraffe/giraffe_2.png', '/monster/giraffe/giraffe_3.png', '/monster/giraffe/giraffe_4.png', '/monster/giraffe/giraffe_5.png'] },
+  ostrich:  { name: '타조', hp: 80, speed: 130, dmg: 15, reward: 16, h: 100, color: '#3a3a3a', flip: false, frames: ['/monster/ostrich/ostrich_1.png', '/monster/ostrich/ostrich_2.png', '/monster/ostrich/ostrich_3.png', '/monster/ostrich/ostrich_4.png', '/monster/ostrich/ostrich_5.png'] },
   lion:     { name: '사자', hp: 350, speed: 90, dmg: 45, reward: 60, h: 75, color: '#c68a3c', flip: false, frames: ['/monster/lion/lion_1.png', '/monster/lion/lion_2.png', '/monster/lion/lion_3.png', '/monster/lion/lion_4.png', '/monster/lion/lion_5.png'] },
   snake:    { name: '뱀', hp: 60, speed: 70, dmg: 18, reward: 14, h: 35, color: '#6a7a4a', flip: false, frames: ['/monster/snake/snake_1.png', '/monster/snake/snake_2.png', '/monster/snake/snake_3.png', '/monster/snake/snake_4.png', '/monster/snake/snake_5.png'] },
   turtle:   { name: '거북이', hp: 400, speed: 30, dmg: 15, reward: 40, h: 50, color: '#5a6a3a', flip: false, frames: ['/monster/turtle/turtle_1.png', '/monster/turtle/turtle_2.png', '/monster/turtle/turtle_3.png', '/monster/turtle/turtle_4.png', '/monster/turtle/turtle_5.png'] },
-  komodo:   { name: '코모도 드래곤', hp: 250, speed: 55, dmg: 35, reward: 40, h: 46, color: '#6a5a5a', flip: false, frames: ['/monster/komodo/komodo_1.png', '/monster/komodo/komodo_2.png', '/monster/komodo/komodo_3.png', '/monster/komodo/komodo_4.png', '/monster/komodo/komodo_5.png'] },
+  komodo:   { name: '코모도 드래곤', hp: 250, speed: 55, dmg: 35, reward: 40, h: 45, color: '#6a5a5a', flip: false, frames: ['/monster/komodo/komodo_1.png', '/monster/komodo/komodo_2.png', '/monster/komodo/komodo_3.png', '/monster/komodo/komodo_4.png', '/monster/komodo/komodo_5.png'] },
   eagle:    { name: '독수리', hp: 120, speed: 140, dmg: 22, reward: 28, h: 75, color: '#5a4a3a', flip: false, frames: ['/monster/eagle/eagle_1.png', '/monster/eagle/eagle_2.png', '/monster/eagle/eagle_3.png', '/monster/eagle/eagle_4.png', '/monster/eagle/eagle_5.png'] },
 }
 const EIMG = {}
