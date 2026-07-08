@@ -15,21 +15,21 @@ const ANIM = {
 // 스킬 정의 — charSeq: 히어로가 재생할 프레임(1-based, 없으면 전체), fx: 분리 이펙트
 //   fx proj  = 투사체: fly 프레임이 몬스터 쪽으로 날아가 명중 시 데미지(+impact 프레임)
 //   fx strike = 낙하/타격: 적 위치에 frames 재생, 중반에 데미지
-// stage — 0:4족보행 1:직립보행 2:하빌리스 3:에렉투스 4:네안데르탈렌시스 5:사피엔스 6:인간
+// stage — 0:4족보행 1:직립보행 2:에렉투스 3:네안데르탈렌시스 4:사피엔스 5:인간
 const SKILL_SHEET = [
-  { id: 1, n: 6, h: 280, stage: 4, charSeq: [1, 2, 3, 4], fx: { type: 'strike', frames: [5, 6], fxH: 240 } },
-  { id: 2, n: 5, h: 250, stage: 4, charSeq: [1, 2], fx: { type: 'proj', fly: [3, 4], impact: 5, fxH: 200 } },
-  { id: 3, n: 4, h: 235, stage: 4, charSeq: [1, 2, 3], fx: { type: 'proj', fly: [4], impact: 4, flyScale: 0.3, fxH: 200 } },
-  { id: 7, n: 6, h: 110, stage: 0 },
-  { id: 8, n: 6, h: 140, stage: 0 },
-  { id: 12, n: 7, h: 110, stage: 0 },
-  { id: 13, n: 7, h: 120, stage: 0 },
-  { id: 15, n: 5, h: 120, stage: 1 },
-  { id: 16, n: 6, h: 145, stage: 1, charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5, 6] } },
-  { id: 17, n: 5, h: 133, stage: 1 },
-  { id: 18, n: 5, h: 210, stage: 2, charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5] } },
-  { id: 19, n: 4, h: 220, stage: 2, charSeq: [1], fx: { type: 'proj', fly: [2, 3, 4, 4, 4], flyScale: 0.6, yOff: 0 } },
-  { id: 20, n: 5, h: 195, stage: 2, charSeq: [1, 2, 3, 5], fx: { type: 'proj', fly: [4], flyScale: 0.9, yOff: 0 } },
+  { id: 1, n: 6, h: 280, stage: 3, title: '번개 바위', charSeq: [1, 2, 3, 4], fx: { type: 'strike', frames: [5, 6], fxH: 240 } },
+  { id: 2, n: 5, h: 250, stage: 3, title: '전기 작살', charSeq: [1, 2], fx: { type: 'proj', fly: [3, 4], impact: 5, fxH: 200 } },
+  { id: 3, n: 4, h: 235, stage: 3, title: '불바위', charSeq: [1, 2, 3], fx: { type: 'proj', fly: [4], impact: 4, flyScale: 0.3, fxH: 200 } },
+  { id: 7, n: 6, h: 110, stage: 0, title: '할퀴기' },
+  { id: 8, n: 6, h: 140, stage: 0, title: '내려치기' },
+  { id: 12, n: 7, h: 110, stage: 0, title: '빙글빙글' },
+  { id: 13, n: 7, h: 120, stage: 0, title: '데굴데굴' },
+  { id: 15, n: 5, h: 120, stage: 1, title: '로우킥' },
+  { id: 16, n: 6, h: 145, stage: 1, title: '바위치기', charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5, 6] } },
+  { id: 17, n: 5, h: 133, stage: 1, title: '포효' },
+  { id: 18, n: 5, h: 210, stage: 2, title: '바위치기 (강화)', charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5] } },
+  { id: 19, n: 4, h: 220, stage: 2, title: '불곰', charSeq: [1], fx: { type: 'proj', fly: [2, 3, 4, 4, 4], flyScale: 0.6, yOff: 0 } },
+  { id: 20, n: 5, h: 195, stage: 2, title: '바위 회오리', charSeq: [1, 2, 3, 5], fx: { type: 'proj', fly: [4], flyScale: 0.9, yOff: 0 } },
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
 const SIMG = {}
@@ -62,7 +62,7 @@ const SKILL_FRAME_T = {
   20: [0.15, 0.15, 0.15, 0.15],            // 토네이도 (4: 휘두르기3+복귀1)
 }
 // 이펙트 타이밍
-const STRIKE_DUR = 0.50   // 낙뢰/낙석 이펙트 재생 시간(초) 기본값
+const STRIKE_DUR = 0.55   // 낙뢰/낙석 이펙트 재생 시간(초) 기본값
 const PROJ_FPS = 8        // 투사체 프레임 전환 속도(초당) 기본값
 
 // ── 날아가는 이펙트(투사체) 프레임 시간 (초, 직접 수정) ──────────
@@ -75,9 +75,9 @@ const FX_FRAME_T = {
 }
 // 낙하/타격 이펙트 재생 시간 (초, 스킬별) — 없으면 STRIKE_DUR
 const STRIKE_DUR_BY = {
-  1: 0.50,    // 번개
-  16: 0.50,   // 낙석
-  18: 0.50,   // 점프낙석
+  1: 0.55,    // 번개
+  16: 0.55,   // 낙석
+  18: 0.55,   // 점프낙석
 }
 
 // 무기 7종 (각 10티어, /equip/w{종류}_{티어}.png)
@@ -96,7 +96,7 @@ const SKILLS = SKILL_SHEET.map(c => {
   const ends = []; let acc = 0
   for (const t of ft) { acc += t; ends.push(acc) }
   return {
-    key: 's' + c.id, id: c.id, name: '스킬 ' + c.id, anim: 's_' + c.id, icon: String(c.id), stage: c.stage,
+    key: 's' + c.id, id: c.id, name: c.title || ('스킬 ' + c.id), anim: 's_' + c.id, icon: String(c.id), stage: c.stage,
     h: c.h, fx: c.fx || null, frameEnds: ends,
     cd: 1, cast: acc, hitAt: 0.55, dmgMult: 2, aoe: false, maxTargets: 1,
     desc: c.n + '프레임 · 임시값',
@@ -113,8 +113,8 @@ const THROW = { windupEnd: 0.14, releaseEnd: 0.30, total: 0.42, range: 340 }
 // ── 적 정의 ──
 const ENEMY_TYPES = {
   // 기존 10종 (신규 도트 시트, 7프레임, 원본이 왼쪽을 향해 flip 불필요)
-  rabbit:   { name: '토끼', hp: 20, speed: 95, dmg: 5,  reward: 4,  h: 42, color: '#a1887f', flip: false, frames: ['/monster/rabbit/rabbit_1.png', '/monster/rabbit/rabbit_2.png', '/monster/rabbit/rabbit_3.png', '/monster/rabbit/rabbit_4.png', '/monster/rabbit/rabbit_5.png', '/monster/rabbit/rabbit_6.png', '/monster/rabbit/rabbit_7.png'] },
-  antelope: { name: '영양', hp: 45, speed: 65, dmg: 10, reward: 8,  h: 80, color: '#c98a4b', flip: false, frames: ['/monster/antelope/antelope_1.png', '/monster/antelope/antelope_2.png', '/monster/antelope/antelope_3.png', '/monster/antelope/antelope_4.png', '/monster/antelope/antelope_5.png', '/monster/antelope/antelope_6.png', '/monster/antelope/antelope_7.png'] },
+  rabbit:   { name: '토끼', hp: 20, speed: 85, dmg: 5,  reward: 4,  h: 34, color: '#a1887f', flip: false, frames: ['/monster/rabbit/rabbit_1.png', '/monster/rabbit/rabbit_2.png', '/monster/rabbit/rabbit_3.png', '/monster/rabbit/rabbit_4.png', '/monster/rabbit/rabbit_5.png', '/monster/rabbit/rabbit_6.png', '/monster/rabbit/rabbit_7.png'] },
+  antelope: { name: '영양', hp: 45, speed: 65, dmg: 10, reward: 8,  h: 60, color: '#c98a4b', flip: false, frames: ['/monster/antelope/antelope_1.png', '/monster/antelope/antelope_2.png', '/monster/antelope/antelope_3.png', '/monster/antelope/antelope_4.png', '/monster/antelope/antelope_5.png', '/monster/antelope/antelope_6.png', '/monster/antelope/antelope_7.png'] },
   deer:     { name: '사슴', hp: 90, speed: 50, dmg: 16, reward: 14, h: 80, color: '#b5794a', flip: false, frames: ['/monster/deer/deer_1.png', '/monster/deer/deer_2.png', '/monster/deer/deer_3.png', '/monster/deer/deer_4.png', '/monster/deer/deer_5.png', '/monster/deer/deer_6.png', '/monster/deer/deer_7.png'] },
   boar:     { name: '멧돼지', hp: 70, speed: 60, dmg: 14, reward: 12, h: 70, color: '#7a6a52', flip: false, frames: ['/monster/boar/boar_1.png', '/monster/boar/boar_2.png', '/monster/boar/boar_3.png', '/monster/boar/boar_4.png', '/monster/boar/boar_5.png', '/monster/boar/boar_6.png', '/monster/boar/boar_7.png'] },
   wolf:     { name: '늑대', hp: 40, speed: 120, dmg: 12, reward: 10, h: 60, color: '#9a8f7a', flip: false, frames: ['/monster/wolf/wolf_1.png', '/monster/wolf/wolf_2.png', '/monster/wolf/wolf_3.png', '/monster/wolf/wolf_4.png', '/monster/wolf/wolf_5.png', '/monster/wolf/wolf_6.png', '/monster/wolf/wolf_7.png'] },
@@ -124,7 +124,7 @@ const ENEMY_TYPES = {
   mammoth:  { name: '매머드', hp: 900, speed: 32, dmg: 55, reward: 110, h: 125, color: '#5f4a34', flip: false, frames: ['/monster/mammoth/mammoth_1.png', '/monster/mammoth/mammoth_2.png', '/monster/mammoth/mammoth_3.png', '/monster/mammoth/mammoth_4.png', '/monster/mammoth/mammoth_5.png', '/monster/mammoth/mammoth_6.png', '/monster/mammoth/mammoth_7.png'] },
   tiger:    { name: '검치호', hp: 600, speed: 80, dmg: 60, reward: 130, h: 65, color: '#c68a3c', flip: false, frames: ['/monster/tiger/tiger_1.png', '/monster/tiger/tiger_2.png', '/monster/tiger/tiger_3.png', '/monster/tiger/tiger_4.png', '/monster/tiger/tiger_5.png', '/monster/tiger/tiger_6.png', '/monster/tiger/tiger_7.png'] },
   // 신규 10종 (5프레임, 스탯 임시값)
-  monkey:   { name: '원숭이', hp: 30, speed: 90, dmg: 8,  reward: 6,  h: 65, color: '#8a6a4a', flip: false, frames: ['/monster/monkey/monkey_1.png', '/monster/monkey/monkey_2.png', '/monster/monkey/monkey_3.png', '/monster/monkey/monkey_4.png', '/monster/monkey/monkey_5.png'] },
+  monkey:   { name: '원숭이', hp: 30, speed: 100, dmg: 8,  reward: 6,  h: 60, color: '#8a6a4a', flip: false, frames: ['/monster/monkey/monkey_1.png', '/monster/monkey/monkey_2.png', '/monster/monkey/monkey_3.png', '/monster/monkey/monkey_4.png', '/monster/monkey/monkey_5.png'] },
   croc:     { name: '악어', hp: 200, speed: 45, dmg: 30, reward: 30, h: 45, color: '#5f7a3a', flip: false, frames: ['/monster/croc/croc_1.png', '/monster/croc/croc_2.png', '/monster/croc/croc_3.png', '/monster/croc/croc_4.png', '/monster/croc/croc_5.png'] },
   elephant: { name: '코끼리', hp: 700, speed: 35, dmg: 50, reward: 90, h: 110, color: '#8d8d94', flip: false, frames: ['/monster/elephant/elephant_1.png', '/monster/elephant/elephant_2.png', '/monster/elephant/elephant_3.png', '/monster/elephant/elephant_4.png', '/monster/elephant/elephant_5.png'] },
   giraffe:  { name: '기린', hp: 300, speed: 70, dmg: 25, reward: 45, h: 150, color: '#d0a04a', flip: false, frames: ['/monster/giraffe/giraffe_1.png', '/monster/giraffe/giraffe_2.png', '/monster/giraffe/giraffe_3.png', '/monster/giraffe/giraffe_4.png', '/monster/giraffe/giraffe_5.png'] },
@@ -133,7 +133,7 @@ const ENEMY_TYPES = {
   snake:    { name: '뱀', hp: 60, speed: 70, dmg: 18, reward: 14, h: 35, color: '#6a7a4a', flip: false, frames: ['/monster/snake/snake_1.png', '/monster/snake/snake_2.png', '/monster/snake/snake_3.png', '/monster/snake/snake_4.png', '/monster/snake/snake_5.png'] },
   turtle:   { name: '거북이', hp: 400, speed: 30, dmg: 15, reward: 40, h: 50, color: '#5a6a3a', flip: false, frames: ['/monster/turtle/turtle_1.png', '/monster/turtle/turtle_2.png', '/monster/turtle/turtle_3.png', '/monster/turtle/turtle_4.png', '/monster/turtle/turtle_5.png'] },
   komodo:   { name: '코모도 드래곤', hp: 250, speed: 55, dmg: 35, reward: 40, h: 45, color: '#6a5a5a', flip: false, frames: ['/monster/komodo/komodo_1.png', '/monster/komodo/komodo_2.png', '/monster/komodo/komodo_3.png', '/monster/komodo/komodo_4.png', '/monster/komodo/komodo_5.png'] },
-  eagle:    { name: '독수리', hp: 120, speed: 140, dmg: 22, reward: 28, h: 80, color: '#5a4a3a', flip: false, frames: ['/monster/eagle/eagle_1.png', '/monster/eagle/eagle_2.png', '/monster/eagle/eagle_3.png', '/monster/eagle/eagle_4.png', '/monster/eagle/eagle_5.png'] },
+  eagle:    { name: '독수리', hp: 120, speed: 140, dmg: 22, reward: 28, h: 80, color: '#5a4a3a', flip: false, air: 90, frames: ['/monster/eagle/eagle_1.png', '/monster/eagle/eagle_2.png', '/monster/eagle/eagle_3.png', '/monster/eagle/eagle_4.png', '/monster/eagle/eagle_5.png'] },
 }
 const EIMG = {}
 for (const k in ENEMY_TYPES) {
@@ -182,7 +182,6 @@ const heroExpReq = lv => Math.floor(50 * Math.pow(1.18, lv - 1))
 const EVOS = [
   { name: '오스트랄로피테쿠스 (4족보행)', mult: 1, mode: 'quad' },
   { name: '오스트랄로피테쿠스 (직립보행)', mult: 3, cost: 1500, mode: 'biped' },
-  { name: '호모 하빌리스', mult: 9, cost: 30000, mode: 'biped' },
   { name: '호모 에렉투스', mult: 27, cost: 300000, mode: 'biped' },
   { name: '호모 네안데르탈렌시스', mult: 81, cost: 3000000, mode: 'biped' },
   { name: '호모 사피엔스', mult: 243, cost: 30000000, mode: 'biped' },
@@ -372,7 +371,7 @@ export default function App() {
         dmg: t.dmg * (1 + 0.1 * (w.waveNum - 1)) * (boss ? 3 : 1),
         meat: Math.floor(t.meat * (1 + 0.2 * (w.waveNum - 1))) * (boss ? 15 : 1),
         exp: Math.floor(t.exp * (1 + 0.2 * (w.waveNum - 1))) * (boss ? 15 : 1),
-        acc: t.acc, eva: t.eva,
+        acc: t.acc, eva: t.eva, air: t.air || 0,
         h: t.h, color: t.color, cd: 0, flash: 0, animT: Math.random() * 10,
       })
     }
@@ -442,8 +441,10 @@ export default function App() {
       const hero = w.hero
       const atkRange = st.mode === 'quad' ? PUNCH.range : THROW.range
 
-      // 배경 스크롤: 이동 상태일 때만 전진
-      const moving = (st.phase === 'fighting' || st.phase === 'cleared') && hero.state === 'move'
+      // 배경 스크롤: 이동 상태 + 앞을 막는 적이 없을 때만 전진
+      const atkRange0 = st.mode === 'quad' ? PUNCH.range : THROW.range
+      const blocked = w.enemies.some(e => !e.dead && e.x - HERO_X < atkRange0)
+      const moving = (st.phase === 'fighting' || st.phase === 'cleared') && hero.state === 'move' && !blocked
       const scroll = moving ? SCROLL * st.mspdMult : 0
       w.scrollX += scroll * dt
 
@@ -458,6 +459,7 @@ export default function App() {
         // 적: 접근 (전진 스크롤만큼 상대속도 가산) + 근접 공격
         for (const e of w.enemies) {
           e.flash = Math.max(0, e.flash - dt * 5)
+          if (e.air) e.airT = Math.min(1, (e.airT ?? 0) + dt * 1.2)   // 서서히 떠오름
           if (e.stun > 0) { e.stun -= dt; continue }  // 기절 중 정지
           const stopX = HERO_X + Math.min(atkRange - 15, 45 + e.h * 0.4)
           if (e.x > stopX) {
@@ -578,7 +580,7 @@ export default function App() {
         if (w.skill != null) {
           // 스킬 시전 중: 상태 유지, 이동/공격 정지
         } else if (hero.state === 'move') {
-          hero.animT += dt * SPEED * st.mspdMult
+          if (!blocked) hero.animT += dt * SPEED * st.mspdMult   // 앞이 막히면 걷기 애니 정지
           const target = w.enemies.find(e => !e.dead && e.x - HERO_X < atkRange)
           if (hero.cd <= 0 && target) {
             hero.state = 'attack'; hero.t = 0; hero.did = false
@@ -693,7 +695,8 @@ export default function App() {
     }
 
     function drawEnemy(ctx, e, now) {
-      const y = w.groundY
+      const air = e.air ? e.air * (e.airT ?? 1) : 0   // 공중 높이 (등장 시 0→air 상승)
+      const y = w.groundY - air
       const t = ENEMY_TYPES[e.type]
       const imgs = EIMG[e.type]
       const stunned = e.stun > 0
