@@ -11,6 +11,9 @@ const ANIM = {
   punch: { srcs: ['/hero/punch/punch_1.png', '/hero/punch/punch_2.png', '/hero/punch/punch_3.png'], h: 102, flip: false },
   throw: { srcs: ['/hero/throw/hero_windup.png', '/hero/throw/hero_release.png'], h: 130, flip: false },
   idle:  { srcs: ['/hero/idle/idle_1.png'], h: 130, flip: false },
+  ewalk: { srcs: ['/hero/erectus_walk/ewalk_1.png', '/hero/erectus_walk/ewalk_2.png', '/hero/erectus_walk/ewalk_3.png', '/hero/erectus_walk/ewalk_4.png'], h: 131, flip: false },
+  eatk1: { srcs: ['/hero/erectus_atk1/eatk1_1.png', '/hero/erectus_atk1/eatk1_2.png', '/hero/erectus_atk1/eatk1_3.png', '/hero/erectus_atk1/eatk1_4.png'], h: 172, flip: false },
+  eatk2: { srcs: ['/hero/erectus_atk2/eatk2_1.png', '/hero/erectus_atk2/eatk2_2.png', '/hero/erectus_atk2/eatk2_3.png', '/hero/erectus_atk2/eatk2_4.png'], h: 139, flip: false },
 }
 // 스킬 정의 — charSeq: 히어로가 재생할 프레임(1-based, 없으면 전체), fx: 분리 이펙트
 //   fx proj  = 투사체: fly 프레임이 몬스터 쪽으로 날아가 명중 시 데미지(+impact 프레임)
@@ -109,6 +112,8 @@ const SPEED = 1                                      // 전역 속도 배율
 const SCROLL = 140 * SPEED                            // 전진 속도 (px/s)
 const PUNCH = { hitAt: 0.12, total: 0.3, range: 95 } // 4족 주먹질
 const THROW = { windupEnd: 0.14, releaseEnd: 0.30, total: 0.42, range: 340 }
+// 에렉투스 몽둥이: 1타 내려치기(위→아래), 2타 올려치기(아래→위) 번갈아
+const ECLUB = { total: 0.42, range: 150, hits: [0.55, 0.55] }  // hits = 각 타 명중 시점(진행률)
 
 // ── 적 정의 ──
 const ENEMY_TYPES = {
@@ -182,7 +187,7 @@ const heroExpReq = lv => Math.floor(50 * Math.pow(1.18, lv - 1))
 const EVOS = [
   { name: '오스트랄로피테쿠스 (4족보행)', mult: 1, mode: 'quad' },
   { name: '오스트랄로피테쿠스 (직립보행)', mult: 3, cost: 1500, mode: 'biped' },
-  { name: '호모 에렉투스', mult: 27, cost: 300000, mode: 'biped' },
+  { name: '호모 에렉투스', mult: 27, cost: 300000, mode: 'erectus' },
   { name: '호모 네안데르탈렌시스', mult: 81, cost: 3000000, mode: 'biped' },
   { name: '호모 사피엔스', mult: 243, cost: 30000000, mode: 'biped' },
   { name: '인간', mult: 729, cost: 300000000, mode: 'biped' },
@@ -439,10 +444,10 @@ export default function App() {
       last = now
       const st = S.current
       const hero = w.hero
-      const atkRange = st.mode === 'quad' ? PUNCH.range : THROW.range
+      const atkRange = st.mode === 'quad' ? PUNCH.range : st.mode === 'erectus' ? ECLUB.range : THROW.range
 
       // 배경 스크롤: 이동 상태 + 앞을 막는 적이 없을 때만 전진
-      const atkRange0 = st.mode === 'quad' ? PUNCH.range : THROW.range
+      const atkRange0 = st.mode === 'quad' ? PUNCH.range : st.mode === 'erectus' ? ECLUB.range : THROW.range
       const blocked = w.enemies.some(e => !e.dead && e.x - HERO_X < atkRange0)
       const moving = (st.phase === 'fighting' || st.phase === 'cleared') && hero.state === 'move' && !blocked
       const scroll = moving ? SCROLL * st.mspdMult : 0
@@ -595,6 +600,15 @@ export default function App() {
               if (t) dealDamage(t, st)
             }
             if (hero.t >= PUNCH.total) { hero.state = 'move'; hero.t = 0 }
+          } else if (st.mode === 'erectus') {
+            const prog = hero.t / ECLUB.total
+            const hitAt = ECLUB.hits[hero.atkAlt ? 1 : 0]
+            if (!hero.did && prog >= hitAt) {
+              hero.did = true
+              const t = w.enemies.find(e => !e.dead && e.x - HERO_X < ECLUB.range + 40)
+              if (t) dealDamage(t, st)
+            }
+            if (hero.t >= ECLUB.total) { hero.state = 'move'; hero.t = 0; hero.atkAlt = !hero.atkAlt }  // 다음 타는 반대 모션
           } else {
             if (!hero.did && hero.t >= THROW.windupEnd) {
               hero.did = true
@@ -681,10 +695,16 @@ export default function App() {
           const k = hero.t < PUNCH.hitAt ? 0 : hero.t < PUNCH.hitAt + 0.1 ? 1 : 2
           return ['punch', k]
         }
+        if (st.mode === 'erectus') {
+          const anim = hero.atkAlt ? 'eatk2' : 'eatk1'
+          const arr = ANIM[anim].srcs
+          const k = Math.min(arr.length - 1, Math.floor(hero.t / ECLUB.total * arr.length))
+          return [anim, k]
+        }
         const k = hero.t < THROW.windupEnd ? 0 : 1
         return ['throw', k]
       }
-      const key = st.mode === 'quad' ? 'quad' : 'walk'
+      const key = st.mode === 'quad' ? 'quad' : st.mode === 'erectus' ? 'ewalk' : 'walk'
       const fi = Math.floor(hero.animT * 10) % ANIM[key].srcs.length
       return [key, fi]
     }
@@ -996,14 +1016,14 @@ export default function App() {
         {tab === '진화' && (
           <div style={st.row}>
             <img
-              src={EVOS[evo].mode === 'quad' ? '/hero/quad/quad_1.png' : '/hero/misc/hero_idle.png'}
+              src={EVOS[evo].mode === 'quad' ? '/hero/quad/quad_1.png' : EVOS[evo].mode === 'erectus' ? '/hero/erectus_walk/ewalk_1.png' : '/hero/misc/hero_idle.png'}
               alt=""
               style={{ height: 64 }}
             />
             <div style={{ flex: 1, marginLeft: 12 }}>
               <div style={st.rowName}>{EVOS[evo].name}</div>
               <div style={st.rowVal}>
-                {EVOS[evo].mode === 'quad' ? '4족 질주 · 주먹질' : '직립 보행 · 돌 던지기'} · 공격력 ×{EVOS[evo].mult}
+                {EVOS[evo].mode === 'quad' ? '4족 질주 · 주먹질' : EVOS[evo].mode === 'erectus' ? '몽둥이 · 내려치기/올려치기' : '직립 보행 · 돌 던지기'} · 공격력 ×{EVOS[evo].mult}
                 {evo < EVOS.length - 1 && <span style={{ color: '#7cb35c' }}> → ×{EVOS[evo + 1].mult}</span>}
               </div>
             </div>
