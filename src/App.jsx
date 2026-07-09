@@ -42,7 +42,10 @@ SKILL_SHEET.forEach(c => {
 })
 const AIMG = {}
 for (const k in ANIM) AIMG[k] = ANIM[k].srcs.map(s => { const i = new Image(); i.src = s; return i })
-const BG = new Image(); BG.src = '/bg/bg.jpg'
+const BG_THEMES = ['wasteland', 'forest', 'volcano', 'snow', 'swamp', 'night']
+const BG_NORMAL = BG_THEMES.map(t => { const i = new Image(); i.src = `/bg/n_${t}.jpg`; return i })
+const BG_BOSS = BG_THEMES.map(t => { const i = new Image(); i.src = `/bg/b_${t}.jpg`; return i })
+const bgFor = (wave, boss) => (boss ? BG_BOSS : BG_NORMAL)[Math.floor((wave - 1) / 10) % BG_THEMES.length]
 const STONE = new Image(); STONE.src = '/misc/stone.png'
 
 // ── 스킬 프레임 시간 설정 (초, 직접 수정) ─────────────────────────
@@ -230,6 +233,7 @@ export default function App() {
   const [tab, setTab] = useState('강화')      // 영웅 서브탭: 강화/성장/진화
   const [phase, setPhase] = useState('fighting')
   const [clearMsg, setClearMsg] = useState(null)   // 웨이브 클리어 배너 (멈춤 없음)
+  const [bossReady, setBossReady] = useState(false) // 10웨이브 클리어 후 보스 도전 대기
   const [offReward, setOffReward] = useState(null) // 오프라인 보상 팝업
   const offDone = useRef(false)
 
@@ -356,13 +360,24 @@ export default function App() {
     function startWave(n) {
       w.enemies = []; w.stones = []; w.rocks = []; w.waves = []
       // 주의: dmgTexts/particles/pools/projs/strikes/skill은 유지 — 클리어 넘어갈 때 이펙트 끊김 방지
-      const boss = n % 5 === 0
-      w.spawnLeft = boss ? 5 : 5 + Math.min(n, 15)
+      w.bossBattle = false
+      w.spawnLeft = 5 + Math.min(n, 15)
       w.total = w.spawnLeft
       w.killed = 0
-      w.bossPending = boss
+      w.bossPending = false
       w.spawnTimer = 300
       w.waveNum = n
+      w.clearedFlag = false
+    }
+
+    function startBossBattle() {
+      w.enemies = []; w.stones = []; w.rocks = []; w.waves = []
+      w.bossBattle = true
+      w.spawnLeft = 1
+      w.total = 1
+      w.killed = 0
+      w.bossPending = true
+      w.spawnTimer = 200
       w.clearedFlag = false
     }
 
@@ -456,6 +471,7 @@ export default function App() {
       w.scrollX += scroll * dt
 
       if (st.phase === 'fighting') {
+        if (w.startBossFlag) { startBossBattle(); w.startBossFlag = false; hero.state = 'move'; hero.t = 0 }
         if (w.needStart) { startWave(st.wave); w.needStart = false; hero.hp = st.maxHp; hero.state = 'move'; hero.t = 0 }
 
         if (w.spawnLeft > 0) {
@@ -660,12 +676,28 @@ export default function App() {
 
         if (hero.hp <= 0) setPhase('gameover')
         else if (w.spawnLeft === 0 && w.enemies.length === 0 && !w.clearedFlag) {
-          // 멈춤 없는 클리어: 배너만 띄우고 즉시 다음 웨이브 (히어로/이펙트/시전 유지)
           w.clearedFlag = true
-          setMeat(m => m + 15 + w.waveNum * 5)
-          setClearMsg(w.waveNum)
-          setWave(v => v + 1)
-          w.needStart = true
+          if (w.bossBattle) {
+            // 보스 처치: 보상 크게 + 다음 웨이브 블록으로 진행
+            setMeat(m => m + 100 + w.waveNum * 20)
+            setClearMsg('보스 격파!')
+            w.bossBattle = false
+            setBossReady(false)
+            setWave(v => v + 1)
+            w.needStart = true
+          } else {
+            setMeat(m => m + 15 + w.waveNum * 5)
+            if (w.waveNum % 10 === 0) {
+              // 10웨이브 클리어 → 보스 도전 대기 (버튼 누를 때까지 진행 정지)
+              setClearMsg(w.waveNum)
+              setBossReady(true)
+              // needStart 하지 않음 → 대기
+            } else {
+              setClearMsg(w.waveNum)
+              setWave(v => v + 1)
+              w.needStart = true
+            }
+          }
         }
       }
 
@@ -779,7 +811,8 @@ export default function App() {
       ctx.save()
       if (w.shake > 0.3) ctx.translate((Math.random() - 0.5) * w.shake, (Math.random() - 0.5) * w.shake)
 
-      // 배경: 가로 무한 타일 스크롤
+      // 배경: 가로 무한 타일 스크롤 (10웨이브마다 테마 변경, 보스전투 시 보스 배경)
+      const BG = bgFor(w.waveNum || 1, w.bossBattle)
       if (BG.complete && BG.naturalWidth > 0) {
         const scale = Math.max(w.W / BG.naturalWidth, w.H / BG.naturalHeight)
         const bw = BG.naturalWidth * scale, bh = BG.naturalHeight * scale
@@ -932,6 +965,7 @@ export default function App() {
     setEvo(v => v + 1)
   }
   function retry() { world.current.needStart = true; setPhase('fighting') }
+  function challengeBoss() { setBossReady(false); world.current.startBossFlag = true }
   function equipSkill(i) {
     setEquipped(eq => {
       if (eq.includes(i)) return eq
@@ -951,6 +985,7 @@ export default function App() {
       * { box-sizing: border-box; }
       button { cursor: pointer; font-family: inherit; }
       .pd-num { font-family: 'Do Hyeon', sans-serif; letter-spacing: 0.02em; }
+      @keyframes pdPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
     `}</style>
     <div style={st.root}>
       <div style={st.topBar}>
@@ -966,7 +1001,7 @@ export default function App() {
         </div>
         <div style={st.currency}>
           <span style={st.currencyPill}>🍖 <b style={{ color: GOLD }}>{fmt(meat)}</b></span>
-          <div style={{ fontSize: 12, opacity: 0.85, marginTop: 3 }}>웨이브 {wave}{wave % 5 === 0 && <span style={{ color: '#ef9a3c' }}> 보스</span>}</div>
+          <div style={{ fontSize: 12, opacity: 0.85, marginTop: 3 }}>웨이브 {wave}{bossReady && <span style={{ color: '#ef5a3c' }}> · 보스 대기</span>}</div>
         </div>
       </div>
       <div style={st.waveProg}>
@@ -987,7 +1022,12 @@ export default function App() {
           <div style={st.hpOuter}><div style={{ ...st.hpInner, width: Math.min(100, heroHpUI / maxHp * 100) + '%' }} /></div>
           <div style={{ fontSize: 10, opacity: 0.8, marginTop: 2 }}>{fmt(heroHpUI)} / {fmt(maxHp)}</div>
         </div>
-        {clearMsg != null && <div style={st.overlayText}>웨이브 {clearMsg} 클리어!</div>}
+        {clearMsg != null && <div style={st.overlayText}>{typeof clearMsg === 'number' ? `웨이브 ${clearMsg} 클리어!` : clearMsg}</div>}
+        {bossReady && phase === 'fighting' && (
+          <div style={st.bossChallenge}>
+            <button style={st.bossBtn} onClick={challengeBoss}>☠ 보스 도전</button>
+          </div>
+        )}
         {phase === 'gameover' && (
           <div style={st.overlay}>
             <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 12 }}>쓰러졌다...</div>
@@ -1283,5 +1323,13 @@ const st = {
   costBtn: { minWidth: 46, padding: '10px 6px', borderRadius: 8, border: '1px solid #a85f1f', background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontSize: 14, flexShrink: 0, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
   plusBtn: { border: '1px solid #a85f1f', background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
   minusBtn: { border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#cbb89a' },
+  bossChallenge: { position: 'absolute', left: 0, right: 0, bottom: 16, display: 'flex', justifyContent: 'center', pointerEvents: 'none' },
+  bossBtn: {
+    pointerEvents: 'auto', padding: '12px 28px', fontSize: 18,
+    border: '2px solid #7a2a1a', borderRadius: 12,
+    background: 'linear-gradient(180deg,#b83a26,#7a2015)', color: '#ffe0d0',
+    boxShadow: '0 4px 16px rgba(180,50,30,0.5), inset 0 1px 0 rgba(255,255,255,0.25)',
+    animation: 'pdPulse 1.2s ease-in-out infinite',
+  },
 }
 
