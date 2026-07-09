@@ -234,6 +234,7 @@ export default function App() {
   const [phase, setPhase] = useState('fighting')
   const [clearMsg, setClearMsg] = useState(null)   // 웨이브 클리어 배너 (멈춤 없음)
   const [bossReady, setBossReady] = useState(false) // 10웨이브 클리어 후 보스 도전 대기
+  const [gem] = useState(0)                          // 다이아 재화 (추후 구현, 표시용)
   const [offReward, setOffReward] = useState(null) // 오프라인 보상 팝업
   const offDone = useRef(false)
 
@@ -989,7 +990,7 @@ export default function App() {
     `}</style>
     <div style={st.root}>
       <div style={st.topBar}>
-        <img src="/hero/misc/face.png" alt="" style={st.avatar} />
+        <div style={st.avatarWrap}><img src="/hero/misc/face.png" alt="" style={st.avatarFace} /></div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={st.nickRow}>
             <span style={st.nick}>Australo_원규</span>
@@ -1000,7 +1001,10 @@ export default function App() {
           </div>
         </div>
         <div style={st.currency}>
-          <span style={st.currencyPill}>🍖 <b style={{ color: GOLD }}>{fmt(meat)}</b></span>
+          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+            <span style={st.pillMeat}><b style={{ color: '#ffe6c0' }}>{fmt(meat)}</b></span>
+            <span style={st.pillGem}><b style={{ color: '#cfe8ff' }}>{fmt(gem)}</b></span>
+          </div>
           <div style={{ fontSize: 12, opacity: 0.85, marginTop: 3 }}>웨이브 {wave}{bossReady && <span style={{ color: '#ef5a3c' }}> · 보스 대기</span>}</div>
         </div>
       </div>
@@ -1247,6 +1251,12 @@ const st = {
     background: 'linear-gradient(180deg,#2b1e11,#1f1509)', borderBottom: '2px solid #4a3418',
   },
   avatar: { width: 44, height: 44, borderRadius: 10, border: `2px solid ${GOLD_D}`, background: '#1a120b', imageRendering: 'pixelated', boxShadow: 'inset 0 0 0 1px #201408' },
+  avatarWrap: {
+    width: 48, height: 48, flexShrink: 0, position: 'relative',
+    backgroundImage: 'url(/ui/avatar.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  },
+  avatarFace: { width: '66%', height: '66%', objectFit: 'cover', borderRadius: '50%', imageRendering: 'pixelated' },
   nickRow: { display: 'flex', alignItems: 'center', gap: 6 },
   nick: { fontSize: 15, fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   lvBadge: { fontSize: 12, color: GOLD, background: 'linear-gradient(180deg,#3a2a14,#2a1d0d)', border: `1px solid ${GOLD_D}`, padding: '1px 8px', borderRadius: 7, flexShrink: 0 },
@@ -1257,6 +1267,18 @@ const st = {
     display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13,
     background: 'linear-gradient(180deg,#2b1e11,#1a1208)', border: '1px solid #4a3418',
     borderRadius: 20, padding: '4px 12px', color: '#f3e6d0',
+  },
+  pillMeat: {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end',
+    minWidth: 92, height: 26, paddingRight: 12, fontSize: 13,
+    backgroundImage: 'url(/ui/pill_meat.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
+    textShadow: '0 1px 2px #000',
+  },
+  pillGem: {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end',
+    minWidth: 92, height: 26, paddingRight: 12, fontSize: 13,
+    backgroundImage: 'url(/ui/pill_gem.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
+    textShadow: '0 1px 2px #000',
   },
   waveProg: { height: 6, background: '#120c06', overflow: 'hidden' },
   gainWrap: { position: 'absolute', left: 8, top: 44, display: 'flex', flexDirection: 'column', gap: 3, pointerEvents: 'none' },
@@ -1272,8 +1294,13 @@ const st = {
     display: 'flex', background: 'linear-gradient(180deg,#241811,#160e07)', borderTop: '2px solid #4a3418',
     paddingBottom: 'env(safe-area-inset-bottom)',
   },
-  navBtn: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '8px 0', border: 'none', background: 'transparent', color: '#9a8768', position: 'relative' },
-  navActive: { color: GOLD },
+  navBtn: {
+    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+    padding: '10px 2px 8px', margin: '0 1px', border: 'none', background: 'transparent',
+    backgroundImage: 'url(/ui/nav_off.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
+    color: '#9a8768', position: 'relative',
+  },
+  navActive: { backgroundImage: 'url(/ui/nav_on.png)', color: GOLD },
   comingSoon: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#20160c', color: '#f3e6d0' },
   cdOverlay: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.72)', fontSize: 13, color: '#7ce0ff' },
   slotRow: { display: 'flex', gap: 8, padding: '4px 2px 8px' },
@@ -1299,28 +1326,39 @@ const st = {
   retryBtn: { padding: '12px 32px', fontSize: 17, borderRadius: 12, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
   tabs: { display: 'flex', gap: 8, padding: '10px 10px 0', background: 'transparent' },
   tabBtn: {
-    flex: 1, padding: '11px 0', borderRadius: '12px 12px 0 0', border: '1px solid #5a4028', borderBottom: 'none',
-    background: 'linear-gradient(180deg,#2a1e11,#20160c)', color: '#a89680', fontSize: 16, position: 'relative',
+    flex: 1, padding: '14px 0 18px', border: 'none', background: 'transparent',
+    backgroundImage: 'url(/ui/tab_off.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
+    color: '#b6a488', fontSize: 16, position: 'relative', filter: 'grayscale(0.2)',
   },
-  tabActive: { background: `linear-gradient(180deg,#3a2a15,#2c2013)`, color: GOLD, border: `1px solid ${GOLD_D}`, borderBottom: 'none', boxShadow: 'inset 0 1px 0 rgba(232,185,98,0.25)' },
+  tabActive: {
+    backgroundImage: 'url(/ui/tab_on.png)', backgroundSize: '100% 100%',
+    color: '#fff4d8', filter: 'none',
+  },
   panel: {
     flex: 1, overflowY: 'auto',
-    background: 'linear-gradient(180deg,#241a10,#1a120a)',
-    border: '1px solid #5a4028', borderRadius: '0 0 14px 14px',
-    margin: '0 8px 8px', padding: '10px 10px 14px',
-    display: 'flex', flexDirection: 'column', gap: 8,
+    background: 'rgba(20,13,7,0.6)',
+    borderStyle: 'solid', borderWidth: '26px 18px 24px 18px',
+    borderImage: 'url(/ui/panel.png) 29 20 26 19 fill / 26px 18px 24px 18px stretch',
+    margin: '0 6px 8px', padding: '4px 6px 8px',
+    display: 'flex', flexDirection: 'column', gap: 6,
   },
   row: {
     display: 'flex', alignItems: 'center', gap: 8,
-    background: 'linear-gradient(180deg,#2e2114,#241a0f)', border: '1px solid #5a4028',
-    borderRadius: 12, padding: '11px 10px',
+    background: 'transparent',
+    borderStyle: 'solid', borderWidth: '18px 16px 14px 16px',
+    borderImage: 'url(/ui/row.png) 22 23 24 24 fill / 18px 16px 14px 16px stretch',
+    padding: '2px 4px',
   },
   rowName: { fontSize: 15 },
   rowLv: { fontSize: 12, color: GOLD, marginLeft: 4 },
   rowVal: { fontSize: 12, opacity: 0.82, marginTop: 2, whiteSpace: 'nowrap' },
   dbgBtn: { width: 34, padding: '10px 0', borderRadius: 8, border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#f3e6d0', fontSize: 16, flexShrink: 0 },
   dbgInput: { width: 44, padding: '9px 2px', borderRadius: 8, border: '1px solid #5a4028', background: '#160e07', color: GOLD, fontSize: 14, textAlign: 'center', flexShrink: 0, fontFamily: "'Do Hyeon',sans-serif" },
-  costBtn: { minWidth: 46, padding: '10px 6px', borderRadius: 8, border: '1px solid #a85f1f', background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontSize: 14, flexShrink: 0, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
+  costBtn: {
+    minWidth: 52, padding: '14px 10px', border: 'none', background: 'transparent',
+    backgroundImage: 'url(/ui/btn.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
+    color: '#fff4d8', fontSize: 14, flexShrink: 0, textShadow: '0 1px 2px #4a0e0e',
+  },
   plusBtn: { border: '1px solid #a85f1f', background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
   minusBtn: { border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#cbb89a' },
   bossChallenge: { position: 'absolute', left: 0, right: 0, bottom: 16, display: 'flex', justifyContent: 'center', pointerEvents: 'none' },
