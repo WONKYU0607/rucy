@@ -1040,8 +1040,9 @@ export default function App() {
         )}
       </div>
 
-      {nav === '영웅' && <>
-      <div style={st.tabs}>
+      {nav === '영웅' && (
+      <div style={st.frameBox}>
+      <div style={st.tabsInner}>
         {['강화', '성장', '진화'].map(t => (
           <button key={t} style={{ ...st.tabBtn, ...(tab === t ? st.tabActive : {}) }} onClick={() => setTab(t)}>
             {t}{t === '성장' && sp > 0 && <span style={st.spDot}>{sp}</span>}
@@ -1049,7 +1050,7 @@ export default function App() {
         ))}
       </div>
 
-      <div style={st.panel}>
+      <div style={st.panelInner}>
         {tab === '강화' && STAT_KEYS.map(k => {
           const d = STAT_LIST[k]
           const c = buyCost(k, lv[k])
@@ -1109,7 +1110,8 @@ export default function App() {
           </>
         )}
       </div>
-      </>}
+      </div>
+      )}
 
       {nav === '스킬' && (
         <div style={st.panel}>
@@ -1152,15 +1154,16 @@ export default function App() {
       )}
 
       {nav === '장비' && (
-        <div style={st.panel}>
-          <div style={st.slotRow}>
+        <div style={st.frameBox}>
+          <div style={st.tabsInner}>
             {['무기', '방어구', '유물'].map(t => (
               <button key={t} style={{ ...st.tabBtn, ...(equipTab === t ? st.tabActive : {}) }} onClick={() => setEquipTab(t)}>{t}</button>
             ))}
           </div>
+          <div style={st.panelInner}>
           {equipTab === '무기' && WEAPON_TYPES.map((wt, wi) => (
             <div key={wi}>
-              <div style={{ fontSize: 12, fontWeight: 700, margin: '6px 2px 4px', opacity: 0.85 }}>{wt}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85 }}>{wt}</div>
               <div style={st.equipGrid}>
                 {Array.from({ length: 10 }, (_, ti) => (
                   <div key={ti} style={st.equipCell}>
@@ -1173,7 +1176,7 @@ export default function App() {
           ))}
           {equipTab === '방어구' && ARMOR_TYPES.map((at, ai) => (
             <div key={ai}>
-              <div style={{ fontSize: 12, fontWeight: 700, margin: '6px 2px 4px', opacity: 0.85 }}>{at}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85 }}>{at}</div>
               <div style={st.equipGrid}>
                 {Array.from({ length: 7 }, (_, ti) => (
                   <div key={ti} style={st.equipCell}>
@@ -1186,7 +1189,7 @@ export default function App() {
           ))}
           {equipTab === '유물' && RELIC_ROWS.map((rn, ri) => (
             <div key={ri}>
-              <div style={{ fontSize: 12, fontWeight: 700, margin: '6px 2px 4px', opacity: 0.85 }}>{rn}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85 }}>{rn}</div>
               <div style={st.equipGrid}>
                 {Array.from({ length: 10 }, (_, ti) => (
                   <div key={ti} style={st.equipCell}>
@@ -1197,6 +1200,7 @@ export default function App() {
               </div>
             </div>
           ))}
+          </div>
         </div>
       )}
 
@@ -1283,10 +1287,10 @@ const st = {
   waveProg: { height: 6, background: '#120c06', overflow: 'hidden' },
   gainWrap: { position: 'absolute', left: 8, top: 44, display: 'flex', flexDirection: 'column', gap: 3, pointerEvents: 'none' },
   gainItem: { display: 'flex', gap: 8, fontSize: 13, background: 'rgba(10,6,3,0.6)', padding: '2px 8px', borderRadius: 6 },
-  spBar: { padding: '4px 6px 8px', fontSize: 14, color: '#c9b596' },
+  spBar: { padding: '3px 5px 5px', fontSize: 12, color: '#c9b596' },
   spBtn: {
-    minWidth: 46, padding: '10px 6px', borderRadius: 8, border: '1px solid #2f7fa0',
-    background: 'linear-gradient(180deg,#3a9ec0,#256f8c)', color: '#fff', fontSize: 14, flexShrink: 0,
+    minWidth: 42, padding: '8px 5px', borderRadius: 7, border: '1px solid #2f7fa0',
+    background: 'linear-gradient(180deg,#3a9ec0,#256f8c)', color: '#fff', fontSize: 13, flexShrink: 0,
     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
   },
   spDot: { marginLeft: 5, fontSize: 11, color: '#fff', background: '#e05a4e', borderRadius: 8, padding: '0 6px' },
@@ -1303,9 +1307,9 @@ const st = {
   navActive: { backgroundImage: 'url(/ui/nav_on.png)', color: GOLD },
   comingSoon: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#20160c', color: '#f3e6d0' },
   cdOverlay: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.72)', fontSize: 13, color: '#7ce0ff' },
-  slotRow: { display: 'flex', gap: 8, padding: '4px 2px 8px' },
-  slot: { flex: 1, aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,#2c2013,#20160c)', border: '2px solid #5a4028', borderRadius: 12 },
-  slotEmpty: { fontSize: 26, color: '#6a4f30' },
+  slotRow: { display: 'flex', gap: 6, padding: '2px 2px 5px' },
+  slot: { flex: 1, aspectRatio: '1', maxWidth: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,#2c2013,#20160c)', border: '2px solid #5a4028', borderRadius: 10 },
+  slotEmpty: { fontSize: 22, color: '#6a4f30' },
   equipGrid: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 },
   equipCell: { position: 'relative', aspectRatio: '1', background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: '1px solid #5a4028', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   equipImg: { width: '78%', height: '78%', objectFit: 'contain', imageRendering: 'pixelated' },
@@ -1314,7 +1318,7 @@ const st = {
   equipTier: { position: 'absolute', right: 3, bottom: 1, fontSize: 11, color: GOLD, textShadow: '0 0 3px #000' },
   offOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   offBox: { background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: `2px solid ${GOLD_D}`, borderRadius: 16, padding: '20px 24px', textAlign: 'center', minWidth: 240, color: '#f3e6d0', boxShadow: '0 8px 30px rgba(0,0,0,0.6)' },
-  skillIcon: { width: 40, height: 40, borderRadius: 9, background: 'linear-gradient(180deg,#2c2013,#1a1208)', border: '1px solid #5a4028', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 },
+  skillIcon: { width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(180deg,#2c2013,#1a1208)', border: '1px solid #5a4028', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 },
   progOuter: { height: 8, background: '#2a1d0d', borderRadius: 4, overflow: 'hidden', border: '1px solid #3a2a14' },
   progInner: { height: '100%', background: `linear-gradient(90deg,${GOLD_D},${GOLD})`, transition: 'width 0.2s' },
   canvasWrap: { height: '42%', position: 'relative', minHeight: 220 },
@@ -1324,40 +1328,50 @@ const st = {
   overlay: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.75)' },
   overlayText: { position: 'absolute', top: '40%', left: 0, right: 0, textAlign: 'center', fontSize: 24, color: GOLD, textShadow: '0 2px 8px rgba(0,0,0,0.8)', pointerEvents: 'none' },
   retryBtn: { padding: '12px 32px', fontSize: 17, borderRadius: 12, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
-  tabs: { display: 'flex', gap: 8, padding: '10px 10px 0', background: 'transparent' },
+  tabs: { display: 'flex', gap: 5, padding: '8px 6px 2px', background: 'transparent' },
   tabBtn: {
-    flex: 1, padding: '14px 0 18px', border: 'none', background: 'transparent',
+    flex: 1, padding: '9px 0 12px', border: 'none', background: 'transparent',
     backgroundImage: 'url(/ui/tab_off.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
-    color: '#b6a488', fontSize: 16, position: 'relative', filter: 'grayscale(0.2)',
+    color: '#b6a488', fontSize: 14, position: 'relative', filter: 'grayscale(0.2)',
   },
   tabActive: {
     backgroundImage: 'url(/ui/tab_on.png)', backgroundSize: '100% 100%',
     color: '#fff4d8', filter: 'none',
   },
   panel: {
-    flex: 1, overflowY: 'auto',
-    background: 'rgba(20,13,7,0.6)',
-    borderStyle: 'solid', borderWidth: '26px 18px 24px 18px',
-    borderImage: 'url(/ui/panel.png) 29 20 26 19 fill / 26px 18px 24px 18px stretch',
-    margin: '0 6px 8px', padding: '4px 6px 8px',
-    display: 'flex', flexDirection: 'column', gap: 6,
+    flex: 1, overflowY: 'auto', minHeight: 0,
+    background: 'rgba(20,13,7,0.55)',
+    borderStyle: 'solid', borderWidth: '12px 10px 11px 10px',
+    borderImage: 'url(/ui/panel.png) 29 20 26 19 fill / 12px 10px 11px 10px stretch',
+    margin: '0 5px 5px', padding: '3px 4px 4px',
+    display: 'flex', flexDirection: 'column', gap: 5,
   },
+  frameBox: {
+    flex: 1, minHeight: 0,
+    background: 'rgba(20,13,7,0.55)',
+    borderStyle: 'solid', borderWidth: '12px 10px 11px 10px',
+    borderImage: 'url(/ui/panel.png) 29 20 26 19 fill / 12px 10px 11px 10px stretch',
+    margin: '6px 5px 5px', padding: '4px 4px 4px',
+    display: 'flex', flexDirection: 'column',
+  },
+  tabsInner: { display: 'flex', gap: 5, padding: '0 0 5px', flexShrink: 0 },
+  panelInner: { flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 5 },
   row: {
-    display: 'flex', alignItems: 'center', gap: 8,
+    display: 'flex', alignItems: 'center', gap: 6,
     background: 'transparent',
-    borderStyle: 'solid', borderWidth: '18px 16px 14px 16px',
-    borderImage: 'url(/ui/row.png) 22 23 24 24 fill / 18px 16px 14px 16px stretch',
-    padding: '2px 4px',
+    borderStyle: 'solid', borderWidth: '9px 11px 9px 11px',
+    borderImage: 'url(/ui/row.png) 22 23 24 24 fill / 9px 11px 9px 11px stretch',
+    padding: '2px 3px', minHeight: 30,
   },
-  rowName: { fontSize: 15 },
-  rowLv: { fontSize: 12, color: GOLD, marginLeft: 4 },
-  rowVal: { fontSize: 12, opacity: 0.82, marginTop: 2, whiteSpace: 'nowrap' },
-  dbgBtn: { width: 34, padding: '10px 0', borderRadius: 8, border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#f3e6d0', fontSize: 16, flexShrink: 0 },
-  dbgInput: { width: 44, padding: '9px 2px', borderRadius: 8, border: '1px solid #5a4028', background: '#160e07', color: GOLD, fontSize: 14, textAlign: 'center', flexShrink: 0, fontFamily: "'Do Hyeon',sans-serif" },
+  rowName: { fontSize: 13 },
+  rowLv: { fontSize: 11, color: GOLD, marginLeft: 4 },
+  rowVal: { fontSize: 10.5, opacity: 0.82, marginTop: 1, whiteSpace: 'nowrap' },
+  dbgBtn: { width: 27, padding: '7px 0', borderRadius: 6, border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#f3e6d0', fontSize: 15, flexShrink: 0 },
+  dbgInput: { width: 38, padding: '6px 2px', borderRadius: 6, border: '1px solid #5a4028', background: '#160e07', color: GOLD, fontSize: 13, textAlign: 'center', flexShrink: 0, fontFamily: "'Do Hyeon',sans-serif" },
   costBtn: {
-    minWidth: 52, padding: '14px 10px', border: 'none', background: 'transparent',
+    minWidth: 46, padding: '11px 7px', border: 'none', background: 'transparent',
     backgroundImage: 'url(/ui/btn.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
-    color: '#fff4d8', fontSize: 14, flexShrink: 0, textShadow: '0 1px 2px #4a0e0e',
+    color: '#fff4d8', fontSize: 13, flexShrink: 0, textShadow: '0 1px 2px #4a0e0e',
   },
   plusBtn: { border: '1px solid #a85f1f', background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
   minusBtn: { border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#cbb89a' },
