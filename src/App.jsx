@@ -11,7 +11,7 @@ const ANIM = {
   punch: { srcs: ['/hero/punch/punch_1.png', '/hero/punch/punch_2.png', '/hero/punch/punch_3.png'], h: 102, flip: false },
   throw: { srcs: ['/hero/throw/hero_windup.png', '/hero/throw/hero_release.png'], h: 130, flip: false },
   idle:  { srcs: ['/hero/idle/idle_1.png'], h: 130, flip: false },
-  ewalk: { srcs: ['/hero/erectus_walk/ewalk_1.png', '/hero/erectus_walk/ewalk_2.png', '/hero/erectus_walk/ewalk_3.png', '/hero/erectus_walk/ewalk_4.png'], h: 131, flip: false },
+  ewalk: { srcs: ['/hero/erectus_walk/ewalk_1.png', '/hero/erectus_walk/ewalk_2.png', '/hero/erectus_walk/ewalk_3.png', '/hero/erectus_walk/ewalk_4.png'], h: 130, flip: false },
   eatk1: { srcs: ['/hero/erectus_atk1/eatk1_1.png', '/hero/erectus_atk1/eatk1_2.png', '/hero/erectus_atk1/eatk1_3.png'], h: 165, flip: false },
 }
 // 스킬 정의 — charSeq: 히어로가 재생할 프레임(1-based, 없으면 전체), fx: 분리 이펙트
@@ -114,7 +114,7 @@ const SCROLL = 140 * SPEED                            // 전진 속도 (px/s)
 const PUNCH = { hitAt: 0.12, total: 0.3, range: 95 } // 4족 주먹질
 const THROW = { windupEnd: 0.14, releaseEnd: 0.30, total: 0.42, range: 340 }
 // 에렉투스 몽둥이: 1타 내려치기(위→아래), 2타 올려치기(아래→위) 번갈아
-const ECLUB = { total: 0.65, range: 150, hits: [0.55, 0.55] }  // hits = 각 타 명중 시점(진행률)
+const ECLUB = { total: 0.65, range: 150, hitAt: 0.55 }  // 몽둥이 내려치기 (단일 모션)
 
 // ── 적 정의 ──
 const ENEMY_TYPES = {
@@ -604,13 +604,12 @@ export default function App() {
             if (hero.t >= PUNCH.total) { hero.state = 'move'; hero.t = 0 }
           } else if (st.mode === 'erectus') {
             const prog = hero.t / ECLUB.total
-            const hitAt = ECLUB.hits[hero.atkAlt ? 1 : 0]
-            if (!hero.did && prog >= hitAt) {
+            if (!hero.did && prog >= ECLUB.hitAt) {
               hero.did = true
               const t = w.enemies.find(e => !e.dead && e.x - HERO_X < ECLUB.range + 40)
               if (t) dealDamage(t, st)
             }
-            if (hero.t >= ECLUB.total) { hero.state = 'move'; hero.t = 0; hero.atkAlt = !hero.atkAlt }  // 다음 타는 반대 모션
+            if (hero.t >= ECLUB.total) { hero.state = 'move'; hero.t = 0 }
           } else {
             if (!hero.did && hero.t >= THROW.windupEnd) {
               hero.did = true
@@ -698,10 +697,9 @@ export default function App() {
           return ['punch', k]
         }
         if (st.mode === 'erectus') {
-          const anim = hero.atkAlt ? 'eatk2' : 'eatk1'
-          const arr = ANIM[anim].srcs
+          const arr = ANIM.eatk1.srcs
           const k = Math.min(arr.length - 1, Math.floor(hero.t / ECLUB.total * arr.length))
-          return [anim, k]
+          return ['eatk1', k]
         }
         const k = hero.t < THROW.windupEnd ? 0 : 1
         return ['throw', k]
@@ -709,8 +707,7 @@ export default function App() {
       const key = st.mode === 'quad' ? 'quad' : st.mode === 'erectus' ? 'ewalk' : 'walk'
       // 에렉투스: 적을 앞에 두고 대기 중(막힘)일 땐 걷기 대신 마지막 스윙 프레임 유지 → 공격↔대기 스냅 깜빡임 방지
       if (st.mode === 'erectus' && key === 'ewalk' && w._blocked) {
-        const anim = hero.atkAlt ? 'eatk1' : 'eatk2'  // 방금 끝난 공격(토글 후이므로 반대)
-        return [anim, ANIM[anim].srcs.length - 1]
+        return ['eatk1', ANIM.eatk1.srcs.length - 1]
       }
       const fi = Math.floor(hero.animT * 10) % ANIM[key].srcs.length
       return [key, fi]
