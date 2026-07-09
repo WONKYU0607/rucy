@@ -12,7 +12,7 @@ const ANIM = {
   throw: { srcs: ['/hero/throw/hero_windup.png', '/hero/throw/hero_release.png'], h: 130, flip: false },
   idle:  { srcs: ['/hero/idle/idle_1.png'], h: 130, flip: false },
   ewalk: { srcs: ['/hero/erectus_walk/ewalk_1.png', '/hero/erectus_walk/ewalk_2.png', '/hero/erectus_walk/ewalk_3.png', '/hero/erectus_walk/ewalk_4.png'], h: 131, flip: false },
-  eatk1: { srcs: ['/hero/erectus_atk1/eatk1_1.png', '/hero/erectus_atk1/eatk1_2.png', '/hero/erectus_atk1/eatk1_3.png', '/hero/erectus_atk1/eatk1_4.png'], h: 172, flip: false },
+  eatk1: { srcs: ['/hero/erectus_atk1/eatk1_1.png', '/hero/erectus_atk1/eatk1_2.png', '/hero/erectus_atk1/eatk1_3.png'], h: 165, flip: false },
   eatk2: { srcs: ['/hero/erectus_atk2/eatk2_1.png', '/hero/erectus_atk2/eatk2_2.png', '/hero/erectus_atk2/eatk2_3.png', '/hero/erectus_atk2/eatk2_4.png'], h: 139, flip: false },
 }
 // 스킬 정의 — charSeq: 히어로가 재생할 프레임(1-based, 없으면 전체), fx: 분리 이펙트
