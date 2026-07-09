@@ -946,6 +946,12 @@ export default function App() {
 
   return (
     <div style={st.outer}>
+    <style>{`
+      @import url('https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Jua&display=swap');
+      * { box-sizing: border-box; }
+      button { cursor: pointer; font-family: inherit; }
+      .pd-num { font-family: 'Do Hyeon', sans-serif; letter-spacing: 0.02em; }
+    `}</style>
     <div style={st.root}>
       <div style={st.topBar}>
         <img src="/hero/misc/face.png" alt="" style={st.avatar} />
@@ -959,8 +965,8 @@ export default function App() {
           </div>
         </div>
         <div style={st.currency}>
-          <div>🍖 <b style={{ color: '#f0b060' }}>{fmt(meat)}</b></div>
-          <div style={{ fontSize: 11, opacity: 0.85 }}>웨이브 {wave}{wave % 5 === 0 && <span style={{ color: '#ef9a3c' }}> 보스</span>}</div>
+          <span style={st.currencyPill}>🍖 <b style={{ color: GOLD }}>{fmt(meat)}</b></span>
+          <div style={{ fontSize: 12, opacity: 0.85, marginTop: 3 }}>웨이브 {wave}{wave % 5 === 0 && <span style={{ color: '#ef9a3c' }}> 보스</span>}</div>
         </div>
       </div>
       <div style={st.waveProg}>
@@ -1011,7 +1017,7 @@ export default function App() {
                 <div style={st.rowName}>{d.name} <span style={st.rowLv}>Lv.{lv[k]}</span></div>
                 <div style={st.rowVal}>{statText(k, lv[k] + skill[k])} <span style={{ color: '#7cb35c' }}>→ {statText(k, lv[k] + 1 + skill[k])}</span></div>
               </div>
-              <button style={st.dbgBtn} onClick={() => buyStat(k, -1)}>−</button>
+              <button style={{ ...st.dbgBtn, ...st.minusBtn }} onClick={() => buyStat(k, -1)}>−</button>
               <input style={st.dbgInput} type="number" inputMode="numeric" value={lv[k]} onChange={e => setStatLv(k, e.target.value)} />
               <button style={{ ...st.costBtn, opacity: ok ? 1 : 0.4 }} onClick={() => buyStat(k)}>{DEBUG ? '+1' : fmt(c)}</button>
             </div>
@@ -1050,7 +1056,7 @@ export default function App() {
                     <div style={st.rowName}>{d.name} <span style={st.rowLv}>Lv.{skill[k]}</span></div>
                     <div style={st.rowVal}>{statText(k, lv[k] + skill[k])} <span style={{ color: '#7cb35c' }}>→ {statText(k, lv[k] + skill[k] + 1)}</span></div>
                   </div>
-                  <button style={st.dbgBtn} onClick={() => upSkill(k, -1)}>−</button>
+                  <button style={{ ...st.dbgBtn, ...st.minusBtn }} onClick={() => upSkill(k, -1)}>−</button>
                   <input style={st.dbgInput} type="number" inputMode="numeric" value={skill[k]} onChange={e => setSkillLv(k, e.target.value)} />
                   <button style={{ ...st.spBtn, opacity: ok ? 1 : 0.4 }} onClick={() => upSkill(k)}>+1</button>
                 </div>
@@ -1184,137 +1190,98 @@ export default function App() {
   )
 }
 
+const GOLD = '#e8b962'
+const GOLD_D = '#a9762f'
+const PANEL_BORDER = '1px solid #6b4a24'
 const st = {
-  outer: {
-    position: 'fixed', inset: 0, background: '#000',
-    display: 'flex', justifyContent: 'center',
-  },
+  outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center' },
   root: {
-    width: '100%', maxWidth: 420, height: '100%',
-    position: 'relative', display: 'flex', flexDirection: 'column',
-    background: '#1a120b', color: '#f5ead9',
-    fontFamily: "'Pretendard', -apple-system, 'Noto Sans KR', sans-serif",
+    width: '100%', maxWidth: 420, height: '100%', position: 'relative',
+    display: 'flex', flexDirection: 'column',
+    background: 'linear-gradient(180deg,#1c130a,#140d06)', color: '#f3e6d0',
+    fontFamily: "'Do Hyeon','Jua',-apple-system,'Noto Sans KR',sans-serif",
   },
   topBar: {
-    display: 'flex', alignItems: 'center', gap: 10,
-    padding: '10px 14px', paddingTop: 'max(10px, env(safe-area-inset-top))',    fontSize: 14, background: '#241a10', borderBottom: '1px solid #3a2c1c',
+    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+    paddingTop: 'max(10px, env(safe-area-inset-top))', fontSize: 14,
+    background: 'linear-gradient(180deg,#2b1e11,#1f1509)', borderBottom: '2px solid #4a3418',
   },
-  avatar: { width: 40, height: 40, borderRadius: 8, border: '2px solid #6b4f35', background: '#1a120b', imageRendering: 'pixelated' },
+  avatar: { width: 44, height: 44, borderRadius: 10, border: `2px solid ${GOLD_D}`, background: '#1a120b', imageRendering: 'pixelated', boxShadow: 'inset 0 0 0 1px #201408' },
   nickRow: { display: 'flex', alignItems: 'center', gap: 6 },
-  nick: { fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  lvBadge: { fontSize: 11, fontWeight: 800, color: '#7ce0ff', background: '#12303a', padding: '1px 6px', borderRadius: 6, flexShrink: 0 },
-  expOuter: { height: 7, background: '#12222a', borderRadius: 4, overflow: 'hidden', marginTop: 4 },
-  expInner: { height: '100%', background: 'linear-gradient(90deg,#3ba7d0,#7ce0ff)', transition: 'width 0.2s' },
-  currency: { textAlign: 'right', fontSize: 13, whiteSpace: 'nowrap' },
-  waveProg: { height: 6, background: '#241a10', overflow: 'hidden' },
+  nick: { fontSize: 15, fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  lvBadge: { fontSize: 12, color: GOLD, background: 'linear-gradient(180deg,#3a2a14,#2a1d0d)', border: `1px solid ${GOLD_D}`, padding: '1px 8px', borderRadius: 7, flexShrink: 0 },
+  expOuter: { height: 9, background: '#0e0a05', borderRadius: 5, overflow: 'hidden', marginTop: 4, border: '1px solid #3a2a14' },
+  expInner: { height: '100%', background: 'linear-gradient(90deg,#c98a2e,#f0c05a,#ffe08a)', transition: 'width 0.2s' },
+  currency: { textAlign: 'right', fontSize: 14, whiteSpace: 'nowrap' },
+  currencyPill: {
+    display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13,
+    background: 'linear-gradient(180deg,#2b1e11,#1a1208)', border: '1px solid #4a3418',
+    borderRadius: 20, padding: '4px 12px', color: '#f3e6d0',
+  },
+  waveProg: { height: 6, background: '#120c06', overflow: 'hidden' },
   gainWrap: { position: 'absolute', left: 8, top: 44, display: 'flex', flexDirection: 'column', gap: 3, pointerEvents: 'none' },
-  gainItem: {
-    display: 'flex', gap: 8, fontSize: 12, fontWeight: 700,
-    background: 'rgba(10,6,3,0.6)', padding: '2px 8px', borderRadius: 6,
-    animation: 'none',
-  },
-  spBar: { padding: '4px 6px 8px', fontSize: 13 },
+  gainItem: { display: 'flex', gap: 8, fontSize: 13, background: 'rgba(10,6,3,0.6)', padding: '2px 8px', borderRadius: 6 },
+  spBar: { padding: '4px 6px 8px', fontSize: 14, color: '#c9b596' },
   spBtn: {
-    minWidth: 46, padding: '10px 6px', borderRadius: 8, border: 'none',
-    background: '#2f8fb0', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0,
+    minWidth: 46, padding: '10px 6px', borderRadius: 8, border: '1px solid #2f7fa0',
+    background: 'linear-gradient(180deg,#3a9ec0,#256f8c)', color: '#fff', fontSize: 14, flexShrink: 0,
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
   },
-  spDot: {
-    marginLeft: 5, fontSize: 10, fontWeight: 800, color: '#fff',
-    background: '#e05a4e', borderRadius: 8, padding: '0 5px',
-  },
+  spDot: { marginLeft: 5, fontSize: 11, color: '#fff', background: '#e05a4e', borderRadius: 8, padding: '0 6px' },
   bottomNav: {
-    display: 'flex', background: '#1a120b', borderTop: '1px solid #3a2c1c',
+    display: 'flex', background: 'linear-gradient(180deg,#241811,#160e07)', borderTop: '2px solid #4a3418',
     paddingBottom: 'env(safe-area-inset-bottom)',
   },
-  navBtn: {
-    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-    padding: '8px 0', border: 'none', background: 'transparent', color: '#8a7a63', cursor: 'pointer',
-  },
-  navActive: { color: '#f0b060' },
-  comingSoon: {
-    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-    justifyContent: 'center', background: '#241a10', color: '#f5ead9',
-  },
-  cdOverlay: {
-    position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
-    justifyContent: 'center', background: 'rgba(10,6,3,0.7)', fontSize: 12,
-    fontWeight: 800, color: '#7ce0ff',
-  },
+  navBtn: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '8px 0', border: 'none', background: 'transparent', color: '#9a8768', position: 'relative' },
+  navActive: { color: GOLD },
+  comingSoon: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#20160c', color: '#f3e6d0' },
+  cdOverlay: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.72)', fontSize: 13, color: '#7ce0ff' },
   slotRow: { display: 'flex', gap: 8, padding: '4px 2px 8px' },
-  slot: {
-    flex: 1, aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    background: '#312415', border: '2px solid #4a3822', borderRadius: 12, cursor: 'pointer',
-  },
-  slotEmpty: { fontSize: 26, color: '#5a4632' },
+  slot: { flex: 1, aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,#2c2013,#20160c)', border: '2px solid #5a4028', borderRadius: 12 },
+  slotEmpty: { fontSize: 26, color: '#6a4f30' },
   equipGrid: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 },
-  equipCell: {
-    position: 'relative', aspectRatio: '1', background: '#312415',
-    border: '1px solid #4a3822', borderRadius: 10, display: 'flex',
-    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-  },
+  equipCell: { position: 'relative', aspectRatio: '1', background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: '1px solid #5a4028', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   equipImg: { width: '78%', height: '78%', objectFit: 'contain', imageRendering: 'pixelated' },
   statIconImg: { width: '100%', height: '100%', objectFit: 'contain' },
-  navIconImg: { width: 24, height: 24, objectFit: 'contain' },
-  equipTier: {
-    position: 'absolute', right: 3, bottom: 1, fontSize: 10, fontWeight: 800,
-    color: '#f0b060', textShadow: '0 0 3px #000',
-  },
-  offOverlay: {
-    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 50,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-  },
-  offBox: {
-    background: '#312415', border: '2px solid #6b4f35', borderRadius: 14,
-    padding: '20px 24px', textAlign: 'center', minWidth: 240, color: '#f5ead9',
-  },
-  skillIcon: {
-    width: 32, height: 32, borderRadius: 8, background: '#241a10',
-    border: '1px solid #4a3822', display: 'flex', alignItems: 'center',
-    justifyContent: 'center', fontSize: 16, flexShrink: 0,
-  },
-  progOuter: { height: 8, background: '#3a2c1c', borderRadius: 4, overflow: 'hidden' },
-  progInner: { height: '100%', background: '#f0b060', transition: 'width 0.2s' },
+  navIconImg: { width: 26, height: 26, objectFit: 'contain' },
+  equipTier: { position: 'absolute', right: 3, bottom: 1, fontSize: 11, color: GOLD, textShadow: '0 0 3px #000' },
+  offOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  offBox: { background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: `2px solid ${GOLD_D}`, borderRadius: 16, padding: '20px 24px', textAlign: 'center', minWidth: 240, color: '#f3e6d0', boxShadow: '0 8px 30px rgba(0,0,0,0.6)' },
+  skillIcon: { width: 40, height: 40, borderRadius: 9, background: 'linear-gradient(180deg,#2c2013,#1a1208)', border: '1px solid #5a4028', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 },
+  progOuter: { height: 8, background: '#2a1d0d', borderRadius: 4, overflow: 'hidden', border: '1px solid #3a2a14' },
+  progInner: { height: '100%', background: `linear-gradient(90deg,${GOLD_D},${GOLD})`, transition: 'width 0.2s' },
   canvasWrap: { height: '42%', position: 'relative', minHeight: 220 },
   heroHpWrap: { position: 'absolute', left: 12, top: 10, width: 130 },
   hpOuter: { height: 8, background: 'rgba(0,0,0,0.5)', borderRadius: 4, overflow: 'hidden' },
   hpInner: { height: '100%', background: '#7cb35c', transition: 'width 0.15s' },
-  overlay: {
-    position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
-    alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.75)',
-  },
-  overlayText: {
-    position: 'absolute', top: '40%', left: 0, right: 0, textAlign: 'center',
-    fontSize: 22, fontWeight: 800, textShadow: '0 2px 8px rgba(0,0,0,0.8)', pointerEvents: 'none',
-  },
-  retryBtn: { padding: '12px 32px', fontSize: 16, fontWeight: 700, borderRadius: 12, border: 'none', background: '#c9772e', color: '#fff' },
-  tabs: { display: 'flex', gap: 6, padding: '8px 10px 0', background: '#241a10' },
+  overlay: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.75)' },
+  overlayText: { position: 'absolute', top: '40%', left: 0, right: 0, textAlign: 'center', fontSize: 24, color: GOLD, textShadow: '0 2px 8px rgba(0,0,0,0.8)', pointerEvents: 'none' },
+  retryBtn: { padding: '12px 32px', fontSize: 17, borderRadius: 12, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
+  tabs: { display: 'flex', gap: 8, padding: '10px 10px 0', background: 'transparent' },
   tabBtn: {
-    flex: 1, padding: '9px 0', borderRadius: '10px 10px 0 0', border: 'none',
-    background: '#2c2012', color: '#a89880', fontSize: 14, fontWeight: 700,
+    flex: 1, padding: '11px 0', borderRadius: '12px 12px 0 0', border: '1px solid #5a4028', borderBottom: 'none',
+    background: 'linear-gradient(180deg,#2a1e11,#20160c)', color: '#a89680', fontSize: 16, position: 'relative',
   },
-  tabActive: { background: '#3a2c1a', color: '#f5ead9' },
+  tabActive: { background: `linear-gradient(180deg,#3a2a15,#2c2013)`, color: GOLD, border: `1px solid ${GOLD_D}`, borderBottom: 'none', boxShadow: 'inset 0 1px 0 rgba(232,185,98,0.25)' },
   panel: {
-    flex: 1, overflowY: 'auto', background: '#241a10',
-    padding: '10px 10px 14px',
+    flex: 1, overflowY: 'auto',
+    background: 'linear-gradient(180deg,#241a10,#1a120a)',
+    border: '1px solid #5a4028', borderRadius: '0 0 14px 14px',
+    margin: '0 8px 8px', padding: '10px 10px 14px',
     display: 'flex', flexDirection: 'column', gap: 8,
   },
   row: {
-    display: 'flex', alignItems: 'center', gap: 6,
-    background: '#312415', border: '1px solid #4a3822', borderRadius: 12, padding: '10px 10px',
+    display: 'flex', alignItems: 'center', gap: 8,
+    background: 'linear-gradient(180deg,#2e2114,#241a0f)', border: '1px solid #5a4028',
+    borderRadius: 12, padding: '11px 10px',
   },
-  rowName: { fontWeight: 700, fontSize: 13 },
-  rowLv: { fontSize: 11, color: '#f0b060', marginLeft: 4 },
-  rowVal: { fontSize: 11, opacity: 0.85, marginTop: 2, whiteSpace: 'nowrap' },
-  dbgBtn: {
-    width: 32, padding: '10px 0', borderRadius: 8, border: '1px solid #4a3822',
-    background: '#241a10', color: '#f5ead9', fontSize: 15, fontWeight: 800, flexShrink: 0,
-  },
-  dbgInput: {
-    width: 42, padding: '9px 2px', borderRadius: 8, border: '1px solid #4a3822',
-    background: '#1a120b', color: '#f0b060', fontSize: 13, fontWeight: 700, textAlign: 'center', flexShrink: 0,
-  },
-  costBtn: {
-    minWidth: 46, padding: '10px 6px', borderRadius: 8, border: 'none',
-    background: '#c9772e', color: '#fff', fontSize: 13, fontWeight: 800, flexShrink: 0,
-  },
+  rowName: { fontSize: 15 },
+  rowLv: { fontSize: 12, color: GOLD, marginLeft: 4 },
+  rowVal: { fontSize: 12, opacity: 0.82, marginTop: 2, whiteSpace: 'nowrap' },
+  dbgBtn: { width: 34, padding: '10px 0', borderRadius: 8, border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#f3e6d0', fontSize: 16, flexShrink: 0 },
+  dbgInput: { width: 44, padding: '9px 2px', borderRadius: 8, border: '1px solid #5a4028', background: '#160e07', color: GOLD, fontSize: 14, textAlign: 'center', flexShrink: 0, fontFamily: "'Do Hyeon',sans-serif" },
+  costBtn: { minWidth: 46, padding: '10px 6px', borderRadius: 8, border: '1px solid #a85f1f', background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontSize: 14, flexShrink: 0, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
+  plusBtn: { border: '1px solid #a85f1f', background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
+  minusBtn: { border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#cbb89a' },
 }
+
