@@ -115,7 +115,7 @@ const SCROLL = 140 * SPEED                            // 전진 속도 (px/s)
 const PUNCH = { hitAt: 0.12, total: 0.3, range: 95 } // 4족 주먹질
 const THROW = { windupEnd: 0.14, releaseEnd: 0.30, total: 0.42, range: 340 }
 // 에렉투스 몽둥이: 1타 내려치기(위→아래), 2타 올려치기(아래→위) 번갈아
-const ECLUB = { total: 0.65, range: 150, hits: [0.55, 0.55] }  // hits = 각 타 명중 시점(진행률)
+const ECLUB = { total: 1.10, range: 150, hits: [0.55, 0.55] }  // hits = 각 타 명중 시점(진행률)
 
 // ── 적 정의 ──
 const ENEMY_TYPES = {
