@@ -87,6 +87,8 @@ const STRIKE_DUR_BY = {
 const WEAPON_TYPES = ['몽둥이', '창', '도끼', '망치', '활', '지팡이', '클로']
 // 방어구 5종 (각 7티어, /equip/a{종류}_{티어}.png)
 const ARMOR_TYPES = ['방어구 1', '방어구 2', '방어구 3', '방어구 4', '방어구 5']
+// 유물 6종 (각 10개, /relic/r{행}_{n}.png)
+const RELIC_ROWS = ['반지', '목걸이', '왕관', '펜던트', '룬 반지', '부적']
 
 // ── 오프라인 보상 설정 (직접 수정 가능) ─────────────────────────
 const OFFLINE_MIN_SEC = 60          // 이 시간 이상 부재 시에만 보상
@@ -449,6 +451,7 @@ export default function App() {
       // 배경 스크롤: 이동 상태 + 앞을 막는 적이 없을 때만 전진
       const atkRange0 = st.mode === 'quad' ? PUNCH.range : st.mode === 'erectus' ? ECLUB.range : THROW.range
       const blocked = w.enemies.some(e => !e.dead && e.x - HERO_X < atkRange0)
+      w._blocked = blocked
       const moving = (st.phase === 'fighting' || st.phase === 'cleared') && hero.state === 'move' && !blocked
       const scroll = moving ? SCROLL * st.mspdMult : 0
       w.scrollX += scroll * dt
@@ -705,6 +708,11 @@ export default function App() {
         return ['throw', k]
       }
       const key = st.mode === 'quad' ? 'quad' : st.mode === 'erectus' ? 'ewalk' : 'walk'
+      // 에렉투스: 적을 앞에 두고 대기 중(막힘)일 땐 걷기 대신 마지막 스윙 프레임 유지 → 공격↔대기 스냅 깜빡임 방지
+      if (st.mode === 'erectus' && key === 'ewalk' && w._blocked) {
+        const anim = hero.atkAlt ? 'eatk1' : 'eatk2'  // 방금 끝난 공격(토글 후이므로 반대)
+        return [anim, ANIM[anim].srcs.length - 1]
+      }
       const fi = Math.floor(hero.animT * 10) % ANIM[key].srcs.length
       return [key, fi]
     }
@@ -1002,7 +1010,7 @@ export default function App() {
           const ok = DEBUG || meat >= c
           return (
             <div key={k} style={st.row}>
-              <div style={st.skillIcon}>{d.icon}</div>
+              <div style={st.skillIcon}><img src={`/icon/${k}.png`} alt="" style={st.statIconImg} /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={st.rowName}>{d.name} <span style={st.rowLv}>Lv.{lv[k]}</span></div>
                 <div style={st.rowVal}>{statText(k, lv[k] + skill[k])} <span style={{ color: '#7cb35c' }}>→ {statText(k, lv[k] + 1 + skill[k])}</span></div>
@@ -1041,7 +1049,7 @@ export default function App() {
               const ok = DEBUG || sp > 0
               return (
                 <div key={k} style={st.row}>
-                  <div style={st.skillIcon}>{d.icon}</div>
+                  <div style={st.skillIcon}><img src={`/icon/${k}.png`} alt="" style={st.statIconImg} /></div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={st.rowName}>{d.name} <span style={st.rowLv}>Lv.{skill[k]}</span></div>
                     <div style={st.rowVal}>{statText(k, lv[k] + skill[k])} <span style={{ color: '#7cb35c' }}>→ {statText(k, lv[k] + skill[k] + 1)}</span></div>
@@ -1130,9 +1138,19 @@ export default function App() {
               </div>
             </div>
           ))}
-          {equipTab === '유물' && (
-            <div style={{ textAlign: 'center', opacity: 0.6, padding: '40px 0', fontSize: 14 }}>유물 · 준비 중입니다</div>
-          )}
+          {equipTab === '유물' && RELIC_ROWS.map((rn, ri) => (
+            <div key={ri}>
+              <div style={{ fontSize: 12, fontWeight: 700, margin: '6px 2px 4px', opacity: 0.85 }}>{rn}</div>
+              <div style={st.equipGrid}>
+                {Array.from({ length: 10 }, (_, ti) => (
+                  <div key={ti} style={st.equipCell}>
+                    <img src={`/relic/r${ri + 1}_${ti + 1}.png`} alt="" style={st.equipImg} />
+                    <div style={st.equipTier}>{ti + 1}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -1158,9 +1176,9 @@ export default function App() {
       )}
 
       <div style={st.bottomNav}>
-        {[['영웅', '🦍'], ['스킬', '✨'], ['장비', '⚔'], ['동료', '🤝'], ['퀴즈', '❓'], ['상점', '💰']].map(([n, ic]) => (
+        {[['영웅', 'nav_hero'], ['스킬', 'nav_skill'], ['장비', 'nav_equip'], ['동료', 'nav_ally'], ['퀴즈', 'nav_quiz'], ['상점', 'nav_shop']].map(([n, ic]) => (
           <button key={n} style={{ ...st.navBtn, ...(nav === n ? st.navActive : {}) }} onClick={() => setNav(n)}>
-            <div style={{ fontSize: 20 }}>{ic}</div>
+            <img src={`/icon/${ic}.png`} alt="" style={st.navIconImg} />
             <div style={{ fontSize: 10 }}>{n}</div>
           </button>
         ))}
@@ -1239,6 +1257,8 @@ const st = {
     alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
   },
   equipImg: { width: '78%', height: '78%', objectFit: 'contain', imageRendering: 'pixelated' },
+  statIconImg: { width: '100%', height: '100%', objectFit: 'contain' },
+  navIconImg: { width: 24, height: 24, objectFit: 'contain' },
   equipTier: {
     position: 'absolute', right: 3, bottom: 1, fontSize: 10, fontWeight: 800,
     color: '#f0b060', textShadow: '0 0 3px #000',
