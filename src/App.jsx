@@ -115,7 +115,7 @@ const SCROLL = 140 * SPEED                            // 전진 속도 (px/s)
 const PUNCH = { hitAt: 0.12, total: 0.3, range: 95 } // 4족 주먹질
 const THROW = { windupEnd: 0.14, releaseEnd: 0.30, total: 0.42, range: 340 }
 // 에렉투스 몽둥이: 1타 내려치기(위→아래), 2타 올려치기(아래→위) 번갈아
-const ECLUB = { total: 1.10, range: 150, hits: [0.55, 0.55] }  // hits = 각 타 명중 시점(진행률)
+const ECLUB = { total: 0.55, range: 150, hits: [0.55, 0.55] }  // hits = 각 타 명중 시점(진행률)
 
 // ── 적 정의 ──
 const ENEMY_TYPES = {
@@ -140,7 +140,7 @@ const ENEMY_TYPES = {
   snake:    { name: '뱀', hp: 60, speed: 70, dmg: 18, reward: 14, h: 35, color: '#6a7a4a', flip: false, frames: ['/monster/snake/snake_1.png', '/monster/snake/snake_2.png', '/monster/snake/snake_3.png', '/monster/snake/snake_4.png', '/monster/snake/snake_5.png'] },
   turtle:   { name: '거북이', hp: 400, speed: 30, dmg: 15, reward: 40, h: 50, color: '#5a6a3a', flip: false, frames: ['/monster/turtle/turtle_1.png', '/monster/turtle/turtle_2.png', '/monster/turtle/turtle_3.png', '/monster/turtle/turtle_4.png', '/monster/turtle/turtle_5.png'] },
   komodo:   { name: '코모도 드래곤', hp: 250, speed: 55, dmg: 35, reward: 40, h: 45, color: '#6a5a5a', flip: false, frames: ['/monster/komodo/komodo_1.png', '/monster/komodo/komodo_2.png', '/monster/komodo/komodo_3.png', '/monster/komodo/komodo_4.png', '/monster/komodo/komodo_5.png'] },
-  eagle:    { name: '독수리', hp: 120, speed: 140, dmg: 22, reward: 28, h: 80, color: '#5a4a3a', flip: false, air: 90, frames: ['/monster/eagle/eagle_1.png', '/monster/eagle/eagle_2.png', '/monster/eagle/eagle_3.png', '/monster/eagle/eagle_4.png', '/monster/eagle/eagle_5.png'] },
+  eagle:    { name: '독수리', hp: 120, speed: 140, dmg: 22, reward: 28, h: 80, color: '#5a4a3a', flip: false, air: 100, frames: ['/monster/eagle/eagle_1.png', '/monster/eagle/eagle_2.png', '/monster/eagle/eagle_3.png', '/monster/eagle/eagle_4.png', '/monster/eagle/eagle_5.png'] },
 }
 const EIMG = {}
 for (const k in ENEMY_TYPES) {
