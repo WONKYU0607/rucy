@@ -238,6 +238,7 @@ export default function App() {
   const [uiCfg, setUiCfg] = useState(() => { try { return { ...UI_DEFAULT, ...JSON.parse(localStorage.getItem('paleoUiCfg') || '{}') } } catch { return { ...UI_DEFAULT } } })
   const [uiEdit, setUiEdit] = useState(false)
   const [copiedUi, setCopiedUi] = useState(false)
+  const [editSel, setEditSel] = useState(null)   // 편집 모드에서 선택된 요소
   useEffect(() => { localStorage.setItem('paleoUiCfg', JSON.stringify(uiCfg)) }, [uiCfg])
   const [offReward, setOffReward] = useState(null) // 오프라인 보상 팝업
   const offDone = useRef(false)
@@ -998,31 +999,49 @@ export default function App() {
       @keyframes pdPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
     `}</style>
     <style>{uiVars(uiCfg)}</style>
-    <div style={st.root}>
-      <button onClick={() => setUiEdit(v => !v)} style={{ position: 'absolute', top: 4, right: 4, zIndex: 60, width: 26, height: 26, borderRadius: 6, border: '1px solid #6b4a24', background: 'rgba(20,13,7,0.8)', color: GOLD, fontSize: 14, padding: 0 }}>⚙</button>
+    <div style={st.root} onClickCapture={e => {
+      if (!uiEdit) return
+      const t = e.target.closest('[data-edit]')
+      if (t) { e.stopPropagation(); e.preventDefault(); setEditSel(t.dataset.edit) }
+    }}>
+      {uiEdit && <style>{`[data-edit]{outline:1px dashed rgba(232,185,98,0.35);outline-offset:-1px;cursor:pointer}${editSel ? `[data-edit="${editSel}"]{outline:2px solid ${GOLD} !important}` : ''}`}</style>}
+      <button onClick={() => { setUiEdit(v => !v); setEditSel(null) }} style={{ position: 'absolute', top: 4, right: 4, zIndex: 60, padding: '3px 8px', borderRadius: 6, border: '1px solid #6b4a24', background: uiEdit ? GOLD_D : 'rgba(20,13,7,0.8)', color: uiEdit ? '#fff' : GOLD, fontSize: 12 }}>{uiEdit ? '편집중' : '⚙'}</button>
       {uiEdit && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 59, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'flex-end' }} onClick={() => setUiEdit(false)}>
-          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 420, maxHeight: '70%', overflowY: 'auto', background: '#1a120b', borderTop: `2px solid ${GOLD_D}`, padding: '10px 12px 16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <b style={{ color: GOLD, fontSize: 15 }}>UI 크기 편집</b>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <button onClick={() => { navigator.clipboard?.writeText(JSON.stringify(uiCfg)); setCopiedUi(true); setTimeout(() => setCopiedUi(false), 1200) }} style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontSize: 13 }}>{copiedUi ? '복사됨!' : '값 복사'}</button>
-                <button onClick={() => setUiCfg({ ...UI_DEFAULT })} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontSize: 13 }}>초기화</button>
+        <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 61, background: 'rgba(16,10,5,0.97)', borderTop: `2px solid ${GOLD_D}`, padding: '8px 12px calc(8px + env(safe-area-inset-bottom))', maxHeight: '46%', overflowY: 'auto' }}>
+          {!editSel && <div style={{ fontSize: 13, color: '#c9b596', textAlign: 'center', padding: '8px 0' }}>조정할 요소를 화면에서 탭하세요 (틀·아이콘·글자·숫자·버튼)</div>}
+          {editSel && (() => {
+            const g = EDIT_GROUPS[editSel]; if (!g) return null
+            const rng = k => k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120)
+            return <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <b style={{ color: GOLD, fontSize: 14 }}>{g.label}</b>
+                <button onClick={() => setEditSel(null)} style={{ padding: '3px 10px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontSize: 12 }}>닫기</button>
               </div>
+              {g.size.map(k => (
+                <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span style={{ width: 92, fontSize: 12, flexShrink: 0 }}>{UI_LABELS[k]}</span>
+                  <input type="range" min={0} max={rng(k)} step={k === 'val' ? 0.5 : 1} value={uiCfg[k]} onChange={e => setUiCfg({ ...uiCfg, [k]: parseFloat(e.target.value) })} style={{ flex: 1, minWidth: 0 }} />
+                  <span style={{ width: 34, textAlign: 'right', fontSize: 12, color: GOLD }}>{uiCfg[k]}</span>
+                </div>
+              ))}
+              {g.pos && ['X', 'Y'].map(ax => {
+                const k = g.pos + ax
+                return <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span style={{ width: 92, fontSize: 12, flexShrink: 0 }}>위치 {ax === 'X' ? '←→' : '↑↓'}</span>
+                  <input type="range" min={-80} max={80} step={1} value={uiCfg[k]} onChange={e => setUiCfg({ ...uiCfg, [k]: parseFloat(e.target.value) })} style={{ flex: 1, minWidth: 0 }} />
+                  <span style={{ width: 34, textAlign: 'right', fontSize: 12, color: GOLD }}>{uiCfg[k]}</span>
+                </div>
+              })}
             </div>
-            <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 8 }}>슬라이더로 조정 → "값 복사" 눌러서 개발자에게 전달</div>
-            {Object.keys(UI_DEFAULT).map(k => (
-              <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-                <span style={{ width: 100, fontSize: 12, flexShrink: 0 }}>{UI_LABELS[k]}</span>
-                <input type="range" min={k === 'equipcols' ? 3 : 0} max={k === 'equipcols' ? 8 : (k.includes('bw') || k.includes('gap') || k === 'sph' || k === 'navpt' || k === 'navpb' || k === 'tabpt' || k === 'tabpb' ? 40 : 120)} step={k === 'val' ? 0.5 : 1} value={uiCfg[k]} onChange={e => setUiCfg({ ...uiCfg, [k]: parseFloat(e.target.value) })} style={{ flex: 1, minWidth: 0 }} />
-                <span style={{ width: 38, textAlign: 'right', fontSize: 12, color: GOLD }}>{uiCfg[k]}</span>
-              </div>
-            ))}
+          })()}
+          <div style={{ display: 'flex', gap: 6, marginTop: 8, borderTop: '1px solid #3a2a14', paddingTop: 8 }}>
+            <button onClick={() => { navigator.clipboard?.writeText(JSON.stringify(uiCfg)); setCopiedUi(true); setTimeout(() => setCopiedUi(false), 1200) }} style={{ flex: 1, padding: '9px', borderRadius: 6, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontSize: 13 }}>{copiedUi ? '복사됨! 개발자에게 전달' : '전체 값 복사'}</button>
+            <button onClick={() => setUiCfg({ ...UI_DEFAULT })} style={{ padding: '9px 12px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontSize: 13 }}>초기화</button>
           </div>
         </div>
       )}
       <div style={st.topBar}>
-        <div style={st.avatarWrap}><img src="/hero/misc/face.png" alt="" style={st.avatarFace} /></div>
+        <div data-edit="avatar" style={st.avatarWrap}><img src="/hero/misc/face.png" alt="" style={st.avatarFace} /></div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={st.nickRow}>
             <span style={st.nick}>Australo_원규</span>
@@ -1032,7 +1051,7 @@ export default function App() {
             <div style={{ ...st.expInner, width: Math.min(100, hexp / heroExpReq(hlv) * 100) + '%' }} />
           </div>
         </div>
-        <div style={st.currency}>
+        <div data-edit="pill" style={st.currency}>
           <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
             <span style={st.pillMeat}><b style={{ color: '#ffe6c0' }}>{fmt(meat)}</b></span>
             <span style={st.pillGem}><b style={{ color: '#cfe8ff' }}>{fmt(gem)}</b></span>
@@ -1073,8 +1092,8 @@ export default function App() {
       </div>
 
       {nav === '영웅' && (
-      <div style={st.frameBox}>
-      <div style={st.tabsInner}>
+      <div data-edit="panel" style={st.frameBox}>
+      <div data-edit="tab" style={st.tabsInner}>
         {['강화', '성장', '진화'].map(t => (
           <button key={t} style={{ ...st.tabBtn, ...(tab === t ? st.tabActive : {}) }} onClick={() => setTab(t)}>
             {t}{t === '성장' && sp > 0 && <span style={st.spDot}>{sp}</span>}
@@ -1088,34 +1107,34 @@ export default function App() {
           const c = buyCost(k, lv[k])
           const ok = DEBUG || meat >= c
           return (
-            <div key={k} style={st.row}>
-              <div style={st.skillIcon}><img src={`/icon/${k}.png`} alt="" style={st.statIconImg} /></div>
+            <div key={k} data-edit="row" style={st.row}>
+              <div data-edit="icon" style={st.skillIcon}><img src={`/icon/${k}.png`} alt="" style={st.statIconImg} /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={st.rowName}>{d.name} <span style={st.rowLv}>Lv.{lv[k]}</span></div>
-                <div style={st.rowVal}>{statText(k, lv[k] + skill[k])} <span style={{ color: '#7cb35c' }}>→ {statText(k, lv[k] + 1 + skill[k])}</span></div>
+                <div data-edit="name" style={st.rowName}>{d.name} <span style={st.rowLv}>Lv.{lv[k]}</span></div>
+                <div data-edit="val" style={st.rowVal}>{statText(k, lv[k] + skill[k])} <span style={{ color: '#7cb35c' }}>→ {statText(k, lv[k] + 1 + skill[k])}</span></div>
               </div>
-              <input style={st.dbgInput} type="number" inputMode="numeric" value={lv[k]} onChange={e => setStatLv(k, e.target.value)} />
-              <button style={{ ...st.costBtn, opacity: ok ? 1 : 0.4 }} onClick={() => buyStat(k)}>{DEBUG ? '+1' : fmt(c)}</button>
+              <input data-edit="input" style={st.dbgInput} type="number" inputMode="numeric" value={lv[k]} onChange={e => setStatLv(k, e.target.value)} />
+              <button data-edit="cost" style={{ ...st.costBtn, opacity: ok ? 1 : 0.4 }} onClick={() => buyStat(k)}>{DEBUG ? '+1' : fmt(c)}</button>
             </div>
           )
         })}
         {tab === '진화' && (
-          <div style={st.row}>
+          <div data-edit="row" style={st.row}>
             <img
               src={EVOS[evo].mode === 'quad' ? '/hero/quad/quad_1.png' : EVOS[evo].mode === 'erectus' ? '/hero/erectus_walk/ewalk_1.png' : '/hero/misc/hero_idle.png'}
               alt=""
               style={{ height: 64 }}
             />
             <div style={{ flex: 1, marginLeft: 12 }}>
-              <div style={st.rowName}>{EVOS[evo].name}</div>
-              <div style={st.rowVal}>
+              <div data-edit="name" style={st.rowName}>{EVOS[evo].name}</div>
+              <div data-edit="val" style={st.rowVal}>
                 {EVOS[evo].mode === 'quad' ? '4족 질주 · 주먹질' : EVOS[evo].mode === 'erectus' ? '몽둥이 · 내려치기/올려치기' : '직립 보행 · 돌 던지기'} · 공격력 ×{EVOS[evo].mult}
                 {evo < EVOS.length - 1 && <span style={{ color: '#7cb35c' }}> → ×{EVOS[evo + 1].mult}</span>}
               </div>
             </div>
             {DEBUG && <button style={st.dbgBtn} onClick={() => setEvo(v => Math.max(0, v - 1))}>−</button>}
             {evo < EVOS.length - 1
-              ? <button style={{ ...st.costBtn, opacity: DEBUG || meat >= EVOS[evo + 1].cost ? 1 : 0.4 }} onClick={evolve}>{DEBUG ? '+1' : fmt(EVOS[evo + 1].cost)}</button>
+              ? <button data-edit="cost" style={{ ...st.costBtn, opacity: DEBUG || meat >= EVOS[evo + 1].cost ? 1 : 0.4 }} onClick={evolve}>{DEBUG ? '+1' : fmt(EVOS[evo + 1].cost)}</button>
               : <div style={{ fontSize: 12, opacity: 0.6 }}>최종 단계</div>}
           </div>
         )}
@@ -1126,14 +1145,14 @@ export default function App() {
               const d = STAT_LIST[k]
               const ok = DEBUG || sp > 0
               return (
-                <div key={k} style={st.row}>
-                  <div style={st.skillIcon}><img src={`/icon/${k}.png`} alt="" style={st.statIconImg} /></div>
+                <div key={k} data-edit="row" style={st.row}>
+                  <div data-edit="icon" style={st.skillIcon}><img src={`/icon/${k}.png`} alt="" style={st.statIconImg} /></div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={st.rowName}>{d.name} <span style={st.rowLv}>Lv.{skill[k]}</span></div>
-                    <div style={st.rowVal}>{statText(k, lv[k] + skill[k])} <span style={{ color: '#7cb35c' }}>→ {statText(k, lv[k] + skill[k] + 1)}</span></div>
+                    <div data-edit="name" style={st.rowName}>{d.name} <span style={st.rowLv}>Lv.{skill[k]}</span></div>
+                    <div data-edit="val" style={st.rowVal}>{statText(k, lv[k] + skill[k])} <span style={{ color: '#7cb35c' }}>→ {statText(k, lv[k] + skill[k] + 1)}</span></div>
                   </div>
-                  <input style={st.dbgInput} type="number" inputMode="numeric" value={skill[k]} onChange={e => setSkillLv(k, e.target.value)} />
-                  <button style={{ ...st.spBtn, opacity: ok ? 1 : 0.4 }} onClick={() => upSkill(k)}>+1</button>
+                  <input data-edit="input" style={st.dbgInput} type="number" inputMode="numeric" value={skill[k]} onChange={e => setSkillLv(k, e.target.value)} />
+                  <button data-edit="sp" style={{ ...st.spBtn, opacity: ok ? 1 : 0.4 }} onClick={() => upSkill(k)}>+1</button>
                 </div>
               )
             })}
@@ -1144,7 +1163,7 @@ export default function App() {
       )}
 
       {nav === '스킬' && (
-        <div style={st.panel}>
+        <div data-edit="panel" style={st.panel}>
           <div style={st.spBar}>장착 슬롯 · 올린 스킬만 자동 발동</div>
           <div style={st.slotRow}>
             {equipped.map((si, slot) => (
@@ -1167,16 +1186,16 @@ export default function App() {
                   {isEq && !ready && <div style={st.cdOverlay}>{cd.toFixed(1)}</div>}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={st.rowName}>{s.name} {isEq && <span style={{ ...st.rowLv, color: '#7ce0ff' }}>장착됨</span>}</div>
-                  <div style={st.rowVal}>{s.desc} · 데미지 ×{s.dmgMult}</div>
+                  <div data-edit="name" style={st.rowName}>{s.name} {isEq && <span style={{ ...st.rowLv, color: '#7ce0ff' }}>장착됨</span>}</div>
+                  <div data-edit="val" style={st.rowVal}>{s.desc} · 데미지 ×{s.dmgMult}</div>
                 </div>
                 <span style={{ fontSize: 11, opacity: 0.7 }}>쿨</span>
                 <input
-                  style={st.dbgInput} type="number" inputMode="decimal" value={cdConf[i]}
+                  data-edit="input" style={st.dbgInput} type="number" inputMode="decimal" value={cdConf[i]}
                   onClick={e => e.stopPropagation()}
                   onChange={e => { const v = Math.max(0.1, Number(e.target.value) || 0.1); setCdConf(c => { const n = [...c]; n[i] = v; return n }) }}
                 />
-                <button style={{ ...st.spBtn, background: isEq ? '#6b4f35' : '#2f8fb0' }}>{isEq ? '해제' : '장착'}</button>
+                <button data-edit="sp" style={{ ...st.spBtn, background: isEq ? '#6b4f35' : '#2f8fb0' }}>{isEq ? '해제' : '장착'}</button>
               </div>
             )
           })}
@@ -1184,8 +1203,8 @@ export default function App() {
       )}
 
       {nav === '장비' && (
-        <div style={st.frameBox}>
-          <div style={st.tabsInner}>
+        <div data-edit="panel" style={st.frameBox}>
+          <div data-edit="tab" style={st.tabsInner}>
             {['무기', '방어구', '유물'].map(t => (
               <button key={t} style={{ ...st.tabBtn, ...(equipTab === t ? st.tabActive : {}) }} onClick={() => setEquipTab(t)}>{t}</button>
             ))}
@@ -1250,12 +1269,12 @@ export default function App() {
               {Math.floor(offReward.sec / 3600)}시간 {Math.floor(offReward.sec % 3600 / 60)}분 · 웨이브 {wave} · {fmt(offReward.kills)}마리 사냥
             </div>
             <div style={{ fontSize: 15, marginBottom: 14 }}>🍖 +{fmt(offReward.meat)} · <span style={{ color: '#8ab4ff' }}>EXP +{fmt(offReward.exp)}</span></div>
-            <button style={{ ...st.costBtn, width: '100%' }} onClick={() => setOffReward(null)}>받기</button>
+            <button data-edit="cost" style={{ ...st.costBtn, width: '100%' }} onClick={() => setOffReward(null)}>받기</button>
           </div>
         </div>
       )}
 
-      <div style={st.bottomNav}>
+      <div data-edit="nav" style={st.bottomNav}>
         {[['영웅', 'nav_hero'], ['스킬', 'nav_skill'], ['장비', 'nav_equip'], ['동료', 'nav_ally'], ['퀴즈', 'nav_quiz'], ['상점', 'nav_shop']].map(([n, ic]) => (
           <button key={n} style={{ ...st.navBtn, ...(nav === n ? st.navActive : {}) }} onClick={() => setNav(n)}>
             <img src={`/icon/${ic}.png`} alt="" style={st.navIconImg} />
@@ -1278,6 +1297,22 @@ const UI_DEFAULT = {
   costw: 40, costh: 30, costfz: 13, inputw: 38, inputfz: 13,
   spw: 42, sph: 8, spfz: 13, tabpt: 9, tabpb: 12, tabfz: 14,
   navicon: 26, navpt: 10, navpb: 8, avatar: 48, slotmax: 60, equipcols: 5, equipgap: 6,
+  // 위치 이동(px): 요소별 X/Y
+  avatarX: 0, avatarY: 0, tabX: 0, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: 0, pillY: 0, iconX: 0, iconY: 0,
+}
+const EDIT_GROUPS = {
+  avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
+  pill: { label: '자원 표시', size: [], pos: 'pill' },
+  panel: { label: '패널 틀', size: ['panelbwV', 'panelbwH'], pos: null },
+  tab: { label: '탭', size: ['tabpt', 'tabpb', 'tabfz'], pos: 'tab' },
+  row: { label: '항목 틀', size: ['rowbwV', 'rowbwH', 'rowmin', 'rowgap'], pos: null },
+  icon: { label: '아이콘', size: ['icon'], pos: 'icon' },
+  name: { label: '이름 글자', size: ['name', 'lv'], pos: null },
+  val: { label: '수치 글자', size: ['val'], pos: null },
+  cost: { label: '+1 버튼', size: ['costw', 'costh', 'costfz'], pos: 'cost' },
+  input: { label: '숫자칸', size: ['inputw', 'inputfz'], pos: null },
+  sp: { label: '장착 버튼', size: ['spw', 'sph', 'spfz'], pos: null },
+  nav: { label: '하단 네비', size: ['navicon', 'navpt', 'navpb'], pos: 'nav' },
 }
 const UI_LABELS = {
   panelbwV: '패널 테두리(상하)', panelbwH: '패널 테두리(좌우)', rowbwV: '항목 테두리(상하)', rowbwH: '항목 테두리(좌우)',
@@ -1293,6 +1328,9 @@ const uiVars = c => `:root{
 --pd-spw:${c.spw}px;--pd-sph:${c.sph}px;--pd-spfz:${c.spfz}px;--pd-tabpt:${c.tabpt}px;--pd-tabpb:${c.tabpb}px;--pd-tabfz:${c.tabfz}px;
 --pd-navicon:${c.navicon}px;--pd-navpt:${c.navpt}px;--pd-navpb:${c.navpb}px;--pd-avatar:${c.avatar}px;--pd-slotmax:${c.slotmax}px;
 --pd-equipcols:${c.equipcols};--pd-equipgap:${c.equipgap}px;
+--pd-avatar-x:${c.avatarX}px;--pd-avatar-y:${c.avatarY}px;--pd-tab-x:${c.tabX}px;--pd-tab-y:${c.tabY}px;
+--pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
+--pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center' },
@@ -1309,7 +1347,7 @@ const st = {
   },
   avatar: { width: 44, height: 44, borderRadius: 10, border: `2px solid ${GOLD_D}`, background: '#1a120b', imageRendering: 'pixelated', boxShadow: 'inset 0 0 0 1px #201408' },
   avatarWrap: {
-    width: 'var(--pd-avatar)', height: 'var(--pd-avatar)', flexShrink: 0, position: 'relative',
+    width: 'var(--pd-avatar)', height: 'var(--pd-avatar)', flexShrink: 0, position: 'relative', transform: 'translate(var(--pd-avatar-x), var(--pd-avatar-y))',
     backgroundImage: 'url(/ui/avatar.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
@@ -1319,7 +1357,7 @@ const st = {
   lvBadge: { fontSize: 12, color: GOLD, background: 'linear-gradient(180deg,#3a2a14,#2a1d0d)', border: `1px solid ${GOLD_D}`, padding: '1px 8px', borderRadius: 7, flexShrink: 0 },
   expOuter: { height: 9, background: '#0e0a05', borderRadius: 5, overflow: 'hidden', marginTop: 4, border: '1px solid #3a2a14' },
   expInner: { height: '100%', background: 'linear-gradient(90deg,#c98a2e,#f0c05a,#ffe08a)', transition: 'width 0.2s' },
-  currency: { textAlign: 'right', fontSize: 14, whiteSpace: 'nowrap' },
+  currency: { textAlign: 'right', fontSize: 14, whiteSpace: 'nowrap', transform: 'translate(var(--pd-pill-x), var(--pd-pill-y))' },
   currencyPill: {
     display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13,
     background: 'linear-gradient(180deg,#2b1e11,#1a1208)', border: '1px solid #4a3418',
@@ -1348,7 +1386,7 @@ const st = {
   },
   spDot: { marginLeft: 5, fontSize: 11, color: '#fff', background: '#e05a4e', borderRadius: 8, padding: '0 6px' },
   bottomNav: {
-    display: 'flex', background: 'linear-gradient(180deg,#241811,#160e07)', borderTop: '2px solid #4a3418',
+    display: 'flex', background: 'linear-gradient(180deg,#241811,#160e07)', borderTop: '2px solid #4a3418', transform: 'translate(var(--pd-nav-x), var(--pd-nav-y))',
     paddingBottom: 'env(safe-area-inset-bottom)',
   },
   navBtn: {
@@ -1371,7 +1409,7 @@ const st = {
   equipTier: { position: 'absolute', right: 3, bottom: 1, fontSize: 11, color: GOLD, textShadow: '0 0 3px #000' },
   offOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   offBox: { background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: `2px solid ${GOLD_D}`, borderRadius: 16, padding: '20px 24px', textAlign: 'center', minWidth: 240, color: '#f3e6d0', boxShadow: '0 8px 30px rgba(0,0,0,0.6)' },
-  skillIcon: { width: 'var(--pd-icon)', height: 'var(--pd-icon)', borderRadius: 8, background: 'linear-gradient(180deg,#2c2013,#1a1208)', border: '1px solid #5a4028', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 },
+  skillIcon: { width: 'var(--pd-icon)', height: 'var(--pd-icon)', transform: 'translate(var(--pd-icon-x), var(--pd-icon-y))', borderRadius: 8, background: 'linear-gradient(180deg,#2c2013,#1a1208)', border: '1px solid #5a4028', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 },
   progOuter: { height: 8, background: '#2a1d0d', borderRadius: 4, overflow: 'hidden', border: '1px solid #3a2a14' },
   progInner: { height: '100%', background: `linear-gradient(90deg,${GOLD_D},${GOLD})`, transition: 'width 0.2s' },
   canvasWrap: { height: '42%', position: 'relative', minHeight: 220 },
@@ -1407,7 +1445,7 @@ const st = {
     margin: '3px 0 0', padding: '4px 4px 2px',
     display: 'flex', flexDirection: 'column',
   },
-  tabsInner: { display: 'flex', gap: 5, padding: '0 0 5px', flexShrink: 0 },
+  tabsInner: { display: 'flex', gap: 5, padding: '0 0 5px', flexShrink: 0, transform: 'translate(var(--pd-tab-x), var(--pd-tab-y))' },
   panelInner: { flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 5 },
   row: {
     display: 'flex', alignItems: 'center', gap: 6,
@@ -1425,7 +1463,7 @@ const st = {
     minWidth: 'var(--pd-costw)', height: 'var(--pd-costh)', padding: '0 8px', border: 'none', background: 'transparent',
     backgroundImage: 'url(/ui/btn.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
     color: '#fff4d8', fontSize: 'var(--pd-costfz)', flexShrink: 0, textShadow: '0 1px 2px #4a0e0e',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'translate(var(--pd-cost-x), var(--pd-cost-y))',
   },
   plusBtn: { border: '1px solid #a85f1f', background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
   minusBtn: { border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#cbb89a' },
