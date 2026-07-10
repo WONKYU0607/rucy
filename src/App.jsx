@@ -235,6 +235,10 @@ export default function App() {
   const [clearMsg, setClearMsg] = useState(null)   // 웨이브 클리어 배너 (멈춤 없음)
   const [bossReady, setBossReady] = useState(false) // 10웨이브 클리어 후 보스 도전 대기
   const [gem] = useState(0)                          // 다이아 재화 (추후 구현, 표시용)
+  const [uiCfg, setUiCfg] = useState(() => { try { return { ...UI_DEFAULT, ...JSON.parse(localStorage.getItem('paleoUiCfg') || '{}') } } catch { return { ...UI_DEFAULT } } })
+  const [uiEdit, setUiEdit] = useState(false)
+  const [copiedUi, setCopiedUi] = useState(false)
+  useEffect(() => { localStorage.setItem('paleoUiCfg', JSON.stringify(uiCfg)) }, [uiCfg])
   const [offReward, setOffReward] = useState(null) // 오프라인 보상 팝업
   const offDone = useRef(false)
 
@@ -993,7 +997,30 @@ export default function App() {
       .pd-num { font-family: 'Do Hyeon', sans-serif; letter-spacing: 0.02em; }
       @keyframes pdPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
     `}</style>
+    <style>{uiVars(uiCfg)}</style>
     <div style={st.root}>
+      <button onClick={() => setUiEdit(v => !v)} style={{ position: 'absolute', top: 4, right: 4, zIndex: 60, width: 26, height: 26, borderRadius: 6, border: '1px solid #6b4a24', background: 'rgba(20,13,7,0.8)', color: GOLD, fontSize: 14, padding: 0 }}>⚙</button>
+      {uiEdit && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 59, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'flex-end' }} onClick={() => setUiEdit(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 420, maxHeight: '70%', overflowY: 'auto', background: '#1a120b', borderTop: `2px solid ${GOLD_D}`, padding: '10px 12px 16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <b style={{ color: GOLD, fontSize: 15 }}>UI 크기 편집</b>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button onClick={() => { navigator.clipboard?.writeText(JSON.stringify(uiCfg)); setCopiedUi(true); setTimeout(() => setCopiedUi(false), 1200) }} style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontSize: 13 }}>{copiedUi ? '복사됨!' : '값 복사'}</button>
+                <button onClick={() => setUiCfg({ ...UI_DEFAULT })} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontSize: 13 }}>초기화</button>
+              </div>
+            </div>
+            <div style={{ fontSize: 11, opacity: 0.6, marginBottom: 8 }}>슬라이더로 조정 → "값 복사" 눌러서 개발자에게 전달</div>
+            {Object.keys(UI_DEFAULT).map(k => (
+              <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                <span style={{ width: 100, fontSize: 12, flexShrink: 0 }}>{UI_LABELS[k]}</span>
+                <input type="range" min={k === 'equipcols' ? 3 : 0} max={k === 'equipcols' ? 8 : (k.includes('bw') || k.includes('gap') || k === 'sph' || k === 'navpt' || k === 'navpb' || k === 'tabpt' || k === 'tabpb' ? 40 : 120)} step={k === 'val' ? 0.5 : 1} value={uiCfg[k]} onChange={e => setUiCfg({ ...uiCfg, [k]: parseFloat(e.target.value) })} style={{ flex: 1, minWidth: 0 }} />
+                <span style={{ width: 38, textAlign: 'right', fontSize: 12, color: GOLD }}>{uiCfg[k]}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div style={st.topBar}>
         <div style={st.avatarWrap}><img src="/hero/misc/face.png" alt="" style={st.avatarFace} /></div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -1244,6 +1271,29 @@ export default function App() {
 const GOLD = '#e8b962'
 const GOLD_D = '#a9762f'
 const PANEL_BORDER = '1px solid #6b4a24'
+// ── UI 크기 조정값 (앱 내 편집기로 조정 → 복사) ──
+const UI_DEFAULT = {
+  panelbwV: 13, panelbwH: 11, rowbwV: 9, rowbwH: 11, rowmin: 30, rowgap: 5,
+  icon: 32, name: 13, lv: 11, val: 10.5,
+  costw: 40, costh: 30, costfz: 13, inputw: 38, inputfz: 13,
+  spw: 42, sph: 8, spfz: 13, tabpt: 9, tabpb: 12, tabfz: 14,
+  navicon: 26, navpt: 10, navpb: 8, avatar: 48, slotmax: 60, equipcols: 5, equipgap: 6,
+}
+const UI_LABELS = {
+  panelbwV: '패널 테두리(상하)', panelbwH: '패널 테두리(좌우)', rowbwV: '항목 테두리(상하)', rowbwH: '항목 테두리(좌우)',
+  rowmin: '항목 최소높이', rowgap: '항목 간격', icon: '아이콘 크기', name: '이름 글자', lv: 'Lv 글자', val: '수치 글자',
+  costw: '+1버튼 너비', costh: '+1버튼 높이', costfz: '+1버튼 글자', inputw: '숫자칸 너비', inputfz: '숫자칸 글자',
+  spw: '장착버튼 너비', sph: '장착버튼 높이', spfz: '장착버튼 글자', tabpt: '탭 위높이', tabpb: '탭 아래높이', tabfz: '탭 글자',
+  navicon: '네비 아이콘', navpt: '네비 위높이', navpb: '네비 아래높이', avatar: '아바타 크기', slotmax: '스킬슬롯 크기', equipcols: '장비 열수', equipgap: '장비 간격',
+}
+const uiVars = c => `:root{
+--pd-panelbw-v:${c.panelbwV}px;--pd-panelbw-h:${c.panelbwH}px;--pd-rowbw-v:${c.rowbwV}px;--pd-rowbw-h:${c.rowbwH}px;
+--pd-rowmin:${c.rowmin}px;--pd-rowgap:${c.rowgap}px;--pd-icon:${c.icon}px;--pd-name:${c.name}px;--pd-lv:${c.lv}px;--pd-val:${c.val}px;
+--pd-costw:${c.costw}px;--pd-costh:${c.costh}px;--pd-costfz:${c.costfz}px;--pd-inputw:${c.inputw}px;--pd-inputfz:${c.inputfz}px;
+--pd-spw:${c.spw}px;--pd-sph:${c.sph}px;--pd-spfz:${c.spfz}px;--pd-tabpt:${c.tabpt}px;--pd-tabpb:${c.tabpb}px;--pd-tabfz:${c.tabfz}px;
+--pd-navicon:${c.navicon}px;--pd-navpt:${c.navpt}px;--pd-navpb:${c.navpb}px;--pd-avatar:${c.avatar}px;--pd-slotmax:${c.slotmax}px;
+--pd-equipcols:${c.equipcols};--pd-equipgap:${c.equipgap}px;
+}`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center' },
   root: {
@@ -1259,7 +1309,7 @@ const st = {
   },
   avatar: { width: 44, height: 44, borderRadius: 10, border: `2px solid ${GOLD_D}`, background: '#1a120b', imageRendering: 'pixelated', boxShadow: 'inset 0 0 0 1px #201408' },
   avatarWrap: {
-    width: 48, height: 48, flexShrink: 0, position: 'relative',
+    width: 'var(--pd-avatar)', height: 'var(--pd-avatar)', flexShrink: 0, position: 'relative',
     backgroundImage: 'url(/ui/avatar.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
@@ -1292,8 +1342,8 @@ const st = {
   gainItem: { display: 'flex', gap: 8, fontSize: 13, background: 'rgba(10,6,3,0.6)', padding: '2px 8px', borderRadius: 6 },
   spBar: { padding: '3px 5px 5px', fontSize: 12, color: '#c9b596' },
   spBtn: {
-    minWidth: 42, padding: '8px 5px', borderRadius: 7, border: '1px solid #2f7fa0',
-    background: 'linear-gradient(180deg,#3a9ec0,#256f8c)', color: '#fff', fontSize: 13, flexShrink: 0,
+    minWidth: 'var(--pd-spw)', padding: 'var(--pd-sph) 5px', borderRadius: 7, border: '1px solid #2f7fa0',
+    background: 'linear-gradient(180deg,#3a9ec0,#256f8c)', color: '#fff', fontSize: 'var(--pd-spfz)', flexShrink: 0,
     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
   },
   spDot: { marginLeft: 5, fontSize: 11, color: '#fff', background: '#e05a4e', borderRadius: 8, padding: '0 6px' },
@@ -1303,7 +1353,7 @@ const st = {
   },
   navBtn: {
     flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-    padding: '10px 2px 8px', margin: '0 1px', border: 'none', background: 'transparent',
+    padding: 'var(--pd-navpt) 2px var(--pd-navpb)', margin: '0 1px', border: 'none', background: 'transparent',
     backgroundImage: 'url(/ui/nav_off.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
     color: '#9a8768', position: 'relative',
   },
@@ -1311,17 +1361,17 @@ const st = {
   comingSoon: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#20160c', color: '#f3e6d0' },
   cdOverlay: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.72)', fontSize: 13, color: '#7ce0ff' },
   slotRow: { display: 'flex', gap: 6, padding: '2px 2px 5px' },
-  slot: { flex: 1, aspectRatio: '1', maxWidth: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,#2c2013,#20160c)', border: '2px solid #5a4028', borderRadius: 10 },
+  slot: { flex: 1, aspectRatio: '1', maxWidth: 'var(--pd-slotmax)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,#2c2013,#20160c)', border: '2px solid #5a4028', borderRadius: 10 },
   slotEmpty: { fontSize: 22, color: '#6a4f30' },
-  equipGrid: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 },
+  equipGrid: { display: 'grid', gridTemplateColumns: 'repeat(var(--pd-equipcols), 1fr)', gap: 'var(--pd-equipgap)' },
   equipCell: { position: 'relative', aspectRatio: '1', background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: '1px solid #5a4028', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   equipImg: { width: '78%', height: '78%', objectFit: 'contain', imageRendering: 'pixelated' },
   statIconImg: { width: '100%', height: '100%', objectFit: 'contain' },
-  navIconImg: { width: 26, height: 26, objectFit: 'contain' },
+  navIconImg: { width: 'var(--pd-navicon)', height: 'var(--pd-navicon)', objectFit: 'contain' },
   equipTier: { position: 'absolute', right: 3, bottom: 1, fontSize: 11, color: GOLD, textShadow: '0 0 3px #000' },
   offOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   offBox: { background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: `2px solid ${GOLD_D}`, borderRadius: 16, padding: '20px 24px', textAlign: 'center', minWidth: 240, color: '#f3e6d0', boxShadow: '0 8px 30px rgba(0,0,0,0.6)' },
-  skillIcon: { width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(180deg,#2c2013,#1a1208)', border: '1px solid #5a4028', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 },
+  skillIcon: { width: 'var(--pd-icon)', height: 'var(--pd-icon)', borderRadius: 8, background: 'linear-gradient(180deg,#2c2013,#1a1208)', border: '1px solid #5a4028', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 },
   progOuter: { height: 8, background: '#2a1d0d', borderRadius: 4, overflow: 'hidden', border: '1px solid #3a2a14' },
   progInner: { height: '100%', background: `linear-gradient(90deg,${GOLD_D},${GOLD})`, transition: 'width 0.2s' },
   canvasWrap: { height: '42%', position: 'relative', minHeight: 220 },
@@ -1333,9 +1383,9 @@ const st = {
   retryBtn: { padding: '12px 32px', fontSize: 17, borderRadius: 12, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
   tabs: { display: 'flex', gap: 5, padding: '8px 6px 2px', background: 'transparent' },
   tabBtn: {
-    flex: 1, padding: '9px 0 12px', border: 'none', background: 'transparent',
+    flex: 1, padding: 'var(--pd-tabpt) 0 var(--pd-tabpb)', border: 'none', background: 'transparent',
     backgroundImage: 'url(/ui/tab_off.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
-    color: '#b6a488', fontSize: 14, position: 'relative', filter: 'grayscale(0.2)',
+    color: '#b6a488', fontSize: 'var(--pd-tabfz)', position: 'relative', filter: 'grayscale(0.2)',
   },
   tabActive: {
     backgroundImage: 'url(/ui/tab_on.png)', backgroundSize: '100% 100%',
@@ -1344,16 +1394,16 @@ const st = {
   panel: {
     flex: 1, overflowY: 'auto', minHeight: 0,
     background: 'rgba(20,13,7,0.55)',
-    borderStyle: 'solid', borderWidth: '13px 11px 12px 11px',
-    borderImage: 'url(/ui/panel.png) 29 20 26 19 fill / 13px 11px 12px 11px stretch',
+    borderStyle: 'solid', borderWidth: 'var(--pd-panelbw-v) var(--pd-panelbw-h)',
+    borderImage: 'url(/ui/panel.png) 29 20 26 19 fill / var(--pd-panelbw-v) var(--pd-panelbw-h) stretch',
     margin: '3px 0 0', padding: '4px 4px 2px',
-    display: 'flex', flexDirection: 'column', gap: 5,
+    display: 'flex', flexDirection: 'column', gap: 'var(--pd-rowgap)',
   },
   frameBox: {
     flex: 1, minHeight: 0,
     background: 'rgba(20,13,7,0.55)',
-    borderStyle: 'solid', borderWidth: '13px 11px 12px 11px',
-    borderImage: 'url(/ui/panel.png) 29 20 26 19 fill / 13px 11px 12px 11px stretch',
+    borderStyle: 'solid', borderWidth: 'var(--pd-panelbw-v) var(--pd-panelbw-h)',
+    borderImage: 'url(/ui/panel.png) 29 20 26 19 fill / var(--pd-panelbw-v) var(--pd-panelbw-h) stretch',
     margin: '3px 0 0', padding: '4px 4px 2px',
     display: 'flex', flexDirection: 'column',
   },
@@ -1362,19 +1412,19 @@ const st = {
   row: {
     display: 'flex', alignItems: 'center', gap: 6,
     background: 'transparent',
-    borderStyle: 'solid', borderWidth: '9px 11px 9px 11px',
-    borderImage: 'url(/ui/row.png) 22 23 24 24 fill / 9px 11px 9px 11px stretch',
-    padding: '2px 3px', minHeight: 30,
+    borderStyle: 'solid', borderWidth: 'var(--pd-rowbw-v) var(--pd-rowbw-h)',
+    borderImage: 'url(/ui/row.png) 22 23 24 24 fill / var(--pd-rowbw-v) var(--pd-rowbw-h) stretch',
+    padding: '2px 3px', minHeight: 'var(--pd-rowmin)',
   },
-  rowName: { fontSize: 13 },
-  rowLv: { fontSize: 11, color: GOLD, marginLeft: 4 },
-  rowVal: { fontSize: 10.5, opacity: 0.82, marginTop: 1, whiteSpace: 'nowrap' },
+  rowName: { fontSize: 'var(--pd-name)' },
+  rowLv: { fontSize: 'var(--pd-lv)', color: GOLD, marginLeft: 4 },
+  rowVal: { fontSize: 'var(--pd-val)', opacity: 0.82, marginTop: 1, whiteSpace: 'nowrap' },
   dbgBtn: { width: 27, padding: '7px 0', borderRadius: 6, border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#f3e6d0', fontSize: 15, flexShrink: 0 },
-  dbgInput: { width: 38, padding: '6px 2px', borderRadius: 6, border: '1px solid #5a4028', background: '#160e07', color: GOLD, fontSize: 13, textAlign: 'center', flexShrink: 0, fontFamily: "'Do Hyeon',sans-serif" },
+  dbgInput: { width: 'var(--pd-inputw)', padding: '6px 2px', borderRadius: 6, border: '1px solid #5a4028', background: '#160e07', color: GOLD, fontSize: 'var(--pd-inputfz)', textAlign: 'center', flexShrink: 0, fontFamily: "'Do Hyeon',sans-serif" },
   costBtn: {
-    minWidth: 40, height: 30, padding: '0 8px', border: 'none', background: 'transparent',
+    minWidth: 'var(--pd-costw)', height: 'var(--pd-costh)', padding: '0 8px', border: 'none', background: 'transparent',
     backgroundImage: 'url(/ui/btn.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
-    color: '#fff4d8', fontSize: 13, flexShrink: 0, textShadow: '0 1px 2px #4a0e0e',
+    color: '#fff4d8', fontSize: 'var(--pd-costfz)', flexShrink: 0, textShadow: '0 1px 2px #4a0e0e',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
   plusBtn: { border: '1px solid #a85f1f', background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
