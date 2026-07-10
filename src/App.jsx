@@ -1011,7 +1011,8 @@ export default function App() {
           {!editSel && <div style={{ fontSize: 13, color: '#c9b596', textAlign: 'center', padding: '8px 0' }}>조정할 요소를 화면에서 탭하세요 (틀·아이콘·글자·숫자·버튼)</div>}
           {editSel && (() => {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
-            const rng = k => k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120)
+            const rng = k => k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : (k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
+            const rmin = k => k === 'equipcols' ? 3 : 0
             return <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <b style={{ color: GOLD, fontSize: 14 }}>{g.label}</b>
@@ -1020,7 +1021,7 @@ export default function App() {
               {g.size.map(k => (
                 <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <span style={{ width: 92, fontSize: 12, flexShrink: 0 }}>{UI_LABELS[k]}</span>
-                  <input type="range" min={0} max={rng(k)} step={k === 'val' ? 0.5 : 1} value={uiCfg[k]} onChange={e => setUiCfg({ ...uiCfg, [k]: parseFloat(e.target.value) })} style={{ flex: 1, minWidth: 0 }} />
+                  <input type="range" min={rmin(k)} max={rng(k)} step={k === 'val' ? 0.5 : 1} value={uiCfg[k]} onChange={e => setUiCfg({ ...uiCfg, [k]: parseFloat(e.target.value) })} style={{ flex: 1, minWidth: 0 }} />
                   <span style={{ width: 34, textAlign: 'right', fontSize: 12, color: GOLD }}>{uiCfg[k]}</span>
                 </div>
               ))}
@@ -1123,7 +1124,8 @@ export default function App() {
             <img
               src={EVOS[evo].mode === 'quad' ? '/hero/quad/quad_1.png' : EVOS[evo].mode === 'erectus' ? '/hero/erectus_walk/ewalk_1.png' : '/hero/misc/hero_idle.png'}
               alt=""
-              style={{ height: 64 }}
+              data-edit="evoimg"
+              style={{ height: 'var(--pd-evoimg)', transform: 'translate(var(--pd-evoimg-x), var(--pd-evoimg-y))' }}
             />
             <div style={{ flex: 1, marginLeft: 12 }}>
               <div data-edit="name" style={st.rowName}>{EVOS[evo].name}</div>
@@ -1140,7 +1142,7 @@ export default function App() {
         )}
         {tab === '성장' && (
           <>
-            <div style={st.spBar}>스킬포인트 <b style={{ color: '#7ce0ff', fontSize: 18 }}>{sp}</b> <span style={{ opacity: 0.6, fontSize: 11 }}>· 레벨업 시 획득</span></div>
+            <div data-edit="spbar" style={st.spBar}>스킬포인트 <b style={{ color: '#7ce0ff', fontSize: 18 }}>{sp}</b> <span style={{ opacity: 0.6, fontSize: 11 }}>· 레벨업 시 획득</span></div>
             {STAT_KEYS.map(k => {
               const d = STAT_LIST[k]
               const ok = DEBUG || sp > 0
@@ -1164,15 +1166,15 @@ export default function App() {
 
       {nav === '스킬' && (
         <div data-edit="panel" style={st.panel}>
-          <div style={st.spBar}>장착 슬롯 · 올린 스킬만 자동 발동</div>
+          <div data-edit="spbar" style={st.spBar}>장착 슬롯 · 올린 스킬만 자동 발동</div>
           <div style={st.slotRow}>
             {equipped.map((si, slot) => (
-              <button key={slot} style={st.slot} onClick={() => si != null && unequipSkill(slot)}>
-                {si != null ? <span style={{ fontSize: 22 }}>{SKILLS[si].icon}</span> : <span style={st.slotEmpty}>+</span>}
+              <button key={slot} data-edit="slot" style={st.slot} onClick={() => si != null && unequipSkill(slot)}>
+                {si != null ? <span style={{ fontSize: 'var(--pd-slotfz)' }}>{SKILLS[si].icon}</span> : <span style={st.slotEmpty}>+</span>}
               </button>
             ))}
           </div>
-          <div style={{ ...st.spBar, marginTop: 4 }}>보유 스킬 · 탭하여 장착 <span style={{ opacity: 0.6, fontSize: 11 }}>· {EVOS[evo].name} 전용</span></div>
+          <div data-edit="spbar" style={{ ...st.spBar, marginTop: 4 }}>보유 스킬 · 탭하여 장착 <span style={{ opacity: 0.6, fontSize: 11 }}>· {EVOS[evo].name} 전용</span></div>
           {SKILLS.map((s, i) => {
             if (s.stage !== evo) return null
             const cd = skillCdUI[i] || 0
@@ -1212,10 +1214,10 @@ export default function App() {
           <div style={st.panelInner}>
           {equipTab === '무기' && WEAPON_TYPES.map((wt, wi) => (
             <div key={wi}>
-              <div style={{ fontSize: 12, fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85 }}>{wt}</div>
+              <div data-edit="cat" style={{ fontSize: 'var(--pd-catfz)', fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85 }}>{wt}</div>
               <div style={st.equipGrid}>
                 {Array.from({ length: 10 }, (_, ti) => (
-                  <div key={ti} style={st.equipCell}>
+                  <div key={ti} data-edit="equip" style={st.equipCell}>
                     <img src={`/equip/A/w${wi + 1}_${ti + 1}.png`} alt="" style={st.equipImg} />
                     <div style={st.equipTier}>{ti + 1}</div>
                   </div>
@@ -1225,10 +1227,10 @@ export default function App() {
           ))}
           {equipTab === '방어구' && ARMOR_TYPES.map((at, ai) => (
             <div key={ai}>
-              <div style={{ fontSize: 12, fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85 }}>{at}</div>
+              <div data-edit="cat" style={{ fontSize: 'var(--pd-catfz)', fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85 }}>{at}</div>
               <div style={st.equipGrid}>
                 {Array.from({ length: 7 }, (_, ti) => (
-                  <div key={ti} style={st.equipCell}>
+                  <div key={ti} data-edit="equip" style={st.equipCell}>
                     <img src={`/equip/B/a${ai + 1}_${ti + 1}.png`} alt="" style={st.equipImg} />
                     <div style={st.equipTier}>{ti + 1}</div>
                   </div>
@@ -1238,10 +1240,10 @@ export default function App() {
           ))}
           {equipTab === '유물' && RELIC_ROWS.map((rn, ri) => (
             <div key={ri}>
-              <div style={{ fontSize: 12, fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85 }}>{rn}</div>
+              <div data-edit="cat" style={{ fontSize: 'var(--pd-catfz)', fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85 }}>{rn}</div>
               <div style={st.equipGrid}>
                 {Array.from({ length: 10 }, (_, ti) => (
-                  <div key={ti} style={st.equipCell}>
+                  <div key={ti} data-edit="equip" style={st.equipCell}>
                     <img src={`/relic/r${ri + 1}_${ti + 1}.png`} alt="" style={st.equipImg} />
                     <div style={st.equipTier}>{ti + 1}</div>
                   </div>
@@ -1297,8 +1299,10 @@ const UI_DEFAULT = {
   costw: 40, costh: 30, costfz: 13, inputw: 38, inputfz: 13,
   spw: 42, sph: 8, spfz: 13, tabpt: 9, tabpb: 12, tabfz: 14,
   navicon: 26, navpt: 10, navpb: 8, avatar: 48, slotmax: 60, equipcols: 5, equipgap: 6,
+  // 추가 요소
+  evoimg: 64, slotfz: 22, catfz: 12, spbarfz: 12, equipimg: 78, equiptier: 11,
   // 위치 이동(px): 요소별 X/Y
-  avatarX: 0, avatarY: 0, tabX: 0, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: 0, pillY: 0, iconX: 0, iconY: 0,
+  avatarX: 0, avatarY: 0, tabX: 0, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: 0, pillY: 0, iconX: 0, iconY: 0, evoimgX: 0, evoimgY: 0,
 }
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
@@ -1313,6 +1317,11 @@ const EDIT_GROUPS = {
   input: { label: '숫자칸', size: ['inputw', 'inputfz'], pos: null },
   sp: { label: '장착 버튼', size: ['spw', 'sph', 'spfz'], pos: null },
   nav: { label: '하단 네비', size: ['navicon', 'navpt', 'navpb'], pos: 'nav' },
+  evoimg: { label: '진화 캐릭터', size: ['evoimg'], pos: 'evoimg' },
+  slot: { label: '스킬 슬롯', size: ['slotmax', 'slotfz'], pos: null },
+  cat: { label: '분류 글자', size: ['catfz'], pos: null },
+  spbar: { label: '안내 글자', size: ['spbarfz'], pos: null },
+  equip: { label: '장비칸', size: ['equipcols', 'equipgap', 'equipimg', 'equiptier'], pos: null },
 }
 const UI_LABELS = {
   panelbwV: '패널 테두리(상하)', panelbwH: '패널 테두리(좌우)', rowbwV: '항목 테두리(상하)', rowbwH: '항목 테두리(좌우)',
@@ -1320,6 +1329,7 @@ const UI_LABELS = {
   costw: '+1버튼 너비', costh: '+1버튼 높이', costfz: '+1버튼 글자', inputw: '숫자칸 너비', inputfz: '숫자칸 글자',
   spw: '장착버튼 너비', sph: '장착버튼 높이', spfz: '장착버튼 글자', tabpt: '탭 위높이', tabpb: '탭 아래높이', tabfz: '탭 글자',
   navicon: '네비 아이콘', navpt: '네비 위높이', navpb: '네비 아래높이', avatar: '아바타 크기', slotmax: '스킬슬롯 크기', equipcols: '장비 열수', equipgap: '장비 간격',
+  evoimg: '진화캐릭 크기', slotfz: '슬롯 + 글자', catfz: '분류 글자', spbarfz: '안내 글자', equipimg: '장비아이콘', equiptier: '티어 숫자',
 }
 const uiVars = c => `:root{
 --pd-panelbw-v:${c.panelbwV}px;--pd-panelbw-h:${c.panelbwH}px;--pd-rowbw-v:${c.rowbwV}px;--pd-rowbw-h:${c.rowbwH}px;
@@ -1331,6 +1341,8 @@ const uiVars = c => `:root{
 --pd-avatar-x:${c.avatarX}px;--pd-avatar-y:${c.avatarY}px;--pd-tab-x:${c.tabX}px;--pd-tab-y:${c.tabY}px;
 --pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
+--pd-evoimg:${c.evoimg}px;--pd-evoimg-x:${c.evoimgX}px;--pd-evoimg-y:${c.evoimgY}px;--pd-slotfz:${c.slotfz}px;
+--pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center' },
@@ -1378,7 +1390,7 @@ const st = {
   waveProg: { height: 6, background: '#120c06', overflow: 'hidden' },
   gainWrap: { position: 'absolute', left: 8, top: 44, display: 'flex', flexDirection: 'column', gap: 3, pointerEvents: 'none' },
   gainItem: { display: 'flex', gap: 8, fontSize: 13, background: 'rgba(10,6,3,0.6)', padding: '2px 8px', borderRadius: 6 },
-  spBar: { padding: '3px 5px 5px', fontSize: 12, color: '#c9b596' },
+  spBar: { padding: '3px 5px 5px', fontSize: 'var(--pd-spbarfz)', color: '#c9b596' },
   spBtn: {
     minWidth: 'var(--pd-spw)', padding: 'var(--pd-sph) 5px', borderRadius: 7, border: '1px solid #2f7fa0',
     background: 'linear-gradient(180deg,#3a9ec0,#256f8c)', color: '#fff', fontSize: 'var(--pd-spfz)', flexShrink: 0,
@@ -1400,13 +1412,13 @@ const st = {
   cdOverlay: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.72)', fontSize: 13, color: '#7ce0ff' },
   slotRow: { display: 'flex', gap: 6, padding: '2px 2px 5px' },
   slot: { flex: 1, aspectRatio: '1', maxWidth: 'var(--pd-slotmax)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,#2c2013,#20160c)', border: '2px solid #5a4028', borderRadius: 10 },
-  slotEmpty: { fontSize: 22, color: '#6a4f30' },
+  slotEmpty: { fontSize: 'var(--pd-slotfz)', color: '#6a4f30' },
   equipGrid: { display: 'grid', gridTemplateColumns: 'repeat(var(--pd-equipcols), 1fr)', gap: 'var(--pd-equipgap)' },
   equipCell: { position: 'relative', aspectRatio: '1', background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: '1px solid #5a4028', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  equipImg: { width: '78%', height: '78%', objectFit: 'contain', imageRendering: 'pixelated' },
+  equipImg: { width: 'var(--pd-equipimg)', height: 'var(--pd-equipimg)', objectFit: 'contain', imageRendering: 'pixelated' },
   statIconImg: { width: '100%', height: '100%', objectFit: 'contain' },
   navIconImg: { width: 'var(--pd-navicon)', height: 'var(--pd-navicon)', objectFit: 'contain' },
-  equipTier: { position: 'absolute', right: 3, bottom: 1, fontSize: 11, color: GOLD, textShadow: '0 0 3px #000' },
+  equipTier: { position: 'absolute', right: 3, bottom: 1, fontSize: 'var(--pd-equiptier)', color: GOLD, textShadow: '0 0 3px #000' },
   offOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   offBox: { background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: `2px solid ${GOLD_D}`, borderRadius: 16, padding: '20px 24px', textAlign: 'center', minWidth: 240, color: '#f3e6d0', boxShadow: '0 8px 30px rgba(0,0,0,0.6)' },
   skillIcon: { width: 'var(--pd-icon)', height: 'var(--pd-icon)', transform: 'translate(var(--pd-icon-x), var(--pd-icon-y))', borderRadius: 8, background: 'linear-gradient(180deg,#2c2013,#1a1208)', border: '1px solid #5a4028', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 },
