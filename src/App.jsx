@@ -17,7 +17,7 @@ const ANIM = {
 // 스킬 정의 — charSeq: 히어로가 재생할 프레임(1-based, 없으면 전체), fx: 분리 이펙트
 //   fx proj  = 투사체: fly 프레임이 몬스터 쪽으로 날아가 명중 시 데미지(+impact 프레임)
 //   fx strike = 낙하/타격: 적 위치에 frames 재생, 중반에 데미지
-// stage — 0:4족보행 1:직립보행 2:에렉투스 3:네안데르탈렌시스 4:사피엔스 5:인간
+// stage — 0:4족보행 1:직립보행 2:에렉투스 3:네안데르탈인 4:사피엔스 5:인간
 const SKILL_SHEET = [
   { id: 1, n: 6, h: 280, stage: 3, title: '번개 바위', charSeq: [1, 2, 3, 4], fx: { type: 'strike', frames: [5, 6], fxH: 240 } },
   { id: 2, n: 5, h: 250, stage: 3, title: '전기 작살', charSeq: [1, 2], fx: { type: 'proj', fly: [3, 4], impact: 5, fxH: 200 } },
@@ -192,7 +192,7 @@ const EVOS = [
   { name: '오스트랄로피테쿠스 (4족보행)', mult: 1, mode: 'quad' },
   { name: '오스트랄로피테쿠스 (직립보행)', mult: 3, cost: 1500, mode: 'biped' },
   { name: '호모 에렉투스', mult: 27, cost: 300000, mode: 'erectus' },
-  { name: '호모 네안데르탈렌시스', mult: 81, cost: 3000000, mode: 'biped' },
+  { name: '호모 네안데르탈인', mult: 81, cost: 3000000, mode: 'biped' },
   { name: '호모 사피엔스', mult: 243, cost: 30000000, mode: 'biped' },
   { name: '인간', mult: 729, cost: 300000000, mode: 'biped' },
 ]
@@ -472,7 +472,7 @@ export default function App() {
       w.scrollX += scroll * dt
 
       if (st.phase === 'fighting') {
-        if (w.startBossFlag) { startBossBattle(); w.startBossFlag = false; hero.state = 'move'; hero.t = 0 }
+        if (w.startBossFlag) { w.startBossFlag = false; w.needStart = false; startBossBattle(); hero.state = 'move'; hero.t = 0 }
         if (w.needStart) { startWave(st.wave); w.needStart = false; hero.hp = st.maxHp; hero.state = 'move'; hero.t = 0 }
 
         if (w.spawnLeft > 0) {
@@ -621,12 +621,17 @@ export default function App() {
             if (hero.t >= PUNCH.total) { hero.state = 'move'; hero.t = 0 }
           } else if (st.mode === 'erectus') {
             const prog = hero.t / ECLUB.total
-            if (!hero.did && prog >= ECLUB.hitAt) {
-              hero.did = true
-              const t = w.enemies.find(e => !e.dead && e.x - HERO_X < ECLUB.range + 40)
-              if (t) dealDamage(t, st)
+            const inRange = w.enemies.find(e => !e.dead && e.x - HERO_X < ECLUB.range + 40)
+            if (!hero.did && !inRange) {
+              // 타격 전에 사거리 내 적이 사라짐(스킬 등으로 처치) → 헛스윙 방지, 걷기로 복귀
+              hero.state = 'move'; hero.t = 0
+            } else {
+              if (!hero.did && prog >= ECLUB.hitAt) {
+                hero.did = true
+                if (inRange) dealDamage(inRange, st)
+              }
+              if (hero.t >= ECLUB.total) { hero.state = 'move'; hero.t = 0 }
             }
-            if (hero.t >= ECLUB.total) { hero.state = 'move'; hero.t = 0 }
           } else {
             if (!hero.did && hero.t >= THROW.windupEnd) {
               hero.did = true
@@ -683,16 +688,16 @@ export default function App() {
             setMeat(m => m + 100 + w.waveNum * 20)
             setClearMsg('보스 격파!')
             w.bossBattle = false
+            w.bossPrompted = false
             setBossReady(false)
             setWave(v => v + 1)
             w.needStart = true
           } else {
             setMeat(m => m + 15 + w.waveNum * 5)
             if (w.waveNum % 10 === 0) {
-              // 10웨이브 클리어 → 보스 도전 대기 (버튼 누를 때까지 진행 정지)
-              setClearMsg(w.waveNum)
-              setBossReady(true)
-              // needStart 하지 않음 → 대기
+              // 10웨이브: 보스 도전 버튼 띄우되 멈추지 않고 같은 웨이브 계속 반복
+              if (!w.bossPrompted) { w.bossPrompted = true; setClearMsg(w.waveNum); setBossReady(true) }
+              w.needStart = true  // setWave 안 함 → 같은 웨이브 재시작(반복)
             } else {
               setClearMsg(w.waveNum)
               setWave(v => v + 1)
@@ -1062,7 +1067,6 @@ export default function App() {
                 <div style={st.rowName}>{d.name} <span style={st.rowLv}>Lv.{lv[k]}</span></div>
                 <div style={st.rowVal}>{statText(k, lv[k] + skill[k])} <span style={{ color: '#7cb35c' }}>→ {statText(k, lv[k] + 1 + skill[k])}</span></div>
               </div>
-              <button style={{ ...st.dbgBtn, ...st.minusBtn }} onClick={() => buyStat(k, -1)}>−</button>
               <input style={st.dbgInput} type="number" inputMode="numeric" value={lv[k]} onChange={e => setStatLv(k, e.target.value)} />
               <button style={{ ...st.costBtn, opacity: ok ? 1 : 0.4 }} onClick={() => buyStat(k)}>{DEBUG ? '+1' : fmt(c)}</button>
             </div>
@@ -1101,7 +1105,6 @@ export default function App() {
                     <div style={st.rowName}>{d.name} <span style={st.rowLv}>Lv.{skill[k]}</span></div>
                     <div style={st.rowVal}>{statText(k, lv[k] + skill[k])} <span style={{ color: '#7cb35c' }}>→ {statText(k, lv[k] + skill[k] + 1)}</span></div>
                   </div>
-                  <button style={{ ...st.dbgBtn, ...st.minusBtn }} onClick={() => upSkill(k, -1)}>−</button>
                   <input style={st.dbgInput} type="number" inputMode="numeric" value={skill[k]} onChange={e => setSkillLv(k, e.target.value)} />
                   <button style={{ ...st.spBtn, opacity: ok ? 1 : 0.4 }} onClick={() => upSkill(k)}>+1</button>
                 </div>
@@ -1341,17 +1344,17 @@ const st = {
   panel: {
     flex: 1, overflowY: 'auto', minHeight: 0,
     background: 'rgba(20,13,7,0.55)',
-    borderStyle: 'solid', borderWidth: '12px 10px 11px 10px',
-    borderImage: 'url(/ui/panel.png) 29 20 26 19 fill / 12px 10px 11px 10px stretch',
-    margin: '0 5px 5px', padding: '3px 4px 4px',
+    borderStyle: 'solid', borderWidth: '13px 11px 12px 11px',
+    borderImage: 'url(/ui/panel.png) 29 20 26 19 fill / 13px 11px 12px 11px stretch',
+    margin: '3px 0 0', padding: '4px 4px 2px',
     display: 'flex', flexDirection: 'column', gap: 5,
   },
   frameBox: {
     flex: 1, minHeight: 0,
     background: 'rgba(20,13,7,0.55)',
-    borderStyle: 'solid', borderWidth: '12px 10px 11px 10px',
-    borderImage: 'url(/ui/panel.png) 29 20 26 19 fill / 12px 10px 11px 10px stretch',
-    margin: '6px 5px 5px', padding: '4px 4px 4px',
+    borderStyle: 'solid', borderWidth: '13px 11px 12px 11px',
+    borderImage: 'url(/ui/panel.png) 29 20 26 19 fill / 13px 11px 12px 11px stretch',
+    margin: '3px 0 0', padding: '4px 4px 2px',
     display: 'flex', flexDirection: 'column',
   },
   tabsInner: { display: 'flex', gap: 5, padding: '0 0 5px', flexShrink: 0 },
@@ -1369,9 +1372,10 @@ const st = {
   dbgBtn: { width: 27, padding: '7px 0', borderRadius: 6, border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#f3e6d0', fontSize: 15, flexShrink: 0 },
   dbgInput: { width: 38, padding: '6px 2px', borderRadius: 6, border: '1px solid #5a4028', background: '#160e07', color: GOLD, fontSize: 13, textAlign: 'center', flexShrink: 0, fontFamily: "'Do Hyeon',sans-serif" },
   costBtn: {
-    minWidth: 46, padding: '11px 7px', border: 'none', background: 'transparent',
+    minWidth: 40, height: 30, padding: '0 8px', border: 'none', background: 'transparent',
     backgroundImage: 'url(/ui/btn.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
     color: '#fff4d8', fontSize: 13, flexShrink: 0, textShadow: '0 1px 2px #4a0e0e',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
   plusBtn: { border: '1px solid #a85f1f', background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
   minusBtn: { border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#cbb89a' },
