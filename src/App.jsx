@@ -1142,7 +1142,7 @@ export default function App() {
         )}
         {tab === '성장' && (
           <>
-            <div data-edit="spbar" style={st.spBar}>스킬포인트 <b style={{ color: '#7ce0ff', fontSize: 'calc(var(--pd-spbarfz) + 2px)' }}>{sp}</b> <span style={{ opacity: 0.6, fontSize: 11 }}>· 레벨업 시 획득</span></div>
+            <div data-edit="spbarC" style={{ ...st.spBar, transform: 'translate(var(--pd-spbarC-x), var(--pd-spbarC-y))' }}>스킬포인트 <b style={{ color: '#7ce0ff', fontSize: 'calc(var(--pd-spbarfz) + 2px)' }}>{sp}</b> <span style={{ opacity: 0.6, fontSize: 11 }}>· 레벨업 시 획득</span></div>
             {STAT_KEYS.map(k => {
               const d = STAT_LIST[k]
               const ok = DEBUG || sp > 0
@@ -1166,7 +1166,7 @@ export default function App() {
 
       {nav === '스킬' && (
         <div data-edit="panel" style={st.panel}>
-          <div data-edit="spbar" style={st.spBar}>장착 슬롯 · 올린 스킬만 자동 발동</div>
+          <div data-edit="spbarA" style={{ ...st.spBar, transform: 'translate(var(--pd-spbarA-x), var(--pd-spbarA-y))' }}>장착 슬롯 · 올린 스킬만 자동 발동</div>
           <div style={st.slotRow}>
             {equipped.map((si, slot) => (
               <button key={slot} data-edit="slot" style={st.slot} onClick={() => si != null && unequipSkill(slot)}>
@@ -1174,7 +1174,7 @@ export default function App() {
               </button>
             ))}
           </div>
-          <div data-edit="spbar" style={{ ...st.spBar, marginTop: 4 }}>보유 스킬 · 탭하여 장착 <span style={{ opacity: 0.6, fontSize: 11 }}>· {EVOS[evo].name} 전용</span></div>
+          <div data-edit="spbarB" style={{ ...st.spBar, marginTop: 4, transform: 'translate(var(--pd-spbarB-x), var(--pd-spbarB-y))' }}>보유 스킬 · 탭하여 장착 <span style={{ opacity: 0.6, fontSize: 11 }}>· {EVOS[evo].name} 전용</span></div>
           {SKILLS.map((s, i) => {
             if (s.stage !== evo) return null
             const cd = skillCdUI[i] || 0
@@ -1304,6 +1304,7 @@ const UI_DEFAULT = {
   // 위치 이동(px): 요소별 X/Y
   avatarX: 0, avatarY: 0, tabX: 0, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: 0, pillY: 0, iconX: 0, iconY: 0, evoimgX: 0, evoimgY: 0,
   panelX: 0, panelY: 0, rowX: 0, rowY: 0, nameX: 0, nameY: 0, valX: 0, valY: 0, inputX: 0, inputY: 0, spX: 0, spY: 0, slotX: 0, slotY: 0, catX: 0, catY: 0, spbarX: 0, spbarY: 0, equipX: 0, equipY: 0,
+  spbarAX: 0, spbarAY: 0, spbarBX: 0, spbarBY: 0, spbarCX: 0, spbarCY: 0,
 }
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
@@ -1321,7 +1322,9 @@ const EDIT_GROUPS = {
   evoimg: { label: '진화 캐릭터', size: ['evoimg'], pos: 'evoimg' },
   slot: { label: '스킬 슬롯', size: ['slotmax', 'slotfz'], pos: 'slot' },
   cat: { label: '분류 글자', size: ['catfz'], pos: 'cat' },
-  spbar: { label: '안내 글자', size: ['spbarfz'], pos: 'spbar' },
+  spbarA: { label: '장착슬롯 안내', size: ['spbarfz'], pos: 'spbarA' },
+  spbarB: { label: '보유스킬 안내', size: ['spbarfz'], pos: 'spbarB' },
+  spbarC: { label: '스킬포인트 안내', size: ['spbarfz'], pos: 'spbarC' },
   equip: { label: '장비칸', size: ['equipcols', 'equipgap', 'equipimg', 'equiptier'], pos: 'equip' },
 }
 const UI_LABELS = {
@@ -1349,6 +1352,7 @@ const uiVars = c => `:root{
 --pd-input-x:${c.inputX}px;--pd-input-y:${c.inputY}px;--pd-sp-x:${c.spX}px;--pd-sp-y:${c.spY}px;
 --pd-slot-x:${c.slotX}px;--pd-slot-y:${c.slotY}px;--pd-cat-x:${c.catX}px;--pd-cat-y:${c.catY}px;
 --pd-spbar-x:${c.spbarX}px;--pd-spbar-y:${c.spbarY}px;--pd-equip-x:${c.equipX}px;--pd-equip-y:${c.equipY}px;
+--pd-spbarA-x:${c.spbarAX}px;--pd-spbarA-y:${c.spbarAY}px;--pd-spbarB-x:${c.spbarBX}px;--pd-spbarB-y:${c.spbarBY}px;--pd-spbarC-x:${c.spbarCX}px;--pd-spbarC-y:${c.spbarCY}px;
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center' },
@@ -1396,7 +1400,7 @@ const st = {
   waveProg: { height: 6, background: '#120c06', overflow: 'hidden' },
   gainWrap: { position: 'absolute', left: 8, top: 44, display: 'flex', flexDirection: 'column', gap: 3, pointerEvents: 'none' },
   gainItem: { display: 'flex', gap: 8, fontSize: 13, background: 'rgba(10,6,3,0.6)', padding: '2px 8px', borderRadius: 6 },
-  spBar: { padding: '3px 5px 5px', fontSize: 'var(--pd-spbarfz)', color: '#c9b596', transform: 'translate(var(--pd-spbar-x), var(--pd-spbar-y))' },
+  spBar: { padding: '3px 5px 5px', fontSize: 'var(--pd-spbarfz)', color: '#c9b596' },
   spBtn: {
     minWidth: 'var(--pd-spw)', padding: 'var(--pd-sph) 5px', borderRadius: 7, border: '1px solid #2f7fa0',
     background: 'linear-gradient(180deg,#3a9ec0,#256f8c)', color: '#fff', fontSize: 'var(--pd-spfz)', flexShrink: 0,
