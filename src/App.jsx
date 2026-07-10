@@ -1214,7 +1214,7 @@ export default function App() {
           <div style={st.panelInner}>
           {equipTab === '무기' && WEAPON_TYPES.map((wt, wi) => (
             <div key={wi}>
-              <div data-edit="cat" style={{ fontSize: 'var(--pd-catfz)', fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85 }}>{wt}</div>
+              <div data-edit="cat" style={{ fontSize: 'var(--pd-catfz)', fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85, transform: 'translate(var(--pd-cat-x), var(--pd-cat-y))' }}>{wt}</div>
               <div style={st.equipGrid}>
                 {Array.from({ length: 10 }, (_, ti) => (
                   <div key={ti} data-edit="equip" style={st.equipCell}>
@@ -1227,7 +1227,7 @@ export default function App() {
           ))}
           {equipTab === '방어구' && ARMOR_TYPES.map((at, ai) => (
             <div key={ai}>
-              <div data-edit="cat" style={{ fontSize: 'var(--pd-catfz)', fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85 }}>{at}</div>
+              <div data-edit="cat" style={{ fontSize: 'var(--pd-catfz)', fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85, transform: 'translate(var(--pd-cat-x), var(--pd-cat-y))' }}>{at}</div>
               <div style={st.equipGrid}>
                 {Array.from({ length: 7 }, (_, ti) => (
                   <div key={ti} data-edit="equip" style={st.equipCell}>
@@ -1240,7 +1240,7 @@ export default function App() {
           ))}
           {equipTab === '유물' && RELIC_ROWS.map((rn, ri) => (
             <div key={ri}>
-              <div data-edit="cat" style={{ fontSize: 'var(--pd-catfz)', fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85 }}>{rn}</div>
+              <div data-edit="cat" style={{ fontSize: 'var(--pd-catfz)', fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85, transform: 'translate(var(--pd-cat-x), var(--pd-cat-y))' }}>{rn}</div>
               <div style={st.equipGrid}>
                 {Array.from({ length: 10 }, (_, ti) => (
                   <div key={ti} data-edit="equip" style={st.equipCell}>
@@ -1303,25 +1303,26 @@ const UI_DEFAULT = {
   evoimg: 64, slotfz: 22, catfz: 12, spbarfz: 12, equipimg: 78, equiptier: 11,
   // 위치 이동(px): 요소별 X/Y
   avatarX: 0, avatarY: 0, tabX: 0, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: 0, pillY: 0, iconX: 0, iconY: 0, evoimgX: 0, evoimgY: 0,
+  panelX: 0, panelY: 0, rowX: 0, rowY: 0, nameX: 0, nameY: 0, valX: 0, valY: 0, inputX: 0, inputY: 0, spX: 0, spY: 0, slotX: 0, slotY: 0, catX: 0, catY: 0, spbarX: 0, spbarY: 0, equipX: 0, equipY: 0,
 }
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
   pill: { label: '자원 표시', size: [], pos: 'pill' },
-  panel: { label: '패널 틀', size: ['panelbwV', 'panelbwH'], pos: null },
+  panel: { label: '패널 틀', size: ['panelbwV', 'panelbwH'], pos: 'panel' },
   tab: { label: '탭', size: ['tabpt', 'tabpb', 'tabfz'], pos: 'tab' },
-  row: { label: '항목 틀', size: ['rowbwV', 'rowbwH', 'rowmin', 'rowgap'], pos: null },
+  row: { label: '항목 틀', size: ['rowbwV', 'rowbwH', 'rowmin', 'rowgap'], pos: 'row' },
   icon: { label: '아이콘', size: ['icon'], pos: 'icon' },
-  name: { label: '이름 글자', size: ['name', 'lv'], pos: null },
-  val: { label: '수치 글자', size: ['val'], pos: null },
+  name: { label: '이름 글자', size: ['name', 'lv'], pos: 'name' },
+  val: { label: '수치 글자', size: ['val'], pos: 'val' },
   cost: { label: '+1 버튼', size: ['costw', 'costh', 'costfz'], pos: 'cost' },
-  input: { label: '숫자칸', size: ['inputw', 'inputfz'], pos: null },
-  sp: { label: '장착 버튼', size: ['spw', 'sph', 'spfz'], pos: null },
+  input: { label: '숫자칸', size: ['inputw', 'inputfz'], pos: 'input' },
+  sp: { label: '장착 버튼', size: ['spw', 'sph', 'spfz'], pos: 'sp' },
   nav: { label: '하단 네비', size: ['navicon', 'navpt', 'navpb'], pos: 'nav' },
   evoimg: { label: '진화 캐릭터', size: ['evoimg'], pos: 'evoimg' },
-  slot: { label: '스킬 슬롯', size: ['slotmax', 'slotfz'], pos: null },
-  cat: { label: '분류 글자', size: ['catfz'], pos: null },
-  spbar: { label: '안내 글자', size: ['spbarfz'], pos: null },
-  equip: { label: '장비칸', size: ['equipcols', 'equipgap', 'equipimg', 'equiptier'], pos: null },
+  slot: { label: '스킬 슬롯', size: ['slotmax', 'slotfz'], pos: 'slot' },
+  cat: { label: '분류 글자', size: ['catfz'], pos: 'cat' },
+  spbar: { label: '안내 글자', size: ['spbarfz'], pos: 'spbar' },
+  equip: { label: '장비칸', size: ['equipcols', 'equipgap', 'equipimg', 'equiptier'], pos: 'equip' },
 }
 const UI_LABELS = {
   panelbwV: '패널 테두리(상하)', panelbwH: '패널 테두리(좌우)', rowbwV: '항목 테두리(상하)', rowbwH: '항목 테두리(좌우)',
@@ -1343,6 +1344,11 @@ const uiVars = c => `:root{
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
 --pd-evoimg:${c.evoimg}px;--pd-evoimg-x:${c.evoimgX}px;--pd-evoimg-y:${c.evoimgY}px;--pd-slotfz:${c.slotfz}px;
 --pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
+--pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
+--pd-name-x:${c.nameX}px;--pd-name-y:${c.nameY}px;--pd-val-x:${c.valX}px;--pd-val-y:${c.valY}px;
+--pd-input-x:${c.inputX}px;--pd-input-y:${c.inputY}px;--pd-sp-x:${c.spX}px;--pd-sp-y:${c.spY}px;
+--pd-slot-x:${c.slotX}px;--pd-slot-y:${c.slotY}px;--pd-cat-x:${c.catX}px;--pd-cat-y:${c.catY}px;
+--pd-spbar-x:${c.spbarX}px;--pd-spbar-y:${c.spbarY}px;--pd-equip-x:${c.equipX}px;--pd-equip-y:${c.equipY}px;
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center' },
@@ -1390,11 +1396,11 @@ const st = {
   waveProg: { height: 6, background: '#120c06', overflow: 'hidden' },
   gainWrap: { position: 'absolute', left: 8, top: 44, display: 'flex', flexDirection: 'column', gap: 3, pointerEvents: 'none' },
   gainItem: { display: 'flex', gap: 8, fontSize: 13, background: 'rgba(10,6,3,0.6)', padding: '2px 8px', borderRadius: 6 },
-  spBar: { padding: '3px 5px 5px', fontSize: 'var(--pd-spbarfz)', color: '#c9b596' },
+  spBar: { padding: '3px 5px 5px', fontSize: 'var(--pd-spbarfz)', color: '#c9b596', transform: 'translate(var(--pd-spbar-x), var(--pd-spbar-y))' },
   spBtn: {
     minWidth: 'var(--pd-spw)', padding: 'var(--pd-sph) 5px', borderRadius: 7, border: '1px solid #2f7fa0',
     background: 'linear-gradient(180deg,#3a9ec0,#256f8c)', color: '#fff', fontSize: 'var(--pd-spfz)', flexShrink: 0,
-    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)', transform: 'translate(var(--pd-sp-x), var(--pd-sp-y))',
   },
   spDot: { marginLeft: 5, fontSize: 11, color: '#fff', background: '#e05a4e', borderRadius: 8, padding: '0 6px' },
   bottomNav: {
@@ -1411,10 +1417,10 @@ const st = {
   comingSoon: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#20160c', color: '#f3e6d0' },
   cdOverlay: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.72)', fontSize: 13, color: '#7ce0ff' },
   slotRow: { display: 'flex', gap: 6, padding: '2px 2px 5px' },
-  slot: { flex: 1, aspectRatio: '1', maxWidth: 'var(--pd-slotmax)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,#2c2013,#20160c)', border: '2px solid #5a4028', borderRadius: 10 },
+  slot: { flex: 1, aspectRatio: '1', maxWidth: 'var(--pd-slotmax)', transform: 'translate(var(--pd-slot-x), var(--pd-slot-y))', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,#2c2013,#20160c)', border: '2px solid #5a4028', borderRadius: 10 },
   slotEmpty: { fontSize: 'var(--pd-slotfz)', color: '#6a4f30' },
   equipGrid: { display: 'grid', gridTemplateColumns: 'repeat(var(--pd-equipcols), 1fr)', gap: 'var(--pd-equipgap)' },
-  equipCell: { position: 'relative', aspectRatio: '1', background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: '1px solid #5a4028', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  equipCell: { position: 'relative', aspectRatio: '1', background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: '1px solid #5a4028', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', transform: 'translate(var(--pd-equip-x), var(--pd-equip-y))' },
   equipImg: { width: 'var(--pd-equipimg)', height: 'var(--pd-equipimg)', objectFit: 'contain', imageRendering: 'pixelated' },
   statIconImg: { width: '100%', height: '100%', objectFit: 'contain' },
   navIconImg: { width: 'var(--pd-navicon)', height: 'var(--pd-navicon)', objectFit: 'contain' },
@@ -1446,7 +1452,7 @@ const st = {
     background: 'rgba(20,13,7,0.55)',
     borderStyle: 'solid', borderWidth: 'var(--pd-panelbw-v) var(--pd-panelbw-h)',
     borderImage: 'url(/ui/panel.png) 29 20 26 19 fill / var(--pd-panelbw-v) var(--pd-panelbw-h) stretch',
-    margin: '3px 0 0', padding: '4px 4px 2px',
+    margin: '3px 0 0', padding: '4px 4px 2px', transform: 'translate(var(--pd-panel-x), var(--pd-panel-y))',
     display: 'flex', flexDirection: 'column', gap: 'var(--pd-rowgap)',
   },
   frameBox: {
@@ -1454,7 +1460,7 @@ const st = {
     background: 'rgba(20,13,7,0.55)',
     borderStyle: 'solid', borderWidth: 'var(--pd-panelbw-v) var(--pd-panelbw-h)',
     borderImage: 'url(/ui/panel.png) 29 20 26 19 fill / var(--pd-panelbw-v) var(--pd-panelbw-h) stretch',
-    margin: '3px 0 0', padding: '4px 4px 2px',
+    margin: '3px 0 0', padding: '4px 4px 2px', transform: 'translate(var(--pd-panel-x), var(--pd-panel-y))',
     display: 'flex', flexDirection: 'column',
   },
   tabsInner: { display: 'flex', gap: 5, padding: '0 0 5px', flexShrink: 0, transform: 'translate(var(--pd-tab-x), var(--pd-tab-y))' },
@@ -1464,13 +1470,13 @@ const st = {
     background: 'transparent',
     borderStyle: 'solid', borderWidth: 'var(--pd-rowbw-v) var(--pd-rowbw-h)',
     borderImage: 'url(/ui/row.png) 22 23 24 24 fill / var(--pd-rowbw-v) var(--pd-rowbw-h) stretch',
-    padding: '2px 3px', minHeight: 'var(--pd-rowmin)',
+    padding: '2px 3px', minHeight: 'var(--pd-rowmin)', transform: 'translate(var(--pd-row-x), var(--pd-row-y))',
   },
-  rowName: { fontSize: 'var(--pd-name)' },
+  rowName: { fontSize: 'var(--pd-name)', transform: 'translate(var(--pd-name-x), var(--pd-name-y))' },
   rowLv: { fontSize: 'var(--pd-lv)', color: GOLD, marginLeft: 4 },
-  rowVal: { fontSize: 'var(--pd-val)', opacity: 0.82, marginTop: 1, whiteSpace: 'nowrap' },
+  rowVal: { fontSize: 'var(--pd-val)', opacity: 0.82, marginTop: 1, whiteSpace: 'nowrap', transform: 'translate(var(--pd-val-x), var(--pd-val-y))' },
   dbgBtn: { width: 27, padding: '7px 0', borderRadius: 6, border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#f3e6d0', fontSize: 15, flexShrink: 0 },
-  dbgInput: { width: 'var(--pd-inputw)', padding: '6px 2px', borderRadius: 6, border: '1px solid #5a4028', background: '#160e07', color: GOLD, fontSize: 'var(--pd-inputfz)', textAlign: 'center', flexShrink: 0, fontFamily: "'Do Hyeon',sans-serif" },
+  dbgInput: { width: 'var(--pd-inputw)', padding: '6px 2px', borderRadius: 6, border: '1px solid #5a4028', background: '#160e07', color: GOLD, fontSize: 'var(--pd-inputfz)', textAlign: 'center', flexShrink: 0, fontFamily: "'Do Hyeon',sans-serif", transform: 'translate(var(--pd-input-x), var(--pd-input-y))' },
   costBtn: {
     minWidth: 'var(--pd-costw)', height: 'var(--pd-costh)', padding: '0 8px', border: 'none', background: 'transparent',
     backgroundImage: 'url(/ui/btn.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
