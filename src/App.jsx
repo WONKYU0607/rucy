@@ -1142,7 +1142,7 @@ export default function App() {
         )}
         {tab === '성장' && (
           <>
-            <div data-edit="spbar" style={st.spBar}>스킬포인트 <b style={{ color: '#7ce0ff', fontSize: 18 }}>{sp}</b> <span style={{ opacity: 0.6, fontSize: 11 }}>· 레벨업 시 획득</span></div>
+            <div data-edit="spbar" style={st.spBar}>스킬포인트 <b style={{ color: '#7ce0ff', fontSize: 'calc(var(--pd-spbarfz) + 2px)' }}>{sp}</b> <span style={{ opacity: 0.6, fontSize: 11 }}>· 레벨업 시 획득</span></div>
             {STAT_KEYS.map(k => {
               const d = STAT_LIST[k]
               const ok = DEBUG || sp > 0
@@ -1469,7 +1469,7 @@ const st = {
     display: 'flex', alignItems: 'center', gap: 6,
     background: 'transparent',
     borderStyle: 'solid', borderWidth: 'var(--pd-rowbw-v) var(--pd-rowbw-h)',
-    borderImage: 'url(/ui/row.png) 22 23 24 24 fill / var(--pd-rowbw-v) var(--pd-rowbw-h) stretch',
+    borderImage: 'url(/ui/row.png) 24 23 24 24 fill / var(--pd-rowbw-v) var(--pd-rowbw-h) stretch',
     padding: '2px 3px', minHeight: 'var(--pd-rowmin)', transform: 'translate(var(--pd-row-x), var(--pd-row-y))',
   },
   rowName: { fontSize: 'var(--pd-name)', transform: 'translate(var(--pd-name-x), var(--pd-name-y))' },
