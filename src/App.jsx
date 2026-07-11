@@ -1011,7 +1011,7 @@ export default function App() {
           {!editSel && <div style={{ fontSize: 13, color: '#c9b596', textAlign: 'center', padding: '8px 0' }}>조정할 요소를 화면에서 탭하세요 (틀·아이콘·글자·숫자·버튼)</div>}
           {editSel && (() => {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
-            const rng = k => k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : (k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
+            const rng = k => k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hpw' ? 260 : k === 'equipcell' ? 160 : (['exph', 'progh', 'hph'].includes(k) || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
             const rmin = k => k === 'equipcols' ? 3 : 0
             return <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -1044,11 +1044,11 @@ export default function App() {
       <div style={st.topBar}>
         <div data-edit="avatar" style={st.avatarWrap}><img src="/hero/misc/face.png" alt="" style={st.avatarFace} /></div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={st.nickRow}>
+          <div data-edit="nick" style={st.nickRow}>
             <span style={st.nick}>Australo_원규</span>
             <span style={st.lvBadge}>Lv.{hlv}</span>
           </div>
-          <div style={st.expOuter}>
+          <div data-edit="expbar" style={st.expOuter}>
             <div style={{ ...st.expInner, width: Math.min(100, hexp / heroExpReq(hlv) * 100) + '%' }} />
           </div>
         </div>
@@ -1057,16 +1057,16 @@ export default function App() {
             <span style={st.pillMeat}><b style={{ color: '#ffe6c0' }}>{fmt(meat)}</b></span>
             <span style={st.pillGem}><b style={{ color: '#cfe8ff' }}>{fmt(gem)}</b></span>
           </div>
-          <div style={{ fontSize: 12, opacity: 0.85, marginTop: 3 }}>웨이브 {wave}{bossReady && <span style={{ color: '#ef5a3c' }}> · 보스 대기</span>}</div>
+          <div style={{ fontSize: 'var(--pd-wavefz)', opacity: 0.85, marginTop: 3 }}>웨이브 {wave}{bossReady && <span style={{ color: '#ef5a3c' }}> · 보스 대기</span>}</div>
         </div>
       </div>
-      <div style={st.waveProg}>
+      <div data-edit="prog" style={st.waveProg}>
         <div style={{ ...st.progInner, width: progress * 100 + '%' }} />
       </div>
 
       <div ref={wrapRef} style={st.canvasWrap}>
         <canvas ref={canvasRef} />
-        <div style={st.gainWrap}>
+        <div data-edit="gain" style={st.gainWrap}>
           {gains.map(g => (
             <div key={g.id} style={st.gainItem}>
               <span style={{ color: '#8ab4ff' }}>EXP +{g.exp}</span>
@@ -1074,14 +1074,14 @@ export default function App() {
             </div>
           ))}
         </div>
-        <div style={st.heroHpWrap}>
+        <div data-edit="herohp" style={st.heroHpWrap}>
           <div style={st.hpOuter}><div style={{ ...st.hpInner, width: Math.min(100, heroHpUI / maxHp * 100) + '%' }} /></div>
-          <div style={{ fontSize: 10, opacity: 0.8, marginTop: 2 }}>{fmt(heroHpUI)} / {fmt(maxHp)}</div>
+          <div style={{ fontSize: 'var(--pd-hpfz)', opacity: 0.8, marginTop: 2 }}>{fmt(heroHpUI)} / {fmt(maxHp)}</div>
         </div>
-        {clearMsg != null && <div style={st.overlayText}>{typeof clearMsg === 'number' ? `웨이브 ${clearMsg} 클리어!` : clearMsg}</div>}
+        {clearMsg != null && <div data-edit="clearmsg" style={st.overlayText}>{typeof clearMsg === 'number' ? `웨이브 ${clearMsg} 클리어!` : clearMsg}</div>}
         {bossReady && phase === 'fighting' && (
           <div style={st.bossChallenge}>
-            <button style={st.bossBtn} onClick={challengeBoss}>☠ 보스 도전</button>
+            <button data-edit="bossbtn" style={st.bossBtn} onClick={challengeBoss}>☠ 보스 도전</button>
           </div>
         )}
         {phase === 'gameover' && (
@@ -1280,7 +1280,7 @@ export default function App() {
         {[['영웅', 'nav_hero'], ['스킬', 'nav_skill'], ['장비', 'nav_equip'], ['동료', 'nav_ally'], ['퀴즈', 'nav_quiz'], ['상점', 'nav_shop']].map(([n, ic]) => (
           <button key={n} style={{ ...st.navBtn, ...(nav === n ? st.navActive : {}) }} onClick={() => setNav(n)}>
             <img src={`/icon/${ic}.png`} alt="" style={st.navIconImg} />
-            <div style={{ fontSize: 10 }}>{n}</div>
+            <div style={{ fontSize: 'var(--pd-navfz)' }}>{n}</div>
           </button>
         ))}
       </div>
@@ -1301,14 +1301,18 @@ const UI_DEFAULT = {
   navicon: 26, navpt: 10, navpb: 8, avatar: 48, slotmax: 60, equipcols: 5, equipgap: 6,
   // 추가 요소
   evoimg: 64, slotfz: 22, catfz: 12, spbarfz: 12, equipimg: 78, equiptier: 11,
+  equipcell: 120, nickfz: 15, lvbadgefz: 12, exph: 9, pillfz: 14, wavefz: 12, progh: 6,
+  gainfz: 13, hpw: 130, hph: 8, hpfz: 10, bossfz: 18, clearfz: 24, navfz: 10,
   // 위치 이동(px): 요소별 X/Y
   avatarX: 0, avatarY: 0, tabX: 0, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: 0, pillY: 0, iconX: 0, iconY: 0, evoimgX: 0, evoimgY: 0,
   panelX: 0, panelY: 0, rowX: 0, rowY: 0, nameX: 0, nameY: 0, valX: 0, valY: 0, inputX: 0, inputY: 0, spX: 0, spY: 0, slotX: 0, slotY: 0, catX: 0, catY: 0, spbarX: 0, spbarY: 0, equipX: 0, equipY: 0,
   spbarAX: 0, spbarAY: 0, spbarBX: 0, spbarBY: 0, spbarCX: 0, spbarCY: 0,
+  nickX: 0, nickY: 0, expX: 0, expY: 0, progX: 0, progY: 0, gainX: 0, gainY: 0,
+  hpX: 0, hpY: 0, bossX: 0, bossY: 0, clearX: 0, clearY: 0,
 }
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
-  pill: { label: '자원 표시', size: [], pos: 'pill' },
+  pill: { label: '자원 표시', size: ['pillfz', 'wavefz'], pos: 'pill' },
   panel: { label: '패널 틀', size: ['panelbwV', 'panelbwH'], pos: 'panel' },
   tab: { label: '탭', size: ['tabpt', 'tabpb', 'tabfz'], pos: 'tab' },
   row: { label: '항목 틀', size: ['rowbwV', 'rowbwH', 'rowmin', 'rowgap'], pos: 'row' },
@@ -1318,14 +1322,21 @@ const EDIT_GROUPS = {
   cost: { label: '+1 버튼', size: ['costw', 'costh', 'costfz'], pos: 'cost' },
   input: { label: '숫자칸', size: ['inputw', 'inputfz'], pos: 'input' },
   sp: { label: '장착 버튼', size: ['spw', 'sph', 'spfz'], pos: 'sp' },
-  nav: { label: '하단 네비', size: ['navicon', 'navpt', 'navpb'], pos: 'nav' },
+  nav: { label: '하단 네비', size: ['navicon', 'navfz', 'navpt', 'navpb'], pos: 'nav' },
   evoimg: { label: '진화 캐릭터', size: ['evoimg'], pos: 'evoimg' },
   slot: { label: '스킬 슬롯', size: ['slotmax', 'slotfz'], pos: 'slot' },
   cat: { label: '분류 글자', size: ['catfz'], pos: 'cat' },
   spbarA: { label: '장착슬롯 안내', size: ['spbarfz'], pos: 'spbarA' },
   spbarB: { label: '보유스킬 안내', size: ['spbarfz'], pos: 'spbarB' },
   spbarC: { label: '스킬포인트 안내', size: ['spbarfz'], pos: 'spbarC' },
-  equip: { label: '장비칸', size: ['equipcols', 'equipgap', 'equipimg', 'equiptier'], pos: 'equip' },
+  equip: { label: '장비칸', size: ['equipcols', 'equipgap', 'equipcell', 'equipimg', 'equiptier'], pos: 'equip' },
+  nick: { label: '닉네임/레벨', size: ['nickfz', 'lvbadgefz'], pos: 'nick' },
+  expbar: { label: 'EXP바', size: ['exph'], pos: 'exp' },
+  prog: { label: '웨이브 진행바', size: ['progh'], pos: 'prog' },
+  gain: { label: '획득 팝업', size: ['gainfz'], pos: 'gain' },
+  herohp: { label: '영웅 HP바', size: ['hpw', 'hph', 'hpfz'], pos: 'hp' },
+  bossbtn: { label: '보스 버튼', size: ['bossfz'], pos: 'boss' },
+  clearmsg: { label: '클리어 문구', size: ['clearfz'], pos: 'clear' },
 }
 const UI_LABELS = {
   panelbwV: '패널 테두리(상하)', panelbwH: '패널 테두리(좌우)', rowbwV: '항목 테두리(상하)', rowbwH: '항목 테두리(좌우)',
@@ -1334,6 +1345,8 @@ const UI_LABELS = {
   spw: '장착버튼 너비', sph: '장착버튼 높이', spfz: '장착버튼 글자', tabpt: '탭 위높이', tabpb: '탭 아래높이', tabfz: '탭 글자',
   navicon: '네비 아이콘', navpt: '네비 위높이', navpb: '네비 아래높이', avatar: '아바타 크기', slotmax: '스킬슬롯 크기', equipcols: '장비 열수', equipgap: '장비 간격',
   evoimg: '진화캐릭 크기', slotfz: '슬롯 + 글자', catfz: '분류 글자', spbarfz: '안내 글자', equipimg: '장비아이콘', equiptier: '티어 숫자',
+  equipcell: '장비칸 크기', nickfz: '닉네임 글자', lvbadgefz: 'Lv뱃지 글자', exph: 'EXP바 높이', pillfz: '자원 글자', wavefz: '웨이브 글자',
+  progh: '진행바 높이', gainfz: '팝업 글자', hpw: 'HP바 너비', hph: 'HP바 높이', hpfz: 'HP 글자', bossfz: '버튼 글자', clearfz: '문구 글자', navfz: '네비 글자',
 }
 const uiVars = c => `:root{
 --pd-panelbw-v:${c.panelbwV}px;--pd-panelbw-h:${c.panelbwH}px;--pd-rowbw-v:${c.rowbwV}px;--pd-rowbw-h:${c.rowbwH}px;
@@ -1353,6 +1366,12 @@ const uiVars = c => `:root{
 --pd-slot-x:${c.slotX}px;--pd-slot-y:${c.slotY}px;--pd-cat-x:${c.catX}px;--pd-cat-y:${c.catY}px;
 --pd-spbar-x:${c.spbarX}px;--pd-spbar-y:${c.spbarY}px;--pd-equip-x:${c.equipX}px;--pd-equip-y:${c.equipY}px;
 --pd-spbarA-x:${c.spbarAX}px;--pd-spbarA-y:${c.spbarAY}px;--pd-spbarB-x:${c.spbarBX}px;--pd-spbarB-y:${c.spbarBY}px;--pd-spbarC-x:${c.spbarCX}px;--pd-spbarC-y:${c.spbarCY}px;
+--pd-equipcell:${c.equipcell}px;--pd-nickfz:${c.nickfz}px;--pd-lvbadgefz:${c.lvbadgefz}px;--pd-exph:${c.exph}px;
+--pd-pillfz:${c.pillfz}px;--pd-wavefz:${c.wavefz}px;--pd-progh:${c.progh}px;--pd-gainfz:${c.gainfz}px;
+--pd-hpw:${c.hpw}px;--pd-hph:${c.hph}px;--pd-hpfz:${c.hpfz}px;--pd-bossfz:${c.bossfz}px;--pd-clearfz:${c.clearfz}px;--pd-navfz:${c.navfz}px;
+--pd-nick-x:${c.nickX}px;--pd-nick-y:${c.nickY}px;--pd-exp-x:${c.expX}px;--pd-exp-y:${c.expY}px;
+--pd-prog-x:${c.progX}px;--pd-prog-y:${c.progY}px;--pd-gain-x:${c.gainX}px;--pd-gain-y:${c.gainY}px;
+--pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center' },
@@ -1374,12 +1393,12 @@ const st = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
   avatarFace: { width: '66%', height: '66%', objectFit: 'cover', borderRadius: '50%', imageRendering: 'pixelated' },
-  nickRow: { display: 'flex', alignItems: 'center', gap: 6 },
-  nick: { fontSize: 15, fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  lvBadge: { fontSize: 12, color: GOLD, background: 'linear-gradient(180deg,#3a2a14,#2a1d0d)', border: `1px solid ${GOLD_D}`, padding: '1px 8px', borderRadius: 7, flexShrink: 0 },
-  expOuter: { height: 9, background: '#0e0a05', borderRadius: 5, overflow: 'hidden', marginTop: 4, border: '1px solid #3a2a14' },
+  nickRow: { display: 'flex', alignItems: 'center', gap: 6, transform: 'translate(var(--pd-nick-x), var(--pd-nick-y))' },
+  nick: { fontSize: 'var(--pd-nickfz)', fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  lvBadge: { fontSize: 'var(--pd-lvbadgefz)', color: GOLD, background: 'linear-gradient(180deg,#3a2a14,#2a1d0d)', border: `1px solid ${GOLD_D}`, padding: '1px 8px', borderRadius: 7, flexShrink: 0 },
+  expOuter: { height: 'var(--pd-exph)', transform: 'translate(var(--pd-exp-x), var(--pd-exp-y))', background: '#0e0a05', borderRadius: 5, overflow: 'hidden', marginTop: 4, border: '1px solid #3a2a14' },
   expInner: { height: '100%', background: 'linear-gradient(90deg,#c98a2e,#f0c05a,#ffe08a)', transition: 'width 0.2s' },
-  currency: { textAlign: 'right', fontSize: 14, whiteSpace: 'nowrap', transform: 'translate(var(--pd-pill-x), var(--pd-pill-y))' },
+  currency: { textAlign: 'right', fontSize: 'var(--pd-pillfz)', whiteSpace: 'nowrap', transform: 'translate(var(--pd-pill-x), var(--pd-pill-y))' },
   currencyPill: {
     display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13,
     background: 'linear-gradient(180deg,#2b1e11,#1a1208)', border: '1px solid #4a3418',
@@ -1397,9 +1416,9 @@ const st = {
     backgroundImage: 'url(/ui/pill_gem.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
     textShadow: '0 1px 2px #000',
   },
-  waveProg: { height: 6, background: '#120c06', overflow: 'hidden' },
-  gainWrap: { position: 'absolute', left: 8, top: 44, display: 'flex', flexDirection: 'column', gap: 3, pointerEvents: 'none' },
-  gainItem: { display: 'flex', gap: 8, fontSize: 13, background: 'rgba(10,6,3,0.6)', padding: '2px 8px', borderRadius: 6 },
+  waveProg: { height: 'var(--pd-progh)', background: '#120c06', overflow: 'hidden', transform: 'translate(var(--pd-prog-x), var(--pd-prog-y))' },
+  gainWrap: { position: 'absolute', left: 8, top: 44, transform: 'translate(var(--pd-gain-x), var(--pd-gain-y))', display: 'flex', flexDirection: 'column', gap: 3, pointerEvents: 'none' },
+  gainItem: { display: 'flex', gap: 8, fontSize: 'var(--pd-gainfz)', background: 'rgba(10,6,3,0.6)', padding: '2px 8px', borderRadius: 6 },
   spBar: { padding: '3px 5px 5px', fontSize: 'var(--pd-spbarfz)', color: '#c9b596' },
   spBtn: {
     minWidth: 'var(--pd-spw)', padding: 'var(--pd-sph) 5px', borderRadius: 7, border: '1px solid #2f7fa0',
@@ -1424,7 +1443,7 @@ const st = {
   slot: { flex: 1, aspectRatio: '1', maxWidth: 'var(--pd-slotmax)', transform: 'translate(var(--pd-slot-x), var(--pd-slot-y))', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,#2c2013,#20160c)', border: '2px solid #5a4028', borderRadius: 10 },
   slotEmpty: { fontSize: 'var(--pd-slotfz)', color: '#6a4f30' },
   equipGrid: { display: 'grid', gridTemplateColumns: 'repeat(var(--pd-equipcols), 1fr)', gap: 'var(--pd-equipgap)' },
-  equipCell: { position: 'relative', aspectRatio: '1', background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: '1px solid #5a4028', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', transform: 'translate(var(--pd-equip-x), var(--pd-equip-y))' },
+  equipCell: { position: 'relative', aspectRatio: '1', width: '100%', maxWidth: 'var(--pd-equipcell)', justifySelf: 'center', background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: '1px solid #5a4028', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', transform: 'translate(var(--pd-equip-x), var(--pd-equip-y))' },
   equipImg: { width: 'var(--pd-equipimg)', height: 'var(--pd-equipimg)', objectFit: 'contain', imageRendering: 'pixelated' },
   statIconImg: { width: '100%', height: '100%', objectFit: 'contain' },
   navIconImg: { width: 'var(--pd-navicon)', height: 'var(--pd-navicon)', objectFit: 'contain' },
@@ -1435,11 +1454,11 @@ const st = {
   progOuter: { height: 8, background: '#2a1d0d', borderRadius: 4, overflow: 'hidden', border: '1px solid #3a2a14' },
   progInner: { height: '100%', background: `linear-gradient(90deg,${GOLD_D},${GOLD})`, transition: 'width 0.2s' },
   canvasWrap: { height: '42%', position: 'relative', minHeight: 220 },
-  heroHpWrap: { position: 'absolute', left: 12, top: 10, width: 130 },
-  hpOuter: { height: 8, background: 'rgba(0,0,0,0.5)', borderRadius: 4, overflow: 'hidden' },
+  heroHpWrap: { position: 'absolute', left: 12, top: 10, width: 'var(--pd-hpw)', transform: 'translate(var(--pd-hp-x), var(--pd-hp-y))' },
+  hpOuter: { height: 'var(--pd-hph)', background: 'rgba(0,0,0,0.5)', borderRadius: 4, overflow: 'hidden' },
   hpInner: { height: '100%', background: '#7cb35c', transition: 'width 0.15s' },
   overlay: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.75)' },
-  overlayText: { position: 'absolute', top: '40%', left: 0, right: 0, textAlign: 'center', fontSize: 24, color: GOLD, textShadow: '0 2px 8px rgba(0,0,0,0.8)', pointerEvents: 'none' },
+  overlayText: { position: 'absolute', top: '40%', left: 0, right: 0, textAlign: 'center', fontSize: 'var(--pd-clearfz)', transform: 'translate(var(--pd-clear-x), var(--pd-clear-y))', color: GOLD, textShadow: '0 2px 8px rgba(0,0,0,0.8)', pointerEvents: 'none' },
   retryBtn: { padding: '12px 32px', fontSize: 17, borderRadius: 12, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
   tabs: { display: 'flex', gap: 5, padding: '8px 6px 2px', background: 'transparent' },
   tabBtn: {
@@ -1491,7 +1510,7 @@ const st = {
   minusBtn: { border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#cbb89a' },
   bossChallenge: { position: 'absolute', left: 0, right: 0, bottom: 16, display: 'flex', justifyContent: 'center', pointerEvents: 'none' },
   bossBtn: {
-    pointerEvents: 'auto', padding: '12px 28px', fontSize: 18,
+    pointerEvents: 'auto', padding: '12px 28px', fontSize: 'var(--pd-bossfz)', transform: 'translate(var(--pd-boss-x), var(--pd-boss-y))',
     border: '2px solid #7a2a1a', borderRadius: 12,
     background: 'linear-gradient(180deg,#b83a26,#7a2015)', color: '#ffe0d0',
     boxShadow: '0 4px 16px rgba(180,50,30,0.5), inset 0 1px 0 rgba(255,255,255,0.25)',
