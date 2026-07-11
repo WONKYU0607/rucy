@@ -1294,21 +1294,18 @@ const GOLD_D = '#a9762f'
 const PANEL_BORDER = '1px solid #6b4a24'
 // ── UI 크기 조정값 (앱 내 편집기로 조정 → 복사) ──
 const UI_DEFAULT = {
-  panelbwV: 13, panelbwH: 11, rowbwV: 9, rowbwH: 11, rowmin: 30, rowgap: 5,
-  icon: 32, name: 13, lv: 11, val: 10.5,
-  costw: 40, costh: 30, costfz: 13, inputw: 38, inputfz: 13,
-  spw: 42, sph: 8, spfz: 13, tabpt: 9, tabpb: 12, tabfz: 14,
-  navicon: 26, navpt: 10, navpb: 8, avatar: 48, slotmax: 60, equipcols: 5, equipgap: 6,
-  // 추가 요소
-  evoimg: 64, slotfz: 22, catfz: 12, spbarfz: 12, equipimg: 78, equiptier: 11,
-  equipcell: 120, nickfz: 15, lvbadgefz: 12, exph: 9, pillfz: 14, wavefz: 12, progh: 6,
-  gainfz: 13, hpw: 130, hph: 8, hpfz: 10, bossfz: 18, clearfz: 24, navfz: 10,
+  panelbwV: 2, panelbwH: 4, rowbwV: 2, rowbwH: 19, rowmin: 38, rowgap: 7, icon: 27, name: 12,
+  lv: 11, val: 12, costw: 35, costh: 28, costfz: 14, inputw: 43, inputfz: 12, spw: 35,
+  sph: 4, spfz: 13, tabpt: 7, tabpb: 10, tabfz: 13, navicon: 26, navpt: 10, navpb: 8,
+  avatar: 40, slotmax: 50, equipcols: 5, equipgap: 10, evoimg: 59, slotfz: 23, catfz: 13, spbarfz: 12,
+  equipimg: 63, equiptier: 13, equipcell: 58, nickfz: 15, lvbadgefz: 12, exph: 9, pillfz: 14, wavefz: 12,
+  progh: 6, gainfz: 13, hpw: 141, hph: 9, hpfz: 11, bossfz: 18, clearfz: 24, navfz: 10,
   // 위치 이동(px): 요소별 X/Y
-  avatarX: 0, avatarY: 0, tabX: 0, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: 0, pillY: 0, iconX: 0, iconY: 0, evoimgX: 0, evoimgY: 0,
-  panelX: 0, panelY: 0, rowX: 0, rowY: 0, nameX: 0, nameY: 0, valX: 0, valY: 0, inputX: 0, inputY: 0, spX: 0, spY: 0, slotX: 0, slotY: 0, catX: 0, catY: 0, spbarX: 0, spbarY: 0, equipX: 0, equipY: 0,
-  spbarAX: 0, spbarAY: 0, spbarBX: 0, spbarBY: 0, spbarCX: 0, spbarCY: 0,
-  nickX: 0, nickY: 0, expX: 0, expY: 0, progX: 0, progY: 0, gainX: 0, gainY: 0,
-  hpX: 0, hpY: 0, bossX: 0, bossY: 0, clearX: 0, clearY: 0,
+  avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: 0, pillY: 4, iconX: -3, iconY: 1,
+  evoimgX: 0, evoimgY: 0, panelX: 0, panelY: 0, rowX: 0, rowY: -1, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0,
+  spX: 0, spY: 0, slotX: 23, slotY: 8, catX: 21, catY: 0, spbarX: 20, spbarY: 1, equipX: 18, equipY: 2, spbarAX: 12, spbarAY: 11,
+  spbarBX: 13, spbarBY: 0, spbarCX: 0, spbarCY: 0, nickX: 0, nickY: 0, expX: 0, expY: 0, progX: 0, progY: 0, gainX: 0, gainY: 0,
+  hpX: -5, hpY: 0, bossX: -12, bossY: -12, clearX: 0, clearY: 0,
 }
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
