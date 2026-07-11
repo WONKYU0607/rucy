@@ -972,6 +972,13 @@ export default function App() {
     if (h) { clearTimeout(h.t); clearInterval(h.iv); holdRef.current = null }
   }
   useEffect(() => () => holdEnd(), [])
+  // 스크롤 엣지 페이드: 위/아래 끝에서는 해제, 넘침 없으면 페이드 없음
+  function updFade(el) {
+    if (!el) return
+    const over = el.scrollHeight - el.clientHeight > 2
+    el.style.setProperty('--fadeT', over && el.scrollTop > 2 ? '14px' : '0px')
+    el.style.setProperty('--fadeB', over && el.scrollHeight - el.scrollTop - el.clientHeight > 2 ? '28px' : '0px')
+  }
   // 스킬(SP) — 레벨 직접 설정 (DEBUG 시 SP 무시)
   function setSkillLv(k, n) {
     n = Math.max(0, Math.floor(Number(n) || 0))
@@ -1013,6 +1020,9 @@ export default function App() {
       button { cursor: pointer; font-family: inherit; }
       .pd-num { font-family: 'Do Hyeon', sans-serif; letter-spacing: 0.02em; }
       @keyframes pdPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+      .pd-fade { --fadeT: 0px; --fadeB: 28px;
+        -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 var(--fadeT), #000 calc(100% - var(--fadeB)), transparent 100%);
+        mask-image: linear-gradient(180deg, transparent 0, #000 var(--fadeT), #000 calc(100% - var(--fadeB)), transparent 100%); }
     `}</style>
     <style>{uiVars(uiCfg)}</style>
     <div style={st.root} onClickCapture={e => {
@@ -1124,7 +1134,7 @@ export default function App() {
         ))}
       </div>
 
-      <div style={st.panelInner}>
+      <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.panelInner}>
         {tab === '강화' && STAT_KEYS.map(k => {
           const d = STAT_LIST[k]
           const c = buyCost(k, lv[k])
@@ -1233,7 +1243,7 @@ export default function App() {
               <button key={t} style={{ ...st.tabBtn, ...(equipTab === t ? st.tabActive : {}) }} onClick={() => setEquipTab(t)}>{t}</button>
             ))}
           </div>
-          <div style={st.panelInner}>
+          <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.panelInner}>
           {equipTab === '무기' && WEAPON_TYPES.map((wt, wi) => (
             <div key={wi}>
               <div data-edit="cat" style={{ fontSize: 'var(--pd-catfz)', fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85, transform: 'translate(var(--pd-cat-x), var(--pd-cat-y))' }}>{wt}</div>
@@ -1506,7 +1516,7 @@ const st = {
     display: 'flex', flexDirection: 'column',
   },
   tabsInner: { display: 'flex', gap: 5, padding: '0 0 5px', flexShrink: 0, transform: 'translate(var(--pd-tab-x), var(--pd-tab-y))' },
-  panelInner: { flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 5 },
+  panelInner: { flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 5, padding: '8px 0 12px' },
   row: {
     display: 'flex', alignItems: 'center', gap: 6,
     background: 'transparent',
