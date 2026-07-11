@@ -950,13 +950,28 @@ export default function App() {
     n = Math.max(0, Math.floor(Number(n) || 0))
     setLv(v => ({ ...v, [k]: n }))
   }
+  const lvLive = useRef(lv); lvLive.current = lv
+  const meatLive = useRef(meat); meatLive.current = meat
   function buyStat(k, delta = 1) {
     if (delta < 0) { setLv(v => ({ ...v, [k]: Math.max(0, v[k] + delta) })); return }
-    const c = DEBUG ? 0 : buyCost(k, lv[k])
-    if (meat < c) return
+    const c = DEBUG ? 0 : buyCost(k, lvLive.current[k])
+    if (meatLive.current < c) return
     setMeat(m => m - c)
     setLv(v => ({ ...v, [k]: v[k] + 1 }))
   }
+  // 길게 누르면 연속 실행 (400ms 후 80ms 간격)
+  const holdRef = useRef(null)
+  function holdStart(fn) {
+    if (uiEdit) return
+    holdEnd()
+    fn()
+    holdRef.current = { iv: null, t: setTimeout(() => { if (holdRef.current) holdRef.current.iv = setInterval(fn, 80) }, 400) }
+  }
+  function holdEnd() {
+    const h = holdRef.current
+    if (h) { clearTimeout(h.t); clearInterval(h.iv); holdRef.current = null }
+  }
+  useEffect(() => () => holdEnd(), [])
   // 스킬(SP) — 레벨 직접 설정 (DEBUG 시 SP 무시)
   function setSkillLv(k, n) {
     n = Math.max(0, Math.floor(Number(n) || 0))
@@ -993,7 +1008,8 @@ export default function App() {
     <div style={st.outer}>
     <style>{`
       @import url('https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Jua&display=swap');
-      * { box-sizing: border-box; }
+      * { box-sizing: border-box; scrollbar-width: none; }
+      *::-webkit-scrollbar { width: 0; height: 0; display: none; }
       button { cursor: pointer; font-family: inherit; }
       .pd-num { font-family: 'Do Hyeon', sans-serif; letter-spacing: 0.02em; }
       @keyframes pdPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
@@ -1115,7 +1131,7 @@ export default function App() {
                 <div data-edit="val" style={st.rowVal}>{statText(k, lv[k] + skill[k])} <span style={{ color: '#7cb35c' }}>→ {statText(k, lv[k] + 1 + skill[k])}</span></div>
               </div>
               <input data-edit="input" style={st.dbgInput} type="number" inputMode="numeric" value={lv[k]} onChange={e => setStatLv(k, e.target.value)} />
-              <button data-edit="cost" style={{ ...st.costBtn, opacity: ok ? 1 : 0.4 }} onClick={() => buyStat(k)}>{DEBUG ? '+1' : fmt(c)}</button>
+              <button data-edit="cost" style={{ ...st.costBtn, opacity: ok ? 1 : 0.4 }} onPointerDown={() => holdStart(() => buyStat(k))} onPointerUp={holdEnd} onPointerLeave={holdEnd} onPointerCancel={holdEnd} onContextMenu={e => e.preventDefault()}>{DEBUG ? '+1' : fmt(c)}</button>
             </div>
           )
         })}
@@ -1498,6 +1514,7 @@ const st = {
   dbgBtn: { width: 27, padding: '7px 0', borderRadius: 6, border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#f3e6d0', fontSize: 15, flexShrink: 0 },
   dbgInput: { width: 'var(--pd-inputw)', padding: '6px 2px', borderRadius: 6, border: '1px solid #5a4028', background: '#160e07', color: GOLD, fontSize: 'var(--pd-inputfz)', textAlign: 'center', flexShrink: 0, fontFamily: "'Do Hyeon',sans-serif", transform: 'translate(var(--pd-input-x), var(--pd-input-y))' },
   costBtn: {
+    touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none',
     minWidth: 'var(--pd-costw)', height: 'var(--pd-costh)', padding: '0 8px', border: 'none', background: 'transparent',
     backgroundImage: 'url(/ui/btn.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
     color: '#fff4d8', fontSize: 'var(--pd-costfz)', flexShrink: 0, textShadow: '0 1px 2px #4a0e0e',
