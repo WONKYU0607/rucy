@@ -14,7 +14,7 @@ const ANIM = {
   ewalk: { srcs: ['/hero/erectus_walk/ewalk_1.png', '/hero/erectus_walk/ewalk_2.png', '/hero/erectus_walk/ewalk_3.png', '/hero/erectus_walk/ewalk_4.png'], h: 130, flip: false },
   eatk1: { srcs: ['/hero/erectus_atk1/eatk1_1.png', '/hero/erectus_atk1/eatk1_2.png', '/hero/erectus_atk1/eatk1_3.png'], h: 165, flip: false },
   nwalk: { srcs: ['/hero/neander_walk/nwalk_1.png', '/hero/neander_walk/nwalk_2.png', '/hero/neander_walk/nwalk_3.png', '/hero/neander_walk/nwalk_4.png'], h: 135, flip: false },
-  natk1: { srcs: ['/hero/neander_atk1/natk1_1.png', '/hero/neander_atk1/natk1_2.png', '/hero/neander_atk1/natk1_3.png'], h: 165, flip: false },
+  natk1: { srcs: ['/hero/neander_atk1/natk1_1.png', '/hero/neander_atk1/natk1_2.png'], h: 165, flip: false },
 }
 // 스킬 정의 — charSeq: 히어로가 재생할 프레임(1-based, 없으면 전체), fx: 분리 이펙트
 //   fx proj  = 투사체: fly 프레임이 몬스터 쪽으로 날아가 명중 시 데미지(+impact 프레임)
@@ -1139,8 +1139,8 @@ export default function App() {
         <div data-edit="gain" style={st.gainWrap}>
           {gains.map(g => (
             <div key={g.id} style={st.gainItem}>
-              <span style={{ color: '#8ab4ff' }}>EXP +{g.exp}</span>
-              <span style={{ color: '#f0b060' }}>🍖 +{g.meat}</span>
+              <span style={st.gainCell}><img src="/ui/ic_exp.png" alt="" style={st.gainIcon} /><span style={{ color: '#6ec4ff' }}>+{g.exp}</span></span>
+              <span style={st.gainCell}><img src="/ui/ic_meat.png" alt="" style={st.gainIcon} /><span style={{ color: '#ff9d6a' }}>+{g.meat}</span></span>
             </div>
           ))}
         </div>
@@ -1479,7 +1479,9 @@ const st = {
     textShadow: '0 1px 2px #000',
   },
   gainWrap: { position: 'absolute', left: 8, top: 44, transform: 'translate(var(--pd-gain-x), var(--pd-gain-y))', display: 'flex', flexDirection: 'column', gap: 3, pointerEvents: 'none' },
-  gainItem: { display: 'flex', gap: 8, fontSize: 'var(--pd-gainfz)', background: 'rgba(10,6,3,0.6)', padding: '2px 8px', borderRadius: 6 },
+  gainCell: { display: 'flex', alignItems: 'center', gap: 3 },
+  gainIcon: { height: 'calc(var(--pd-gainfz) + 6px)', objectFit: 'contain' },
+  gainItem: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--pd-gainfz)', background: 'rgba(10,6,3,0.6)', padding: '2px 8px', borderRadius: 6 },
   spBar: { padding: '3px 5px 5px', fontSize: 'var(--pd-spbarfz)', color: '#c9b596' },
   spBtn: {
     touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none',
