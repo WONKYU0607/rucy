@@ -1120,7 +1120,9 @@ export default function App() {
           </div>
         </div>
         <div data-edit="bossbtn" style={st.bossWrap}>
-          <button style={{ ...st.bossBtn, opacity: bossReady && phase === 'fighting' ? 1 : 0.45, animation: bossReady && phase === 'fighting' ? 'pdPulse 1.2s ease-in-out infinite' : 'none' }} disabled={!(bossReady && phase === 'fighting')} onClick={challengeBoss}>보스 도전</button>
+          <button style={{ ...st.bossBtn, opacity: bossReady && phase === 'fighting' ? 1 : 0.45, animation: bossReady && phase === 'fighting' ? 'pdPulse 1.2s ease-in-out infinite' : 'none' }} disabled={!uiEdit && !(bossReady && phase === 'fighting')} onClick={() => { if (!uiEdit) challengeBoss() }}>
+            <span data-edit="bosstext" style={st.bossText}>보스 도전</span>
+          </button>
         </div>
       </div>
 
@@ -1356,7 +1358,7 @@ const UI_DEFAULT = {
   evoimgX: 0, evoimgY: 0, panelX: 0, panelY: 0, rowX: 0, rowY: -1, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0,
   spX: 0, spY: 0, slotX: 23, slotY: 8, catX: 21, catY: 0, spbarX: 20, spbarY: 1, equipX: 18, equipY: 2, spbarAX: 12, spbarAY: 11,
   spbarBX: 13, spbarBY: 0, spbarCX: 0, spbarCY: 0, nickX: 0, nickY: 0, expX: 0, expY: 0, progX: 0, progY: 0, gainX: 0, gainY: 0,
-  hpX: 0, hpY: 0, bossX: 0, bossY: 0, clearX: 0, clearY: 0, waveX: 0, waveY: 0, wtitleX: 0, wtitleY: 0, diaX: 0, diaY: 0,
+  hpX: 0, hpY: 0, bossX: 0, bossY: 0, clearX: 0, clearY: 0, waveX: 0, waveY: 0, wtitleX: 0, wtitleY: 0, diaX: 0, diaY: 0, btextX: 0, btextY: 0,
 }
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
@@ -1385,7 +1387,8 @@ const EDIT_GROUPS = {
   waveband: { label: '웨이브 현판(판)', size: ['wavebh'], pos: 'wave' },
   wavetitle: { label: '현판 글자', size: ['wavefz'], pos: 'wtitle' },
   diarow: { label: '다이아 줄', size: ['diasz'], pos: 'dia' },
-  bossbtn: { label: '보스 버튼', size: ['bossh', 'bossfz'], pos: 'boss' },
+  bossbtn: { label: '보스 버튼(판)', size: ['bossh'], pos: 'boss' },
+  bosstext: { label: '보스 버튼 글자', size: ['bossfz'], pos: 'btext' },
   clearmsg: { label: '클리어 문구', size: ['clearfz'], pos: 'clear' },
 }
 const UI_LABELS = {
@@ -1421,7 +1424,7 @@ const uiVars = c => `:root{
 --pd-hph:${c.hph}px;--pd-hpfz:${c.hpfz}px;--pd-bossfz:${c.bossfz}px;--pd-clearfz:${c.clearfz}px;--pd-navfz:${c.navfz}px;--pd-diasz:${c.diasz}px;--pd-bossh:${c.bossh}px;--pd-wavebh:${c.wavebh}px;
 --pd-nick-x:${c.nickX}px;--pd-nick-y:${c.nickY}px;--pd-exp-x:${c.expX}px;--pd-exp-y:${c.expY}px;
 --pd-gain-x:${c.gainX}px;--pd-gain-y:${c.gainY}px;
---pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;
+--pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center' },
@@ -1579,7 +1582,8 @@ const st = {
   bossBtn: {
     border: 'none', height: 'var(--pd-bossh)', alignSelf: 'center', aspectRatio: '300 / 135', padding: '0 0 2px 12%',
     background: 'transparent url(/ui/boss_btn.png) center / 100% 100% no-repeat',
-    color: '#ffe0d0', fontSize: 'var(--pd-bossfz)', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', lineHeight: 1,
+    color: '#ffe0d0', whiteSpace: 'nowrap', lineHeight: 1,
   },
+  bossText: { display: 'inline-block', fontSize: 'var(--pd-bossfz)', textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-btext-x), var(--pd-btext-y))' },
 }
 
