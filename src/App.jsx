@@ -267,7 +267,7 @@ export default function App() {
   const [uiEdit, setUiEdit] = useState(false)
   const [copiedUi, setCopiedUi] = useState(false)
   const [editSel, setEditSel] = useState(null)   // 편집 모드에서 선택된 요소
-  useEffect(() => { localStorage.setItem('paleoUiCfg', JSON.stringify(uiCfg)) }, [uiCfg])
+  useEffect(() => { localStorage.setItem('paleoUiCfg', JSON.stringify(uiCfg)); localStorage.setItem('paleoUiCfgTs', String(Date.now())) }, [uiCfg])
   const [offReward, setOffReward] = useState(null) // 오프라인 보상 팝업
   const offDone = useRef(false)
 
@@ -1015,6 +1015,8 @@ export default function App() {
     try {
       const sv = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null')
       if (!sv) return
+      sv.ui = JSON.parse(localStorage.getItem('paleoUiCfg') || 'null')
+      sv.uiTs = Number(localStorage.getItem('paleoUiCfgTs')) || 0
       await setDoc(doc(fbDb, 'paleoSaves', fbAuth.currentUser.uid), sv)
       setCloudMsg('저장됨 ' + new Date().toLocaleTimeString())
     } catch (e) { setCloudMsg('저장 실패: ' + (e.code || e.message)) }
@@ -1028,6 +1030,13 @@ export default function App() {
         const snap = await getDoc(doc(fbDb, 'paleoSaves', u.uid))
         const cloud = snap.exists() ? snap.data() : null
         const local = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null')
+        // UI 편집값: 타임스탬프가 더 최근인 쪽 채택 (세이브와 독립)
+        const localUiTs = Number(localStorage.getItem('paleoUiCfgTs')) || 0
+        if (cloud?.ui && (cloud.uiTs || 0) > localUiTs) {
+          localStorage.setItem('paleoUiCfg', JSON.stringify(cloud.ui))
+          localStorage.setItem('paleoUiCfgTs', String(cloud.uiTs))
+          setUiCfg({ ...UI_DEFAULT, ...Object.fromEntries(Object.entries(cloud.ui).filter(([k]) => k in UI_DEFAULT)) })
+        }
         if (cloud && (cloud.wave || 0) > (local?.wave || 0)) {
           localStorage.setItem(SAVE_KEY, JSON.stringify(cloud))
           location.reload()  // 클라우드 세이브로 재시작
@@ -1429,15 +1438,15 @@ const UI_DEFAULT = {
   panelbwV: 2, panelbwH: 4, rowbwV: 2, rowbwH: 19, rowmin: 38, rowgap: 7, icon: 27, name: 12,
   lv: 11, val: 12, costw: 35, costh: 28, costfz: 14, inputw: 43, inputfz: 12, spw: 35,
   sph: 4, spfz: 13, tabpt: 7, tabpb: 10, tabfz: 13, navicon: 26, navpt: 10, navpb: 8,
-  avatar: 40, slotmax: 50, equipcols: 5, equipgap: 10, evoimg: 59, slotfz: 23, catfz: 13, spbarfz: 12,
-  equipimg: 63, equiptier: 13, equipcell: 58, nickfz: 15, lvbadgefz: 12, exph: 9, pillfz: 14, wavefz: 12,
-  gainfz: 13, hph: 34, hpfz: 11, bossfz: 11, bossh: 40, wavebh: 44, clearfz: 24, navfz: 10, diasz: 11,
+  avatar: 40, slotmax: 50, equipcols: 5, equipgap: 11, evoimg: 56, slotfz: 23, catfz: 13, spbarfz: 12,
+  equipimg: 60, equiptier: 13, equipcell: 54, nickfz: 15, lvbadgefz: 12, exph: 11, pillfz: 14, wavefz: 12,
+  gainfz: 13, hph: 11, hpfz: 10, bossfz: 11, bossh: 40, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
   // 위치 이동(px): 요소별 X/Y
-  avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: 0, pillY: 4, iconX: -3, iconY: 1,
-  evoimgX: 0, evoimgY: 0, panelX: 0, panelY: 0, rowX: 0, rowY: -1, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0,
-  spX: 0, spY: 0, slotX: 23, slotY: 8, catX: 21, catY: 0, spbarX: 20, spbarY: 1, equipX: 18, equipY: 2, spbarAX: 12, spbarAY: 11,
-  spbarBX: 13, spbarBY: 0, spbarCX: 0, spbarCY: 0, nickX: 0, nickY: 0, expX: 0, expY: 0, progX: 0, progY: 0, gainX: 0, gainY: 0,
-  hpX: 0, hpY: 0, bossX: 0, bossY: 0, clearX: 0, clearY: 0, waveX: 0, waveY: 0, wtitleX: 0, wtitleY: 0, diaX: 0, diaY: 0, btextX: 0, btextY: 0,
+  avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: 2, pillY: 2, iconX: -3, iconY: 1,
+  evoimgX: 0, evoimgY: 1, panelX: 0, panelY: 0, rowX: 0, rowY: -3, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0,
+  spX: 0, spY: 0, slotX: 23, slotY: 8, catX: 21, catY: -5, spbarX: 20, spbarY: 1, equipX: -9, equipY: -4, spbarAX: 13, spbarAY: 12,
+  spbarBX: 15, spbarBY: 0, spbarCX: 14, spbarCY: -3, nickX: 0, nickY: 0, expX: 0, expY: 0, gainX: 0, gainY: 0,
+  hpX: -3, hpY: 1, bossX: 1, bossY: -4, clearX: 0, clearY: 0, waveX: 0, waveY: 1, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: -1, btextY: 6,
 }
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
