@@ -107,6 +107,22 @@ const WEAPON_TYPES = ['몽둥이', '창', '도끼', '망치', '활', '지팡이'
 const ARMOR_TYPES = ['방어구 1', '방어구 2', '방어구 3', '방어구 4', '방어구 5']
 // 유물 6종 (각 10개, /relic/r{행}_{n}.png)
 const RELIC_ROWS = ['반지', '목걸이', '왕관', '펜던트', '룬 반지', '부적']
+// ── 가챠(소환) 정의: 티어가 높을수록 희박 ──
+const GACHA_CATS = {
+  무기: { kinds: 7, tiers: 10, img: (k, t) => `/equip/A/w${k}_${t}.png`, weights: [23, 18, 15, 12, 9, 7, 5.5, 4.5, 3.5, 2.5] },
+  방어구: { kinds: 5, tiers: 7, img: (k, t) => `/equip/B/a${k}_${t}.png`, weights: [30, 22, 16, 12, 9, 6.5, 4.5] },
+  유물: { kinds: 6, tiers: 10, img: (k, t) => `/relic/r${k}_${t}.png`, weights: [23, 18, 15, 12, 9, 7, 5.5, 4.5, 3.5, 2.5] },
+}
+const GACHA_COST = { 1: 10, 10: 100, 30: 300 }
+const GRADE_BANDS = { 10: ['일반', '일반', '고급', '고급', '레어', '레어', '영웅', '영웅', '전설', '전설'], 7: ['일반', '일반', '고급', '고급', '레어', '영웅', '전설'] }
+const GRADE_COLOR = { 일반: '#b7bcc2', 고급: '#54c964', 레어: '#ff9430', 영웅: '#c05cff', 전설: '#ff4038' }
+const gradeOf = (cat, tier) => GRADE_BANDS[GACHA_CATS[cat].tiers][tier - 1]
+const rollTier = cat => {
+  const w = GACHA_CATS[cat].weights
+  let r = Math.random() * w.reduce((a, b) => a + b, 0)
+  for (let i = 0; i < w.length; i++) { r -= w[i]; if (r <= 0) return i + 1 }
+  return w.length
+}
 
 // ── 오프라인 보상 설정 (직접 수정 가능) ─────────────────────────
 const OFFLINE_MIN_SEC = 60          // 이 시간 이상 부재 시에만 보상
@@ -262,7 +278,9 @@ export default function App() {
   const [phase, setPhase] = useState('fighting')
   const [clearMsg, setClearMsg] = useState(null)   // 웨이브 클리어 배너 (멈춤 없음)
   const [bossReady, setBossReady] = useState(false) // 10웨이브 클리어 후 보스 도전 대기
-  const [gem] = useState(0)                          // 다이아 재화 (추후 구현, 표시용)
+  const [gem, setGem] = useState(init.gem || 0)      // 다이아 재화 (DEBUG 시 무한)
+  const [inv, setInv] = useState(init.inv || {})     // 뽑은 장비 보유 수량 { 'w1_3': n }
+  const [gacha, setGacha] = useState(null)           // 소환 결과 오버레이 { cat, items:[{k,t}] }
   const [uiCfg, setUiCfg] = useState(() => { try { const sv = JSON.parse(localStorage.getItem('paleoUiCfg') || '{}'); return { ...UI_DEFAULT, ...Object.fromEntries(Object.entries(sv).filter(([k]) => k in UI_DEFAULT)) } } catch { return { ...UI_DEFAULT } } })
   const [uiEdit, setUiEdit] = useState(false)
   const [copiedUi, setCopiedUi] = useState(false)
@@ -328,8 +346,8 @@ export default function App() {
   }
 
   useEffect(() => {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, ts: Date.now() }))
-  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf])
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, ts: Date.now() }))
+  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv])
 
   // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제
   useEffect(() => {
@@ -994,6 +1012,21 @@ export default function App() {
     setMeat(m => m - c)
     setLv(v => ({ ...v, [k]: v[k] + 1 }))
   }
+  // 소환: n회 뽑기 → 인벤토리 반영 + 결과 오버레이
+  function pullGacha(cat, n) {
+    const cost = GACHA_COST[n]
+    if (!DEBUG) {
+      if (gem < cost) return
+      setGem(g => g - cost)
+    }
+    const items = Array.from({ length: n }, () => ({ k: 1 + Math.floor(Math.random() * GACHA_CATS[cat].kinds), t: rollTier(cat) }))
+    setInv(v => {
+      const nv = { ...v }
+      for (const it of items) { const key = `${cat}:${it.k}_${it.t}`; nv[key] = (nv[key] || 0) + 1 }
+      return nv
+    })
+    setGacha({ cat, items })
+  }
   // 길게 누르면 연속 실행 (400ms 후 80ms 간격)
   const holdRef = useRef(null)
   function holdStart(fn) {
@@ -1104,6 +1137,8 @@ export default function App() {
       button { cursor: pointer; font-family: inherit; }
       .pd-num { font-family: 'Do Hyeon', sans-serif; letter-spacing: 0.02em; }
       @keyframes pdPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+      @keyframes pdGachaPop { 0% { transform: scale(0.2); opacity: 0; } 70% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+      .pd-gacha-pop { animation: pdGachaPop 0.35s ease-out backwards; }
       .pd-fade { --fadeT: 0px; --fadeB: 28px;
         -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 var(--fadeT), #000 calc(100% - var(--fadeB)), transparent 100%);
         mask-image: linear-gradient(180deg, transparent 0, #000 var(--fadeT), #000 calc(100% - var(--fadeB)), transparent 100%); }
@@ -1116,6 +1151,33 @@ export default function App() {
     }}>
       {uiEdit && <style>{`[data-edit]{outline:1px dashed rgba(232,185,98,0.35);outline-offset:-1px;cursor:pointer}${editSel ? `[data-edit="${editSel}"]{outline:2px solid ${GOLD} !important}` : ''}`}</style>}
       <button onClick={() => { setUiEdit(v => !v); setEditSel(null) }} style={{ position: 'absolute', top: 4, right: 4, zIndex: 60, padding: '3px 8px', borderRadius: 6, border: '1px solid #6b4a24', background: uiEdit ? GOLD_D : 'rgba(20,13,7,0.8)', color: uiEdit ? '#fff' : GOLD, fontSize: 12 }}>{uiEdit ? '편집중' : '⚙'}</button>
+      {gacha && (
+        <div style={st.gachaOverlay}>
+          <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.gachaScroll}>
+            <div style={st.gachaGrid}>
+              {gacha.items.map((it, i) => {
+                const gr = gradeOf(gacha.cat, it.t)
+                const hi = gr === '영웅' || gr === '전설'
+                return (
+                  <div key={i} data-edit="gacha" className="pd-gacha-pop" style={{
+                    ...st.gachaCell, borderColor: GRADE_COLOR[gr], animationDelay: `${Math.min(i * 60, 1800)}ms`,
+                    boxShadow: hi ? `0 0 18px 4px ${GRADE_COLOR[gr]}66` : 'none',
+                  }}>
+                    <span style={{ ...st.gachaGrade, color: GRADE_COLOR[gr] }}>{gr}</span>
+                    <img src={GACHA_CATS[gacha.cat].img(it.k, it.t)} alt="" style={st.gachaImg} />
+                    <span style={st.gachaTier}>{it.t}등급</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+          <div style={st.gachaBtns}>
+            <button style={st.gachaBtn} onClick={() => setGacha(null)}>확인</button>
+            <button style={st.gachaBtn} onClick={() => pullGacha(gacha.cat, 10)}>10회 소환 <span style={st.shopCost}><img src="/ui/pill_gem.png" alt="" style={st.shopGemIc} />100</span></button>
+            <button style={st.gachaBtn} onClick={() => pullGacha(gacha.cat, 30)}>30회 소환 <span style={st.shopCost}><img src="/ui/pill_gem.png" alt="" style={st.shopGemIc} />300</span></button>
+          </div>
+        </div>
+      )}
       {uiEdit && (
         <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, margin: '0 auto', maxWidth: 420, zIndex: 61, background: 'rgba(16,10,5,0.32)', border: `2px solid ${GOLD_D}`, textShadow: '0 1px 3px rgba(0,0,0,0.9)', borderBottom: 'none', borderRadius: '10px 10px 0 0', padding: '8px 12px calc(8px + env(safe-area-inset-bottom))', maxHeight: '46%', overflowY: 'auto' }}>
           {!editSel && <div style={{ fontSize: 13, color: '#c9b596', textAlign: 'center', padding: '8px 0' }}>조정할 요소를 화면에서 탭하세요 (틀·아이콘·글자·숫자·버튼)</div>}
@@ -1172,7 +1234,7 @@ export default function App() {
         <div data-edit="pill" style={st.currency}>
           <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
             <span style={st.pillMeat}><b style={{ color: '#ffe6c0' }}>{fmt(meat)}</b></span>
-            <span style={st.pillGem}><b style={{ color: '#cfe8ff' }}>{fmt(gem)}</b></span>
+            <span style={st.pillGem}><b style={{ color: '#cfe8ff' }}>{DEBUG ? '∞' : fmt(gem)}</b></span>
           </div>
         </div>
       </div>
@@ -1393,7 +1455,24 @@ export default function App() {
         </div>
       )}
 
-      {nav !== '영웅' && nav !== '스킬' && nav !== '장비' && (
+      {nav === '상점' && (
+        <div data-edit="panel" style={st.frameBox}>
+          <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.panelInner}>
+            {Object.keys(GACHA_CATS).map(cat => (
+              <div key={cat} data-edit="row" style={{ ...st.row, transform: 'translate(var(--pd-row-x), var(--pd-row-y))' }}>
+                <img src={GACHA_CATS[cat].img(1, GACHA_CATS[cat].tiers)} alt="" style={{ height: 'calc(var(--pd-icon) + 10px)', objectFit: 'contain', transform: 'translate(var(--pd-icon-x), var(--pd-icon-y))' }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700 }}>{cat} 소환</div>
+                  <div style={{ fontSize: 11, opacity: 0.6 }}>티어가 높을수록 희귀</div>
+                </div>
+                <button style={st.shopBtn} onClick={() => pullGacha(cat, 1)}>1회<br /><span style={st.shopCost}><img src="/ui/pill_gem.png" alt="" style={st.shopGemIc} />10</span></button>
+                <button style={st.shopBtn} onClick={() => pullGacha(cat, 10)}>10회<br /><span style={st.shopCost}><img src="/ui/pill_gem.png" alt="" style={st.shopGemIc} />100</span></button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {nav !== '영웅' && nav !== '스킬' && nav !== '장비' && nav !== '상점' && (
         <div style={st.comingSoon}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>🔒</div>
           <div style={{ fontSize: 16, fontWeight: 700 }}>{nav}</div>
@@ -1440,13 +1519,13 @@ const UI_DEFAULT = {
   evoimg0: 56, evoimg1: 56, evoimg2: 56, evoimg3: 56, evoimg4: 56, evoimg5: 56,
   evoimg0X: 0, evoimg0Y: 1, evoimg1X: 0, evoimg1Y: 1, evoimg2X: 0, evoimg2Y: 1,
   evoimg3X: 0, evoimg3Y: 1, evoimg4X: 0, evoimg4Y: 1, evoimg5X: 0, evoimg5Y: 1,
-  gainfz: 13, hph: 11, hpfz: 10, bossfz: 11, bossh: 40, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
+  gachacell: 62, gachafz: 10, gainfz: 13, hph: 11, hpfz: 10, bossfz: 11, bossh: 40, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
   // 위치 이동(px): 요소별 X/Y
   avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: 2, pillY: 2, iconX: -3, iconY: 1,
   panelX: 0, panelY: 0, rowX: 0, rowY: -3, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0,
   spX: 0, spY: 0, slotX: 23, slotY: 8, catX: 21, catY: -5, spbarX: 20, spbarY: 1, equipX: -9, equipY: -4, spbarAX: 13, spbarAY: 12,
   spbarBX: 15, spbarBY: 0, spbarCX: 14, spbarCY: -3, nickX: 0, nickY: 0, expX: 0, expY: 0, gainX: 0, gainY: 0,
-  hpX: -3, hpY: 1, bossX: 1, bossY: -4, clearX: 0, clearY: 0, waveX: 0, waveY: 1, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: -1, btextY: 6,
+  hpX: -3, hpY: 1, bossX: 1, bossY: -4, clearX: 0, clearY: 0, waveX: 0, waveY: 1, gachaX: 0, gachaY: 0, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: -1, btextY: 6,
 }
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
@@ -1475,6 +1554,7 @@ const EDIT_GROUPS = {
   wavetitle: { label: '현판 글자', size: ['wavefz'], pos: 'wtitle' },
   diarow: { label: '다이아 줄', size: ['diasz'], pos: 'dia' },
   bossbtn: { label: '보스 버튼(판)', size: ['bossh'], pos: 'boss' },
+  gacha: { label: '소환 결과 셀', size: ['gachacell', 'gachafz'], pos: 'gacha' },
   bosstext: { label: '보스 버튼 글자', size: ['bossfz'], pos: 'btext' },
   clearmsg: { label: '클리어 문구', size: ['clearfz'], pos: 'clear' },
 }
@@ -1487,7 +1567,7 @@ const UI_LABELS = {
   navicon: '네비 아이콘', navpt: '네비 위높이', navpb: '네비 아래높이', avatar: '아바타 크기', slotmax: '스킬슬롯 크기', equipcols: '장비 열수', equipgap: '장비 간격',
   slotfz: '슬롯 + 글자', catfz: '분류 글자', spbarfz: '안내 글자', equipimg: '장비아이콘', equiptier: '티어 숫자',
   equipcell: '장비칸 크기', nickfz: '닉네임 글자', lvbadgefz: 'Lv뱃지 글자', exph: 'EXP바 높이', pillfz: '자원 글자', wavefz: '웨이브 글자',
-  gainfz: '팝업 글자', hph: 'HP알약 높이', hpfz: 'HP 글자', bossfz: '버튼 글자', clearfz: '문구 글자', navfz: '네비 글자', diasz: '다이아 크기', bossh: '버튼 판 크기', wavebh: '현판 높이',
+  gainfz: '팝업 글자', hph: 'HP알약 높이', hpfz: 'HP 글자', bossfz: '버튼 글자', clearfz: '문구 글자', navfz: '네비 글자', diasz: '다이아 크기', bossh: '버튼 판 크기', wavebh: '현판 높이', gachacell: '결과 셀 크기', gachafz: '등급 글자',
 }
 for (let i = 0; i < 6; i++) UI_LABELS[`evoimg${i}`] = `${i + 1}단계 크기`
 const uiVars = c => `:root{
@@ -1510,7 +1590,7 @@ ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg$
 --pd-spbarA-x:${c.spbarAX}px;--pd-spbarA-y:${c.spbarAY}px;--pd-spbarB-x:${c.spbarBX}px;--pd-spbarB-y:${c.spbarBY}px;--pd-spbarC-x:${c.spbarCX}px;--pd-spbarC-y:${c.spbarCY}px;
 --pd-equipcell:${c.equipcell}px;--pd-nickfz:${c.nickfz}px;--pd-lvbadgefz:${c.lvbadgefz}px;--pd-exph:${c.exph}px;
 --pd-pillfz:${c.pillfz}px;--pd-wavefz:${c.wavefz}px;--pd-gainfz:${c.gainfz}px;
---pd-hph:${c.hph}px;--pd-hpfz:${c.hpfz}px;--pd-bossfz:${c.bossfz}px;--pd-clearfz:${c.clearfz}px;--pd-navfz:${c.navfz}px;--pd-diasz:${c.diasz}px;--pd-bossh:${c.bossh}px;--pd-wavebh:${c.wavebh}px;
+--pd-hph:${c.hph}px;--pd-hpfz:${c.hpfz}px;--pd-bossfz:${c.bossfz}px;--pd-clearfz:${c.clearfz}px;--pd-navfz:${c.navfz}px;--pd-diasz:${c.diasz}px;--pd-bossh:${c.bossh}px;--pd-wavebh:${c.wavebh}px;--pd-gachacell:${c.gachacell}px;--pd-gachafz:${c.gachafz}px;--pd-gacha-x:${c.gachaX}px;--pd-gacha-y:${c.gachaY}px;
 --pd-nick-x:${c.nickX}px;--pd-nick-y:${c.nickY}px;--pd-exp-x:${c.expX}px;--pd-exp-y:${c.expY}px;
 --pd-gain-x:${c.gainX}px;--pd-gain-y:${c.gainY}px;
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
@@ -1584,6 +1664,33 @@ const st = {
   navActive: { backgroundImage: 'url(/ui/nav_on.png)', color: GOLD },
   cloudBox: { display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', fontSize: 12 },
   cloudBtn: { flexShrink: 0, padding: '6px 10px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 12 },
+  shopBtn: {
+    flexShrink: 0, minWidth: 58, padding: '5px 8px', borderRadius: 8, border: '1px solid #5a4028',
+    background: 'linear-gradient(180deg,#3a2a16,#241708)', color: '#f3e6d0', fontSize: 12, lineHeight: 1.35,
+    touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none',
+  },
+  shopCost: { display: 'inline-flex', alignItems: 'center', gap: 2, color: '#8fd0ff' },
+  shopGemIc: { height: 12, objectFit: 'contain' },
+  gachaOverlay: {
+    position: 'fixed', inset: 0, zIndex: 70, background: 'rgba(6,3,1,0.96)',
+    display: 'flex', flexDirection: 'column', padding: '18px 10px calc(10px + env(safe-area-inset-bottom))',
+  },
+  gachaScroll: { flex: 1, minHeight: 0, overflowY: 'auto' },
+  gachaGrid: { display: 'grid', gridTemplateColumns: 'repeat(5, var(--pd-gachacell))', gap: 10, justifyContent: 'center', alignContent: 'center', minHeight: '100%' },
+  gachaCell: {
+    position: 'relative', width: 'var(--pd-gachacell)', aspectRatio: '1', borderRadius: 10,
+    border: '2px solid #777', background: 'linear-gradient(180deg,#22180d,#120b05)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    transform: 'translate(var(--pd-gacha-x), var(--pd-gacha-y))',
+  },
+  gachaGrade: { position: 'absolute', top: 2, left: 4, fontSize: 'var(--pd-gachafz)', fontWeight: 700, textShadow: '0 1px 2px #000' },
+  gachaImg: { width: '74%', height: '74%', objectFit: 'contain', imageRendering: 'pixelated' },
+  gachaTier: { position: 'absolute', bottom: 2, right: 5, fontSize: 'var(--pd-gachafz)', color: '#ffd98a', textShadow: '0 1px 2px #000' },
+  gachaBtns: { display: 'flex', gap: 8, justifyContent: 'center', paddingTop: 10 },
+  gachaBtn: {
+    padding: '10px 14px', borderRadius: 10, border: '1px solid #5a4028',
+    background: 'linear-gradient(180deg,#3a2a16,#241708)', color: '#f3e6d0', fontSize: 13,
+  },
   comingSoon: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#20160c', color: '#f3e6d0' },
   cdOverlay: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.72)', fontSize: 13, color: '#7ce0ff' },
   slotRow: { display: 'flex', gap: 6, padding: '2px 2px 5px' },
