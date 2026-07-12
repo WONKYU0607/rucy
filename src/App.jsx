@@ -784,7 +784,7 @@ export default function App() {
         return ['eatk1', ANIM.eatk1.srcs.length - 1]
       }
       if (st.mode === 'neander' && key === 'nwalk' && w._blocked) {
-        return ['natk1', ANIM.natk1.srcs.length - 1]
+        return ['natk1', 0]
       }
       const fi = Math.floor(hero.animT * 10) % ANIM[key].srcs.length
       return [key, fi]
@@ -1248,8 +1248,8 @@ export default function App() {
             <img
               src={EVOS[evo].mode === 'quad' ? '/hero/quad/quad_1.png' : EVOS[evo].mode === 'erectus' ? '/hero/erectus_walk/ewalk_1.png' : EVOS[evo].mode === 'neander' ? '/hero/neander_walk/nwalk_1.png' : '/hero/misc/hero_idle.png'}
               alt=""
-              data-edit="evoimg"
-              style={{ height: 'var(--pd-evoimg)', transform: 'translate(var(--pd-evoimg-x), var(--pd-evoimg-y))' }}
+              data-edit={`evoimg${evo}`}
+              style={{ height: `var(--pd-evoimg${evo})`, transform: `translate(var(--pd-evoimg${evo}-x), var(--pd-evoimg${evo}-y))` }}
             />
             <div style={{ flex: 1, marginLeft: 12 }}>
               <div data-edit="name" style={st.rowName}>{EVOS[evo].name}</div>
@@ -1435,12 +1435,15 @@ const UI_DEFAULT = {
   panelbwV: 2, panelbwH: 4, rowbwV: 2, rowbwH: 19, rowmin: 38, rowgap: 7, icon: 27, name: 12,
   lv: 11, val: 12, costw: 35, costh: 28, costfz: 14, inputw: 43, inputfz: 12, spw: 35,
   sph: 4, spfz: 13, tabpt: 7, tabpb: 10, tabfz: 13, navicon: 26, navpt: 10, navpb: 8,
-  avatar: 40, slotmax: 50, equipcols: 5, equipgap: 11, evoimg: 56, slotfz: 23, catfz: 13, spbarfz: 12,
+  avatar: 40, slotmax: 50, equipcols: 5, equipgap: 11, slotfz: 23, catfz: 13, spbarfz: 12,
   equipimg: 60, equiptier: 13, equipcell: 54, nickfz: 15, lvbadgefz: 12, exph: 11, pillfz: 14, wavefz: 12,
+  evoimg0: 56, evoimg1: 56, evoimg2: 56, evoimg3: 56, evoimg4: 56, evoimg5: 56,
+  evoimg0X: 0, evoimg0Y: 1, evoimg1X: 0, evoimg1Y: 1, evoimg2X: 0, evoimg2Y: 1,
+  evoimg3X: 0, evoimg3Y: 1, evoimg4X: 0, evoimg4Y: 1, evoimg5X: 0, evoimg5Y: 1,
   gainfz: 13, hph: 11, hpfz: 10, bossfz: 11, bossh: 40, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
   // 위치 이동(px): 요소별 X/Y
   avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: 2, pillY: 2, iconX: -3, iconY: 1,
-  evoimgX: 0, evoimgY: 1, panelX: 0, panelY: 0, rowX: 0, rowY: -3, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0,
+  panelX: 0, panelY: 0, rowX: 0, rowY: -3, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0,
   spX: 0, spY: 0, slotX: 23, slotY: 8, catX: 21, catY: -5, spbarX: 20, spbarY: 1, equipX: -9, equipY: -4, spbarAX: 13, spbarAY: 12,
   spbarBX: 15, spbarBY: 0, spbarCX: 14, spbarCY: -3, nickX: 0, nickY: 0, expX: 0, expY: 0, gainX: 0, gainY: 0,
   hpX: -3, hpY: 1, bossX: 1, bossY: -4, clearX: 0, clearY: 0, waveX: 0, waveY: 1, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: -1, btextY: 6,
@@ -1458,7 +1461,6 @@ const EDIT_GROUPS = {
   input: { label: '숫자칸', size: ['inputw', 'inputfz'], pos: 'input' },
   sp: { label: '장착 버튼', size: ['spw', 'sph', 'spfz'], pos: 'sp' },
   nav: { label: '하단 네비', size: ['navicon', 'navfz', 'navpt', 'navpb'], pos: 'nav' },
-  evoimg: { label: '진화 캐릭터', size: ['evoimg'], pos: 'evoimg' },
   slot: { label: '스킬 슬롯', size: ['slotmax', 'slotfz'], pos: 'slot' },
   cat: { label: '분류 글자', size: ['catfz'], pos: 'cat' },
   spbarA: { label: '장착슬롯 안내', size: ['spbarfz'], pos: 'spbarA' },
@@ -1476,16 +1478,18 @@ const EDIT_GROUPS = {
   bosstext: { label: '보스 버튼 글자', size: ['bossfz'], pos: 'btext' },
   clearmsg: { label: '클리어 문구', size: ['clearfz'], pos: 'clear' },
 }
+for (let i = 0; i < 6; i++) EDIT_GROUPS[`evoimg${i}`] = { label: `진화캐릭 ${i + 1}단계`, size: [`evoimg${i}`], pos: `evoimg${i}` }
 const UI_LABELS = {
   panelbwV: '패널 테두리(상하)', panelbwH: '패널 테두리(좌우)', rowbwV: '항목 테두리(상하)', rowbwH: '항목 테두리(좌우)',
   rowmin: '항목 최소높이', rowgap: '항목 간격', icon: '아이콘 크기', name: '이름 글자', lv: 'Lv 글자', val: '수치 글자',
   costw: '+1버튼 너비', costh: '+1버튼 높이', costfz: '+1버튼 글자', inputw: '숫자칸 너비', inputfz: '숫자칸 글자',
   spw: '장착버튼 너비', sph: '장착버튼 높이', spfz: '장착버튼 글자', tabpt: '탭 위높이', tabpb: '탭 아래높이', tabfz: '탭 글자',
   navicon: '네비 아이콘', navpt: '네비 위높이', navpb: '네비 아래높이', avatar: '아바타 크기', slotmax: '스킬슬롯 크기', equipcols: '장비 열수', equipgap: '장비 간격',
-  evoimg: '진화캐릭 크기', slotfz: '슬롯 + 글자', catfz: '분류 글자', spbarfz: '안내 글자', equipimg: '장비아이콘', equiptier: '티어 숫자',
+  slotfz: '슬롯 + 글자', catfz: '분류 글자', spbarfz: '안내 글자', equipimg: '장비아이콘', equiptier: '티어 숫자',
   equipcell: '장비칸 크기', nickfz: '닉네임 글자', lvbadgefz: 'Lv뱃지 글자', exph: 'EXP바 높이', pillfz: '자원 글자', wavefz: '웨이브 글자',
   gainfz: '팝업 글자', hph: 'HP알약 높이', hpfz: 'HP 글자', bossfz: '버튼 글자', clearfz: '문구 글자', navfz: '네비 글자', diasz: '다이아 크기', bossh: '버튼 판 크기', wavebh: '현판 높이',
 }
+for (let i = 0; i < 6; i++) UI_LABELS[`evoimg${i}`] = `${i + 1}단계 크기`
 const uiVars = c => `:root{
 --pd-panelbw-v:${c.panelbwV}px;--pd-panelbw-h:${c.panelbwH}px;--pd-rowbw-v:${c.rowbwV}px;--pd-rowbw-h:${c.rowbwH}px;
 --pd-rowmin:${c.rowmin}px;--pd-rowgap:${c.rowgap}px;--pd-icon:${c.icon}px;--pd-name:${c.name}px;--pd-lv:${c.lv}px;--pd-val:${c.val}px;
@@ -1496,7 +1500,7 @@ const uiVars = c => `:root{
 --pd-avatar-x:${c.avatarX}px;--pd-avatar-y:${c.avatarY}px;--pd-tab-x:${c.tabX}px;--pd-tab-y:${c.tabY}px;
 --pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
---pd-evoimg:${c.evoimg}px;--pd-evoimg-x:${c.evoimgX}px;--pd-evoimg-y:${c.evoimgY}px;--pd-slotfz:${c.slotfz}px;
+${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg${i}-x:${c['evoimg' + i + 'X']}px;--pd-evoimg${i}-y:${c['evoimg' + i + 'Y']}px;`).join('')}--pd-slotfz:${c.slotfz}px;
 --pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
 --pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
 --pd-name-x:${c.nameX}px;--pd-name-y:${c.nameY}px;--pd-val-x:${c.valX}px;--pd-val-y:${c.valY}px;
