@@ -1052,7 +1052,7 @@ export default function App() {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) }))
             const nbtn = { width: 26, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
-            const rng = k => k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'equipcell' ? 160 : (['exph', 'progh'].includes(k) || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
+            const rng = k => k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'equipcell' ? 160 : (k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
             const rmin = k => k === 'equipcols' ? 3 : 0
             return <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -1095,6 +1095,7 @@ export default function App() {
           </div>
           <div data-edit="expbar" style={st.expOuter}>
             <div style={{ ...st.expInner, width: Math.min(100, hexp / heroExpReq(hlv) * 100) + '%' }} />
+            <span className="pd-num" style={st.expText}>{Math.min(100, hexp / heroExpReq(hlv) * 100).toFixed(1)}%</span>
           </div>
         </div>
         <div data-edit="pill" style={st.currency}>
@@ -1111,7 +1112,7 @@ export default function App() {
           <span className="pd-num" style={st.hpText}>{fmt(heroHpUI)} / {fmt(maxHp)}</span>
         </div>
         <div data-edit="waveband" style={st.waveBanner}>
-          <div className="pd-num" style={st.waveTitle}>WAVE {wave}</div>
+          <div style={st.waveTitle}>웨이브 {wave}</div>
           <div style={st.diaRow}>
             {Array.from({ length: 10 }, (_, i) => (
               <img key={i} src={i < (wave - 1) % 10 + 1 ? '/ui/dia_on.png' : '/ui/dia_off.png'} alt="" style={st.dia} />
@@ -1121,9 +1122,6 @@ export default function App() {
         <div data-edit="bossbtn" style={st.bossWrap}>
           <button style={{ ...st.bossBtn, opacity: bossReady && phase === 'fighting' ? 1 : 0.45, animation: bossReady && phase === 'fighting' ? 'pdPulse 1.2s ease-in-out infinite' : 'none' }} disabled={!(bossReady && phase === 'fighting')} onClick={challengeBoss}>보스 도전</button>
         </div>
-      </div>
-      <div data-edit="prog" style={st.waveProg}>
-        <div style={{ ...st.progInner, width: progress * 100 + '%' }} />
       </div>
 
       <div ref={wrapRef} style={st.canvasWrap}>
@@ -1352,7 +1350,7 @@ const UI_DEFAULT = {
   sph: 4, spfz: 13, tabpt: 7, tabpb: 10, tabfz: 13, navicon: 26, navpt: 10, navpb: 8,
   avatar: 40, slotmax: 50, equipcols: 5, equipgap: 10, evoimg: 59, slotfz: 23, catfz: 13, spbarfz: 12,
   equipimg: 63, equiptier: 13, equipcell: 58, nickfz: 15, lvbadgefz: 12, exph: 9, pillfz: 14, wavefz: 12,
-  progh: 6, gainfz: 13, hph: 34, hpfz: 11, bossfz: 13, clearfz: 24, navfz: 10, diasz: 11,
+  gainfz: 13, hph: 34, hpfz: 11, bossfz: 11, clearfz: 24, navfz: 10, diasz: 11,
   // 위치 이동(px): 요소별 X/Y
   avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: 0, pillY: 4, iconX: -3, iconY: 1,
   evoimgX: 0, evoimgY: 0, panelX: 0, panelY: 0, rowX: 0, rowY: -1, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0,
@@ -1382,7 +1380,6 @@ const EDIT_GROUPS = {
   equip: { label: '장비칸', size: ['equipcols', 'equipgap', 'equipcell', 'equipimg', 'equiptier'], pos: 'equip' },
   nick: { label: '닉네임/레벨', size: ['nickfz', 'lvbadgefz'], pos: 'nick' },
   expbar: { label: 'EXP바', size: ['exph'], pos: 'exp' },
-  prog: { label: '웨이브 진행바', size: ['progh'], pos: 'prog' },
   gain: { label: '획득 팝업', size: ['gainfz'], pos: 'gain' },
   hppill: { label: 'HP 알약', size: ['hph', 'hpfz'], pos: 'hp' },
   waveband: { label: '웨이브 현판', size: ['wavefz', 'diasz'], pos: 'wave' },
@@ -1397,7 +1394,7 @@ const UI_LABELS = {
   navicon: '네비 아이콘', navpt: '네비 위높이', navpb: '네비 아래높이', avatar: '아바타 크기', slotmax: '스킬슬롯 크기', equipcols: '장비 열수', equipgap: '장비 간격',
   evoimg: '진화캐릭 크기', slotfz: '슬롯 + 글자', catfz: '분류 글자', spbarfz: '안내 글자', equipimg: '장비아이콘', equiptier: '티어 숫자',
   equipcell: '장비칸 크기', nickfz: '닉네임 글자', lvbadgefz: 'Lv뱃지 글자', exph: 'EXP바 높이', pillfz: '자원 글자', wavefz: '웨이브 글자',
-  progh: '진행바 높이', gainfz: '팝업 글자', hph: 'HP알약 높이', hpfz: 'HP 글자', bossfz: '버튼 글자', clearfz: '문구 글자', navfz: '네비 글자', diasz: '다이아 크기',
+  gainfz: '팝업 글자', hph: 'HP알약 높이', hpfz: 'HP 글자', bossfz: '버튼 글자', clearfz: '문구 글자', navfz: '네비 글자', diasz: '다이아 크기',
 }
 const uiVars = c => `:root{
 --pd-panelbw-v:${c.panelbwV}px;--pd-panelbw-h:${c.panelbwH}px;--pd-rowbw-v:${c.rowbwV}px;--pd-rowbw-h:${c.rowbwH}px;
@@ -1418,10 +1415,10 @@ const uiVars = c => `:root{
 --pd-spbar-x:${c.spbarX}px;--pd-spbar-y:${c.spbarY}px;--pd-equip-x:${c.equipX}px;--pd-equip-y:${c.equipY}px;
 --pd-spbarA-x:${c.spbarAX}px;--pd-spbarA-y:${c.spbarAY}px;--pd-spbarB-x:${c.spbarBX}px;--pd-spbarB-y:${c.spbarBY}px;--pd-spbarC-x:${c.spbarCX}px;--pd-spbarC-y:${c.spbarCY}px;
 --pd-equipcell:${c.equipcell}px;--pd-nickfz:${c.nickfz}px;--pd-lvbadgefz:${c.lvbadgefz}px;--pd-exph:${c.exph}px;
---pd-pillfz:${c.pillfz}px;--pd-wavefz:${c.wavefz}px;--pd-progh:${c.progh}px;--pd-gainfz:${c.gainfz}px;
+--pd-pillfz:${c.pillfz}px;--pd-wavefz:${c.wavefz}px;--pd-gainfz:${c.gainfz}px;
 --pd-hph:${c.hph}px;--pd-hpfz:${c.hpfz}px;--pd-bossfz:${c.bossfz}px;--pd-clearfz:${c.clearfz}px;--pd-navfz:${c.navfz}px;--pd-diasz:${c.diasz}px;
 --pd-nick-x:${c.nickX}px;--pd-nick-y:${c.nickY}px;--pd-exp-x:${c.expX}px;--pd-exp-y:${c.expY}px;
---pd-prog-x:${c.progX}px;--pd-prog-y:${c.progY}px;--pd-gain-x:${c.gainX}px;--pd-gain-y:${c.gainY}px;
+--pd-gain-x:${c.gainX}px;--pd-gain-y:${c.gainY}px;
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;
 }`
 const st = {
@@ -1447,8 +1444,9 @@ const st = {
   nickRow: { display: 'flex', alignItems: 'center', gap: 6, transform: 'translate(var(--pd-nick-x), var(--pd-nick-y))' },
   nick: { fontSize: 'var(--pd-nickfz)', fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   lvBadge: { fontSize: 'var(--pd-lvbadgefz)', color: GOLD, background: 'linear-gradient(180deg,#3a2a14,#2a1d0d)', border: `1px solid ${GOLD_D}`, padding: '1px 8px', borderRadius: 7, flexShrink: 0 },
-  expOuter: { height: 'var(--pd-exph)', transform: 'translate(var(--pd-exp-x), var(--pd-exp-y))', background: '#0e0a05', borderRadius: 5, overflow: 'hidden', marginTop: 4, border: '1px solid #3a2a14' },
-  expInner: { height: '100%', background: 'linear-gradient(90deg,#c98a2e,#f0c05a,#ffe08a)', transition: 'width 0.2s' },
+  expOuter: { position: 'relative', height: 'var(--pd-exph)', transform: 'translate(var(--pd-exp-x), var(--pd-exp-y))', background: '#0e0a05', borderRadius: 5, overflow: 'hidden', marginTop: 4, border: '1px solid #1e3a5f' },
+  expInner: { height: '100%', background: 'linear-gradient(90deg,#1f5fa8,#3f8fd8,#7cc4ff)', transition: 'width 0.2s' },
+  expText: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'calc(var(--pd-exph) - 4px)', lineHeight: 1, textShadow: '0 1px 2px #000' },
   currency: { textAlign: 'right', fontSize: 'var(--pd-pillfz)', whiteSpace: 'nowrap', transform: 'translate(var(--pd-pill-x), var(--pd-pill-y))' },
   currencyPill: {
     display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13,
@@ -1467,7 +1465,6 @@ const st = {
     backgroundImage: 'url(/ui/pill_gem.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
     textShadow: '0 1px 2px #000',
   },
-  waveProg: { height: 'var(--pd-progh)', background: '#120c06', overflow: 'hidden', transform: 'translate(var(--pd-prog-x), var(--pd-prog-y))' },
   gainWrap: { position: 'absolute', left: 8, top: 44, transform: 'translate(var(--pd-gain-x), var(--pd-gain-y))', display: 'flex', flexDirection: 'column', gap: 3, pointerEvents: 'none' },
   gainItem: { display: 'flex', gap: 8, fontSize: 'var(--pd-gainfz)', background: 'rgba(10,6,3,0.6)', padding: '2px 8px', borderRadius: 6 },
   spBar: { padding: '3px 5px 5px', fontSize: 'var(--pd-spbarfz)', color: '#c9b596' },
@@ -1503,7 +1500,6 @@ const st = {
   offBox: { background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: `2px solid ${GOLD_D}`, borderRadius: 16, padding: '20px 24px', textAlign: 'center', minWidth: 240, color: '#f3e6d0', boxShadow: '0 8px 30px rgba(0,0,0,0.6)' },
   skillIcon: { width: 'var(--pd-icon)', height: 'var(--pd-icon)', transform: 'translate(var(--pd-icon-x), var(--pd-icon-y))', borderRadius: 8, background: 'linear-gradient(180deg,#2c2013,#1a1208)', border: '1px solid #5a4028', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 },
   progOuter: { height: 8, background: '#2a1d0d', borderRadius: 4, overflow: 'hidden', border: '1px solid #3a2a14' },
-  progInner: { height: '100%', background: `linear-gradient(90deg,${GOLD_D},${GOLD})`, transition: 'width 0.2s' },
   canvasWrap: { height: '42%', position: 'relative', minHeight: 220 },
   statusBar: { display: 'flex', alignItems: 'center', gap: 6, padding: '3px 8px 2px' },
   hpPill: {
@@ -1522,7 +1518,7 @@ const st = {
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
     transform: 'translate(var(--pd-wave-x), var(--pd-wave-y))',
   },
-  waveTitle: { fontSize: 'var(--pd-wavefz)', letterSpacing: '0.08em', color: '#f3dfae', textShadow: '0 1px 2px #000', lineHeight: 1 },
+  waveTitle: { fontSize: 'var(--pd-wavefz)', color: '#e8b962', textShadow: '0 1px 2px #000', lineHeight: 1 },
   diaRow: { display: 'flex', gap: 3 },
   dia: { width: 'var(--pd-diasz)', height: 'var(--pd-diasz)', objectFit: 'contain' },
   bossWrap: { flexShrink: 0, alignSelf: 'stretch', display: 'flex', transform: 'translate(var(--pd-boss-x), var(--pd-boss-y))' },
@@ -1579,9 +1575,9 @@ const st = {
   plusBtn: { border: '1px solid #a85f1f', background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
   minusBtn: { border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#cbb89a' },
   bossBtn: {
-    border: 'none', minWidth: 88, padding: '0 16px',
+    border: 'none', height: '100%', aspectRatio: '300 / 135', padding: '0 0 2px 12%',
     background: 'transparent url(/ui/boss_btn.png) center / 100% 100% no-repeat',
-    color: '#ffe0d0', fontSize: 'var(--pd-bossfz)', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap',
+    color: '#ffe0d0', fontSize: 'var(--pd-bossfz)', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', lineHeight: 1,
   },
 }
 
