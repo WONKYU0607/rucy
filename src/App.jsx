@@ -267,7 +267,7 @@ export default function App() {
   const [uiEdit, setUiEdit] = useState(false)
   const [copiedUi, setCopiedUi] = useState(false)
   const [editSel, setEditSel] = useState(null)   // 편집 모드에서 선택된 요소
-  useEffect(() => { localStorage.setItem('paleoUiCfg', JSON.stringify(uiCfg)); localStorage.setItem('paleoUiCfgTs', String(Date.now())) }, [uiCfg])
+  useEffect(() => { localStorage.setItem('paleoUiCfg', JSON.stringify(uiCfg)) }, [uiCfg])
   const [offReward, setOffReward] = useState(null) // 오프라인 보상 팝업
   const offDone = useRef(false)
 
@@ -1016,7 +1016,6 @@ export default function App() {
       const sv = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null')
       if (!sv) return
       sv.ui = JSON.parse(localStorage.getItem('paleoUiCfg') || 'null')
-      sv.uiTs = Number(localStorage.getItem('paleoUiCfgTs')) || 0
       await setDoc(doc(fbDb, 'paleoSaves', fbAuth.currentUser.uid), sv)
       setCloudMsg('저장됨 ' + new Date().toLocaleTimeString())
     } catch (e) { setCloudMsg('저장 실패: ' + (e.code || e.message)) }
@@ -1030,11 +1029,9 @@ export default function App() {
         const snap = await getDoc(doc(fbDb, 'paleoSaves', u.uid))
         const cloud = snap.exists() ? snap.data() : null
         const local = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null')
-        // UI 편집값: 타임스탬프가 더 최근인 쪽 채택 (세이브와 독립)
-        const localUiTs = Number(localStorage.getItem('paleoUiCfgTs')) || 0
-        if (cloud?.ui && (cloud.uiTs || 0) > localUiTs) {
+        // UI 편집값: 클라우드(PC에서 올린 값)를 항상 적용
+        if (cloud?.ui) {
           localStorage.setItem('paleoUiCfg', JSON.stringify(cloud.ui))
-          localStorage.setItem('paleoUiCfgTs', String(cloud.uiTs))
           setUiCfg({ ...UI_DEFAULT, ...Object.fromEntries(Object.entries(cloud.ui).filter(([k]) => k in UI_DEFAULT)) })
         }
         if (cloud && (cloud.wave || 0) > (local?.wave || 0)) {
