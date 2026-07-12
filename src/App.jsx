@@ -280,7 +280,8 @@ export default function App() {
   const [bossReady, setBossReady] = useState(false) // 10웨이브 클리어 후 보스 도전 대기
   const [gem, setGem] = useState(init.gem || 0)      // 다이아 재화 (DEBUG 시 무한)
   const [inv, setInv] = useState(init.inv || {})     // 뽑은 장비 보유 수량 { 'w1_3': n }
-  const [gacha, setGacha] = useState(null)           // 소환 결과 오버레이 { cat, items:[{k,t}] }
+  const [gacha, setGacha] = useState(null)
+  const [menuOpen, setMenuOpen] = useState(false)           // 소환 결과 오버레이 { cat, items:[{k,t}] }
   const [uiCfg, setUiCfg] = useState(() => { try { const sv = JSON.parse(localStorage.getItem('paleoUiCfg') || '{}'); return { ...UI_DEFAULT, ...Object.fromEntries(Object.entries(sv).filter(([k]) => k in UI_DEFAULT)) } } catch { return { ...UI_DEFAULT } } })
   const [uiEdit, setUiEdit] = useState(false)
   const [copiedUi, setCopiedUi] = useState(false)
@@ -1164,18 +1165,18 @@ export default function App() {
                     ...st.gachaCell, borderColor: GRADE_COLOR[gr], animationDelay: `${Math.min(i * 60, 1800)}ms`,
                     boxShadow: hi ? `0 0 18px 4px ${GRADE_COLOR[gr]}66` : 'none',
                   }}>
-                    <span style={{ ...st.gachaGrade, color: GRADE_COLOR[gr] }}>{gr}</span>
-                    <img src={GACHA_CATS[gacha.cat].img(it.k, it.t)} alt="" style={st.gachaImg} />
-                    <span style={st.gachaTier}>{it.t}등급</span>
+                    <span data-edit="ggrade" style={{ ...st.gachaGrade, color: GRADE_COLOR[gr] }}>{gr}</span>
+                    <img src={GACHA_CATS[gacha.cat].img(it.k, it.t)} alt="" data-edit="gimg" style={st.gachaImg} />
+                    <span data-edit="gtier" style={st.gachaTier}>{it.t}등급</span>
                   </div>
                 )
               })}
             </div>
           </div>
           <div style={st.gachaBtns}>
-            <button style={st.gachaBtn} onClick={() => setGacha(null)}>확인</button>
-            <button style={st.gachaBtn} onClick={() => pullGacha(gacha.cat, 10)}>10회 소환 <span style={st.shopCost}><img src="/ui/gem.png" alt="" style={st.shopGemIc} />100</span></button>
-            <button style={st.gachaBtn} onClick={() => pullGacha(gacha.cat, 30)}>30회 소환 <span style={st.shopCost}><img src="/ui/gem.png" alt="" style={st.shopGemIc} />300</span></button>
+            <button data-edit="gbtn" style={st.gachaBtn} onClick={() => setGacha(null)}><span data-edit="gbtntext" style={st.gachaBtnText}>확인</span></button>
+            <button data-edit="gbtn" style={st.gachaBtn} onClick={() => pullGacha(gacha.cat, 10)}><span data-edit="gbtntext" style={st.gachaBtnText}>10회 소환 <span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />100</span></span></button>
+            <button data-edit="gbtn" style={st.gachaBtn} onClick={() => pullGacha(gacha.cat, 30)}><span data-edit="gbtntext" style={st.gachaBtnText}>30회 소환 <span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />300</span></span></button>
           </div>
         </div>
       )}
@@ -1232,11 +1233,27 @@ export default function App() {
             <span className="pd-num" style={st.expText}>{Math.min(100, hexp / heroExpReq(hlv) * 100).toFixed(1)}%</span>
           </div>
         </div>
-        <div data-edit="pill" style={st.currency}>
-          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-            <span style={st.pillMeat}><b style={{ color: '#ffe6c0' }}>{fmt(meat)}</b></span>
-            <span style={st.pillGem}><b style={{ color: '#cfe8ff' }}>{DEBUG ? '∞' : fmt(gem)}</b></span>
+        <div data-edit="pill" style={{ ...st.currency, position: 'relative' }}>
+          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
+            <span data-edit="pillmeat" style={st.pillMeat}><b style={{ color: '#ffe6c0' }}>{fmt(meat)}</b></span>
+            <span data-edit="pillgem" style={st.pillGem}><b style={{ color: '#cfe8ff' }}>{DEBUG ? '∞' : fmt(gem)}</b></span>
+            <button data-edit="hamb" style={st.hambBtn} onClick={() => setMenuOpen(o => !o)}>☰</button>
           </div>
+          {menuOpen && (
+            <div data-edit="menu" style={st.menuPanel}>
+              <button style={{ ...st.menuItem, opacity: 0.5 }} onClick={() => {}}>우편함 <span style={{ fontSize: 11, opacity: 0.7 }}>준비 중</span></button>
+              <div style={{ borderTop: '1px solid #3a2a14', margin: '4px 0' }} />
+              {FB_ON && (fbUser ? (
+                <>
+                  <div style={{ ...st.menuItem, opacity: 0.8 }}><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fbUser.email}</span></div>
+                  <button style={st.menuItem} onClick={pushCloud}>지금 저장 <span style={{ fontSize: 11, opacity: 0.6 }}>{cloudMsg}</span></button>
+                  <button style={st.menuItem} onClick={fbLogout}>로그아웃</button>
+                </>
+              ) : (
+                <button style={st.menuItem} onClick={fbLogin}>구글 로그인 · 저장 연동</button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       <div style={st.statusBar}>
@@ -1351,20 +1368,6 @@ export default function App() {
       </div>
       )}
 
-      {nav === '영웅' && FB_ON && (
-        <div style={st.cloudBox}>
-          {fbUser ? (
-            <>
-              <span style={{ opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fbUser.email}</span>
-              <span style={{ opacity: 0.55, fontSize: 11, flexShrink: 0 }}>{cloudMsg}</span>
-              <button style={st.cloudBtn} onClick={pushCloud}>지금 저장</button>
-              <button style={st.cloudBtn} onClick={fbLogout}>로그아웃</button>
-            </>
-          ) : (
-            <button style={{ ...st.cloudBtn, width: '100%' }} onClick={fbLogin}>구글 로그인 · 기기 간 저장 연동</button>
-          )}
-        </div>
-      )}
       {nav === '스킬' && (
         <div data-edit="panel" style={st.panel}>
           <div data-edit="spbarA" style={{ ...st.spBar, transform: 'translate(var(--pd-spbarA-x), var(--pd-spbarA-y))' }}>장착 슬롯 · 올린 스킬만 자동 발동</div>
@@ -1419,8 +1422,8 @@ export default function App() {
               <div style={st.equipGrid}>
                 {Array.from({ length: 10 }, (_, ti) => (
                   <div key={ti} data-edit="equip" style={st.equipCell}>
-                    <img src={`/equip/A/w${wi + 1}_${ti + 1}.png`} alt="" style={st.equipImg} />
-                    <div style={st.equipTier}>{ti + 1}등급</div>
+                    <img src={`/equip/A/w${wi + 1}_${ti + 1}.png`} alt="" data-edit="eqimg" style={st.equipImg} />
+                    <div data-edit="eqtier" style={st.equipTier}>{ti + 1}등급</div>
                   </div>
                 ))}
               </div>
@@ -1432,8 +1435,8 @@ export default function App() {
               <div style={st.equipGrid}>
                 {Array.from({ length: 7 }, (_, ti) => (
                   <div key={ti} data-edit="equip" style={st.equipCell}>
-                    <img src={`/equip/B/a${ai + 1}_${ti + 1}.png`} alt="" style={st.equipImg} />
-                    <div style={st.equipTier}>{ti + 1}등급</div>
+                    <img src={`/equip/B/a${ai + 1}_${ti + 1}.png`} alt="" data-edit="eqimg" style={st.equipImg} />
+                    <div data-edit="eqtier" style={st.equipTier}>{ti + 1}등급</div>
                   </div>
                 ))}
               </div>
@@ -1445,8 +1448,8 @@ export default function App() {
               <div style={st.equipGrid}>
                 {Array.from({ length: 10 }, (_, ti) => (
                   <div key={ti} data-edit="equip" style={st.equipCell}>
-                    <img src={`/relic/r${ri + 1}_${ti + 1}.png`} alt="" style={st.equipImg} />
-                    <div style={st.equipTier}>{ti + 1}등급</div>
+                    <img src={`/relic/r${ri + 1}_${ti + 1}.png`} alt="" data-edit="eqimg" style={st.equipImg} />
+                    <div data-edit="eqtier" style={st.equipTier}>{ti + 1}등급</div>
                   </div>
                 ))}
               </div>
@@ -1460,14 +1463,14 @@ export default function App() {
         <div data-edit="panel" style={st.frameBox}>
           <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.panelInner}>
             {Object.keys(GACHA_CATS).map(cat => (
-              <div key={cat} data-edit="row" style={{ ...st.row, transform: 'translate(var(--pd-row-x), var(--pd-row-y))' }}>
-                <img src={GACHA_CATS[cat].img(1, GACHA_CATS[cat].tiers)} alt="" style={{ height: 'calc(var(--pd-icon) + 10px)', objectFit: 'contain', transform: 'translate(var(--pd-icon-x), var(--pd-icon-y))' }} />
+              <div key={cat} data-edit="shoprow" style={{ ...st.row, minHeight: 'var(--pd-shoprowmin)', transform: 'translate(var(--pd-shoprow-x), var(--pd-shoprow-y))' }}>
+                <img src={GACHA_CATS[cat].img(1, GACHA_CATS[cat].tiers)} alt="" data-edit="shopic" style={{ height: 'var(--pd-shopic)', objectFit: 'contain', transform: 'translate(var(--pd-shopic-x), var(--pd-shopic-y))' }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700 }}>{cat} 소환</div>
-                  <div style={{ fontSize: 11, opacity: 0.6 }}>티어가 높을수록 희귀</div>
+                  <div data-edit="shoptitle" style={{ fontWeight: 700, fontSize: 'var(--pd-shoptfz)', transform: 'translate(var(--pd-shopt-x), var(--pd-shopt-y))' }}>{cat} 소환</div>
+                  <div data-edit="shopsub" style={{ fontSize: 'var(--pd-shopsubfz)', opacity: 0.6, transform: 'translate(var(--pd-shopsub-x), var(--pd-shopsub-y))' }}>티어가 높을수록 희귀</div>
                 </div>
-                <button style={st.shopBtn} onClick={() => pullGacha(cat, 1)}>1회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" style={st.shopGemIc} />10</span></button>
-                <button style={st.shopBtn} onClick={() => pullGacha(cat, 10)}>10회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" style={st.shopGemIc} />100</span></button>
+                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => pullGacha(cat, 1)}><span data-edit="shopbtext" style={st.shopBtnText}>1회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />10</span></span></button>
+                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => pullGacha(cat, 10)}><span data-edit="shopbtext" style={st.shopBtnText}>10회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />100</span></span></button>
               </div>
             ))}
           </div>
@@ -1495,7 +1498,7 @@ export default function App() {
       )}
 
       <div data-edit="nav" style={st.bottomNav}>
-        {[['영웅', 'nav_hero'], ['스킬', 'nav_skill'], ['장비', 'nav_equip'], ['동료', 'nav_ally'], ['퀴즈', 'nav_quiz'], ['상점', 'nav_shop']].map(([n, ic]) => (
+        {[['영웅', 'nav_hero'], ['스킬', 'nav_skill'], ['장비', 'nav_equip'], ['동료', 'nav_ally'], ['모험', 'nav_adventure'], ['상점', 'nav_shop']].map(([n, ic]) => (
           <button key={n} style={{ ...st.navBtn, ...(nav === n ? st.navActive : {}) }} onClick={() => setNav(n)}>
             <img src={`/icon/${ic}.png`} alt="" style={st.navIconImg} />
             <div style={{ fontSize: 'var(--pd-navfz)' }}>{n}</div>
@@ -1520,13 +1523,19 @@ const UI_DEFAULT = {
   evoimg0: 56, evoimg1: 56, evoimg2: 56, evoimg3: 56, evoimg4: 56, evoimg5: 56,
   evoimg0X: 0, evoimg0Y: 1, evoimg1X: 0, evoimg1Y: 1, evoimg2X: 0, evoimg2Y: 1,
   evoimg3X: 0, evoimg3Y: 1, evoimg4X: 0, evoimg4Y: 1, evoimg5X: 0, evoimg5Y: 1,
-  gachacell: 62, gachafz: 10, gainfz: 13, hph: 11, hpfz: 10, bossfz: 11, bossh: 40, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
+  gachacell: 62, gachafz: 10, gtierfz: 10, gachaimg: 74, gainfz: 13,
+  shoprowmin: 46, shopic: 38, shoptfz: 13, shopsubfz: 11, shopbw: 62, shopbfz: 12, shopgem: 12,
+  gbtnfz: 13, gbtnpw: 16, gbtnph: 10,
+  pmw: 92, pmh: 26, pmfz: 13, pgw: 92, pgh: 26, pgfz: 13, hambsz: 26, menufz: 13, hph: 11, hpfz: 10, bossfz: 11, bossh: 40, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
   // 위치 이동(px): 요소별 X/Y
   avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: 2, pillY: 2, iconX: -3, iconY: 1,
   panelX: 0, panelY: 0, rowX: 0, rowY: -3, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0,
   spX: 0, spY: 0, slotX: 23, slotY: 8, catX: 21, catY: -5, spbarX: 20, spbarY: 1, equipX: -9, equipY: -4, spbarAX: 13, spbarAY: 12,
   spbarBX: 15, spbarBY: 0, spbarCX: 14, spbarCY: -3, nickX: 0, nickY: 0, expX: 0, expY: 0, gainX: 0, gainY: 0,
-  hpX: -3, hpY: 1, bossX: 1, bossY: -4, clearX: 0, clearY: 0, waveX: 0, waveY: 1, gachaX: 0, gachaY: 0, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: -1, btextY: 6,
+  hpX: -3, hpY: 1, bossX: 1, bossY: -4, clearX: 0, clearY: 0, waveX: 0, waveY: 1, gachaX: 0, gachaY: 0, eqtierX: 0, eqtierY: 0, eqimgX: 0, eqimgY: 0,
+  shoprowX: 0, shoprowY: 0, shopicX: 0, shopicY: 0, shoptX: 0, shoptY: 0, shopsubX: 0, shopsubY: 0,
+  shopbX: 0, shopbY: 0, shopbtX: 0, shopbtY: 0, shopgemX: 0, shopgemY: 0,
+  gbtnX: 0, gbtnY: 0, gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0, hambX: 0, hambY: 0, menuX: 0, menuY: 0, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: -1, btextY: 6,
 }
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
@@ -1546,7 +1555,9 @@ const EDIT_GROUPS = {
   spbarA: { label: '장착슬롯 안내', size: ['spbarfz'], pos: 'spbarA' },
   spbarB: { label: '보유스킬 안내', size: ['spbarfz'], pos: 'spbarB' },
   spbarC: { label: '스킬포인트 안내', size: ['spbarfz'], pos: 'spbarC' },
-  equip: { label: '장비칸', size: ['equipcols', 'equipgap', 'equipcell', 'equipimg', 'equiptier'], pos: 'equip' },
+  equip: { label: '장비칸', size: ['equipcols', 'equipgap', 'equipcell'], pos: 'equip' },
+  eqimg: { label: '장비 아이콘', size: ['equipimg'], pos: 'eqimg' },
+  eqtier: { label: '장비 등급 글자', size: ['equiptier'], pos: 'eqtier' },
   nick: { label: '닉네임/레벨', size: ['nickfz', 'lvbadgefz'], pos: 'nick' },
   expbar: { label: 'EXP바', size: ['exph'], pos: 'exp' },
   gain: { label: '획득 팝업', size: ['gainfz'], pos: 'gain' },
@@ -1555,7 +1566,23 @@ const EDIT_GROUPS = {
   wavetitle: { label: '현판 글자', size: ['wavefz'], pos: 'wtitle' },
   diarow: { label: '다이아 줄', size: ['diasz'], pos: 'dia' },
   bossbtn: { label: '보스 버튼(판)', size: ['bossh'], pos: 'boss' },
-  gacha: { label: '소환 결과 셀', size: ['gachacell', 'gachafz'], pos: 'gacha' },
+  gacha: { label: '소환 결과 셀', size: ['gachacell'], pos: 'gacha' },
+  ggrade: { label: '결과 등급 글자', size: ['gachafz'], pos: 'ggrade' },
+  gtier: { label: '결과 티어 글자', size: ['gtierfz'], pos: 'gtier' },
+  gimg: { label: '결과 아이콘', size: ['gachaimg'], pos: 'gimg' },
+  gbtn: { label: '결과 버튼(판)', size: ['gbtnpw', 'gbtnph'], pos: 'gbtn' },
+  gbtntext: { label: '결과 버튼 글자', size: ['gbtnfz'], pos: 'gbtnt' },
+  shoprow: { label: '소환 박스', size: ['shoprowmin'], pos: 'shoprow' },
+  shopic: { label: '소환 아이콘', size: ['shopic'], pos: 'shopic' },
+  shoptitle: { label: '소환 제목 글자', size: ['shoptfz'], pos: 'shopt' },
+  shopsub: { label: '소환 부제 글자', size: ['shopsubfz'], pos: 'shopsub' },
+  shopbtn: { label: '소환 버튼(판)', size: ['shopbw'], pos: 'shopb' },
+  shopbtext: { label: '소환 버튼 글자', size: ['shopbfz'], pos: 'shopbt' },
+  shopgem: { label: '다이아 아이콘', size: ['shopgem'], pos: 'shopgem' },
+  pillmeat: { label: '고기 알약', size: ['pmw', 'pmh', 'pmfz'], pos: 'pm' },
+  pillgem: { label: '다이아 알약', size: ['pgw', 'pgh', 'pgfz'], pos: 'pg' },
+  hamb: { label: '메뉴 버튼', size: ['hambsz'], pos: 'hamb' },
+  menu: { label: '메뉴 패널', size: ['menufz'], pos: 'menu' },
   bosstext: { label: '보스 버튼 글자', size: ['bossfz'], pos: 'btext' },
   clearmsg: { label: '클리어 문구', size: ['clearfz'], pos: 'clear' },
 }
@@ -1568,7 +1595,10 @@ const UI_LABELS = {
   navicon: '네비 아이콘', navpt: '네비 위높이', navpb: '네비 아래높이', avatar: '아바타 크기', slotmax: '스킬슬롯 크기', equipcols: '장비 열수', equipgap: '장비 간격',
   slotfz: '슬롯 + 글자', catfz: '분류 글자', spbarfz: '안내 글자', equipimg: '장비아이콘', equiptier: '티어 숫자',
   equipcell: '장비칸 크기', nickfz: '닉네임 글자', lvbadgefz: 'Lv뱃지 글자', exph: 'EXP바 높이', pillfz: '자원 글자', wavefz: '웨이브 글자',
-  gainfz: '팝업 글자', hph: 'HP알약 높이', hpfz: 'HP 글자', bossfz: '버튼 글자', clearfz: '문구 글자', navfz: '네비 글자', diasz: '다이아 크기', bossh: '버튼 판 크기', wavebh: '현판 높이', gachacell: '결과 셀 크기', gachafz: '등급 글자',
+  gainfz: '팝업 글자', hph: 'HP알약 높이', hpfz: 'HP 글자', bossfz: '버튼 글자', clearfz: '문구 글자', navfz: '네비 글자', diasz: '다이아 크기', bossh: '버튼 판 크기', wavebh: '현판 높이', gachacell: '결과 셀 크기', gachafz: '등급 글자', gtierfz: '티어 글자', gachaimg: '아이콘 %',
+  shoprowmin: '박스 높이', shopic: '아이콘 크기', shoptfz: '제목 글자', shopsubfz: '부제 글자',
+  shopbw: '버튼 너비', shopbfz: '버튼 글자', shopgem: '다이아 크기', gbtnfz: '버튼 글자', gbtnpw: '판 가로', gbtnph: '판 세로',
+  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', menufz: '메뉴 글자',
 }
 for (let i = 0; i < 6; i++) UI_LABELS[`evoimg${i}`] = `${i + 1}단계 크기`
 const uiVars = c => `:root{
@@ -1592,6 +1622,12 @@ ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg$
 --pd-equipcell:${c.equipcell}px;--pd-nickfz:${c.nickfz}px;--pd-lvbadgefz:${c.lvbadgefz}px;--pd-exph:${c.exph}px;
 --pd-pillfz:${c.pillfz}px;--pd-wavefz:${c.wavefz}px;--pd-gainfz:${c.gainfz}px;
 --pd-hph:${c.hph}px;--pd-hpfz:${c.hpfz}px;--pd-bossfz:${c.bossfz}px;--pd-clearfz:${c.clearfz}px;--pd-navfz:${c.navfz}px;--pd-diasz:${c.diasz}px;--pd-bossh:${c.bossh}px;--pd-wavebh:${c.wavebh}px;--pd-gachacell:${c.gachacell}px;--pd-gachafz:${c.gachafz}px;--pd-gacha-x:${c.gachaX}px;--pd-gacha-y:${c.gachaY}px;
+--pd-gtierfz:${c.gtierfz}px;--pd-gachaimg:${c.gachaimg};--pd-shoprowmin:${c.shoprowmin}px;--pd-shopic:${c.shopic}px;
+--pd-shoptfz:${c.shoptfz}px;--pd-shopsubfz:${c.shopsubfz}px;--pd-shopbw:${c.shopbw}px;--pd-shopbfz:${c.shopbfz}px;--pd-shopgem:${c.shopgem}px;
+--pd-gbtnfz:${c.gbtnfz}px;--pd-gbtnpw:${c.gbtnpw}px;--pd-gbtnph:${c.gbtnph}px;
+--pd-pmw:${c.pmw}px;--pd-pmh:${c.pmh}px;--pd-pmfz:${c.pmfz}px;--pd-pgw:${c.pgw}px;--pd-pgh:${c.pgh}px;--pd-pgfz:${c.pgfz}px;--pd-hambsz:${c.hambsz}px;--pd-menufz:${c.menufz}px;
+${['pm', 'pg', 'hamb', 'menu'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt', 'shopgem', 'gbtn', 'gbtnt', 'ggrade', 'gtier', 'gimg'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 --pd-nick-x:${c.nickX}px;--pd-nick-y:${c.nickY}px;--pd-exp-x:${c.expX}px;--pd-exp-y:${c.expY}px;
 --pd-gain-x:${c.gainX}px;--pd-gain-y:${c.gainY}px;
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
@@ -1630,13 +1666,15 @@ const st = {
   },
   pillMeat: {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end',
-    minWidth: 92, height: 26, paddingRight: 12, fontSize: 13,
+    minWidth: 'var(--pd-pmw)', height: 'var(--pd-pmh)', paddingRight: 12, fontSize: 'var(--pd-pmfz)',
+    transform: 'translate(var(--pd-pm-x), var(--pd-pm-y))',
     backgroundImage: 'url(/ui/pill_meat.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
     textShadow: '0 1px 2px #000',
   },
   pillGem: {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end',
-    minWidth: 92, height: 26, paddingRight: 12, fontSize: 13,
+    minWidth: 'var(--pd-pgw)', height: 'var(--pd-pgh)', paddingRight: 12, fontSize: 'var(--pd-pgfz)',
+    transform: 'translate(var(--pd-pg-x), var(--pd-pg-y))',
     backgroundImage: 'url(/ui/pill_gem.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
     textShadow: '0 1px 2px #000',
   },
@@ -1663,17 +1701,35 @@ const st = {
     color: '#9a8768', position: 'relative',
   },
   navActive: { backgroundImage: 'url(/ui/nav_on.png)', color: GOLD },
+  hambBtn: {
+    width: 'var(--pd-hambsz)', height: 'var(--pd-hambsz)', flexShrink: 0, padding: 0,
+    border: '1px solid #5a4028', borderRadius: 6, background: '#2c2013', color: GOLD,
+    fontSize: 'calc(var(--pd-hambsz) - 12px)', lineHeight: 1,
+    transform: 'translate(var(--pd-hamb-x), var(--pd-hamb-y))',
+  },
+  menuPanel: {
+    position: 'absolute', right: 8, top: '100%', marginTop: 4, zIndex: 65, minWidth: 210,
+    background: 'rgba(16,10,5,0.97)', border: `2px solid ${GOLD_D}`, borderRadius: 10,
+    padding: 8, fontSize: 'var(--pd-menufz)', textAlign: 'left',
+    transform: 'translate(var(--pd-menu-x), var(--pd-menu-y))',
+  },
+  menuItem: {
+    display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 10px',
+    background: 'transparent', border: 'none', color: '#f3e6d0', fontSize: 'inherit', textAlign: 'left',
+  },
   cloudBox: { display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', fontSize: 12 },
   cloudBtn: { flexShrink: 0, padding: '6px 10px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 12 },
   shopBtn: {
-    flexShrink: 0, minWidth: 62, padding: '6px 10px',
+    flexShrink: 0, padding: '6px 10px',
     borderStyle: 'solid', borderWidth: '9px 12px',
     borderImage: 'url(/ui/frame_btn.png) 90 130 fill / 9px 12px stretch',
-    background: 'rgba(18,11,5,0.85)', color: '#f3e6d0', fontSize: 12, lineHeight: 1.35,
+    background: 'rgba(18,11,5,0.85)', color: '#f3e6d0', lineHeight: 1.35,
     touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none',
+    minWidth: 'var(--pd-shopbw)', transform: 'translate(var(--pd-shopb-x), var(--pd-shopb-y))',
   },
+  shopBtnText: { display: 'inline-block', fontSize: 'var(--pd-shopbfz)', transform: 'translate(var(--pd-shopbt-x), var(--pd-shopbt-y))' },
   shopCost: { display: 'inline-flex', alignItems: 'center', gap: 2, color: '#8fd0ff' },
-  shopGemIc: { height: 12, objectFit: 'contain' },
+  shopGemIc: { height: 'var(--pd-shopgem)', objectFit: 'contain', transform: 'translate(var(--pd-shopgem-x), var(--pd-shopgem-y))' },
   gachaOverlay: {
     position: 'fixed', inset: 0, zIndex: 70, background: 'rgba(6,3,1,0.96)',
     display: 'flex', flexDirection: 'column', padding: '18px 10px calc(10px + env(safe-area-inset-bottom))',
@@ -1686,16 +1742,18 @@ const st = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     transform: 'translate(var(--pd-gacha-x), var(--pd-gacha-y))',
   },
-  gachaGrade: { position: 'absolute', top: 2, left: 4, fontSize: 'var(--pd-gachafz)', fontWeight: 700, textShadow: '0 1px 2px #000' },
-  gachaImg: { width: '74%', height: '74%', objectFit: 'contain', imageRendering: 'pixelated' },
-  gachaTier: { position: 'absolute', bottom: 2, right: 5, fontSize: 'var(--pd-gachafz)', color: '#ffd98a', textShadow: '0 1px 2px #000' },
+  gachaGrade: { position: 'absolute', top: 2, left: 4, fontSize: 'var(--pd-gachafz)', fontWeight: 700, textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-ggrade-x), var(--pd-ggrade-y))' },
+  gachaImg: { width: 'calc(var(--pd-gachaimg) * 1%)', height: 'calc(var(--pd-gachaimg) * 1%)', objectFit: 'contain', imageRendering: 'pixelated', transform: 'translate(var(--pd-gimg-x), var(--pd-gimg-y))' },
+  gachaTier: { position: 'absolute', bottom: 2, right: 5, fontSize: 'var(--pd-gtierfz)', color: '#ffd98a', textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-gtier-x), var(--pd-gtier-y))' },
   gachaBtns: { display: 'flex', gap: 8, justifyContent: 'center', paddingTop: 10 },
   gachaBtn: {
-    padding: '10px 16px',
+    padding: 'var(--pd-gbtnph) var(--pd-gbtnpw)',
     borderStyle: 'solid', borderWidth: '10px 14px',
     borderImage: 'url(/ui/frame_btn.png) 90 130 fill / 10px 14px stretch',
-    background: 'rgba(18,11,5,0.85)', color: '#f3e6d0', fontSize: 13,
+    background: 'rgba(18,11,5,0.85)', color: '#f3e6d0',
+    transform: 'translate(var(--pd-gbtn-x), var(--pd-gbtn-y))',
   },
+  gachaBtnText: { display: 'inline-block', fontSize: 'var(--pd-gbtnfz)', transform: 'translate(var(--pd-gbtnt-x), var(--pd-gbtnt-y))' },
   comingSoon: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#20160c', color: '#f3e6d0' },
   cdOverlay: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.72)', fontSize: 13, color: '#7ce0ff' },
   slotRow: { display: 'flex', gap: 6, padding: '2px 2px 5px' },
@@ -1703,10 +1761,10 @@ const st = {
   slotEmpty: { fontSize: 'var(--pd-slotfz)', color: '#6a4f30' },
   equipGrid: { display: 'grid', gridTemplateColumns: 'repeat(var(--pd-equipcols), minmax(0, var(--pd-equipcell)))', gap: 'var(--pd-equipgap)', justifyContent: 'center' },
   equipCell: { position: 'relative', aspectRatio: '1', width: '100%', maxWidth: 'var(--pd-equipcell)', justifySelf: 'center', background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: '1px solid #5a4028', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', transform: 'translate(var(--pd-equip-x), var(--pd-equip-y))' },
-  equipImg: { width: 'var(--pd-equipimg)', height: 'var(--pd-equipimg)', objectFit: 'contain', imageRendering: 'pixelated' },
+  equipImg: { width: 'var(--pd-equipimg)', height: 'var(--pd-equipimg)', objectFit: 'contain', imageRendering: 'pixelated', transform: 'translate(var(--pd-eqimg-x), var(--pd-eqimg-y))' },
   statIconImg: { width: '100%', height: '100%', objectFit: 'contain' },
   navIconImg: { width: 'var(--pd-navicon)', height: 'var(--pd-navicon)', objectFit: 'contain' },
-  equipTier: { position: 'absolute', right: 3, bottom: 1, fontSize: 'var(--pd-equiptier)', color: GOLD, textShadow: '0 0 3px #000' },
+  equipTier: { position: 'absolute', right: 3, bottom: 1, fontSize: 'var(--pd-equiptier)', color: GOLD, textShadow: '0 0 3px #000', transform: 'translate(var(--pd-eqtier-x), var(--pd-eqtier-y))' },
   offOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   offBox: { background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: `2px solid ${GOLD_D}`, borderRadius: 16, padding: '20px 24px', textAlign: 'center', minWidth: 240, color: '#f3e6d0', boxShadow: '0 8px 30px rgba(0,0,0,0.6)' },
   skillIcon: { width: 'var(--pd-icon)', height: 'var(--pd-icon)', transform: 'translate(var(--pd-icon-x), var(--pd-icon-y))', borderRadius: 8, background: 'linear-gradient(180deg,#2c2013,#1a1208)', border: '1px solid #5a4028', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 },
