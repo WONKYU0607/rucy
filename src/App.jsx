@@ -1025,7 +1025,7 @@ export default function App() {
       for (const it of items) { const key = `${cat}:${it.k}_${it.t}`; nv[key] = (nv[key] || 0) + 1 }
       return nv
     })
-    setGacha({ cat, items })
+    setGacha({ cat, items, roll: Date.now() })
   }
   // 길게 누르면 연속 실행 (400ms 후 80ms 간격)
   const holdRef = useRef(null)
@@ -1156,10 +1156,11 @@ export default function App() {
           <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.gachaScroll}>
             <div style={st.gachaGrid}>
               {gacha.items.map((it, i) => {
+                const cellKey = `${gacha.roll}_${i}`
                 const gr = gradeOf(gacha.cat, it.t)
                 const hi = gr === '영웅' || gr === '전설'
                 return (
-                  <div key={i} data-edit="gacha" className="pd-gacha-pop" style={{
+                  <div key={cellKey} data-edit="gacha" className="pd-gacha-pop" style={{
                     ...st.gachaCell, borderColor: GRADE_COLOR[gr], animationDelay: `${Math.min(i * 60, 1800)}ms`,
                     boxShadow: hi ? `0 0 18px 4px ${GRADE_COLOR[gr]}66` : 'none',
                   }}>
@@ -1173,8 +1174,8 @@ export default function App() {
           </div>
           <div style={st.gachaBtns}>
             <button style={st.gachaBtn} onClick={() => setGacha(null)}>확인</button>
-            <button style={st.gachaBtn} onClick={() => pullGacha(gacha.cat, 10)}>10회 소환 <span style={st.shopCost}><img src="/ui/pill_gem.png" alt="" style={st.shopGemIc} />100</span></button>
-            <button style={st.gachaBtn} onClick={() => pullGacha(gacha.cat, 30)}>30회 소환 <span style={st.shopCost}><img src="/ui/pill_gem.png" alt="" style={st.shopGemIc} />300</span></button>
+            <button style={st.gachaBtn} onClick={() => pullGacha(gacha.cat, 10)}>10회 소환 <span style={st.shopCost}><img src="/ui/gem.png" alt="" style={st.shopGemIc} />100</span></button>
+            <button style={st.gachaBtn} onClick={() => pullGacha(gacha.cat, 30)}>30회 소환 <span style={st.shopCost}><img src="/ui/gem.png" alt="" style={st.shopGemIc} />300</span></button>
           </div>
         </div>
       )}
@@ -1419,7 +1420,7 @@ export default function App() {
                 {Array.from({ length: 10 }, (_, ti) => (
                   <div key={ti} data-edit="equip" style={st.equipCell}>
                     <img src={`/equip/A/w${wi + 1}_${ti + 1}.png`} alt="" style={st.equipImg} />
-                    <div style={st.equipTier}>{ti + 1}</div>
+                    <div style={st.equipTier}>{ti + 1}등급</div>
                   </div>
                 ))}
               </div>
@@ -1432,7 +1433,7 @@ export default function App() {
                 {Array.from({ length: 7 }, (_, ti) => (
                   <div key={ti} data-edit="equip" style={st.equipCell}>
                     <img src={`/equip/B/a${ai + 1}_${ti + 1}.png`} alt="" style={st.equipImg} />
-                    <div style={st.equipTier}>{ti + 1}</div>
+                    <div style={st.equipTier}>{ti + 1}등급</div>
                   </div>
                 ))}
               </div>
@@ -1445,7 +1446,7 @@ export default function App() {
                 {Array.from({ length: 10 }, (_, ti) => (
                   <div key={ti} data-edit="equip" style={st.equipCell}>
                     <img src={`/relic/r${ri + 1}_${ti + 1}.png`} alt="" style={st.equipImg} />
-                    <div style={st.equipTier}>{ti + 1}</div>
+                    <div style={st.equipTier}>{ti + 1}등급</div>
                   </div>
                 ))}
               </div>
@@ -1465,8 +1466,8 @@ export default function App() {
                   <div style={{ fontWeight: 700 }}>{cat} 소환</div>
                   <div style={{ fontSize: 11, opacity: 0.6 }}>티어가 높을수록 희귀</div>
                 </div>
-                <button style={st.shopBtn} onClick={() => pullGacha(cat, 1)}>1회<br /><span style={st.shopCost}><img src="/ui/pill_gem.png" alt="" style={st.shopGemIc} />10</span></button>
-                <button style={st.shopBtn} onClick={() => pullGacha(cat, 10)}>10회<br /><span style={st.shopCost}><img src="/ui/pill_gem.png" alt="" style={st.shopGemIc} />100</span></button>
+                <button style={st.shopBtn} onClick={() => pullGacha(cat, 1)}>1회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" style={st.shopGemIc} />10</span></button>
+                <button style={st.shopBtn} onClick={() => pullGacha(cat, 10)}>10회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" style={st.shopGemIc} />100</span></button>
               </div>
             ))}
           </div>
@@ -1665,8 +1666,10 @@ const st = {
   cloudBox: { display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', fontSize: 12 },
   cloudBtn: { flexShrink: 0, padding: '6px 10px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 12 },
   shopBtn: {
-    flexShrink: 0, minWidth: 58, padding: '5px 8px', borderRadius: 8, border: '1px solid #5a4028',
-    background: 'linear-gradient(180deg,#3a2a16,#241708)', color: '#f3e6d0', fontSize: 12, lineHeight: 1.35,
+    flexShrink: 0, minWidth: 62, padding: '6px 10px',
+    borderStyle: 'solid', borderWidth: '9px 12px',
+    borderImage: 'url(/ui/frame_btn.png) 90 130 fill / 9px 12px stretch',
+    background: 'rgba(18,11,5,0.85)', color: '#f3e6d0', fontSize: 12, lineHeight: 1.35,
     touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none',
   },
   shopCost: { display: 'inline-flex', alignItems: 'center', gap: 2, color: '#8fd0ff' },
@@ -1688,8 +1691,10 @@ const st = {
   gachaTier: { position: 'absolute', bottom: 2, right: 5, fontSize: 'var(--pd-gachafz)', color: '#ffd98a', textShadow: '0 1px 2px #000' },
   gachaBtns: { display: 'flex', gap: 8, justifyContent: 'center', paddingTop: 10 },
   gachaBtn: {
-    padding: '10px 14px', borderRadius: 10, border: '1px solid #5a4028',
-    background: 'linear-gradient(180deg,#3a2a16,#241708)', color: '#f3e6d0', fontSize: 13,
+    padding: '10px 16px',
+    borderStyle: 'solid', borderWidth: '10px 14px',
+    borderImage: 'url(/ui/frame_btn.png) 90 130 fill / 10px 14px stretch',
+    background: 'rgba(18,11,5,0.85)', color: '#f3e6d0', fontSize: 13,
   },
   comingSoon: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#20160c', color: '#f3e6d0' },
   cdOverlay: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.72)', fontSize: 13, color: '#7ce0ff' },
