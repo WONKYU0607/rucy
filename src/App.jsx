@@ -143,7 +143,8 @@ const SKILLS = SKILL_SHEET.map(c => {
 })
 // 대시 프레임 타이밍: 0=기모으기 앞부분 짧게, 주먹뻗기(3,4번) 길게
 
-const HERO_X = 90
+const BOSS_TIME = 20  // 보스 제한시간(초)
+const HERO_X = 90  // 평상시 영웅 x (보스전에선 화면 중앙 쪽으로 이동)
 const SPEED = 1                                      // 전역 속도 배율
 const SCROLL = 140 * SPEED                            // 전진 속도 (px/s)
 const PUNCH = { hitAt: 0.12, total: 0.3, range: 95 } // 4족 주먹질
@@ -315,6 +316,7 @@ export default function App() {
     setOffReward({ sec: Math.floor(away), kills, meat: gm, exp: ge })
   }, [])
   const [heroHpUI, setHeroHpUI] = useState(100)
+  const [bossUI, setBossUI] = useState(null)   // 보스전 타이머/체력 바
   const [progress, setProgress] = useState(0)
   const [gains, setGains] = useState([])       // 획득 팝업 리스트
   const [skillCdUI, setSkillCdUI] = useState(SKILLS.map(() => 0))  // 스킬 남은 쿨타임(초)
@@ -385,7 +387,7 @@ export default function App() {
       enemies: [], stones: [], dmgTexts: [], particles: [],
       hero: { hp: maxHp, cd: 0, state: 'move', t: 0, did: false, flash: 0, animT: 0 },
       spawnLeft: 0, spawnTimer: 0, killed: 0, total: 1,
-      shake: 0, scrollX: 0, needStart: true, W: 0, H: 0, groundY: 0,
+      shake: 0, scrollX: 0, needStart: true, W: 0, H: 0, groundY: 0, heroX: HERO_X, bossTimer: 0,
       skillCd: SKILLS.map(() => 0), skill: null, skillT: 0, skillDid: false, rocks: [], projs: [], strikes: [],
     }
   }
@@ -426,6 +428,7 @@ export default function App() {
     function startBossBattle() {
       w.enemies = []; w.stones = []; w.rocks = []; w.waves = []
       w.bossBattle = true
+      w.bossTimer = BOSS_TIME
       w.spawnLeft = 1
       w.total = 1
       w.killed = 0
@@ -518,10 +521,12 @@ export default function App() {
       const atkRange = st.mode === 'quad' ? PUNCH.range : melee ? ECLUB.range : THROW.range
 
       // 배경 스크롤: 이동 상태 + 앞을 막는 적이 없을 때만 전진
+      const heroTargetX = w.bossBattle ? Math.round(w.W * 0.34) : HERO_X
+      w.heroX += (heroTargetX - w.heroX) * Math.min(1, dt * 4)
       const atkRange0 = st.mode === 'quad' ? PUNCH.range : (st.mode === 'erectus' || st.mode === 'neander') ? ECLUB.range : THROW.range
-      const blocked = w.enemies.some(e => !e.dead && e.x - HERO_X < atkRange0)
+      const blocked = w.enemies.some(e => !e.dead && e.x - w.heroX < atkRange0)
       w._blocked = blocked
-      const moving = (st.phase === 'fighting' || st.phase === 'cleared') && hero.state === 'move' && !blocked
+      const moving = (st.phase === 'fighting' || st.phase === 'cleared') && hero.state === 'move' && !blocked && !w.bossBattle
       const scroll = moving ? SCROLL * st.mspdMult : 0
       w.scrollX += scroll * dt
 
@@ -539,7 +544,7 @@ export default function App() {
           e.flash = Math.max(0, e.flash - dt * 5)
           if (e.air) e.airT = Math.min(1, (e.airT ?? 0) + dt * 1.2)   // 서서히 떠오름
           if (e.stun > 0) { e.stun -= dt; continue }  // 기절 중 정지
-          const stopX = HERO_X + Math.min(atkRange - 15, 45 + e.h * 0.4)
+          const stopX = w.heroX + Math.min(atkRange - 15, 45 + e.h * 0.4)
           if (e.x > stopX) {
             e.x -= (e.speed * SPEED * 1.3 + scroll) * dt
             e.animT += dt * SPEED * (1 + scroll / SCROLL * 0.4)
@@ -552,9 +557,9 @@ export default function App() {
                 hero.hp -= e.dmg
                 hero.flash = 0.2
                 w.shake = 4
-                burst(HERO_X + 15, w.groundY - 70, '#c81818', 8, true)
+                burst(w.heroX + 15, w.groundY - 70, '#c81818', 8, true)
               } else {
-                addDmg(HERO_X, w.groundY - 130, 'DODGE', false, true)
+                addDmg(w.heroX, w.groundY - 130, 'DODGE', false, true)
               }
               e.cd = 1200
             }
@@ -588,11 +593,11 @@ export default function App() {
               // 투사체: 히어로 앞에서 생성, 명중 시 데미지
               const ft = FX_FRAME_T[sk.id] || sk.fx.fly.map(() => 1 / PROJ_FPS)
               const fe = []; let fa = 0; for (const t of ft) { fa += t; fe.push(fa) }
-              w.projs.push({ id: sk.id, fly: sk.fx.fly, impact: sk.fx.impact || null, x: HERO_X + 70, t: 0, dmg, h: sk.fx.fxH ?? sk.h, scale: sk.fx.flyScale || 1, yOff: sk.fx.yOff ?? 40, fe, feTotal: fa })
+              w.projs.push({ id: sk.id, fly: sk.fx.fly, impact: sk.fx.impact || null, x: w.heroX + 70, t: 0, dmg, h: sk.fx.fxH ?? sk.h, scale: sk.fx.flyScale || 1, yOff: sk.fx.yOff ?? 40, fe, feTotal: fa })
             } else if (sk.fx && sk.fx.type === 'strike') {
               // 낙하/타격: 살아있는 적 위치마다 (최대 5), 없으면 전방
               const ts = w.enemies.filter(e => !e.dead).slice(0, 5)
-              const xs = ts.length ? ts.map(e => e.x) : [HERO_X + 260]
+              const xs = ts.length ? ts.map(e => e.x) : [w.heroX + 260]
               for (const x of xs) w.strikes.push({ id: sk.id, frames: sk.fx.frames, x, t: 0, dur: STRIKE_DUR_BY[sk.id] ?? STRIKE_DUR, dmg, hitDone: false, h: sk.fx.fxH ?? sk.h })
             } else if (sk.aoe) {
               for (const t of w.enemies) if (!t.dead) { applySkillDmg(t, dmg); if (sk.stun) t.stun = sk.stun }
@@ -659,7 +664,7 @@ export default function App() {
           // 스킬 시전 중: 상태 유지, 이동/공격 정지
         } else if (hero.state === 'move') {
           if (!blocked) hero.animT += dt * SPEED * st.mspdMult   // 앞이 막히면 걷기 애니 정지
-          const target = w.enemies.find(e => !e.dead && e.x - HERO_X < atkRange)
+          const target = w.enemies.find(e => !e.dead && e.x - w.heroX < atkRange)
           if (hero.cd <= 0 && target) {
             hero.state = 'attack'; hero.t = 0; hero.did = false
             hero.cd = st.cd
@@ -669,13 +674,13 @@ export default function App() {
           if (st.mode === 'quad') {
             if (!hero.did && hero.t >= PUNCH.hitAt) {
               hero.did = true
-              const t = w.enemies.find(e => !e.dead && e.x - HERO_X < PUNCH.range + 40)
+              const t = w.enemies.find(e => !e.dead && e.x - w.heroX < PUNCH.range + 40)
               if (t) dealDamage(t, st)
             }
             if (hero.t >= PUNCH.total) { hero.state = 'move'; hero.t = 0 }
           } else if (st.mode === 'erectus' || st.mode === 'neander') {
             const prog = hero.t / ECLUB.total
-            const inRange = w.enemies.find(e => !e.dead && e.x - HERO_X < ECLUB.range + 40)
+            const inRange = w.enemies.find(e => !e.dead && e.x - w.heroX < ECLUB.range + 40)
             if (!hero.did && !inRange) {
               // 타격 전에 사거리 내 적이 사라짐(스킬 등으로 처치) → 헛스윙 방지, 걷기로 복귀
               hero.state = 'move'; hero.t = 0
@@ -691,7 +696,7 @@ export default function App() {
               hero.did = true
               const target = w.enemies.find(e => !e.dead)
               if (target) {
-                const sx = HERO_X + 32, sy = w.groundY - 130 * 0.78
+                const sx = w.heroX + 32, sy = w.groundY - 130 * 0.78
                 const d = Math.hypot(target.x - sx, (w.groundY - target.h * 0.55) - sy)
                 w.stones.push({
                   sx, sy, x: sx, y: sy, target, t: 0,
@@ -733,6 +738,28 @@ export default function App() {
         const prog = w.total ? w.killed / w.total : 0
         if (prog !== w.shownProg) { w.shownProg = prog; setProgress(prog) }
         if (Math.ceil(hero.hp) !== w.shownHp) { w.shownHp = Math.ceil(hero.hp); setHeroHpUI(Math.max(0, w.shownHp)) }
+        if (w.bossBattle) {
+          const bEn = w.enemies.find(e => e.boss && !e.dead)
+          const tt = Math.ceil(Math.max(0, w.bossTimer) * 10)
+          const hh = bEn ? Math.ceil(bEn.hp) : -1
+          if (tt !== w._btShown || hh !== w._bhShown) {
+            w._btShown = tt; w._bhShown = hh
+            setBossUI({ t: Math.max(0, w.bossTimer), hp: bEn ? Math.max(0, bEn.hp) : 0, maxHp: bEn ? bEn.maxHp : 1, has: !!bEn })
+          }
+        } else if (w._btShown !== -1) { w._btShown = -1; w._bhShown = -1; setBossUI(null) }
+
+        // 보스 제한시간: 초과 시 실패 처리 후 같은 웨이브 재개 (재도전 가능)
+        if (w.bossBattle) {
+          w.bossTimer -= dt
+          if (w.bossTimer <= 0 && !w.clearedFlag) {
+            w.clearedFlag = true
+            w.enemies = []; w.stones = []; w.rocks = []
+            w.bossBattle = false
+            setClearMsg('시간 초과 — 보스 실패')
+            setBossReady(true)
+            w.needStart = true
+          }
+        }
 
         if (hero.hp <= 0) setPhase('gameover')
         else if (w.spawnLeft === 0 && w.enemies.length === 0 && !w.clearedFlag) {
@@ -904,7 +931,7 @@ export default function App() {
         const hh = a.h
         const hw = hh * (im.naturalWidth / im.naturalHeight)
         ctx.save()
-        ctx.translate(HERO_X, w.groundY)
+        ctx.translate(w.heroX, w.groundY)
         if (hero.flash > 0) ctx.filter = 'brightness(2.5)'
         if (a.flip) ctx.scale(-1, 1)
         ctx.drawImage(im, -hw / 2, -hh, hw, hh)
@@ -1152,6 +1179,23 @@ export default function App() {
     }}>
       {uiEdit && <style>{`[data-edit]{outline:1px dashed rgba(232,185,98,0.35);outline-offset:-1px;cursor:pointer}${editSel ? `[data-edit="${editSel}"]{outline:2px solid ${GOLD} !important}` : ''}`}</style>}
       <button onClick={() => { setUiEdit(v => !v); setEditSel(null) }} style={{ position: 'absolute', top: 4, right: 4, zIndex: 60, padding: '3px 8px', borderRadius: 6, border: '1px solid #6b4a24', background: uiEdit ? GOLD_D : 'rgba(20,13,7,0.8)', color: uiEdit ? '#fff' : GOLD, fontSize: 12 }}>{uiEdit ? '편집중' : '⚙'}</button>
+      {menuOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80 }} onClick={() => setMenuOpen(false)}>
+          <div data-edit="menu" style={st.menuPanel} onClick={e => e.stopPropagation()}>
+            <button style={{ ...st.menuItem, opacity: 0.5 }} onClick={() => {}}>우편함 <span style={{ fontSize: 11, opacity: 0.7 }}>준비 중</span></button>
+            <div style={{ borderTop: '1px solid #3a2a14', margin: '4px 0' }} />
+            {FB_ON && (fbUser ? (
+              <>
+                <div style={{ ...st.menuItem, opacity: 0.8 }}><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fbUser.email}</span></div>
+                <button style={st.menuItem} onClick={pushCloud}>지금 저장 <span style={{ fontSize: 11, opacity: 0.6 }}>{cloudMsg}</span></button>
+                <button style={st.menuItem} onClick={fbLogout}>로그아웃</button>
+              </>
+            ) : (
+              <button style={st.menuItem} onClick={fbLogin}>구글 로그인 · 저장 연동</button>
+            ))}
+          </div>
+        </div>
+      )}
       {gacha && (
         <div style={st.gachaOverlay}>
           <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.gachaScroll}>
@@ -1187,7 +1231,7 @@ export default function App() {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) }))
             const nbtn = { width: 26, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
-            const rng = k => k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'equipcell' ? 160 : (k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
+            const rng = k => k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
             const rmin = k => k === 'equipcols' ? 3 : 0
             return <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -1239,21 +1283,6 @@ export default function App() {
             <span data-edit="pillgem" style={st.pillGem}><b style={{ color: '#cfe8ff' }}>{DEBUG ? '∞' : fmt(gem)}</b></span>
             <button data-edit="hamb" style={st.hambBtn} onClick={() => setMenuOpen(o => !o)}>☰</button>
           </div>
-          {menuOpen && (
-            <div data-edit="menu" style={st.menuPanel}>
-              <button style={{ ...st.menuItem, opacity: 0.5 }} onClick={() => {}}>우편함 <span style={{ fontSize: 11, opacity: 0.7 }}>준비 중</span></button>
-              <div style={{ borderTop: '1px solid #3a2a14', margin: '4px 0' }} />
-              {FB_ON && (fbUser ? (
-                <>
-                  <div style={{ ...st.menuItem, opacity: 0.8 }}><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fbUser.email}</span></div>
-                  <button style={st.menuItem} onClick={pushCloud}>지금 저장 <span style={{ fontSize: 11, opacity: 0.6 }}>{cloudMsg}</span></button>
-                  <button style={st.menuItem} onClick={fbLogout}>로그아웃</button>
-                </>
-              ) : (
-                <button style={st.menuItem} onClick={fbLogin}>구글 로그인 · 저장 연동</button>
-              ))}
-            </div>
-          )}
         </div>
       </div>
       <div style={st.statusBar}>
@@ -1279,6 +1308,18 @@ export default function App() {
 
       <div ref={wrapRef} style={st.canvasWrap}>
         <canvas ref={canvasRef} />
+        {bossUI && (
+          <div style={st.bossBars}>
+            <div data-edit="btimer" style={st.btOuter}>
+              <div style={st.btTrack}><div style={{ ...st.btInner, width: Math.min(100, bossUI.t / BOSS_TIME * 100) + '%' }} /></div>
+            </div>
+            {bossUI.has && (
+              <div data-edit="bosshp" style={st.bhOuter}>
+                <div style={st.bhTrack}><div style={{ ...st.bhInner, width: Math.min(100, bossUI.hp / bossUI.maxHp * 100) + '%' }} /></div>
+              </div>
+            )}
+          </div>
+        )}
         <div data-edit="gain" style={st.gainWrap}>
           {gains.map(g => (
             <div key={g.id} style={st.gainItem}>
@@ -1526,7 +1567,7 @@ const UI_DEFAULT = {
   gachacell: 62, gachafz: 10, gtierfz: 10, gachaimg: 74, gainfz: 13,
   shoprowmin: 46, shopic: 38, shoptfz: 13, shopsubfz: 11, shopbw: 62, shopbfz: 12, shopgem: 12,
   gbtnfz: 13, gbtnpw: 16, gbtnph: 10,
-  pmw: 92, pmh: 26, pmfz: 13, pgw: 92, pgh: 26, pgfz: 13, hambsz: 26, menufz: 13, hph: 11, hpfz: 10, bossfz: 11, bossh: 40, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
+  btw: 210, bth: 30, bhpw: 250, bhph: 36, pmw: 92, pmh: 26, pmfz: 13, pgw: 92, pgh: 26, pgfz: 13, hambsz: 26, menufz: 13, hph: 11, hpfz: 10, bossfz: 11, bossh: 40, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
   // 위치 이동(px): 요소별 X/Y
   avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: 2, pillY: 2, iconX: -3, iconY: 1,
   panelX: 0, panelY: 0, rowX: 0, rowY: -3, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0,
@@ -1535,7 +1576,7 @@ const UI_DEFAULT = {
   hpX: -3, hpY: 1, bossX: 1, bossY: -4, clearX: 0, clearY: 0, waveX: 0, waveY: 1, gachaX: 0, gachaY: 0, eqtierX: 0, eqtierY: 0, eqimgX: 0, eqimgY: 0,
   shoprowX: 0, shoprowY: 0, shopicX: 0, shopicY: 0, shoptX: 0, shoptY: 0, shopsubX: 0, shopsubY: 0,
   shopbX: 0, shopbY: 0, shopbtX: 0, shopbtY: 0, shopgemX: 0, shopgemY: 0,
-  gbtnX: 0, gbtnY: 0, gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0, hambX: 0, hambY: 0, menuX: 0, menuY: 0, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: -1, btextY: 6,
+  gbtnX: 0, gbtnY: 0, gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0, hambX: 0, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: 0, bhpX: 0, bhpY: 0, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: -1, btextY: 6,
 }
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
@@ -1582,6 +1623,8 @@ const EDIT_GROUPS = {
   pillmeat: { label: '고기 알약', size: ['pmw', 'pmh', 'pmfz'], pos: 'pm' },
   pillgem: { label: '다이아 알약', size: ['pgw', 'pgh', 'pgfz'], pos: 'pg' },
   hamb: { label: '메뉴 버튼', size: ['hambsz'], pos: 'hamb' },
+  btimer: { label: '보스 타이머 바', size: ['btw', 'bth'], pos: 'bt' },
+  bosshp: { label: '보스 체력 바', size: ['bhpw', 'bhph'], pos: 'bhp' },
   menu: { label: '메뉴 패널', size: ['menufz'], pos: 'menu' },
   bosstext: { label: '보스 버튼 글자', size: ['bossfz'], pos: 'btext' },
   clearmsg: { label: '클리어 문구', size: ['clearfz'], pos: 'clear' },
@@ -1598,7 +1641,7 @@ const UI_LABELS = {
   gainfz: '팝업 글자', hph: 'HP알약 높이', hpfz: 'HP 글자', bossfz: '버튼 글자', clearfz: '문구 글자', navfz: '네비 글자', diasz: '다이아 크기', bossh: '버튼 판 크기', wavebh: '현판 높이', gachacell: '결과 셀 크기', gachafz: '등급 글자', gtierfz: '티어 글자', gachaimg: '아이콘 %',
   shoprowmin: '박스 높이', shopic: '아이콘 크기', shoptfz: '제목 글자', shopsubfz: '부제 글자',
   shopbw: '버튼 너비', shopbfz: '버튼 글자', shopgem: '다이아 크기', gbtnfz: '버튼 글자', gbtnpw: '판 가로', gbtnph: '판 세로',
-  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', menufz: '메뉴 글자',
+  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', menufz: '메뉴 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
 }
 for (let i = 0; i < 6; i++) UI_LABELS[`evoimg${i}`] = `${i + 1}단계 크기`
 const uiVars = c => `:root{
@@ -1625,7 +1668,8 @@ ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg$
 --pd-gtierfz:${c.gtierfz}px;--pd-gachaimg:${c.gachaimg};--pd-shoprowmin:${c.shoprowmin}px;--pd-shopic:${c.shopic}px;
 --pd-shoptfz:${c.shoptfz}px;--pd-shopsubfz:${c.shopsubfz}px;--pd-shopbw:${c.shopbw}px;--pd-shopbfz:${c.shopbfz}px;--pd-shopgem:${c.shopgem}px;
 --pd-gbtnfz:${c.gbtnfz}px;--pd-gbtnpw:${c.gbtnpw}px;--pd-gbtnph:${c.gbtnph}px;
---pd-pmw:${c.pmw}px;--pd-pmh:${c.pmh}px;--pd-pmfz:${c.pmfz}px;--pd-pgw:${c.pgw}px;--pd-pgh:${c.pgh}px;--pd-pgfz:${c.pgfz}px;--pd-hambsz:${c.hambsz}px;--pd-menufz:${c.menufz}px;
+--pd-pmw:${c.pmw}px;--pd-pmh:${c.pmh}px;--pd-pmfz:${c.pmfz}px;--pd-pgw:${c.pgw}px;--pd-pgh:${c.pgh}px;--pd-pgfz:${c.pgfz}px;--pd-hambsz:${c.hambsz}px;--pd-menufz:${c.menufz}px;--pd-btw:${c.btw}px;--pd-bth:${c.bth}px;--pd-bhpw:${c.bhpw}px;--pd-bhph:${c.bhph}px;
+${['bt', 'bhp'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 ${['pm', 'pg', 'hamb', 'menu'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt', 'shopgem', 'gbtn', 'gbtnt', 'ggrade', 'gtier', 'gimg'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 --pd-nick-x:${c.nickX}px;--pd-nick-y:${c.nickY}px;--pd-exp-x:${c.expX}px;--pd-exp-y:${c.expY}px;
@@ -1678,6 +1722,21 @@ const st = {
     backgroundImage: 'url(/ui/pill_gem.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
     textShadow: '0 1px 2px #000',
   },
+  bossBars: { position: 'absolute', left: 0, right: 0, top: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, pointerEvents: 'none' },
+  btOuter: {
+    position: 'relative', width: 'var(--pd-btw)', height: 'var(--pd-bth)', pointerEvents: 'auto',
+    background: 'url(/ui/bar_timer.png) center / 100% 100% no-repeat',
+    transform: 'translate(var(--pd-bt-x), var(--pd-bt-y))',
+  },
+  btTrack: { position: 'absolute', left: '19%', right: '5.5%', top: '30%', bottom: '30%', borderRadius: 4, overflow: 'hidden' },
+  btInner: { height: '100%', background: 'linear-gradient(180deg,#7cc4ff,#1f5fa8)', transition: 'width 0.1s linear' },
+  bhOuter: {
+    position: 'relative', width: 'var(--pd-bhpw)', height: 'var(--pd-bhph)', pointerEvents: 'auto',
+    background: 'url(/ui/bar_bosshp.png) center / 100% 100% no-repeat',
+    transform: 'translate(var(--pd-bhp-x), var(--pd-bhp-y))',
+  },
+  bhTrack: { position: 'absolute', left: '19%', right: '6%', top: '30%', bottom: '30%', borderRadius: 4, overflow: 'hidden' },
+  bhInner: { height: '100%', background: 'linear-gradient(180deg,#e05038,#8e1f14)', transition: 'width 0.12s' },
   gainWrap: { position: 'absolute', left: 8, top: 44, transform: 'translate(var(--pd-gain-x), var(--pd-gain-y))', display: 'flex', flexDirection: 'column', gap: 3, pointerEvents: 'none' },
   gainCell: { display: 'flex', alignItems: 'center', gap: 3 },
   gainIcon: { height: 'calc(var(--pd-gainfz) + 6px)', objectFit: 'contain' },
@@ -1708,7 +1767,7 @@ const st = {
     transform: 'translate(var(--pd-hamb-x), var(--pd-hamb-y))',
   },
   menuPanel: {
-    position: 'absolute', right: 8, top: '100%', marginTop: 4, zIndex: 65, minWidth: 210,
+    position: 'fixed', right: 'calc((100vw - min(100vw, 420px)) / 2 + 8px)', top: 'calc(max(10px, env(safe-area-inset-top)) + 44px)', minWidth: 210,
     background: 'rgba(16,10,5,0.97)', border: `2px solid ${GOLD_D}`, borderRadius: 10,
     padding: 8, fontSize: 'var(--pd-menufz)', textAlign: 'left',
     transform: 'translate(var(--pd-menu-x), var(--pd-menu-y))',
