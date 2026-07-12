@@ -155,6 +155,18 @@ for (const k in ENEMY_TYPES) {
   e.eva = Math.min(0.4, e.speed / 400)        // 회피율 (늑대 0.3, 매머드 0.08)
   e.acc = Math.min(0.35, e.dmg / 200)         // 명중률 (강한 적일수록 잘 맞춤)
 }
+// 보스 20종: 10웨이브마다 순서대로 순환 (웨이브10=boss1, 20=boss2, ... 200=boss20, 210=boss1)
+const BOSS_TYPES = [
+  { name: '저주받은 검치호', h: 125 }, { name: '뇌전 매머드', h: 145 }, { name: '암흑 고릴라', h: 135 },
+  { name: '용암 곰', h: 130 }, { name: '독왕 코브라', h: 125 },
+  { name: '서리 마수', h: 130 }, { name: '뇌전 기린', h: 175 }, { name: '수정 코뿔소', h: 135 },
+  { name: '심연 악어', h: 110 }, { name: '맹독 전갈', h: 120 },
+  { name: '바위 골렘', h: 150 }, { name: '숲 골렘', h: 150 }, { name: '용암 골렘', h: 150 },
+  { name: '얼음 골렘', h: 150 }, { name: '뇌전 거인', h: 150 },
+  { name: '원석 골렘', h: 150 }, { name: '고목 정령', h: 155 }, { name: '화염 골렘', h: 155 },
+  { name: '빙정 골렘', h: 150 }, { name: '폭풍 정령', h: 150 },
+].map((b, i) => ({ ...b, frames: [1, 2, 3, 4].map(f => `/boss/boss${i + 1}/boss${i + 1}_${f}.png`) }))
+const BIMG = BOSS_TYPES.map(b => b.frames.map(src => { const im = new Image(); im.src = src; return im }))
 const WAVE_CYCLE = ['rabbit', 'antelope', 'deer', 'boar', 'wolf', 'hyena', 'bear', 'rhino', 'tiger', 'mammoth', 'monkey', 'snake', 'ostrich', 'turtle', 'croc', 'komodo', 'eagle', 'giraffe', 'lion', 'elephant']
 
 // 9종 스탯 — 강화탭(고기)·스킬탭(스킬포인트) 양쪽에서 사용
@@ -235,7 +247,7 @@ export default function App() {
   const [clearMsg, setClearMsg] = useState(null)   // 웨이브 클리어 배너 (멈춤 없음)
   const [bossReady, setBossReady] = useState(false) // 10웨이브 클리어 후 보스 도전 대기
   const [gem] = useState(0)                          // 다이아 재화 (추후 구현, 표시용)
-  const [uiCfg, setUiCfg] = useState(() => { try { return { ...UI_DEFAULT, ...JSON.parse(localStorage.getItem('paleoUiCfg') || '{}') } } catch { return { ...UI_DEFAULT } } })
+  const [uiCfg, setUiCfg] = useState(() => { try { const sv = JSON.parse(localStorage.getItem('paleoUiCfg') || '{}'); return { ...UI_DEFAULT, ...Object.fromEntries(Object.entries(sv).filter(([k]) => k in UI_DEFAULT)) } } catch { return { ...UI_DEFAULT } } })
   const [uiEdit, setUiEdit] = useState(false)
   const [copiedUi, setCopiedUi] = useState(false)
   const [editSel, setEditSel] = useState(null)   // 편집 모드에서 선택된 요소
@@ -391,15 +403,16 @@ export default function App() {
       const key = WAVE_CYCLE[(w.waveNum - 1) % WAVE_CYCLE.length]
       const boss = w.bossPending && w.spawnLeft === 1
       const t = ENEMY_TYPES[key]
+      const bi = Math.floor((w.waveNum - 1) / 10) % BOSS_TYPES.length
       const sc = (1 + 0.4 * (w.waveNum - 1)) * (boss ? 12 : 1)
       w.enemies.push({
-        type: key, boss, x: w.W + 40, hp: t.hp * sc, maxHp: t.hp * sc,
+        type: key, boss, bossIdx: bi, x: w.W + 40, hp: t.hp * sc, maxHp: t.hp * sc,
         speed: t.speed * (boss ? 0.6 : 0.9 + Math.random() * 0.2),
         dmg: t.dmg * (1 + 0.1 * (w.waveNum - 1)) * (boss ? 3 : 1),
         meat: Math.floor(t.meat * (1 + 0.2 * (w.waveNum - 1))) * (boss ? 15 : 1),
         exp: Math.floor(t.exp * (1 + 0.2 * (w.waveNum - 1))) * (boss ? 15 : 1),
         acc: t.acc, eva: t.eva, air: t.air || 0,
-        h: t.h, color: t.color, cd: 0, flash: 0, animT: Math.random() * 10,
+        h: boss ? BOSS_TYPES[bi].h : t.h, color: t.color, cd: 0, flash: 0, animT: Math.random() * 10,
       })
     }
 
@@ -765,7 +778,7 @@ export default function App() {
       const air = e.air ? e.air * (e.airT ?? 1) : 0   // 공중 높이 (등장 시 0→air 상승)
       const y = w.groundY - air
       const t = ENEMY_TYPES[e.type]
-      const imgs = EIMG[e.type]
+      const imgs = e.boss ? BIMG[e.bossIdx] : EIMG[e.type]
       const stunned = e.stun > 0
       const gall = e.animT * 9
       const fi = stunned ? 0 : Math.floor(gall / Math.PI) % imgs.length  // 기절 시 프레임 고정
@@ -1039,7 +1052,7 @@ export default function App() {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) }))
             const nbtn = { width: 26, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
-            const rng = k => k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hpw' ? 260 : k === 'equipcell' ? 160 : (['exph', 'progh', 'hph'].includes(k) || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
+            const rng = k => k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'equipcell' ? 160 : (['exph', 'progh'].includes(k) || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
             const rmin = k => k === 'equipcols' ? 3 : 0
             return <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -1089,7 +1102,24 @@ export default function App() {
             <span style={st.pillMeat}><b style={{ color: '#ffe6c0' }}>{fmt(meat)}</b></span>
             <span style={st.pillGem}><b style={{ color: '#cfe8ff' }}>{fmt(gem)}</b></span>
           </div>
-          <div style={{ fontSize: 'var(--pd-wavefz)', opacity: 0.85, marginTop: 3 }}>웨이브 {wave}{bossReady && <span style={{ color: '#ef5a3c' }}> · 보스 대기</span>}</div>
+        </div>
+      </div>
+      <div style={st.statusBar}>
+        <div data-edit="hppill" style={st.hpPill}>
+          <img src="/ui/hp_heart.png" alt="" style={st.hpHeart} />
+          <div style={st.hpTrack}><div style={{ ...st.hpFill, width: Math.min(100, heroHpUI / maxHp * 100) + '%' }} /></div>
+          <span className="pd-num" style={st.hpText}>{fmt(heroHpUI)} / {fmt(maxHp)}</span>
+        </div>
+        <div data-edit="waveband" style={st.waveBanner}>
+          <div className="pd-num" style={st.waveTitle}>WAVE {wave}</div>
+          <div style={st.diaRow}>
+            {Array.from({ length: 10 }, (_, i) => (
+              <img key={i} src={i < (wave - 1) % 10 + 1 ? '/ui/dia_on.png' : '/ui/dia_off.png'} alt="" style={st.dia} />
+            ))}
+          </div>
+        </div>
+        <div data-edit="bossbtn" style={st.bossWrap}>
+          <button style={{ ...st.bossBtn, opacity: bossReady && phase === 'fighting' ? 1 : 0.45, animation: bossReady && phase === 'fighting' ? 'pdPulse 1.2s ease-in-out infinite' : 'none' }} disabled={!(bossReady && phase === 'fighting')} onClick={challengeBoss}>보스 도전</button>
         </div>
       </div>
       <div data-edit="prog" style={st.waveProg}>
@@ -1106,16 +1136,7 @@ export default function App() {
             </div>
           ))}
         </div>
-        <div data-edit="herohp" style={st.heroHpWrap}>
-          <div style={st.hpOuter}><div style={{ ...st.hpInner, width: Math.min(100, heroHpUI / maxHp * 100) + '%' }} /></div>
-          <div style={{ fontSize: 'var(--pd-hpfz)', opacity: 0.8, marginTop: 2 }}>{fmt(heroHpUI)} / {fmt(maxHp)}</div>
-        </div>
         {clearMsg != null && <div data-edit="clearmsg" style={st.overlayText}>{typeof clearMsg === 'number' ? `웨이브 ${clearMsg} 클리어!` : clearMsg}</div>}
-        {bossReady && phase === 'fighting' && (
-          <div style={st.bossChallenge}>
-            <button data-edit="bossbtn" style={st.bossBtn} onClick={challengeBoss}>☠ 보스 도전</button>
-          </div>
-        )}
         {phase === 'gameover' && (
           <div style={st.overlay}>
             <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 12 }}>쓰러졌다...</div>
@@ -1331,13 +1352,13 @@ const UI_DEFAULT = {
   sph: 4, spfz: 13, tabpt: 7, tabpb: 10, tabfz: 13, navicon: 26, navpt: 10, navpb: 8,
   avatar: 40, slotmax: 50, equipcols: 5, equipgap: 10, evoimg: 59, slotfz: 23, catfz: 13, spbarfz: 12,
   equipimg: 63, equiptier: 13, equipcell: 58, nickfz: 15, lvbadgefz: 12, exph: 9, pillfz: 14, wavefz: 12,
-  progh: 6, gainfz: 13, hpw: 141, hph: 9, hpfz: 11, bossfz: 18, clearfz: 24, navfz: 10,
+  progh: 6, gainfz: 13, hph: 34, hpfz: 11, bossfz: 13, clearfz: 24, navfz: 10, diasz: 11,
   // 위치 이동(px): 요소별 X/Y
   avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: 0, pillY: 4, iconX: -3, iconY: 1,
   evoimgX: 0, evoimgY: 0, panelX: 0, panelY: 0, rowX: 0, rowY: -1, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0,
   spX: 0, spY: 0, slotX: 23, slotY: 8, catX: 21, catY: 0, spbarX: 20, spbarY: 1, equipX: 18, equipY: 2, spbarAX: 12, spbarAY: 11,
   spbarBX: 13, spbarBY: 0, spbarCX: 0, spbarCY: 0, nickX: 0, nickY: 0, expX: 0, expY: 0, progX: 0, progY: 0, gainX: 0, gainY: 0,
-  hpX: -5, hpY: 0, bossX: -12, bossY: -12, clearX: 0, clearY: 0,
+  hpX: 0, hpY: 0, bossX: 0, bossY: 0, clearX: 0, clearY: 0, waveX: 0, waveY: 0,
 }
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
@@ -1363,7 +1384,8 @@ const EDIT_GROUPS = {
   expbar: { label: 'EXP바', size: ['exph'], pos: 'exp' },
   prog: { label: '웨이브 진행바', size: ['progh'], pos: 'prog' },
   gain: { label: '획득 팝업', size: ['gainfz'], pos: 'gain' },
-  herohp: { label: '영웅 HP바', size: ['hpw', 'hph', 'hpfz'], pos: 'hp' },
+  hppill: { label: 'HP 알약', size: ['hph', 'hpfz'], pos: 'hp' },
+  waveband: { label: '웨이브 현판', size: ['wavefz', 'diasz'], pos: 'wave' },
   bossbtn: { label: '보스 버튼', size: ['bossfz'], pos: 'boss' },
   clearmsg: { label: '클리어 문구', size: ['clearfz'], pos: 'clear' },
 }
@@ -1375,7 +1397,7 @@ const UI_LABELS = {
   navicon: '네비 아이콘', navpt: '네비 위높이', navpb: '네비 아래높이', avatar: '아바타 크기', slotmax: '스킬슬롯 크기', equipcols: '장비 열수', equipgap: '장비 간격',
   evoimg: '진화캐릭 크기', slotfz: '슬롯 + 글자', catfz: '분류 글자', spbarfz: '안내 글자', equipimg: '장비아이콘', equiptier: '티어 숫자',
   equipcell: '장비칸 크기', nickfz: '닉네임 글자', lvbadgefz: 'Lv뱃지 글자', exph: 'EXP바 높이', pillfz: '자원 글자', wavefz: '웨이브 글자',
-  progh: '진행바 높이', gainfz: '팝업 글자', hpw: 'HP바 너비', hph: 'HP바 높이', hpfz: 'HP 글자', bossfz: '버튼 글자', clearfz: '문구 글자', navfz: '네비 글자',
+  progh: '진행바 높이', gainfz: '팝업 글자', hph: 'HP알약 높이', hpfz: 'HP 글자', bossfz: '버튼 글자', clearfz: '문구 글자', navfz: '네비 글자', diasz: '다이아 크기',
 }
 const uiVars = c => `:root{
 --pd-panelbw-v:${c.panelbwV}px;--pd-panelbw-h:${c.panelbwH}px;--pd-rowbw-v:${c.rowbwV}px;--pd-rowbw-h:${c.rowbwH}px;
@@ -1397,10 +1419,10 @@ const uiVars = c => `:root{
 --pd-spbarA-x:${c.spbarAX}px;--pd-spbarA-y:${c.spbarAY}px;--pd-spbarB-x:${c.spbarBX}px;--pd-spbarB-y:${c.spbarBY}px;--pd-spbarC-x:${c.spbarCX}px;--pd-spbarC-y:${c.spbarCY}px;
 --pd-equipcell:${c.equipcell}px;--pd-nickfz:${c.nickfz}px;--pd-lvbadgefz:${c.lvbadgefz}px;--pd-exph:${c.exph}px;
 --pd-pillfz:${c.pillfz}px;--pd-wavefz:${c.wavefz}px;--pd-progh:${c.progh}px;--pd-gainfz:${c.gainfz}px;
---pd-hpw:${c.hpw}px;--pd-hph:${c.hph}px;--pd-hpfz:${c.hpfz}px;--pd-bossfz:${c.bossfz}px;--pd-clearfz:${c.clearfz}px;--pd-navfz:${c.navfz}px;
+--pd-hph:${c.hph}px;--pd-hpfz:${c.hpfz}px;--pd-bossfz:${c.bossfz}px;--pd-clearfz:${c.clearfz}px;--pd-navfz:${c.navfz}px;--pd-diasz:${c.diasz}px;
 --pd-nick-x:${c.nickX}px;--pd-nick-y:${c.nickY}px;--pd-exp-x:${c.expX}px;--pd-exp-y:${c.expY}px;
 --pd-prog-x:${c.progX}px;--pd-prog-y:${c.progY}px;--pd-gain-x:${c.gainX}px;--pd-gain-y:${c.gainY}px;
---pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;
+--pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center' },
@@ -1483,9 +1505,27 @@ const st = {
   progOuter: { height: 8, background: '#2a1d0d', borderRadius: 4, overflow: 'hidden', border: '1px solid #3a2a14' },
   progInner: { height: '100%', background: `linear-gradient(90deg,${GOLD_D},${GOLD})`, transition: 'width 0.2s' },
   canvasWrap: { height: '42%', position: 'relative', minHeight: 220 },
-  heroHpWrap: { position: 'absolute', left: 12, top: 10, width: 'var(--pd-hpw)', transform: 'translate(var(--pd-hp-x), var(--pd-hp-y))' },
-  hpOuter: { height: 'var(--pd-hph)', background: 'rgba(0,0,0,0.5)', borderRadius: 4, overflow: 'hidden' },
-  hpInner: { height: '100%', background: '#7cb35c', transition: 'width 0.15s' },
+  statusBar: { display: 'flex', alignItems: 'center', gap: 6, padding: '3px 8px 2px' },
+  hpPill: {
+    position: 'relative', flex: 1.1, minWidth: 0, height: 'var(--pd-hph)',
+    background: 'url(/ui/hp_capsule.png) center / 100% 100% no-repeat',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    transform: 'translate(var(--pd-hp-x), var(--pd-hp-y))',
+  },
+  hpHeart: { position: 'absolute', left: -7, height: 'calc(var(--pd-hph) + 8px)', zIndex: 1, pointerEvents: 'none' },
+  hpTrack: { position: 'absolute', left: '12%', right: '9%', top: '26%', bottom: '28%', overflow: 'hidden', borderRadius: 4 },
+  hpFill: { height: '100%', background: 'linear-gradient(180deg,#d94a35,#8e1f14)', transition: 'width 0.15s' },
+  hpText: { position: 'relative', paddingLeft: '6%', fontSize: 'var(--pd-hpfz)', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap' },
+  waveBanner: {
+    flex: 1.5, minWidth: 0, height: 'calc(var(--pd-hph) + 10px)',
+    background: 'url(/ui/wave_banner.png) center / 100% 100% no-repeat',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
+    transform: 'translate(var(--pd-wave-x), var(--pd-wave-y))',
+  },
+  waveTitle: { fontSize: 'var(--pd-wavefz)', letterSpacing: '0.08em', color: '#f3dfae', textShadow: '0 1px 2px #000', lineHeight: 1 },
+  diaRow: { display: 'flex', gap: 3 },
+  dia: { width: 'var(--pd-diasz)', height: 'var(--pd-diasz)', objectFit: 'contain' },
+  bossWrap: { flexShrink: 0, alignSelf: 'stretch', display: 'flex', transform: 'translate(var(--pd-boss-x), var(--pd-boss-y))' },
   overlay: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.75)' },
   overlayText: { position: 'absolute', top: '40%', left: 0, right: 0, textAlign: 'center', fontSize: 'var(--pd-clearfz)', transform: 'translate(var(--pd-clear-x), var(--pd-clear-y))', color: GOLD, textShadow: '0 2px 8px rgba(0,0,0,0.8)', pointerEvents: 'none' },
   retryBtn: { padding: '12px 32px', fontSize: 17, borderRadius: 12, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
@@ -1538,13 +1578,10 @@ const st = {
   },
   plusBtn: { border: '1px solid #a85f1f', background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
   minusBtn: { border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#cbb89a' },
-  bossChallenge: { position: 'absolute', left: 0, right: 0, bottom: 16, display: 'flex', justifyContent: 'center', pointerEvents: 'none' },
   bossBtn: {
-    pointerEvents: 'auto', padding: '12px 28px', fontSize: 'var(--pd-bossfz)', transform: 'translate(var(--pd-boss-x), var(--pd-boss-y))',
-    border: '2px solid #7a2a1a', borderRadius: 12,
-    background: 'linear-gradient(180deg,#b83a26,#7a2015)', color: '#ffe0d0',
-    boxShadow: '0 4px 16px rgba(180,50,30,0.5), inset 0 1px 0 rgba(255,255,255,0.25)',
-    animation: 'pdPulse 1.2s ease-in-out infinite',
+    border: 'none', minWidth: 88, padding: '0 16px',
+    background: 'transparent url(/ui/boss_btn.png) center / 100% 100% no-repeat',
+    color: '#ffe0d0', fontSize: 'var(--pd-bossfz)', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap',
   },
 }
 
