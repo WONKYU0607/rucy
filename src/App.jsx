@@ -1,4 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { initializeApp } from 'firebase/app'
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut } from 'firebase/auth'
+import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore'
+
+// ── Firebase 클라우드 세이브 설정: 콘솔 웹앱 구성값 붙여넣기 ──
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyAxUsbLJI5aoWprLk8zBFy-INt2RHOF9fs',
+  authDomain: 'rucy-5640a.firebaseapp.com',
+  projectId: 'rucy-5640a',
+  appId: '1:711322673029:web:2c11067daedf428425eeec',
+}
+const FB_ON = true
+const fbAuth = FB_ON ? getAuth(initializeApp(FIREBASE_CONFIG)) : null
+const fbDb = FB_ON ? getFirestore() : null
 
 // ── 디버그 모드: 업그레이드 비용 무료 + 레벨 직접입력 (출시 전 false로) ──
 const DEBUG = true
@@ -993,6 +1007,49 @@ export default function App() {
     if (h) { clearTimeout(h.t); clearInterval(h.iv); holdRef.current = null }
   }
   useEffect(() => () => holdEnd(), [])
+  // ── 클라우드 세이브: 로그인 시 웨이브 높은 쪽 채택, 이후 60초/백그라운드 전환 시 업로드 ──
+  const [fbUser, setFbUser] = useState(null)
+  const [cloudMsg, setCloudMsg] = useState('')
+  async function pushCloud() {
+    if (!FB_ON || !fbAuth.currentUser) return
+    try {
+      const sv = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null')
+      if (!sv) return
+      await setDoc(doc(fbDb, 'paleoSaves', fbAuth.currentUser.uid), sv)
+      setCloudMsg('저장됨 ' + new Date().toLocaleTimeString())
+    } catch (e) { setCloudMsg('저장 실패: ' + (e.code || e.message)) }
+  }
+  useEffect(() => {
+    if (!FB_ON) return
+    return onAuthStateChanged(fbAuth, async u => {
+      setFbUser(u)
+      if (!u) return
+      try {
+        const snap = await getDoc(doc(fbDb, 'paleoSaves', u.uid))
+        const cloud = snap.exists() ? snap.data() : null
+        const local = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null')
+        if (cloud && (cloud.wave || 0) > (local?.wave || 0)) {
+          localStorage.setItem(SAVE_KEY, JSON.stringify(cloud))
+          location.reload()  // 클라우드 세이브로 재시작
+        } else {
+          pushCloud()
+        }
+      } catch (e) { setCloudMsg('동기화 실패: ' + (e.code || e.message)) }
+    })
+  }, [])
+  useEffect(() => {
+    if (!FB_ON) return
+    const iv = setInterval(pushCloud, 60000)
+    const onVis = () => { if (document.visibilityState === 'hidden') pushCloud() }
+    document.addEventListener('visibilitychange', onVis)
+    return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVis) }
+  }, [])
+  async function fbLogin() {
+    try { await signInWithPopup(fbAuth, new GoogleAuthProvider()) }
+    catch { try { await signInWithRedirect(fbAuth, new GoogleAuthProvider()) } catch (e) { setCloudMsg('로그인 실패: ' + (e.code || e.message)) } }
+  }
+  async function fbLogout() { await pushCloud(); await signOut(fbAuth) }
+
   // 스크롤 엣지 페이드: 위/아래 끝에서는 해제, 넘침 없으면 페이드 없음
   function updFade(el) {
     if (!el) return
@@ -1225,6 +1282,20 @@ export default function App() {
       </div>
       )}
 
+      {nav === '영웅' && FB_ON && (
+        <div style={st.cloudBox}>
+          {fbUser ? (
+            <>
+              <span style={{ opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fbUser.email}</span>
+              <span style={{ opacity: 0.55, fontSize: 11, flexShrink: 0 }}>{cloudMsg}</span>
+              <button style={st.cloudBtn} onClick={pushCloud}>지금 저장</button>
+              <button style={st.cloudBtn} onClick={fbLogout}>로그아웃</button>
+            </>
+          ) : (
+            <button style={{ ...st.cloudBtn, width: '100%' }} onClick={fbLogin}>구글 로그인 · 기기 간 저장 연동</button>
+          )}
+        </div>
+      )}
       {nav === '스킬' && (
         <div data-edit="panel" style={st.panel}>
           <div data-edit="spbarA" style={{ ...st.spBar, transform: 'translate(var(--pd-spbarA-x), var(--pd-spbarA-y))' }}>장착 슬롯 · 올린 스킬만 자동 발동</div>
@@ -1501,6 +1572,8 @@ const st = {
     color: '#9a8768', position: 'relative',
   },
   navActive: { backgroundImage: 'url(/ui/nav_on.png)', color: GOLD },
+  cloudBox: { display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', fontSize: 12 },
+  cloudBtn: { flexShrink: 0, padding: '6px 10px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 12 },
   comingSoon: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#20160c', color: '#f3e6d0' },
   cdOverlay: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.72)', fontSize: 13, color: '#7ce0ff' },
   slotRow: { display: 'flex', gap: 6, padding: '2px 2px 5px' },
