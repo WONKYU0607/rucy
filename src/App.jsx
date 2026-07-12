@@ -13,6 +13,8 @@ const ANIM = {
   idle:  { srcs: ['/hero/idle/idle_1.png'], h: 130, flip: false },
   ewalk: { srcs: ['/hero/erectus_walk/ewalk_1.png', '/hero/erectus_walk/ewalk_2.png', '/hero/erectus_walk/ewalk_3.png', '/hero/erectus_walk/ewalk_4.png'], h: 130, flip: false },
   eatk1: { srcs: ['/hero/erectus_atk1/eatk1_1.png', '/hero/erectus_atk1/eatk1_2.png', '/hero/erectus_atk1/eatk1_3.png'], h: 165, flip: false },
+  nwalk: { srcs: ['/hero/neander_walk/nwalk_1.png', '/hero/neander_walk/nwalk_2.png', '/hero/neander_walk/nwalk_3.png', '/hero/neander_walk/nwalk_4.png'], h: 135, flip: false },
+  natk1: { srcs: ['/hero/neander_atk1/natk1_1.png', '/hero/neander_atk1/natk1_2.png', '/hero/neander_atk1/natk1_3.png'], h: 165, flip: false },
 }
 // 스킬 정의 — charSeq: 히어로가 재생할 프레임(1-based, 없으면 전체), fx: 분리 이펙트
 //   fx proj  = 투사체: fly 프레임이 몬스터 쪽으로 날아가 명중 시 데미지(+impact 프레임)
@@ -204,7 +206,7 @@ const EVOS = [
   { name: '오스트랄로피테쿠스 (4족보행)', mult: 1, mode: 'quad' },
   { name: '오스트랄로피테쿠스 (직립보행)', mult: 3, cost: 1500, mode: 'biped' },
   { name: '호모 에렉투스', mult: 27, cost: 300000, mode: 'erectus' },
-  { name: '호모 네안데르탈인', mult: 81, cost: 3000000, mode: 'biped' },
+  { name: '호모 네안데르탈인', mult: 81, cost: 3000000, mode: 'neander' },
   { name: '호모 사피엔스', mult: 243, cost: 30000000, mode: 'biped' },
   { name: '인간', mult: 729, cost: 300000000, mode: 'biped' },
 ]
@@ -479,10 +481,11 @@ export default function App() {
       last = now
       const st = S.current
       const hero = w.hero
-      const atkRange = st.mode === 'quad' ? PUNCH.range : st.mode === 'erectus' ? ECLUB.range : THROW.range
+      const melee = st.mode === 'erectus' || st.mode === 'neander'
+      const atkRange = st.mode === 'quad' ? PUNCH.range : melee ? ECLUB.range : THROW.range
 
       // 배경 스크롤: 이동 상태 + 앞을 막는 적이 없을 때만 전진
-      const atkRange0 = st.mode === 'quad' ? PUNCH.range : st.mode === 'erectus' ? ECLUB.range : THROW.range
+      const atkRange0 = st.mode === 'quad' ? PUNCH.range : (st.mode === 'erectus' || st.mode === 'neander') ? ECLUB.range : THROW.range
       const blocked = w.enemies.some(e => !e.dead && e.x - HERO_X < atkRange0)
       w._blocked = blocked
       const moving = (st.phase === 'fighting' || st.phase === 'cleared') && hero.state === 'move' && !blocked
@@ -637,7 +640,7 @@ export default function App() {
               if (t) dealDamage(t, st)
             }
             if (hero.t >= PUNCH.total) { hero.state = 'move'; hero.t = 0 }
-          } else if (st.mode === 'erectus') {
+          } else if (st.mode === 'erectus' || st.mode === 'neander') {
             const prog = hero.t / ECLUB.total
             const inRange = w.enemies.find(e => !e.dead && e.x - HERO_X < ECLUB.range + 40)
             if (!hero.did && !inRange) {
@@ -752,18 +755,22 @@ export default function App() {
           const k = hero.t < PUNCH.hitAt ? 0 : hero.t < PUNCH.hitAt + 0.1 ? 1 : 2
           return ['punch', k]
         }
-        if (st.mode === 'erectus') {
-          const arr = ANIM.eatk1.srcs
+        if (st.mode === 'erectus' || st.mode === 'neander') {
+          const ak = st.mode === 'neander' ? 'natk1' : 'eatk1'
+          const arr = ANIM[ak].srcs
           const k = Math.min(arr.length - 1, Math.floor(hero.t / ECLUB.total * arr.length))
-          return ['eatk1', k]
+          return [ak, k]
         }
         const k = hero.t < THROW.windupEnd ? 0 : 1
         return ['throw', k]
       }
-      const key = st.mode === 'quad' ? 'quad' : st.mode === 'erectus' ? 'ewalk' : 'walk'
-      // 에렉투스: 적을 앞에 두고 대기 중(막힘)일 땐 걷기 대신 마지막 스윙 프레임 유지 → 공격↔대기 스냅 깜빡임 방지
+      const key = st.mode === 'quad' ? 'quad' : st.mode === 'erectus' ? 'ewalk' : st.mode === 'neander' ? 'nwalk' : 'walk'
+      // 근접 모드: 적을 앞에 두고 대기 중(막힘)일 땐 걷기 대신 마지막 스윙 프레임 유지 → 공격↔대기 스냅 깜빡임 방지
       if (st.mode === 'erectus' && key === 'ewalk' && w._blocked) {
         return ['eatk1', ANIM.eatk1.srcs.length - 1]
+      }
+      if (st.mode === 'neander' && key === 'nwalk' && w._blocked) {
+        return ['natk1', ANIM.natk1.srcs.length - 1]
       }
       const fi = Math.floor(hero.animT * 10) % ANIM[key].srcs.length
       return [key, fi]
@@ -965,6 +972,7 @@ export default function App() {
   }
   const lvLive = useRef(lv); lvLive.current = lv
   const meatLive = useRef(meat); meatLive.current = meat
+  const spLive = useRef(sp); spLive.current = sp
   function buyStat(k, delta = 1) {
     if (delta < 0) { setLv(v => ({ ...v, [k]: Math.max(0, v[k] + delta) })); return }
     const c = DEBUG ? 0 : buyCost(k, lvLive.current[k])
@@ -999,7 +1007,7 @@ export default function App() {
   }
   function upSkill(k, delta = 1) {
     if (delta < 0) { setSkill(s => ({ ...s, [k]: Math.max(0, s[k] + delta) })); return }
-    if (!DEBUG && sp <= 0) return
+    if (!DEBUG && spLive.current <= 0) return
     if (!DEBUG) setSp(s => s - 1)
     setSkill(s => ({ ...s, [k]: s[k] + 1 }))
   }
@@ -1175,7 +1183,7 @@ export default function App() {
         {tab === '진화' && (
           <div data-edit="row" style={st.row}>
             <img
-              src={EVOS[evo].mode === 'quad' ? '/hero/quad/quad_1.png' : EVOS[evo].mode === 'erectus' ? '/hero/erectus_walk/ewalk_1.png' : '/hero/misc/hero_idle.png'}
+              src={EVOS[evo].mode === 'quad' ? '/hero/quad/quad_1.png' : EVOS[evo].mode === 'erectus' ? '/hero/erectus_walk/ewalk_1.png' : EVOS[evo].mode === 'neander' ? '/hero/neander_walk/nwalk_1.png' : '/hero/misc/hero_idle.png'}
               alt=""
               data-edit="evoimg"
               style={{ height: 'var(--pd-evoimg)', transform: 'translate(var(--pd-evoimg-x), var(--pd-evoimg-y))' }}
@@ -1183,7 +1191,7 @@ export default function App() {
             <div style={{ flex: 1, marginLeft: 12 }}>
               <div data-edit="name" style={st.rowName}>{EVOS[evo].name}</div>
               <div data-edit="val" style={st.rowVal}>
-                {EVOS[evo].mode === 'quad' ? '4족 질주 · 주먹질' : EVOS[evo].mode === 'erectus' ? '몽둥이 · 내려치기/올려치기' : '직립 보행 · 돌 던지기'} · 공격력 ×{EVOS[evo].mult}
+                {EVOS[evo].mode === 'quad' ? '4족 질주 · 주먹질' : EVOS[evo].mode === 'erectus' ? '몽둥이 · 내려치기/올려치기' : EVOS[evo].mode === 'neander' ? '돌도끼 · 내려찍기' : '직립 보행 · 돌 던지기'} · 공격력 ×{EVOS[evo].mult}
                 {evo < EVOS.length - 1 && <span style={{ color: '#7cb35c' }}> → ×{EVOS[evo + 1].mult}</span>}
               </div>
             </div>
@@ -1207,7 +1215,7 @@ export default function App() {
                     <div data-edit="val" style={st.rowVal}>{statText(k, lv[k] + skill[k])} <span style={{ color: '#7cb35c' }}>→ {statText(k, lv[k] + skill[k] + 1)}</span></div>
                   </div>
                   <input data-edit="input" style={st.dbgInput} type="number" inputMode="numeric" value={skill[k]} onChange={e => setSkillLv(k, e.target.value)} />
-                  <button data-edit="sp" style={{ ...st.spBtn, opacity: ok ? 1 : 0.4 }} onClick={() => upSkill(k)}>+1</button>
+                  <button data-edit="sp" style={{ ...st.spBtn, opacity: ok ? 1 : 0.4 }} onPointerDown={() => holdStart(() => upSkill(k))} onPointerUp={holdEnd} onPointerLeave={holdEnd} onPointerCancel={holdEnd} onContextMenu={e => e.preventDefault()}>+1</button>
                 </div>
               )
             })}
@@ -1474,6 +1482,7 @@ const st = {
   gainItem: { display: 'flex', gap: 8, fontSize: 'var(--pd-gainfz)', background: 'rgba(10,6,3,0.6)', padding: '2px 8px', borderRadius: 6 },
   spBar: { padding: '3px 5px 5px', fontSize: 'var(--pd-spbarfz)', color: '#c9b596' },
   spBtn: {
+    touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none',
     minWidth: 'var(--pd-spw)', padding: 'var(--pd-sph) 5px', borderRadius: 7, border: '1px solid #2f7fa0',
     background: 'linear-gradient(180deg,#3a9ec0,#256f8c)', color: '#fff', fontSize: 'var(--pd-spfz)', flexShrink: 0,
     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)', transform: 'translate(var(--pd-sp-x), var(--pd-sp-y))',
