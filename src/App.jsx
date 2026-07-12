@@ -317,6 +317,9 @@ export default function App() {
   }, [])
   const [heroHpUI, setHeroHpUI] = useState(100)
   const [bossUI, setBossUI] = useState(null)   // 보스전 타이머/체력 바
+  const [paused, setPaused] = useState(false)  // 디버그 일시정지
+  const [waveJump, setWaveJump] = useState(null) // 웨이브 이동 모달 입력값(null=닫힘)
+  const [best, setBest] = useState(init.best || init.wave || 1) // 도달 최고 웨이브(이동 상한)
   const [progress, setProgress] = useState(0)
   const [gains, setGains] = useState([])       // 획득 팝업 리스트
   const [skillCdUI, setSkillCdUI] = useState(SKILLS.map(() => 0))  // 스킬 남은 쿨타임(초)
@@ -349,8 +352,8 @@ export default function App() {
   }
 
   useEffect(() => {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, ts: Date.now() }))
-  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv])
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, ts: Date.now() }))
+  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best])
 
   // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제
   useEffect(() => {
@@ -513,7 +516,7 @@ export default function App() {
     }
 
     function loop(now) {
-      const dt = Math.min((now - last) / 1000, 0.05)
+      const dt = w.paused ? 0 : Math.min((now - last) / 1000, 0.05)
       last = now
       const st = S.current
       const hero = w.hero
@@ -1033,6 +1036,8 @@ export default function App() {
   const lvLive = useRef(lv); lvLive.current = lv
   const meatLive = useRef(meat); meatLive.current = meat
   const spLive = useRef(sp); spLive.current = sp
+  useEffect(() => { world.current.paused = paused }, [paused])
+  useEffect(() => { setBest(b => Math.max(b, wave)) }, [wave])
   function buyStat(k, delta = 1) {
     if (delta < 0) { setLv(v => ({ ...v, [k]: Math.max(0, v[k] + delta) })); return }
     const c = DEBUG ? 0 : buyCost(k, lvLive.current[k])
@@ -1143,6 +1148,17 @@ export default function App() {
     setEvo(v => v + 1)
   }
   function retry() { world.current.needStart = true; setPhase('fighting') }
+  function jumpWave(n) {
+    n = Math.max(1, Math.min(best, Math.floor(Number(n) || 0)))
+    if (!n) return
+    const w = world.current
+    w.bossBattle = false
+    w.startBossFlag = false
+    setBossReady(false)
+    setWave(n)
+    w.needStart = true
+    setWaveJump(null)
+  }
   function challengeBoss() { setBossReady(false); world.current.startBossFlag = true }
   function equipSkill(i) {
     setEquipped(eq => {
@@ -1193,6 +1209,18 @@ export default function App() {
             ) : (
               <button style={st.menuItem} onClick={fbLogin}>구글 로그인 · 저장 연동</button>
             ))}
+          </div>
+        </div>
+      )}
+      {waveJump != null && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(0,0,0,0.5)' }} onClick={() => setWaveJump(null)}>
+          <div data-edit="wjump" style={st.wjPanel} onClick={e => e.stopPropagation()}>
+            <div style={{ marginBottom: 6 }}>웨이브 이동 <span style={{ opacity: 0.6, fontSize: 11 }}>(최고 {best})</span></div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input type="number" min={1} max={best} value={waveJump} onChange={e => setWaveJump(e.target.value)} style={st.wjInput} />
+              <button style={st.cloudBtn} onClick={() => jumpWave(waveJump)}>이동</button>
+              <button style={st.cloudBtn} onClick={() => jumpWave(best)}>최고로</button>
+            </div>
           </div>
         </div>
       )}
@@ -1291,7 +1319,7 @@ export default function App() {
           <div style={st.hpTrack}><div style={{ ...st.hpFill, width: Math.min(100, heroHpUI / maxHp * 100) + '%' }} /></div>
           <span className="pd-num" style={st.hpText}>{fmt(heroHpUI)} / {fmt(maxHp)}</span>
         </div>
-        <div data-edit="waveband" style={st.waveBanner}>
+        <div data-edit="waveband" style={st.waveBanner} onClick={() => { if (!uiEdit) setWaveJump(String(wave)) }}>
           <div data-edit="wavetitle" style={st.waveTitle}>웨이브 {wave}</div>
           <div data-edit="diarow" style={st.diaRow}>
             {Array.from({ length: 10 }, (_, i) => (
@@ -1308,6 +1336,7 @@ export default function App() {
 
       <div ref={wrapRef} style={st.canvasWrap}>
         <canvas ref={canvasRef} />
+        <button data-edit="pausebtn" style={{ ...st.pauseBtn, opacity: paused ? 1 : 0.65 }} onClick={() => { if (!uiEdit) setPaused(p => !p) }}>{paused ? '▶' : 'II'}</button>
         {bossUI && (
           <div style={st.bossBars}>
             <div data-edit="btimer" style={st.btOuter}>
@@ -1356,557 +1385,3 @@ export default function App() {
             <div key={k} data-edit="row" style={st.row}>
               <div data-edit="icon" style={st.skillIcon}><img src={`/icon/${k}.png`} alt="" style={st.statIconImg} /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div data-edit="name" style={st.rowName}>{d.name} <span style={st.rowLv}>Lv.{lv[k]}</span></div>
-                <div data-edit="val" style={st.rowVal}>{statText(k, lv[k] + skill[k])} <span style={{ color: '#7cb35c' }}>→ {statText(k, lv[k] + 1 + skill[k])}</span></div>
-              </div>
-              <input data-edit="input" style={st.dbgInput} type="number" inputMode="numeric" value={lv[k]} onChange={e => setStatLv(k, e.target.value)} />
-              <button data-edit="cost" style={{ ...st.costBtn, opacity: ok ? 1 : 0.4 }} onPointerDown={() => holdStart(() => buyStat(k))} onPointerUp={holdEnd} onPointerLeave={holdEnd} onPointerCancel={holdEnd} onContextMenu={e => e.preventDefault()}>{DEBUG ? '+1' : fmt(c)}</button>
-            </div>
-          )
-        })}
-        {tab === '진화' && (
-          <div data-edit="row" style={st.row}>
-            <img
-              src={EVOS[evo].mode === 'quad' ? '/hero/quad/quad_1.png' : EVOS[evo].mode === 'erectus' ? '/hero/erectus_walk/ewalk_1.png' : EVOS[evo].mode === 'neander' ? '/hero/neander_walk/nwalk_1.png' : '/hero/misc/hero_idle.png'}
-              alt=""
-              data-edit={`evoimg${evo}`}
-              style={{ height: `var(--pd-evoimg${evo})`, transform: `translate(var(--pd-evoimg${evo}-x), var(--pd-evoimg${evo}-y))` }}
-            />
-            <div style={{ flex: 1, marginLeft: 12 }}>
-              <div data-edit="name" style={st.rowName}>{EVOS[evo].name}</div>
-              <div data-edit="val" style={st.rowVal}>
-                {EVOS[evo].mode === 'quad' ? '4족 질주 · 주먹질' : EVOS[evo].mode === 'erectus' ? '몽둥이 · 내려치기/올려치기' : EVOS[evo].mode === 'neander' ? '돌도끼 · 내려찍기' : '직립 보행 · 돌 던지기'} · 공격력 ×{EVOS[evo].mult}
-                {evo < EVOS.length - 1 && <span style={{ color: '#7cb35c' }}> → ×{EVOS[evo + 1].mult}</span>}
-              </div>
-            </div>
-            {DEBUG && <button style={st.dbgBtn} onClick={() => setEvo(v => Math.max(0, v - 1))}>−</button>}
-            {evo < EVOS.length - 1
-              ? <button data-edit="cost" style={{ ...st.costBtn, opacity: DEBUG || meat >= EVOS[evo + 1].cost ? 1 : 0.4 }} onClick={evolve}>{DEBUG ? '+1' : fmt(EVOS[evo + 1].cost)}</button>
-              : <div style={{ fontSize: 12, opacity: 0.6 }}>최종 단계</div>}
-          </div>
-        )}
-        {tab === '성장' && (
-          <>
-            <div data-edit="spbarC" style={{ ...st.spBar, transform: 'translate(var(--pd-spbarC-x), var(--pd-spbarC-y))' }}>스킬포인트 <b style={{ color: '#7ce0ff', fontSize: 'calc(var(--pd-spbarfz) + 2px)' }}>{sp}</b> <span style={{ opacity: 0.6, fontSize: 11 }}>· 레벨업 시 획득</span></div>
-            {STAT_KEYS.map(k => {
-              const d = STAT_LIST[k]
-              const ok = DEBUG || sp > 0
-              return (
-                <div key={k} data-edit="row" style={st.row}>
-                  <div data-edit="icon" style={st.skillIcon}><img src={`/icon/${k}.png`} alt="" style={st.statIconImg} /></div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div data-edit="name" style={st.rowName}>{d.name} <span style={st.rowLv}>Lv.{skill[k]}</span></div>
-                    <div data-edit="val" style={st.rowVal}>{statText(k, lv[k] + skill[k])} <span style={{ color: '#7cb35c' }}>→ {statText(k, lv[k] + skill[k] + 1)}</span></div>
-                  </div>
-                  <input data-edit="input" style={st.dbgInput} type="number" inputMode="numeric" value={skill[k]} onChange={e => setSkillLv(k, e.target.value)} />
-                  <button data-edit="sp" style={{ ...st.spBtn, opacity: ok ? 1 : 0.4 }} onPointerDown={() => holdStart(() => upSkill(k))} onPointerUp={holdEnd} onPointerLeave={holdEnd} onPointerCancel={holdEnd} onContextMenu={e => e.preventDefault()}>+1</button>
-                </div>
-              )
-            })}
-          </>
-        )}
-      </div>
-      </div>
-      )}
-
-      {nav === '스킬' && (
-        <div data-edit="panel" style={st.panel}>
-          <div data-edit="spbarA" style={{ ...st.spBar, transform: 'translate(var(--pd-spbarA-x), var(--pd-spbarA-y))' }}>장착 슬롯 · 올린 스킬만 자동 발동</div>
-          <div style={st.slotRow}>
-            {equipped.map((si, slot) => (
-              <button key={slot} data-edit="slot" style={st.slot} onClick={() => si != null && unequipSkill(slot)}>
-                {si != null ? <span style={{ fontSize: 'var(--pd-slotfz)' }}>{SKILLS[si].icon}</span> : <span style={st.slotEmpty}>+</span>}
-              </button>
-            ))}
-          </div>
-          <div data-edit="spbarB" style={{ ...st.spBar, marginTop: 4, transform: 'translate(var(--pd-spbarB-x), var(--pd-spbarB-y))' }}>보유 스킬 · 탭하여 장착 <span style={{ opacity: 0.6, fontSize: 11 }}>· {EVOS[evo].name} 전용</span></div>
-          {SKILLS.map((s, i) => {
-            if (s.stage !== evo) return null
-            const cd = skillCdUI[i] || 0
-            const ready = cd <= 0
-            const eqSlot = equipped.indexOf(i)
-            const isEq = eqSlot >= 0
-            return (
-              <div key={s.key} style={{ ...st.row, opacity: isEq ? 0.55 : 1 }} onClick={() => isEq ? unequipSkill(eqSlot) : equipSkill(i)}>
-                <div style={{ ...st.skillIcon, position: 'relative', overflow: 'hidden' }}>
-                  {s.icon}
-                  {isEq && !ready && <div style={st.cdOverlay}>{cd.toFixed(1)}</div>}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div data-edit="name" style={st.rowName}>{s.name} {isEq && <span style={{ ...st.rowLv, color: '#7ce0ff' }}>장착됨</span>}</div>
-                  <div data-edit="val" style={st.rowVal}>{s.desc} · 데미지 ×{s.dmgMult}</div>
-                </div>
-                <span style={{ fontSize: 11, opacity: 0.7 }}>쿨</span>
-                <input
-                  data-edit="input" style={st.dbgInput} type="number" inputMode="decimal" value={cdConf[i]}
-                  onClick={e => e.stopPropagation()}
-                  onChange={e => { const v = Math.max(0.1, Number(e.target.value) || 0.1); setCdConf(c => { const n = [...c]; n[i] = v; return n }) }}
-                />
-                <button data-edit="sp" style={{ ...st.spBtn, background: isEq ? '#6b4f35' : '#2f8fb0' }}>{isEq ? '해제' : '장착'}</button>
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {nav === '장비' && (
-        <div data-edit="panel" style={st.frameBox}>
-          <div data-edit="tab" style={st.tabsInner}>
-            {['무기', '방어구', '유물'].map(t => (
-              <button key={t} style={{ ...st.tabBtn, ...(equipTab === t ? st.tabActive : {}) }} onClick={() => setEquipTab(t)}>{t}</button>
-            ))}
-          </div>
-          <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.panelInner}>
-          {equipTab === '무기' && WEAPON_TYPES.map((wt, wi) => (
-            <div key={wi}>
-              <div data-edit="cat" style={{ fontSize: 'var(--pd-catfz)', fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85, transform: 'translate(var(--pd-cat-x), var(--pd-cat-y))' }}>{wt}</div>
-              <div style={st.equipGrid}>
-                {Array.from({ length: 10 }, (_, ti) => (
-                  <div key={ti} data-edit="equip" style={st.equipCell}>
-                    <img src={`/equip/A/w${wi + 1}_${ti + 1}.png`} alt="" data-edit="eqimg" style={st.equipImg} />
-                    <div data-edit="eqtier" style={st.equipTier}>{ti + 1}등급</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-          {equipTab === '방어구' && ARMOR_TYPES.map((at, ai) => (
-            <div key={ai}>
-              <div data-edit="cat" style={{ fontSize: 'var(--pd-catfz)', fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85, transform: 'translate(var(--pd-cat-x), var(--pd-cat-y))' }}>{at}</div>
-              <div style={st.equipGrid}>
-                {Array.from({ length: 7 }, (_, ti) => (
-                  <div key={ti} data-edit="equip" style={st.equipCell}>
-                    <img src={`/equip/B/a${ai + 1}_${ti + 1}.png`} alt="" data-edit="eqimg" style={st.equipImg} />
-                    <div data-edit="eqtier" style={st.equipTier}>{ti + 1}등급</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-          {equipTab === '유물' && RELIC_ROWS.map((rn, ri) => (
-            <div key={ri}>
-              <div data-edit="cat" style={{ fontSize: 'var(--pd-catfz)', fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85, transform: 'translate(var(--pd-cat-x), var(--pd-cat-y))' }}>{rn}</div>
-              <div style={st.equipGrid}>
-                {Array.from({ length: 10 }, (_, ti) => (
-                  <div key={ti} data-edit="equip" style={st.equipCell}>
-                    <img src={`/relic/r${ri + 1}_${ti + 1}.png`} alt="" data-edit="eqimg" style={st.equipImg} />
-                    <div data-edit="eqtier" style={st.equipTier}>{ti + 1}등급</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-          </div>
-        </div>
-      )}
-
-      {nav === '상점' && (
-        <div data-edit="panel" style={st.frameBox}>
-          <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.panelInner}>
-            {Object.keys(GACHA_CATS).map(cat => (
-              <div key={cat} data-edit="shoprow" style={{ ...st.row, minHeight: 'var(--pd-shoprowmin)', transform: 'translate(var(--pd-shoprow-x), var(--pd-shoprow-y))' }}>
-                <img src={GACHA_CATS[cat].img(1, GACHA_CATS[cat].tiers)} alt="" data-edit="shopic" style={{ height: 'var(--pd-shopic)', objectFit: 'contain', transform: 'translate(var(--pd-shopic-x), var(--pd-shopic-y))' }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div data-edit="shoptitle" style={{ fontWeight: 700, fontSize: 'var(--pd-shoptfz)', transform: 'translate(var(--pd-shopt-x), var(--pd-shopt-y))' }}>{cat} 소환</div>
-                  <div data-edit="shopsub" style={{ fontSize: 'var(--pd-shopsubfz)', opacity: 0.6, transform: 'translate(var(--pd-shopsub-x), var(--pd-shopsub-y))' }}>티어가 높을수록 희귀</div>
-                </div>
-                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => pullGacha(cat, 1)}><span data-edit="shopbtext" style={st.shopBtnText}>1회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />10</span></span></button>
-                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => pullGacha(cat, 10)}><span data-edit="shopbtext" style={st.shopBtnText}>10회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />100</span></span></button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      {nav !== '영웅' && nav !== '스킬' && nav !== '장비' && nav !== '상점' && (
-        <div style={st.comingSoon}>
-          <div style={{ fontSize: 40, marginBottom: 10 }}>🔒</div>
-          <div style={{ fontSize: 16, fontWeight: 700 }}>{nav}</div>
-          <div style={{ fontSize: 13, opacity: 0.6, marginTop: 6 }}>준비 중입니다</div>
-        </div>
-      )}
-
-      {offReward && (
-        <div style={st.offOverlay}>
-          <div style={st.offBox}>
-            <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 8 }}>오프라인 보상</div>
-            <div style={{ fontSize: 13, opacity: 0.8, marginBottom: 10 }}>
-              {Math.floor(offReward.sec / 3600)}시간 {Math.floor(offReward.sec % 3600 / 60)}분 · 웨이브 {wave} · {fmt(offReward.kills)}마리 사냥
-            </div>
-            <div style={{ fontSize: 15, marginBottom: 14 }}>🍖 +{fmt(offReward.meat)} · <span style={{ color: '#8ab4ff' }}>EXP +{fmt(offReward.exp)}</span></div>
-            <button data-edit="cost" style={{ ...st.costBtn, width: '100%' }} onClick={() => setOffReward(null)}>받기</button>
-          </div>
-        </div>
-      )}
-
-      <div data-edit="nav" style={st.bottomNav}>
-        {[['영웅', 'nav_hero'], ['스킬', 'nav_skill'], ['장비', 'nav_equip'], ['동료', 'nav_ally'], ['모험', 'nav_adventure'], ['상점', 'nav_shop']].map(([n, ic]) => (
-          <button key={n} style={{ ...st.navBtn, ...(nav === n ? st.navActive : {}) }} onClick={() => setNav(n)}>
-            <img src={`/icon/${ic}.png`} alt="" style={st.navIconImg} />
-            <div style={{ fontSize: 'var(--pd-navfz)' }}>{n}</div>
-          </button>
-        ))}
-      </div>
-    </div>
-    </div>
-  )
-}
-
-const GOLD = '#e8b962'
-const GOLD_D = '#a9762f'
-const PANEL_BORDER = '1px solid #6b4a24'
-// ── UI 크기 조정값 (앱 내 편집기로 조정 → 복사) ──
-const UI_DEFAULT = {
-  panelbwV: 2, panelbwH: 4, rowbwV: 2, rowbwH: 19, rowmin: 38, rowgap: 7, icon: 27, name: 12,
-  lv: 11, val: 12, costw: 35, costh: 28, costfz: 14, inputw: 43, inputfz: 12, spw: 35,
-  sph: 4, spfz: 13, tabpt: 7, tabpb: 10, tabfz: 13, navicon: 26, navpt: 10, navpb: 8,
-  avatar: 40, slotmax: 50, equipcols: 5, equipgap: 11, slotfz: 23, catfz: 13, spbarfz: 12,
-  equipimg: 60, equiptier: 13, equipcell: 54, nickfz: 15, lvbadgefz: 12, exph: 11, pillfz: 14, wavefz: 12,
-  evoimg0: 56, evoimg1: 56, evoimg2: 56, evoimg3: 56, evoimg4: 56, evoimg5: 56,
-  evoimg0X: 0, evoimg0Y: 1, evoimg1X: 0, evoimg1Y: 1, evoimg2X: 0, evoimg2Y: 1,
-  evoimg3X: 0, evoimg3Y: 1, evoimg4X: 0, evoimg4Y: 1, evoimg5X: 0, evoimg5Y: 1,
-  gachacell: 62, gachafz: 10, gtierfz: 10, gachaimg: 74, gainfz: 13,
-  shoprowmin: 46, shopic: 38, shoptfz: 13, shopsubfz: 11, shopbw: 62, shopbfz: 12, shopgem: 12,
-  gbtnfz: 13, gbtnpw: 16, gbtnph: 10,
-  btw: 210, bth: 30, bhpw: 250, bhph: 36, pmw: 92, pmh: 26, pmfz: 13, pgw: 92, pgh: 26, pgfz: 13, hambsz: 26, menufz: 13, hph: 11, hpfz: 10, bossfz: 11, bossh: 40, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
-  // 위치 이동(px): 요소별 X/Y
-  avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: 2, pillY: 2, iconX: -3, iconY: 1,
-  panelX: 0, panelY: 0, rowX: 0, rowY: -3, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0,
-  spX: 0, spY: 0, slotX: 23, slotY: 8, catX: 21, catY: -5, spbarX: 20, spbarY: 1, equipX: -9, equipY: -4, spbarAX: 13, spbarAY: 12,
-  spbarBX: 15, spbarBY: 0, spbarCX: 14, spbarCY: -3, nickX: 0, nickY: 0, expX: 0, expY: 0, gainX: 0, gainY: 0,
-  hpX: -3, hpY: 1, bossX: 1, bossY: -4, clearX: 0, clearY: 0, waveX: 0, waveY: 1, gachaX: 0, gachaY: 0, eqtierX: 0, eqtierY: 0, eqimgX: 0, eqimgY: 0,
-  shoprowX: 0, shoprowY: 0, shopicX: 0, shopicY: 0, shoptX: 0, shoptY: 0, shopsubX: 0, shopsubY: 0,
-  shopbX: 0, shopbY: 0, shopbtX: 0, shopbtY: 0, shopgemX: 0, shopgemY: 0,
-  gbtnX: 0, gbtnY: 0, gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0, hambX: 0, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: 0, bhpX: 0, bhpY: 0, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: -1, btextY: 6,
-}
-const EDIT_GROUPS = {
-  avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
-  pill: { label: '자원 표시', size: ['pillfz', 'wavefz'], pos: 'pill' },
-  panel: { label: '패널 틀', size: ['panelbwV', 'panelbwH'], pos: 'panel' },
-  tab: { label: '탭', size: ['tabpt', 'tabpb', 'tabfz'], pos: 'tab' },
-  row: { label: '항목 틀', size: ['rowbwV', 'rowbwH', 'rowmin', 'rowgap'], pos: 'row' },
-  icon: { label: '아이콘', size: ['icon'], pos: 'icon' },
-  name: { label: '이름 글자', size: ['name', 'lv'], pos: 'name' },
-  val: { label: '수치 글자', size: ['val'], pos: 'val' },
-  cost: { label: '+1 버튼', size: ['costw', 'costh', 'costfz'], pos: 'cost' },
-  input: { label: '숫자칸', size: ['inputw', 'inputfz'], pos: 'input' },
-  sp: { label: '장착 버튼', size: ['spw', 'sph', 'spfz'], pos: 'sp' },
-  nav: { label: '하단 네비', size: ['navicon', 'navfz', 'navpt', 'navpb'], pos: 'nav' },
-  slot: { label: '스킬 슬롯', size: ['slotmax', 'slotfz'], pos: 'slot' },
-  cat: { label: '분류 글자', size: ['catfz'], pos: 'cat' },
-  spbarA: { label: '장착슬롯 안내', size: ['spbarfz'], pos: 'spbarA' },
-  spbarB: { label: '보유스킬 안내', size: ['spbarfz'], pos: 'spbarB' },
-  spbarC: { label: '스킬포인트 안내', size: ['spbarfz'], pos: 'spbarC' },
-  equip: { label: '장비칸', size: ['equipcols', 'equipgap', 'equipcell'], pos: 'equip' },
-  eqimg: { label: '장비 아이콘', size: ['equipimg'], pos: 'eqimg' },
-  eqtier: { label: '장비 등급 글자', size: ['equiptier'], pos: 'eqtier' },
-  nick: { label: '닉네임/레벨', size: ['nickfz', 'lvbadgefz'], pos: 'nick' },
-  expbar: { label: 'EXP바', size: ['exph'], pos: 'exp' },
-  gain: { label: '획득 팝업', size: ['gainfz'], pos: 'gain' },
-  hppill: { label: 'HP 알약', size: ['hph', 'hpfz'], pos: 'hp' },
-  waveband: { label: '웨이브 현판(판)', size: ['wavebh'], pos: 'wave' },
-  wavetitle: { label: '현판 글자', size: ['wavefz'], pos: 'wtitle' },
-  diarow: { label: '다이아 줄', size: ['diasz'], pos: 'dia' },
-  bossbtn: { label: '보스 버튼(판)', size: ['bossh'], pos: 'boss' },
-  gacha: { label: '소환 결과 셀', size: ['gachacell'], pos: 'gacha' },
-  ggrade: { label: '결과 등급 글자', size: ['gachafz'], pos: 'ggrade' },
-  gtier: { label: '결과 티어 글자', size: ['gtierfz'], pos: 'gtier' },
-  gimg: { label: '결과 아이콘', size: ['gachaimg'], pos: 'gimg' },
-  gbtn: { label: '결과 버튼(판)', size: ['gbtnpw', 'gbtnph'], pos: 'gbtn' },
-  gbtntext: { label: '결과 버튼 글자', size: ['gbtnfz'], pos: 'gbtnt' },
-  shoprow: { label: '소환 박스', size: ['shoprowmin'], pos: 'shoprow' },
-  shopic: { label: '소환 아이콘', size: ['shopic'], pos: 'shopic' },
-  shoptitle: { label: '소환 제목 글자', size: ['shoptfz'], pos: 'shopt' },
-  shopsub: { label: '소환 부제 글자', size: ['shopsubfz'], pos: 'shopsub' },
-  shopbtn: { label: '소환 버튼(판)', size: ['shopbw'], pos: 'shopb' },
-  shopbtext: { label: '소환 버튼 글자', size: ['shopbfz'], pos: 'shopbt' },
-  shopgem: { label: '다이아 아이콘', size: ['shopgem'], pos: 'shopgem' },
-  pillmeat: { label: '고기 알약', size: ['pmw', 'pmh', 'pmfz'], pos: 'pm' },
-  pillgem: { label: '다이아 알약', size: ['pgw', 'pgh', 'pgfz'], pos: 'pg' },
-  hamb: { label: '메뉴 버튼', size: ['hambsz'], pos: 'hamb' },
-  btimer: { label: '보스 타이머 바', size: ['btw', 'bth'], pos: 'bt' },
-  bosshp: { label: '보스 체력 바', size: ['bhpw', 'bhph'], pos: 'bhp' },
-  menu: { label: '메뉴 패널', size: ['menufz'], pos: 'menu' },
-  bosstext: { label: '보스 버튼 글자', size: ['bossfz'], pos: 'btext' },
-  clearmsg: { label: '클리어 문구', size: ['clearfz'], pos: 'clear' },
-}
-for (let i = 0; i < 6; i++) EDIT_GROUPS[`evoimg${i}`] = { label: `진화캐릭 ${i + 1}단계`, size: [`evoimg${i}`], pos: `evoimg${i}` }
-const UI_LABELS = {
-  panelbwV: '패널 테두리(상하)', panelbwH: '패널 테두리(좌우)', rowbwV: '항목 테두리(상하)', rowbwH: '항목 테두리(좌우)',
-  rowmin: '항목 최소높이', rowgap: '항목 간격', icon: '아이콘 크기', name: '이름 글자', lv: 'Lv 글자', val: '수치 글자',
-  costw: '+1버튼 너비', costh: '+1버튼 높이', costfz: '+1버튼 글자', inputw: '숫자칸 너비', inputfz: '숫자칸 글자',
-  spw: '장착버튼 너비', sph: '장착버튼 높이', spfz: '장착버튼 글자', tabpt: '탭 위높이', tabpb: '탭 아래높이', tabfz: '탭 글자',
-  navicon: '네비 아이콘', navpt: '네비 위높이', navpb: '네비 아래높이', avatar: '아바타 크기', slotmax: '스킬슬롯 크기', equipcols: '장비 열수', equipgap: '장비 간격',
-  slotfz: '슬롯 + 글자', catfz: '분류 글자', spbarfz: '안내 글자', equipimg: '장비아이콘', equiptier: '티어 숫자',
-  equipcell: '장비칸 크기', nickfz: '닉네임 글자', lvbadgefz: 'Lv뱃지 글자', exph: 'EXP바 높이', pillfz: '자원 글자', wavefz: '웨이브 글자',
-  gainfz: '팝업 글자', hph: 'HP알약 높이', hpfz: 'HP 글자', bossfz: '버튼 글자', clearfz: '문구 글자', navfz: '네비 글자', diasz: '다이아 크기', bossh: '버튼 판 크기', wavebh: '현판 높이', gachacell: '결과 셀 크기', gachafz: '등급 글자', gtierfz: '티어 글자', gachaimg: '아이콘 %',
-  shoprowmin: '박스 높이', shopic: '아이콘 크기', shoptfz: '제목 글자', shopsubfz: '부제 글자',
-  shopbw: '버튼 너비', shopbfz: '버튼 글자', shopgem: '다이아 크기', gbtnfz: '버튼 글자', gbtnpw: '판 가로', gbtnph: '판 세로',
-  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', menufz: '메뉴 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
-}
-for (let i = 0; i < 6; i++) UI_LABELS[`evoimg${i}`] = `${i + 1}단계 크기`
-const uiVars = c => `:root{
---pd-panelbw-v:${c.panelbwV}px;--pd-panelbw-h:${c.panelbwH}px;--pd-rowbw-v:${c.rowbwV}px;--pd-rowbw-h:${c.rowbwH}px;
---pd-rowmin:${c.rowmin}px;--pd-rowgap:${c.rowgap}px;--pd-icon:${c.icon}px;--pd-name:${c.name}px;--pd-lv:${c.lv}px;--pd-val:${c.val}px;
---pd-costw:${c.costw}px;--pd-costh:${c.costh}px;--pd-costfz:${c.costfz}px;--pd-inputw:${c.inputw}px;--pd-inputfz:${c.inputfz}px;
---pd-spw:${c.spw}px;--pd-sph:${c.sph}px;--pd-spfz:${c.spfz}px;--pd-tabpt:${c.tabpt}px;--pd-tabpb:${c.tabpb}px;--pd-tabfz:${c.tabfz}px;
---pd-navicon:${c.navicon}px;--pd-navpt:${c.navpt}px;--pd-navpb:${c.navpb}px;--pd-avatar:${c.avatar}px;--pd-slotmax:${c.slotmax}px;
---pd-equipcols:${c.equipcols};--pd-equipgap:${c.equipgap}px;
---pd-avatar-x:${c.avatarX}px;--pd-avatar-y:${c.avatarY}px;--pd-tab-x:${c.tabX}px;--pd-tab-y:${c.tabY}px;
---pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
---pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
-${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg${i}-x:${c['evoimg' + i + 'X']}px;--pd-evoimg${i}-y:${c['evoimg' + i + 'Y']}px;`).join('')}--pd-slotfz:${c.slotfz}px;
---pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
---pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
---pd-name-x:${c.nameX}px;--pd-name-y:${c.nameY}px;--pd-val-x:${c.valX}px;--pd-val-y:${c.valY}px;
---pd-input-x:${c.inputX}px;--pd-input-y:${c.inputY}px;--pd-sp-x:${c.spX}px;--pd-sp-y:${c.spY}px;
---pd-slot-x:${c.slotX}px;--pd-slot-y:${c.slotY}px;--pd-cat-x:${c.catX}px;--pd-cat-y:${c.catY}px;
---pd-spbar-x:${c.spbarX}px;--pd-spbar-y:${c.spbarY}px;--pd-equip-x:${c.equipX}px;--pd-equip-y:${c.equipY}px;
---pd-spbarA-x:${c.spbarAX}px;--pd-spbarA-y:${c.spbarAY}px;--pd-spbarB-x:${c.spbarBX}px;--pd-spbarB-y:${c.spbarBY}px;--pd-spbarC-x:${c.spbarCX}px;--pd-spbarC-y:${c.spbarCY}px;
---pd-equipcell:${c.equipcell}px;--pd-nickfz:${c.nickfz}px;--pd-lvbadgefz:${c.lvbadgefz}px;--pd-exph:${c.exph}px;
---pd-pillfz:${c.pillfz}px;--pd-wavefz:${c.wavefz}px;--pd-gainfz:${c.gainfz}px;
---pd-hph:${c.hph}px;--pd-hpfz:${c.hpfz}px;--pd-bossfz:${c.bossfz}px;--pd-clearfz:${c.clearfz}px;--pd-navfz:${c.navfz}px;--pd-diasz:${c.diasz}px;--pd-bossh:${c.bossh}px;--pd-wavebh:${c.wavebh}px;--pd-gachacell:${c.gachacell}px;--pd-gachafz:${c.gachafz}px;--pd-gacha-x:${c.gachaX}px;--pd-gacha-y:${c.gachaY}px;
---pd-gtierfz:${c.gtierfz}px;--pd-gachaimg:${c.gachaimg};--pd-shoprowmin:${c.shoprowmin}px;--pd-shopic:${c.shopic}px;
---pd-shoptfz:${c.shoptfz}px;--pd-shopsubfz:${c.shopsubfz}px;--pd-shopbw:${c.shopbw}px;--pd-shopbfz:${c.shopbfz}px;--pd-shopgem:${c.shopgem}px;
---pd-gbtnfz:${c.gbtnfz}px;--pd-gbtnpw:${c.gbtnpw}px;--pd-gbtnph:${c.gbtnph}px;
---pd-pmw:${c.pmw}px;--pd-pmh:${c.pmh}px;--pd-pmfz:${c.pmfz}px;--pd-pgw:${c.pgw}px;--pd-pgh:${c.pgh}px;--pd-pgfz:${c.pgfz}px;--pd-hambsz:${c.hambsz}px;--pd-menufz:${c.menufz}px;--pd-btw:${c.btw}px;--pd-bth:${c.bth}px;--pd-bhpw:${c.bhpw}px;--pd-bhph:${c.bhph}px;
-${['bt', 'bhp'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
-${['pm', 'pg', 'hamb', 'menu'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
-${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt', 'shopgem', 'gbtn', 'gbtnt', 'ggrade', 'gtier', 'gimg'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
---pd-nick-x:${c.nickX}px;--pd-nick-y:${c.nickY}px;--pd-exp-x:${c.expX}px;--pd-exp-y:${c.expY}px;
---pd-gain-x:${c.gainX}px;--pd-gain-y:${c.gainY}px;
---pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
-}`
-const st = {
-  outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center' },
-  root: {
-    width: '100%', maxWidth: 420, height: '100%', position: 'relative',
-    display: 'flex', flexDirection: 'column',
-    background: 'linear-gradient(180deg,#1c130a,#140d06)', color: '#f3e6d0',
-    fontFamily: "'Do Hyeon','Jua',-apple-system,'Noto Sans KR',sans-serif",
-  },
-  topBar: {
-    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-    paddingTop: 'max(10px, env(safe-area-inset-top))', fontSize: 14,
-    background: 'linear-gradient(180deg,#2b1e11,#1f1509)', borderBottom: '2px solid #4a3418',
-  },
-  avatar: { width: 44, height: 44, borderRadius: 10, border: `2px solid ${GOLD_D}`, background: '#1a120b', imageRendering: 'pixelated', boxShadow: 'inset 0 0 0 1px #201408' },
-  avatarWrap: {
-    width: 'var(--pd-avatar)', height: 'var(--pd-avatar)', flexShrink: 0, position: 'relative', transform: 'translate(var(--pd-avatar-x), var(--pd-avatar-y))',
-    backgroundImage: 'url(/ui/avatar.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-  },
-  avatarFace: { width: '66%', height: '66%', objectFit: 'cover', borderRadius: '50%', imageRendering: 'pixelated' },
-  nickRow: { display: 'flex', alignItems: 'center', gap: 6, transform: 'translate(var(--pd-nick-x), var(--pd-nick-y))' },
-  nick: { fontSize: 'var(--pd-nickfz)', fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  lvBadge: { fontSize: 'var(--pd-lvbadgefz)', color: GOLD, background: 'linear-gradient(180deg,#3a2a14,#2a1d0d)', border: `1px solid ${GOLD_D}`, padding: '1px 8px', borderRadius: 7, flexShrink: 0 },
-  expOuter: { position: 'relative', height: 'var(--pd-exph)', transform: 'translate(var(--pd-exp-x), var(--pd-exp-y))', background: '#0e0a05', borderRadius: 5, overflow: 'hidden', marginTop: 4, border: '1px solid #1e3a5f' },
-  expInner: { height: '100%', background: 'linear-gradient(90deg,#1f5fa8,#3f8fd8,#7cc4ff)', transition: 'width 0.2s' },
-  expText: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'calc(var(--pd-exph) - 4px)', lineHeight: 1, textShadow: '0 1px 2px #000' },
-  currency: { textAlign: 'right', fontSize: 'var(--pd-pillfz)', whiteSpace: 'nowrap', transform: 'translate(var(--pd-pill-x), var(--pd-pill-y))' },
-  currencyPill: {
-    display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13,
-    background: 'linear-gradient(180deg,#2b1e11,#1a1208)', border: '1px solid #4a3418',
-    borderRadius: 20, padding: '4px 12px', color: '#f3e6d0',
-  },
-  pillMeat: {
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end',
-    minWidth: 'var(--pd-pmw)', height: 'var(--pd-pmh)', paddingRight: 12, fontSize: 'var(--pd-pmfz)',
-    transform: 'translate(var(--pd-pm-x), var(--pd-pm-y))',
-    backgroundImage: 'url(/ui/pill_meat.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
-    textShadow: '0 1px 2px #000',
-  },
-  pillGem: {
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end',
-    minWidth: 'var(--pd-pgw)', height: 'var(--pd-pgh)', paddingRight: 12, fontSize: 'var(--pd-pgfz)',
-    transform: 'translate(var(--pd-pg-x), var(--pd-pg-y))',
-    backgroundImage: 'url(/ui/pill_gem.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
-    textShadow: '0 1px 2px #000',
-  },
-  bossBars: { position: 'absolute', left: 0, right: 0, top: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, pointerEvents: 'none' },
-  btOuter: {
-    position: 'relative', width: 'var(--pd-btw)', height: 'var(--pd-bth)', pointerEvents: 'auto',
-    background: 'url(/ui/bar_timer.png) center / 100% 100% no-repeat',
-    transform: 'translate(var(--pd-bt-x), var(--pd-bt-y))',
-  },
-  btTrack: { position: 'absolute', left: '19%', right: '5.5%', top: '30%', bottom: '30%', borderRadius: 4, overflow: 'hidden' },
-  btInner: { height: '100%', background: 'linear-gradient(180deg,#7cc4ff,#1f5fa8)', transition: 'width 0.1s linear' },
-  bhOuter: {
-    position: 'relative', width: 'var(--pd-bhpw)', height: 'var(--pd-bhph)', pointerEvents: 'auto',
-    background: 'url(/ui/bar_bosshp.png) center / 100% 100% no-repeat',
-    transform: 'translate(var(--pd-bhp-x), var(--pd-bhp-y))',
-  },
-  bhTrack: { position: 'absolute', left: '19%', right: '6%', top: '30%', bottom: '30%', borderRadius: 4, overflow: 'hidden' },
-  bhInner: { height: '100%', background: 'linear-gradient(180deg,#e05038,#8e1f14)', transition: 'width 0.12s' },
-  gainWrap: { position: 'absolute', left: 8, top: 44, transform: 'translate(var(--pd-gain-x), var(--pd-gain-y))', display: 'flex', flexDirection: 'column', gap: 3, pointerEvents: 'none' },
-  gainCell: { display: 'flex', alignItems: 'center', gap: 3 },
-  gainIcon: { height: 'calc(var(--pd-gainfz) + 6px)', objectFit: 'contain' },
-  gainItem: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--pd-gainfz)', background: 'rgba(10,6,3,0.6)', padding: '2px 8px', borderRadius: 6 },
-  spBar: { padding: '3px 5px 5px', fontSize: 'var(--pd-spbarfz)', color: '#c9b596' },
-  spBtn: {
-    touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none',
-    minWidth: 'var(--pd-spw)', padding: 'var(--pd-sph) 5px', borderRadius: 7, border: '1px solid #2f7fa0',
-    background: 'linear-gradient(180deg,#3a9ec0,#256f8c)', color: '#fff', fontSize: 'var(--pd-spfz)', flexShrink: 0,
-    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)', transform: 'translate(var(--pd-sp-x), var(--pd-sp-y))',
-  },
-  spDot: { marginLeft: 5, fontSize: 11, color: '#fff', background: '#e05a4e', borderRadius: 8, padding: '0 6px' },
-  bottomNav: {
-    display: 'flex', background: 'linear-gradient(180deg,#241811,#160e07)', borderTop: '2px solid #4a3418', transform: 'translate(var(--pd-nav-x), var(--pd-nav-y))',
-    paddingBottom: 'env(safe-area-inset-bottom)',
-  },
-  navBtn: {
-    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-    padding: 'var(--pd-navpt) 2px var(--pd-navpb)', margin: '0 1px', border: 'none', background: 'transparent',
-    backgroundImage: 'url(/ui/nav_off.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
-    color: '#9a8768', position: 'relative',
-  },
-  navActive: { backgroundImage: 'url(/ui/nav_on.png)', color: GOLD },
-  hambBtn: {
-    width: 'var(--pd-hambsz)', height: 'var(--pd-hambsz)', flexShrink: 0, padding: 0,
-    border: '1px solid #5a4028', borderRadius: 6, background: '#2c2013', color: GOLD,
-    fontSize: 'calc(var(--pd-hambsz) - 12px)', lineHeight: 1,
-    transform: 'translate(var(--pd-hamb-x), var(--pd-hamb-y))',
-  },
-  menuPanel: {
-    position: 'fixed', right: 'calc((100vw - min(100vw, 420px)) / 2 + 8px)', top: 'calc(max(10px, env(safe-area-inset-top)) + 44px)', minWidth: 210,
-    background: 'rgba(16,10,5,0.97)', border: `2px solid ${GOLD_D}`, borderRadius: 10,
-    padding: 8, fontSize: 'var(--pd-menufz)', textAlign: 'left',
-    transform: 'translate(var(--pd-menu-x), var(--pd-menu-y))',
-  },
-  menuItem: {
-    display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 10px',
-    background: 'transparent', border: 'none', color: '#f3e6d0', fontSize: 'inherit', textAlign: 'left',
-  },
-  cloudBox: { display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', fontSize: 12 },
-  cloudBtn: { flexShrink: 0, padding: '6px 10px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 12 },
-  shopBtn: {
-    flexShrink: 0, padding: '6px 10px',
-    borderStyle: 'solid', borderWidth: '9px 12px',
-    borderImage: 'url(/ui/frame_btn.png) 90 130 fill / 9px 12px stretch',
-    background: 'rgba(18,11,5,0.85)', color: '#f3e6d0', lineHeight: 1.35,
-    touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none',
-    minWidth: 'var(--pd-shopbw)', transform: 'translate(var(--pd-shopb-x), var(--pd-shopb-y))',
-  },
-  shopBtnText: { display: 'inline-block', fontSize: 'var(--pd-shopbfz)', transform: 'translate(var(--pd-shopbt-x), var(--pd-shopbt-y))' },
-  shopCost: { display: 'inline-flex', alignItems: 'center', gap: 2, color: '#8fd0ff' },
-  shopGemIc: { height: 'var(--pd-shopgem)', objectFit: 'contain', transform: 'translate(var(--pd-shopgem-x), var(--pd-shopgem-y))' },
-  gachaOverlay: {
-    position: 'fixed', inset: 0, zIndex: 70, background: 'rgba(6,3,1,0.96)',
-    display: 'flex', flexDirection: 'column', padding: '18px 10px calc(10px + env(safe-area-inset-bottom))',
-  },
-  gachaScroll: { flex: 1, minHeight: 0, overflowY: 'auto' },
-  gachaGrid: { display: 'grid', gridTemplateColumns: 'repeat(5, var(--pd-gachacell))', gap: 10, justifyContent: 'center', alignContent: 'center', minHeight: '100%' },
-  gachaCell: {
-    position: 'relative', width: 'var(--pd-gachacell)', aspectRatio: '1', borderRadius: 10,
-    border: '2px solid #777', background: 'linear-gradient(180deg,#22180d,#120b05)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    transform: 'translate(var(--pd-gacha-x), var(--pd-gacha-y))',
-  },
-  gachaGrade: { position: 'absolute', top: 2, left: 4, fontSize: 'var(--pd-gachafz)', fontWeight: 700, textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-ggrade-x), var(--pd-ggrade-y))' },
-  gachaImg: { width: 'calc(var(--pd-gachaimg) * 1%)', height: 'calc(var(--pd-gachaimg) * 1%)', objectFit: 'contain', imageRendering: 'pixelated', transform: 'translate(var(--pd-gimg-x), var(--pd-gimg-y))' },
-  gachaTier: { position: 'absolute', bottom: 2, right: 5, fontSize: 'var(--pd-gtierfz)', color: '#ffd98a', textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-gtier-x), var(--pd-gtier-y))' },
-  gachaBtns: { display: 'flex', gap: 8, justifyContent: 'center', paddingTop: 10 },
-  gachaBtn: {
-    padding: 'var(--pd-gbtnph) var(--pd-gbtnpw)',
-    borderStyle: 'solid', borderWidth: '10px 14px',
-    borderImage: 'url(/ui/frame_btn.png) 90 130 fill / 10px 14px stretch',
-    background: 'rgba(18,11,5,0.85)', color: '#f3e6d0',
-    transform: 'translate(var(--pd-gbtn-x), var(--pd-gbtn-y))',
-  },
-  gachaBtnText: { display: 'inline-block', fontSize: 'var(--pd-gbtnfz)', transform: 'translate(var(--pd-gbtnt-x), var(--pd-gbtnt-y))' },
-  comingSoon: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#20160c', color: '#f3e6d0' },
-  cdOverlay: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.72)', fontSize: 13, color: '#7ce0ff' },
-  slotRow: { display: 'flex', gap: 6, padding: '2px 2px 5px' },
-  slot: { flex: 1, aspectRatio: '1', maxWidth: 'var(--pd-slotmax)', transform: 'translate(var(--pd-slot-x), var(--pd-slot-y))', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,#2c2013,#20160c)', border: '2px solid #5a4028', borderRadius: 10 },
-  slotEmpty: { fontSize: 'var(--pd-slotfz)', color: '#6a4f30' },
-  equipGrid: { display: 'grid', gridTemplateColumns: 'repeat(var(--pd-equipcols), minmax(0, var(--pd-equipcell)))', gap: 'var(--pd-equipgap)', justifyContent: 'center' },
-  equipCell: { position: 'relative', aspectRatio: '1', width: '100%', maxWidth: 'var(--pd-equipcell)', justifySelf: 'center', background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: '1px solid #5a4028', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', transform: 'translate(var(--pd-equip-x), var(--pd-equip-y))' },
-  equipImg: { width: 'var(--pd-equipimg)', height: 'var(--pd-equipimg)', objectFit: 'contain', imageRendering: 'pixelated', transform: 'translate(var(--pd-eqimg-x), var(--pd-eqimg-y))' },
-  statIconImg: { width: '100%', height: '100%', objectFit: 'contain' },
-  navIconImg: { width: 'var(--pd-navicon)', height: 'var(--pd-navicon)', objectFit: 'contain' },
-  equipTier: { position: 'absolute', right: 3, bottom: 1, fontSize: 'var(--pd-equiptier)', color: GOLD, textShadow: '0 0 3px #000', transform: 'translate(var(--pd-eqtier-x), var(--pd-eqtier-y))' },
-  offOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  offBox: { background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: `2px solid ${GOLD_D}`, borderRadius: 16, padding: '20px 24px', textAlign: 'center', minWidth: 240, color: '#f3e6d0', boxShadow: '0 8px 30px rgba(0,0,0,0.6)' },
-  skillIcon: { width: 'var(--pd-icon)', height: 'var(--pd-icon)', transform: 'translate(var(--pd-icon-x), var(--pd-icon-y))', borderRadius: 8, background: 'linear-gradient(180deg,#2c2013,#1a1208)', border: '1px solid #5a4028', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 },
-  progOuter: { height: 8, background: '#2a1d0d', borderRadius: 4, overflow: 'hidden', border: '1px solid #3a2a14' },
-  canvasWrap: { height: '42%', position: 'relative', minHeight: 220 },
-  statusBar: { display: 'flex', alignItems: 'center', gap: 6, padding: '3px 8px 2px' },
-  hpPill: {
-    position: 'relative', flex: 1.1, minWidth: 0, height: 'var(--pd-hph)',
-    background: 'url(/ui/hp_capsule.png) center / 100% 100% no-repeat',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    transform: 'translate(var(--pd-hp-x), var(--pd-hp-y))',
-  },
-  hpHeart: { position: 'absolute', left: -7, height: 'calc(var(--pd-hph) + 8px)', zIndex: 1, pointerEvents: 'none' },
-  hpTrack: { position: 'absolute', left: '12%', right: '9%', top: '26%', bottom: '28%', overflow: 'hidden', borderRadius: 4 },
-  hpFill: { height: '100%', background: 'linear-gradient(180deg,#d94a35,#8e1f14)', transition: 'width 0.15s' },
-  hpText: { position: 'relative', paddingLeft: '6%', fontSize: 'var(--pd-hpfz)', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap' },
-  waveBanner: {
-    flex: 1.5, minWidth: 0, height: 'var(--pd-wavebh)', alignSelf: 'center',
-    background: 'url(/ui/wave_banner.png) center / 100% 100% no-repeat',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
-    transform: 'translate(var(--pd-wave-x), var(--pd-wave-y))',
-  },
-  waveTitle: { fontSize: 'var(--pd-wavefz)', color: '#e8b962', textShadow: '0 1px 2px #000', lineHeight: 1, transform: 'translate(var(--pd-wtitle-x), var(--pd-wtitle-y))' },
-  diaRow: { display: 'flex', gap: 3, transform: 'translate(var(--pd-dia-x), var(--pd-dia-y))' },
-  dia: { width: 'var(--pd-diasz)', height: 'var(--pd-diasz)', objectFit: 'contain' },
-  bossWrap: { flexShrink: 0, alignSelf: 'stretch', display: 'flex', transform: 'translate(var(--pd-boss-x), var(--pd-boss-y))' },
-  overlay: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.75)' },
-  overlayText: { position: 'absolute', top: '40%', left: 0, right: 0, textAlign: 'center', fontSize: 'var(--pd-clearfz)', transform: 'translate(var(--pd-clear-x), var(--pd-clear-y))', color: GOLD, textShadow: '0 2px 8px rgba(0,0,0,0.8)', pointerEvents: 'none' },
-  retryBtn: { padding: '12px 32px', fontSize: 17, borderRadius: 12, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
-  tabs: { display: 'flex', gap: 5, padding: '8px 6px 2px', background: 'transparent' },
-  tabBtn: {
-    flex: 1, padding: 'var(--pd-tabpt) 0 var(--pd-tabpb)', border: 'none', background: 'transparent',
-    backgroundImage: 'url(/ui/tab_off.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
-    color: '#b6a488', fontSize: 'var(--pd-tabfz)', position: 'relative', filter: 'grayscale(0.2)',
-  },
-  tabActive: {
-    backgroundImage: 'url(/ui/tab_on.png)', backgroundSize: '100% 100%',
-    color: '#fff4d8', filter: 'none',
-  },
-  panel: {
-    flex: 1, overflowY: 'auto', minHeight: 0,
-    background: 'rgba(20,13,7,0.55)',
-    borderStyle: 'solid', borderWidth: 'var(--pd-panelbw-v) var(--pd-panelbw-h)',
-    borderImage: 'url(/ui/panel.png) 29 20 26 19 fill / var(--pd-panelbw-v) var(--pd-panelbw-h) stretch',
-    margin: '3px 0 0', padding: '4px 4px 2px', transform: 'translate(var(--pd-panel-x), var(--pd-panel-y))',
-    display: 'flex', flexDirection: 'column', gap: 'var(--pd-rowgap)',
-  },
-  frameBox: {
-    flex: 1, minHeight: 0,
-    background: 'rgba(20,13,7,0.55)',
-    borderStyle: 'solid', borderWidth: 'var(--pd-panelbw-v) var(--pd-panelbw-h)',
-    borderImage: 'url(/ui/panel.png) 29 20 26 19 fill / var(--pd-panelbw-v) var(--pd-panelbw-h) stretch',
-    margin: '3px 0 0', padding: '4px 4px 2px', transform: 'translate(var(--pd-panel-x), var(--pd-panel-y))',
-    display: 'flex', flexDirection: 'column',
-  },
-  tabsInner: { display: 'flex', gap: 5, padding: '0 0 5px', flexShrink: 0, transform: 'translate(var(--pd-tab-x), var(--pd-tab-y))' },
-  panelInner: { flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 5, padding: '8px 0 12px' },
-  row: {
-    display: 'flex', alignItems: 'center', gap: 6,
-    background: 'transparent',
-    borderStyle: 'solid', borderWidth: 'var(--pd-rowbw-v) var(--pd-rowbw-h)',
-    borderImage: 'url(/ui/row.png) 24 23 24 24 fill / var(--pd-rowbw-v) var(--pd-rowbw-h) stretch',
-    padding: '2px 3px', minHeight: 'var(--pd-rowmin)', transform: 'translate(var(--pd-row-x), var(--pd-row-y))',
-  },
-  rowName: { fontSize: 'var(--pd-name)', transform: 'translate(var(--pd-name-x), var(--pd-name-y))' },
-  rowLv: { fontSize: 'var(--pd-lv)', color: GOLD, marginLeft: 4 },
-  rowVal: { fontSize: 'var(--pd-val)', opacity: 0.82, marginTop: 1, whiteSpace: 'nowrap', transform: 'translate(var(--pd-val-x), var(--pd-val-y))' },
-  dbgBtn: { width: 27, padding: '7px 0', borderRadius: 6, border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#f3e6d0', fontSize: 15, flexShrink: 0 },
-  dbgInput: { width: 'var(--pd-inputw)', padding: '6px 2px', borderRadius: 6, border: '1px solid #5a4028', background: '#160e07', color: GOLD, fontSize: 'var(--pd-inputfz)', textAlign: 'center', flexShrink: 0, fontFamily: "'Do Hyeon',sans-serif", transform: 'translate(var(--pd-input-x), var(--pd-input-y))' },
-  costBtn: {
-    touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none',
-    minWidth: 'var(--pd-costw)', height: 'var(--pd-costh)', padding: '0 8px', border: 'none', background: 'transparent',
-    backgroundImage: 'url(/ui/btn.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
-    color: '#fff4d8', fontSize: 'var(--pd-costfz)', flexShrink: 0, textShadow: '0 1px 2px #4a0e0e',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'translate(var(--pd-cost-x), var(--pd-cost-y))',
-  },
-  plusBtn: { border: '1px solid #a85f1f', background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
-  minusBtn: { border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#cbb89a' },
-  bossBtn: {
-    border: 'none', height: 'var(--pd-bossh)', alignSelf: 'center', aspectRatio: '300 / 135', padding: '0 0 2px 12%',
-    background: 'transparent url(/ui/boss_btn.png) center / 100% 100% no-repeat',
-    color: '#ffe0d0', whiteSpace: 'nowrap', lineHeight: 1,
-  },
-  bossText: { display: 'inline-block', fontSize: 'var(--pd-bossfz)', textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-btext-x), var(--pd-btext-y))' },
-}
-
