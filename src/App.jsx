@@ -1112,8 +1112,8 @@ export default function App() {
           <span className="pd-num" style={st.hpText}>{fmt(heroHpUI)} / {fmt(maxHp)}</span>
         </div>
         <div data-edit="waveband" style={st.waveBanner}>
-          <div style={st.waveTitle}>웨이브 {wave}</div>
-          <div style={st.diaRow}>
+          <div data-edit="wavetitle" style={st.waveTitle}>웨이브 {wave}</div>
+          <div data-edit="diarow" style={st.diaRow}>
             {Array.from({ length: 10 }, (_, i) => (
               <img key={i} src={i < (wave - 1) % 10 + 1 ? '/ui/dia_on.png' : '/ui/dia_off.png'} alt="" style={st.dia} />
             ))}
@@ -1350,13 +1350,13 @@ const UI_DEFAULT = {
   sph: 4, spfz: 13, tabpt: 7, tabpb: 10, tabfz: 13, navicon: 26, navpt: 10, navpb: 8,
   avatar: 40, slotmax: 50, equipcols: 5, equipgap: 10, evoimg: 59, slotfz: 23, catfz: 13, spbarfz: 12,
   equipimg: 63, equiptier: 13, equipcell: 58, nickfz: 15, lvbadgefz: 12, exph: 9, pillfz: 14, wavefz: 12,
-  gainfz: 13, hph: 34, hpfz: 11, bossfz: 11, clearfz: 24, navfz: 10, diasz: 11,
+  gainfz: 13, hph: 34, hpfz: 11, bossfz: 11, bossh: 40, wavebh: 44, clearfz: 24, navfz: 10, diasz: 11,
   // 위치 이동(px): 요소별 X/Y
   avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: 0, pillY: 4, iconX: -3, iconY: 1,
   evoimgX: 0, evoimgY: 0, panelX: 0, panelY: 0, rowX: 0, rowY: -1, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0,
   spX: 0, spY: 0, slotX: 23, slotY: 8, catX: 21, catY: 0, spbarX: 20, spbarY: 1, equipX: 18, equipY: 2, spbarAX: 12, spbarAY: 11,
   spbarBX: 13, spbarBY: 0, spbarCX: 0, spbarCY: 0, nickX: 0, nickY: 0, expX: 0, expY: 0, progX: 0, progY: 0, gainX: 0, gainY: 0,
-  hpX: 0, hpY: 0, bossX: 0, bossY: 0, clearX: 0, clearY: 0, waveX: 0, waveY: 0,
+  hpX: 0, hpY: 0, bossX: 0, bossY: 0, clearX: 0, clearY: 0, waveX: 0, waveY: 0, wtitleX: 0, wtitleY: 0, diaX: 0, diaY: 0,
 }
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
@@ -1382,8 +1382,10 @@ const EDIT_GROUPS = {
   expbar: { label: 'EXP바', size: ['exph'], pos: 'exp' },
   gain: { label: '획득 팝업', size: ['gainfz'], pos: 'gain' },
   hppill: { label: 'HP 알약', size: ['hph', 'hpfz'], pos: 'hp' },
-  waveband: { label: '웨이브 현판', size: ['wavefz', 'diasz'], pos: 'wave' },
-  bossbtn: { label: '보스 버튼', size: ['bossfz'], pos: 'boss' },
+  waveband: { label: '웨이브 현판(판)', size: ['wavebh'], pos: 'wave' },
+  wavetitle: { label: '현판 글자', size: ['wavefz'], pos: 'wtitle' },
+  diarow: { label: '다이아 줄', size: ['diasz'], pos: 'dia' },
+  bossbtn: { label: '보스 버튼', size: ['bossh', 'bossfz'], pos: 'boss' },
   clearmsg: { label: '클리어 문구', size: ['clearfz'], pos: 'clear' },
 }
 const UI_LABELS = {
@@ -1394,7 +1396,7 @@ const UI_LABELS = {
   navicon: '네비 아이콘', navpt: '네비 위높이', navpb: '네비 아래높이', avatar: '아바타 크기', slotmax: '스킬슬롯 크기', equipcols: '장비 열수', equipgap: '장비 간격',
   evoimg: '진화캐릭 크기', slotfz: '슬롯 + 글자', catfz: '분류 글자', spbarfz: '안내 글자', equipimg: '장비아이콘', equiptier: '티어 숫자',
   equipcell: '장비칸 크기', nickfz: '닉네임 글자', lvbadgefz: 'Lv뱃지 글자', exph: 'EXP바 높이', pillfz: '자원 글자', wavefz: '웨이브 글자',
-  gainfz: '팝업 글자', hph: 'HP알약 높이', hpfz: 'HP 글자', bossfz: '버튼 글자', clearfz: '문구 글자', navfz: '네비 글자', diasz: '다이아 크기',
+  gainfz: '팝업 글자', hph: 'HP알약 높이', hpfz: 'HP 글자', bossfz: '버튼 글자', clearfz: '문구 글자', navfz: '네비 글자', diasz: '다이아 크기', bossh: '버튼 판 크기', wavebh: '현판 높이',
 }
 const uiVars = c => `:root{
 --pd-panelbw-v:${c.panelbwV}px;--pd-panelbw-h:${c.panelbwH}px;--pd-rowbw-v:${c.rowbwV}px;--pd-rowbw-h:${c.rowbwH}px;
@@ -1416,10 +1418,10 @@ const uiVars = c => `:root{
 --pd-spbarA-x:${c.spbarAX}px;--pd-spbarA-y:${c.spbarAY}px;--pd-spbarB-x:${c.spbarBX}px;--pd-spbarB-y:${c.spbarBY}px;--pd-spbarC-x:${c.spbarCX}px;--pd-spbarC-y:${c.spbarCY}px;
 --pd-equipcell:${c.equipcell}px;--pd-nickfz:${c.nickfz}px;--pd-lvbadgefz:${c.lvbadgefz}px;--pd-exph:${c.exph}px;
 --pd-pillfz:${c.pillfz}px;--pd-wavefz:${c.wavefz}px;--pd-gainfz:${c.gainfz}px;
---pd-hph:${c.hph}px;--pd-hpfz:${c.hpfz}px;--pd-bossfz:${c.bossfz}px;--pd-clearfz:${c.clearfz}px;--pd-navfz:${c.navfz}px;--pd-diasz:${c.diasz}px;
+--pd-hph:${c.hph}px;--pd-hpfz:${c.hpfz}px;--pd-bossfz:${c.bossfz}px;--pd-clearfz:${c.clearfz}px;--pd-navfz:${c.navfz}px;--pd-diasz:${c.diasz}px;--pd-bossh:${c.bossh}px;--pd-wavebh:${c.wavebh}px;
 --pd-nick-x:${c.nickX}px;--pd-nick-y:${c.nickY}px;--pd-exp-x:${c.expX}px;--pd-exp-y:${c.expY}px;
 --pd-gain-x:${c.gainX}px;--pd-gain-y:${c.gainY}px;
---pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;
+--pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center' },
@@ -1513,13 +1515,13 @@ const st = {
   hpFill: { height: '100%', background: 'linear-gradient(180deg,#d94a35,#8e1f14)', transition: 'width 0.15s' },
   hpText: { position: 'relative', paddingLeft: '6%', fontSize: 'var(--pd-hpfz)', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap' },
   waveBanner: {
-    flex: 1.5, minWidth: 0, height: 'calc(var(--pd-hph) + 10px)',
+    flex: 1.5, minWidth: 0, height: 'var(--pd-wavebh)', alignSelf: 'center',
     background: 'url(/ui/wave_banner.png) center / 100% 100% no-repeat',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
     transform: 'translate(var(--pd-wave-x), var(--pd-wave-y))',
   },
-  waveTitle: { fontSize: 'var(--pd-wavefz)', color: '#e8b962', textShadow: '0 1px 2px #000', lineHeight: 1 },
-  diaRow: { display: 'flex', gap: 3 },
+  waveTitle: { fontSize: 'var(--pd-wavefz)', color: '#e8b962', textShadow: '0 1px 2px #000', lineHeight: 1, transform: 'translate(var(--pd-wtitle-x), var(--pd-wtitle-y))' },
+  diaRow: { display: 'flex', gap: 3, transform: 'translate(var(--pd-dia-x), var(--pd-dia-y))' },
   dia: { width: 'var(--pd-diasz)', height: 'var(--pd-diasz)', objectFit: 'contain' },
   bossWrap: { flexShrink: 0, alignSelf: 'stretch', display: 'flex', transform: 'translate(var(--pd-boss-x), var(--pd-boss-y))' },
   overlay: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.75)' },
@@ -1575,7 +1577,7 @@ const st = {
   plusBtn: { border: '1px solid #a85f1f', background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
   minusBtn: { border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#cbb89a' },
   bossBtn: {
-    border: 'none', height: '100%', aspectRatio: '300 / 135', padding: '0 0 2px 12%',
+    border: 'none', height: 'var(--pd-bossh)', alignSelf: 'center', aspectRatio: '300 / 135', padding: '0 0 2px 12%',
     background: 'transparent url(/ui/boss_btn.png) center / 100% 100% no-repeat',
     color: '#ffe0d0', fontSize: 'var(--pd-bossfz)', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', lineHeight: 1,
   },
