@@ -530,7 +530,7 @@ export default function App() {
     }
     function killEnemy(t, st) {
       t.dead = true
-      t.dieT = 0.22
+      t.dieT = 0.3
       w.killed++
       const gm = Math.floor(t.meat * st.meatMult)
       const ge = Math.floor(t.exp * st.expMult)
@@ -912,8 +912,8 @@ export default function App() {
       ctx.translate(e.x, y - bounce + (e.air ? 0 : (e.yOff || 0)))
       ctx.rotate(rock)
       if (e.sq > 0) { const q = e.sq / 0.18; ctx.scale(1 + 0.10 * q, 1 - 0.14 * q) }
-      if (e.dead) { const dq = 1 - Math.max(0, e.dieT) / 0.22; ctx.globalAlpha = 1 - dq; ctx.scale(1 + 0.15 * dq, 1 - 0.35 * dq) }
-      if (e.flash > 0.5) ctx.filter = 'brightness(3)'
+      if (e.dead) { ctx.filter = 'brightness(0)'; ctx.globalAlpha = Math.max(0, e.dieT) / 0.3 * 0.5 }
+      if (!e.dead && e.flash > 0.5) ctx.filter = 'brightness(3)'
       if (im.complete && im.naturalWidth > 0) {
         const eh = e.h * (e.scaleV || 1)
         const ew = eh * (im.naturalWidth / im.naturalHeight)
