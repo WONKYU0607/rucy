@@ -423,7 +423,7 @@ export default function App() {
       enemies: [], stones: [], dmgTexts: [], particles: [],
       hero: { hp: maxHp, cd: 0, state: 'move', t: 0, did: false, flash: 0, animT: 0 },
       spawnLeft: 0, spawnTimer: 0, killed: 0, total: 1,
-      shake: 0, scrollX: 0, needStart: true, W: 0, H: 0, groundY: 0, heroX: HERO_X, bossTimer: 0,
+      shake: 0, scrollX: 0, needStart: true, W: 0, H: 0, groundY: 0, heroX: HERO_X, bossTimer: 0, hitstop: 0,
       skillCd: SKILLS.map(() => 0), skill: null, skillT: 0, skillDid: false, rocks: [], projs: [], strikes: [],
     }
   }
@@ -518,7 +518,9 @@ export default function App() {
       const dmg = st.atk * (crit ? st.critMult : 1)
       t.hp -= dmg
       t.flash = 1
-      t.x += 8
+      t.kb = Math.max(t.kb || 0, t.boss ? 30 : 85)   // 넉백 초기속도(px/s), ease-out 감쇠
+      t.sq = 0.16                                     // 피격 스쿼시
+      if (t.boss && w.hsCd <= 0) { w.hitstop = Math.max(w.hitstop || 0, 0.06); w.hsCd = 0.35 }  // 연타 시 과도한 멈춤 방지
       const ty = w.groundY - t.h * 0.55
       addDmg(t.x, ty - t.h * 0.5 - 12, Math.round(dmg), crit)
       burst(t.x, ty, '#c81818', crit ? 20 : 10, true)   // 빨간 피 튀김
@@ -542,6 +544,9 @@ export default function App() {
     function applySkillDmg(t, dmg) {
       t.hp -= dmg
       t.flash = 1
+      t.kb = Math.max(t.kb || 0, t.boss ? 55 : 150)
+      t.sq = 0.18
+      w.hitstop = Math.max(w.hitstop || 0, t.boss ? 0.09 : 0.05)
       const ty = w.groundY - t.h * 0.55
       addDmg(t.x, ty - t.h * 0.5 - 12, Math.round(dmg), true)
       burst(t.x, ty, '#c81818', 18, true)
@@ -549,8 +554,11 @@ export default function App() {
     }
 
     function loop(now) {
-      const dt = w.paused ? 0 : Math.min((now - last) / 1000, 0.05)
+      const rawDt = Math.min((now - last) / 1000, 0.05)
       last = now
+      let dt = w.paused ? 0 : rawDt
+      if (dt > 0 && w.hitstop > 0) { w.hitstop -= rawDt; dt = 0 }  // 히트스톱: 세계 정지, 렌더 유지
+      w.hsCd = Math.max(0, (w.hsCd || 0) - rawDt)  // 기본공격 히트스톱 재발동 쿨
       const st = S.current
       const hero = w.hero
       const melee = st.mode === 'erectus' || st.mode === 'neander'
@@ -580,10 +588,15 @@ export default function App() {
           e.flash = Math.max(0, e.flash - dt * 5)
           if (e.air) e.airT = Math.min(1, (e.airT ?? 0) + dt * 1.2)   // 서서히 떠오름
           if (e.stun > 0) { e.stun -= dt; continue }  // 기절 중 정지
+          // 넉백: ease-out 감쇠하며 뒤로 밀림 / 스쿼시 타이머
+          if (e.kb > 0.5) { e.x += e.kb * dt; e.kb -= e.kb * Math.min(1, dt * 9) } else e.kb = 0
+          if (e.sq > 0) e.sq = Math.max(0, e.sq - dt)
+          e.vt = Math.min(1, (e.vt ?? 0) + dt * 2.2)   // 스폰 직후 가속 (0→1)
           const stopX = w.heroX + Math.min(atkRange - 15, 45 + e.h * 0.4)
           if (e.x > stopX) {
-            e.x -= (e.speed * SPEED * 1.3 + scroll) * dt
-            e.animT += dt * SPEED * (1 + scroll / SCROLL * 0.4)
+            const near = Math.min(1, Math.max(0.3, (e.x - stopX) / 55))  // 정지 전 감속
+            e.x -= (e.speed * SPEED * 1.3 * e.vt * near + scroll) * dt
+            e.animT += dt * SPEED * (0.4 + 0.6 * e.vt * near) * (1 + scroll / SCROLL * 0.4)
           } else {
             e.cd -= dt * 1000
             if (e.cd <= 0) {
@@ -891,6 +904,7 @@ export default function App() {
       ctx.save()
       ctx.translate(e.x, y - bounce)
       ctx.rotate(rock)
+      if (e.sq > 0) { const q = e.sq / 0.18; ctx.scale(1 + 0.10 * q, 1 - 0.14 * q) }
       if (e.flash > 0.5) ctx.filter = 'brightness(3)'
       if (im.complete && im.naturalWidth > 0) {
         const eh = e.h
@@ -967,7 +981,8 @@ export default function App() {
         const hh = a.h
         const hw = hh * (im.naturalWidth / im.naturalHeight)
         ctx.save()
-        ctx.translate(w.heroX, w.groundY)
+        const lunge = hero.state === 'attack' ? Math.sin(Math.min(1, hero.t / 0.4) * Math.PI) * 12 : 0
+        ctx.translate(w.heroX + lunge, w.groundY)
         if (hero.flash > 0) ctx.filter = 'brightness(2.5)'
         if (a.flip) ctx.scale(-1, 1)
         ctx.drawImage(im, -hw / 2, -hh, hw, hh)
