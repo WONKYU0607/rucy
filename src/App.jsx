@@ -146,14 +146,14 @@ const SKILLS = SKILL_SHEET.map(c => {
 // ── 동료 정의: 영웅 뒤에서 투사체 공격 (겹침 허용, 소형) ──
 const ALLY_DEFS = {
   hunter: {
-    name: '헌터', h: 70, xOff: -3, atkMult: 0.45, cd: 1.15, range: 470,
+    name: '헌터', h: 70, xOff: -50, atkMult: 0.45, cd: 1.15, range: 470,
     projSpd: 560, projW: 62, projBob: 0, atkDur: 0.42, throwAt: 0.16, projYr: 0.62,
     walk: [1, 2, 3, 4].map(i => `/ally/hunter/hwalk_${i}.png`),
     atk: [1, 2].map(i => `/ally/hunter/hatk_${i}.png`),
     proj: '/ally/hunter/spear.png',
   },
   shaman: {
-    name: '주술사', h: 70, xOff: -3, atkMult: 0.55, cd: 1.6, range: 500,
+    name: '주술사', h: 70, xOff: -50, atkMult: 0.55, cd: 1.6, range: 500,
     projSpd: 400, projW: 26, projBob: 5, atkDur: 0.5, throwAt: 0.2, projYr: 0.75,
     walk: [1, 2, 3, 4].map(i => `/ally/shaman/swalk_${i}.png`),
     atk: [1].map(i => `/ally/shaman/satk_${i}.png`),
