@@ -143,17 +143,31 @@ const SKILLS = SKILL_SHEET.map(c => {
 })
 // 대시 프레임 타이밍: 0=기모으기 앞부분 짧게, 주먹뻗기(3,4번) 길게
 
-// ── 동료: 헌터 (창 투척 원거리) ──
-const HUNTER = {
-  name: '헌터', h: 108, atkMult: 0.45, cd: 1.15, range: 470, spearSpd: 560,
-  walk: [1, 2, 3, 4].map(i => `/ally/hunter/hwalk_${i}.png`),
-  atk: [1, 2].map(i => `/ally/hunter/hatk_${i}.png`),
-  spear: '/ally/hunter/spear.png',
+// ── 동료 정의: 영웅 뒤에서 투사체 공격 (겹침 허용, 소형) ──
+const ALLY_DEFS = {
+  hunter: {
+    name: '헌터', h: 72, xOff: -50, atkMult: 0.45, cd: 1.15, range: 470,
+    projSpd: 560, projW: 62, projBob: 0, atkDur: 0.42, throwAt: 0.16, projYr: 0.62,
+    walk: [1, 2, 3, 4].map(i => `/ally/hunter/hwalk_${i}.png`),
+    atk: [1, 2].map(i => `/ally/hunter/hatk_${i}.png`),
+    proj: '/ally/hunter/spear.png',
+  },
+  shaman: {
+    name: '주술사', h: 78, xOff: -92, atkMult: 0.55, cd: 1.6, range: 500,
+    projSpd: 400, projW: 26, projBob: 5, atkDur: 0.5, throwAt: 0.2, projYr: 0.75,
+    walk: [1, 2, 3, 4].map(i => `/ally/shaman/swalk_${i}.png`),
+    atk: [1].map(i => `/ally/shaman/satk_${i}.png`),
+    proj: '/ally/shaman/fire.png',
+  },
 }
-const HUIMG = {
-  walk: HUNTER.walk.map(s => { const i = new Image(); i.src = s; return i }),
-  atk: HUNTER.atk.map(s => { const i = new Image(); i.src = s; return i }),
-  spear: (() => { const i = new Image(); i.src = HUNTER.spear; return i })(),
+const ALLY_IMG = {}
+for (const k in ALLY_DEFS) {
+  const d = ALLY_DEFS[k]
+  ALLY_IMG[k] = {
+    walk: d.walk.map(s => { const i = new Image(); i.src = s; return i }),
+    atk: d.atk.map(s => { const i = new Image(); i.src = s; return i }),
+    proj: (() => { const i = new Image(); i.src = d.proj; return i })(),
+  }
 }
 const BOSS_TIME = 20  // 보스 제한시간(초)
 const HERO_X = 90  // 평상시 영웅 x (보스전에선 화면 중앙 쪽으로 이동)
@@ -328,7 +342,7 @@ export default function App() {
   const [inv, setInv] = useState(init.inv || {})     // 뽑은 장비 보유 수량 { 'w1_3': n }
   const [gacha, setGacha] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [allies] = useState({ hunter: true })  // 동료 보유 (고용/성장 시스템은 추후)
+  const [alliesOn, setAlliesOn] = useState(init.alliesOn || {})  // 장착된 동료 (보유/성장 시스템은 추후)
   const [allySub, setAllySub] = useState('동료')           // 소환 결과 오버레이 { cat, items:[{k,t}] }
   const [uiCfg, setUiCfg] = useState(() => { try { const sv = JSON.parse(localStorage.getItem('paleoUiCfg') || '{}'); return { ...UI_DEFAULT, ...Object.fromEntries(Object.entries(sv).filter(([k]) => k in UI_DEFAULT)) } } catch { return { ...UI_DEFAULT } } })
   const [uiEdit, setUiEdit] = useState(false)
@@ -384,7 +398,7 @@ export default function App() {
     atk: ATK_BASE * EVOS[evo].mult * (1 + tot('atk') * STAT_LIST.atk.per / 100),
     cd: 1000 / (ASPD * aspdMult) / SPEED,
     aspdMult, mspdMult,
-    maxHp, wave, phase, allies,
+    maxHp, wave, phase, alliesOn,
     mode: EVOS[evo].mode,
     evo,
     critRate: Math.min(1, tot('critRate') * STAT_LIST.critRate.per / 100),
@@ -399,8 +413,8 @@ export default function App() {
   }
 
   useEffect(() => {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, ts: Date.now() }))
-  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best])
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, alliesOn, ts: Date.now() }))
+  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, alliesOn])
 
   // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제
   useEffect(() => {
@@ -437,7 +451,7 @@ export default function App() {
       enemies: [], stones: [], dmgTexts: [], particles: [],
       hero: { hp: maxHp, cd: 0, state: 'move', t: 0, did: false, flash: 0, animT: 0 },
       spawnLeft: 0, spawnTimer: 0, killed: 0, total: 1,
-      shake: 0, scrollX: 0, needStart: true, W: 0, H: 0, groundY: 0, heroX: HERO_X, bossTimer: 0, hitstop: 0, hunter: { x: 0, cd: 0, state: 'walk', t: 0, animT: 0, thrown: false }, spears: [],
+      shake: 0, scrollX: 0, needStart: true, W: 0, H: 0, groundY: 0, heroX: HERO_X, bossTimer: 0, hitstop: 0, allyU: {}, spears: [],
       skillCd: SKILLS.map(() => 0), skill: null, skillT: 0, skillDid: false, rocks: [], projs: [], strikes: [],
     }
   }
@@ -815,27 +829,33 @@ export default function App() {
           }
         } else if (w._btShown !== -1) { w._btShown = -1; w._bhShown = -1; setBossUI(null) }
 
-        // ── 동료 헌터: 영웅 뒤에서 창 투척 ──
-        if (st.allies?.hunter && st.phase === 'fighting') {
-          const hu = w.hunter
-          hu.x = w.heroX - 62
-          hu.cd -= dt
-          if (hu.state === 'walk') {
-            hu.animT += dt * 6
-            const tgt = w.enemies.find(e => !e.dead && e.x > hu.x && e.x - hu.x < HUNTER.range)
-            if (hu.cd <= 0 && tgt) { hu.state = 'atk'; hu.t = 0; hu.thrown = false }
-          } else {
-            hu.t += dt
-            if (!hu.thrown && hu.t >= 0.16) {
-              hu.thrown = true
-              w.spears.push({ x: hu.x + 48, y: w.groundY - HUNTER.h * 0.62 })
+        // ── 동료: 장착된 각 동료가 영웅 뒤에서 투사체 공격 ──
+        if (st.phase === 'fighting') {
+          for (const ak in ALLY_DEFS) {
+            if (!st.alliesOn?.[ak]) continue
+            const d = ALLY_DEFS[ak]
+            const au = w.allyU[ak] || (w.allyU[ak] = { cd: 0, state: 'walk', t: 0, animT: 0, thrown: false })
+            au.x = w.heroX + d.xOff
+            au.cd -= dt
+            if (au.state === 'walk') {
+              au.animT += dt * 6
+              const tgt = w.enemies.find(e => !e.dead && e.x > au.x && e.x - au.x < d.range)
+              if (au.cd <= 0 && tgt) { au.state = 'atk'; au.t = 0; au.thrown = false }
+            } else {
+              au.t += dt
+              if (!au.thrown && au.t >= d.throwAt) {
+                au.thrown = true
+                w.spears.push({ ally: ak, t: 0, x: au.x + d.h * 0.4, y: w.groundY - d.h * d.projYr })
+              }
+              if (au.t >= d.atkDur) { au.state = 'walk'; au.cd = d.cd }
             }
-            if (hu.t >= 0.42) { hu.state = 'walk'; hu.cd = HUNTER.cd }
           }
           for (const sp2 of w.spears) {
-            sp2.x += HUNTER.spearSpd * dt
+            const d = ALLY_DEFS[sp2.ally]
+            sp2.t += dt
+            sp2.x += d.projSpd * dt
             const hit = w.enemies.find(e => !e.dead && Math.abs(e.x - sp2.x) < 26 + e.h * 0.2)
-            if (hit) { sp2.dead = true; dealDamage(hit, { ...st, atk: st.atk * HUNTER.atkMult }) }
+            if (hit) { sp2.dead = true; dealDamage(hit, { ...st, atk: st.atk * d.atkMult }) }
             else if (sp2.x > w.W + 80) sp2.dead = true
           }
           w.spears = w.spears.filter(sp2 => !sp2.dead)
@@ -1029,21 +1049,30 @@ export default function App() {
         const hh = a.h
         const hw = hh * (im.naturalWidth / im.naturalHeight)
         ctx.save()
-        // 동료 헌터 (영웅 왼쪽 뒤)
-        if (st.allies?.hunter) {
-          const hu = w.hunter
-          const arr = hu.state === 'atk' ? HUIMG.atk : HUIMG.walk
-          const fi = hu.state === 'atk' ? (hu.t < 0.2 ? 0 : 1) : Math.floor(hu.animT) % arr.length
+        // 장착 동료 (영웅 왼쪽 뒤, 겹침 허용)
+        for (const ak in ALLY_DEFS) {
+          if (!st.alliesOn?.[ak]) continue
+          const d = ALLY_DEFS[ak]
+          const au = w.allyU[ak]
+          if (!au) continue
+          const arr = au.state === 'atk' ? ALLY_IMG[ak].atk : ALLY_IMG[ak].walk
+          const fi = au.state === 'atk' ? Math.min(arr.length - 1, Math.floor(au.t / d.atkDur * arr.length)) : Math.floor(au.animT) % arr.length
           const im2 = arr[fi]
           if (im2.complete && im2.naturalWidth > 0) {
-            const hh = HUNTER.h
+            const hh = d.h
             const ww2 = hh * (im2.naturalWidth / im2.naturalHeight)
-            const bob = hu.state === 'walk' ? Math.abs(Math.sin(hu.animT * 3.1)) * 3.5 : 0
-            ctx.drawImage(im2, hu.x - ww2 / 2, w.groundY - hh + bob * 0 - bob, ww2, hh)
+            const bob = au.state === 'walk' ? Math.abs(Math.sin(au.animT * 3.1)) * 3 : 0
+            ctx.drawImage(im2, au.x - ww2 / 2, w.groundY - hh - bob, ww2, hh)
           }
-          const si = HUIMG.spear
+        }
+        for (const sp2 of w.spears) {
+          const d = ALLY_DEFS[sp2.ally]
+          const si = ALLY_IMG[sp2.ally].proj
           if (si.complete && si.naturalWidth > 0) {
-            for (const sp2 of w.spears) ctx.drawImage(si, sp2.x - 44, sp2.y - 4, 88, 88 * (si.naturalHeight / si.naturalWidth))
+            const pw = d.projW
+            const ph = pw * (si.naturalHeight / si.naturalWidth)
+            const by = d.projBob ? Math.sin(sp2.t * 9) * d.projBob : 0
+            ctx.drawImage(si, sp2.x - pw / 2, sp2.y - ph / 2 + by, pw, ph)
           }
         }
         const lunge = hero.state === 'attack' ? Math.sin(Math.min(1, hero.t / 0.4) * Math.PI) * 12 : 0
@@ -1669,18 +1698,23 @@ export default function App() {
           </div>
           {allySub === '동료' ? (
             <div style={st.allyGrid}>
-              {[HUNTER, null, null, null].map((a, i) => (
-                <div key={i} data-edit="allyslot" style={{ ...st.allySlot, opacity: a ? 1 : 0.45 }}>
-                  {a ? (
-                    <>
-                      <div data-edit="allyname" style={st.allyName}>{a.name}</div>
-                      <img data-edit="allyimg" src={a.walk[0]} alt="" style={st.allyImg} />
-                    </>
-                  ) : (
-                    <span style={{ opacity: 0.5, fontSize: 18 }}>?</span>
-                  )}
-                </div>
-              ))}
+              {['hunter', 'shaman', null, null].map((ak, i) => {
+                const a = ak ? ALLY_DEFS[ak] : null
+                const on = ak && alliesOn[ak]
+                return (
+                  <div key={i} data-edit="allyslot" style={{ ...st.allySlot, opacity: a ? 1 : 0.45, borderColor: on ? GOLD : '#5a4028' }}>
+                    {a ? (
+                      <>
+                        <div data-edit="allyname" style={st.allyName}>{a.name}</div>
+                        <img data-edit="allyimg" src={a.walk[0]} alt="" style={st.allyImg} />
+                        <button data-edit="allybtn" style={{ ...st.allyBtn, ...(on ? st.allyBtnOn : {}) }} onClick={() => setAlliesOn(v => ({ ...v, [ak]: !v[ak] }))}>{on ? '해제' : '장착'}</button>
+                      </>
+                    ) : (
+                      <span style={{ opacity: 0.5, fontSize: 18 }}>?</span>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           ) : (
             <div style={{ textAlign: 'center', padding: 30, opacity: 0.55 }}>전직 — 준비 중</div>
@@ -1737,7 +1771,7 @@ const UI_DEFAULT = {
   gachacell: 62, gachafz: 10, gtierfz: 10, gachaimg: 74, gainfz: 13,
   shoprowmin: 46, shopic: 38, shoptfz: 13, shopsubfz: 11, shopbw: 62, shopbfz: 12, shopgem: 12,
   gbtnfz: 13, gbtnpw: 16, gbtnph: 10,
-  pbsz: 30, wjfz: 13, caslot: 78, caimg: 46, canamefz: 12, catabfz: 12, btw: 210, bth: 30, bhpw: 250, bhph: 36, pmw: 92, pmh: 26, pmfz: 13, pgw: 92, pgh: 26, pgfz: 13, hambsz: 26, menufz: 13, hph: 11, hpfz: 10, bossfz: 11, bossh: 40, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
+  pbsz: 30, wjfz: 13, caslot: 82, caimg: 42, canamefz: 12, catabfz: 12, cabtnfz: 11, btw: 210, bth: 30, bhpw: 250, bhph: 36, pmw: 92, pmh: 26, pmfz: 13, pgw: 92, pgh: 26, pgfz: 13, hambsz: 26, menufz: 13, hph: 11, hpfz: 10, bossfz: 11, bossh: 40, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
   // 위치 이동(px): 요소별 X/Y
   avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: 2, pillY: 2, iconX: -3, iconY: 1,
   panelX: 0, panelY: 0, rowX: 0, rowY: -3, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0,
@@ -1746,7 +1780,7 @@ const UI_DEFAULT = {
   hpX: -3, hpY: 1, bossX: 1, bossY: -4, clearX: 0, clearY: 0, waveX: 0, waveY: 1, gachaX: 0, gachaY: 0, eqtierX: 0, eqtierY: 0, eqimgX: 0, eqimgY: 0,
   shoprowX: 0, shoprowY: 0, shopicX: 0, shopicY: 0, shoptX: 0, shoptY: 0, shopsubX: 0, shopsubY: 0,
   shopbX: 0, shopbY: 0, shopbtX: 0, shopbtY: 0, shopgemX: 0, shopgemY: 0,
-  gbtnX: 0, gbtnY: 0, gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0, hambX: 0, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: 0, bhpX: 0, bhpY: 0, pbX: 0, pbY: 0, wjX: 0, wjY: 0, caslotX: 0, caslotY: 0, caimgX: 0, caimgY: 0, canameX: 0, canameY: 0, catabX: 0, catabY: 0, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: -1, btextY: 6,
+  gbtnX: 0, gbtnY: 0, gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0, hambX: 0, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: 0, bhpX: 0, bhpY: 0, pbX: 0, pbY: 0, wjX: 0, wjY: 0, caslotX: 0, caslotY: 0, caimgX: 0, caimgY: 0, canameX: 0, canameY: 0, catabX: 0, catabY: 0, cabtnX: 0, cabtnY: 0, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: -1, btextY: 6,
 }
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
@@ -1798,6 +1832,7 @@ const EDIT_GROUPS = {
   allyslot: { label: '동료 칸', size: ['caslot'], pos: 'caslot' },
   allyimg: { label: '동료 캐릭터', size: ['caimg'], pos: 'caimg' },
   allyname: { label: '동료 이름', size: ['canamefz'], pos: 'caname' },
+  allybtn: { label: '장착 버튼', size: ['cabtnfz'], pos: 'cabtn' },
   wjump: { label: '웨이브 이동 창', size: ['wjfz'], pos: 'wj' },
   btimer: { label: '보스 타이머 바', size: ['btw', 'bth'], pos: 'bt' },
   bosshp: { label: '보스 체력 바', size: ['bhpw', 'bhph'], pos: 'bhp' },
@@ -1817,7 +1852,7 @@ const UI_LABELS = {
   gainfz: '팝업 글자', hph: 'HP알약 높이', hpfz: 'HP 글자', bossfz: '버튼 글자', clearfz: '문구 글자', navfz: '네비 글자', diasz: '다이아 크기', bossh: '버튼 판 크기', wavebh: '현판 높이', gachacell: '결과 셀 크기', gachafz: '등급 글자', gtierfz: '티어 글자', gachaimg: '아이콘 %',
   shoprowmin: '박스 높이', shopic: '아이콘 크기', shoptfz: '제목 글자', shopsubfz: '부제 글자',
   shopbw: '버튼 너비', shopbfz: '버튼 글자', shopgem: '다이아 크기', gbtnfz: '버튼 글자', gbtnpw: '판 가로', gbtnph: '판 세로',
-  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', catabfz: '탭 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
+  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
 }
 for (let i = 0; i < 6; i++) UI_LABELS[`evoimg${i}`] = `${i + 1}단계 크기`
 const uiVars = c => `:root{
@@ -1845,7 +1880,8 @@ ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg$
 --pd-shoptfz:${c.shoptfz}px;--pd-shopsubfz:${c.shopsubfz}px;--pd-shopbw:${c.shopbw}px;--pd-shopbfz:${c.shopbfz}px;--pd-shopgem:${c.shopgem}px;
 --pd-gbtnfz:${c.gbtnfz}px;--pd-gbtnpw:${c.gbtnpw}px;--pd-gbtnph:${c.gbtnph}px;
 --pd-pmw:${c.pmw}px;--pd-pmh:${c.pmh}px;--pd-pmfz:${c.pmfz}px;--pd-pgw:${c.pgw}px;--pd-pgh:${c.pgh}px;--pd-pgfz:${c.pgfz}px;--pd-hambsz:${c.hambsz}px;--pd-menufz:${c.menufz}px;--pd-pbsz:${c.pbsz}px;--pd-wjfz:${c.wjfz}px;--pd-caslot:${c.caslot}px;--pd-caimg:${c.caimg}px;--pd-canamefz:${c.canamefz}px;--pd-catabfz:${c.catabfz}px;
-${['caslot', 'caimg', 'caname', 'catab'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}--pd-pb-x:${c.pbX}px;--pd-pb-y:${c.pbY}px;--pd-wj-x:${c.wjX}px;--pd-wj-y:${c.wjY}px;--pd-btw:${c.btw}px;--pd-bth:${c.bth}px;--pd-bhpw:${c.bhpw}px;--pd-bhph:${c.bhph}px;
+--pd-cabtnfz:${c.cabtnfz}px;
+${['caslot', 'caimg', 'caname', 'catab', 'cabtn'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}--pd-pb-x:${c.pbX}px;--pd-pb-y:${c.pbY}px;--pd-wj-x:${c.wjX}px;--pd-wj-y:${c.wjY}px;--pd-btw:${c.btw}px;--pd-bth:${c.bth}px;--pd-bhpw:${c.bhpw}px;--pd-bhph:${c.bhph}px;
 ${['bt', 'bhp'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 ${['pm', 'pg', 'hamb', 'menu'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt', 'shopgem', 'gbtn', 'gbtnt', 'ggrade', 'gtier', 'gimg'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
@@ -2016,6 +2052,11 @@ const st = {
     transform: 'translate(var(--pd-caslot-x), var(--pd-caslot-y))',
   },
   allyName: { fontSize: 'var(--pd-canamefz)', color: GOLD, transform: 'translate(var(--pd-caname-x), var(--pd-caname-y))' },
+  allyBtn: {
+    padding: '3px 12px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013',
+    color: '#b8a888', fontSize: 'var(--pd-cabtnfz)', transform: 'translate(var(--pd-cabtn-x), var(--pd-cabtn-y))',
+  },
+  allyBtnOn: { color: GOLD, borderColor: GOLD_D, background: '#3a2a14' },
   allyImg: { height: 'var(--pd-caimg)', objectFit: 'contain', imageRendering: 'pixelated', transform: 'translate(var(--pd-caimg-x), var(--pd-caimg-y))' },
   comingSoon: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#20160c', color: '#f3e6d0' },
   cdOverlay: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.72)', fontSize: 13, color: '#7ce0ff' },
