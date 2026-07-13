@@ -146,14 +146,14 @@ const SKILLS = SKILL_SHEET.map(c => {
 // ── 동료 정의: 영웅 뒤에서 투사체 공격 (겹침 허용, 소형) ──
 const ALLY_DEFS = {
   hunter: {
-    name: '헌터', h: 70, xOff: -70, yOff: -40, atkMult: 0.45, cd: 1.15, range: 400,
+    name: '헌터', h: 70, xOff: -78, yOff: -6, atkMult: 0.45, cd: 1.15, range: 470,
     projSpd: 560, projW: 62, projBob: 0, atkDur: 0.42, throwAt: 0.16, projYr: 0.62,
     walk: [1, 2, 3, 4].map(i => `/ally/hunter/hwalk_${i}.png`),
     atk: [1, 2].map(i => `/ally/hunter/hatk_${i}.png`),
     proj: '/ally/hunter/spear.png',
   },
   shaman: {
-    name: '주술사', h: 70, xOff: -70, yOff: -15, atkMult: 0.55, cd: 1.6, range: 400,
+    name: '주술사', h: 70, xOff: -128, yOff: -26, atkMult: 0.55, cd: 1.6, range: 500,
     projSpd: 400, projW: 26, projBob: 5, atkDur: 0.5, throwAt: 0.2, projYr: 0.75,
     walk: [1, 2, 3, 4].map(i => `/ally/shaman/swalk_${i}.png`),
     atk: [1].map(i => `/ally/shaman/satk_${i}.png`),
@@ -164,9 +164,9 @@ const ALLY_IMG = {}
 for (const k in ALLY_DEFS) {
   const d = ALLY_DEFS[k]
   ALLY_IMG[k] = {
-    walk: d.walk.map(s => { const i = new Image(); i.src = s; return i }),
-    atk: d.atk.map(s => { const i = new Image(); i.src = s; return i }),
-    proj: (() => { const i = new Image(); i.src = d.proj; return i })(),
+    walk: d.walk.map(s => { const i = new Image(); i.onerror = () => console.warn('[ally] 로드 실패:', s); i.src = s; return i }),
+    atk: d.atk.map(s => { const i = new Image(); i.onerror = () => console.warn('[ally] 로드 실패:', s); i.src = s; return i }),
+    proj: (() => { const i = new Image(); i.onerror = () => console.warn('[ally] 로드 실패:', d.proj); i.src = d.proj; return i })(),
   }
 }
 const BOSS_TIME = 20  // 보스 제한시간(초)
@@ -1058,11 +1058,20 @@ export default function App() {
           const arr = au.state === 'atk' ? ALLY_IMG[ak].atk : ALLY_IMG[ak].walk
           const fi = au.state === 'atk' ? Math.min(arr.length - 1, Math.floor(au.t / d.atkDur * arr.length)) : Math.floor(au.animT) % arr.length
           const im2 = arr[fi]
-          if (im2.complete && im2.naturalWidth > 0) {
-            const hh = d.h
-            const ww2 = hh * (im2.naturalWidth / im2.naturalHeight)
-            const bob = au.state === 'walk' ? Math.abs(Math.sin(au.animT * 3.1)) * 3 : 0
-            ctx.drawImage(im2, au.x - ww2 / 2, w.groundY - hh - bob + (d.yOff || 0), ww2, hh)
+          const ok = im2 && im2.complete && im2.naturalWidth > 0
+          const hh = d.h
+          const ww2 = ok ? hh * (im2.naturalWidth / im2.naturalHeight) : hh * 0.7
+          const bob = au.state === 'walk' ? Math.abs(Math.sin(au.animT * 3.1)) * 3 : 0
+          const dx = au.x - ww2 / 2, dy = w.groundY - hh - bob + (d.yOff || 0)
+          if (ok) ctx.drawImage(im2, dx, dy, ww2, hh)
+          // 자가진단: 이미지 실패=빨간 박스 / window.__allyDebug=true → 위치 확인용 자홍 테두리
+          if (!ok || window.__allyDebug) {
+            ctx.save()
+            ctx.lineWidth = 2
+            ctx.strokeStyle = ok ? '#ff00ff' : '#ff2020'
+            if (!ok) { ctx.fillStyle = 'rgba(255,32,32,0.45)'; ctx.fillRect(dx, dy, ww2, hh) }
+            ctx.strokeRect(dx, dy, ww2, hh)
+            ctx.restore()
           }
         }
         for (const sp2 of w.spears) {
