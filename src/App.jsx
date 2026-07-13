@@ -1050,8 +1050,10 @@ export default function App() {
         const hw = hh * (im.naturalWidth / im.naturalHeight)
         ctx.save()
         // 장착 동료 (영웅 왼쪽 뒤, 겹침 허용)
+        // 주의: draw() 스코프에 게임 상태 st가 없음(파일 하단 스타일 객체 st와 충돌) → S.current 직접 참조
+        const gs = S.current
         for (const ak in ALLY_DEFS) {
-          if (!st.alliesOn?.[ak]) continue
+          if (!gs.alliesOn?.[ak]) continue
           const d = ALLY_DEFS[ak]
           const au = w.allyU[ak]
           if (!au) continue
