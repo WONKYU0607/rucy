@@ -20,15 +20,15 @@ const DEBUG = true
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
   quad:  { srcs: ['/hero/quad/quad_1.png', '/hero/quad/quad_2.png', '/hero/quad/quad_3.png', '/hero/quad/quad_4.png'], h: 76,  flip: false },
-  walk:  { srcs: ['/hero/walk/walk_1.png', '/hero/walk/walk_2.png', '/hero/walk/walk_3.png', '/hero/walk/walk_4.png'], h: 130, flip: false },
-  run:   { srcs: ['/hero/run/run_1.png', '/hero/run/run_2.png', '/hero/run/run_3.png', '/hero/run/run_4.png'], h: 119, flip: false },
-  punch: { srcs: ['/hero/punch/punch_1.png', '/hero/punch/punch_2.png', '/hero/punch/punch_3.png'], h: 102, flip: false },
-  throw: { srcs: ['/hero/throw/hero_windup.png', '/hero/throw/hero_release.png'], h: 130, flip: false },
-  idle:  { srcs: ['/hero/idle/idle_1.png'], h: 130, flip: false },
-  ewalk: { srcs: ['/hero/erectus_walk/ewalk_1.png', '/hero/erectus_walk/ewalk_2.png', '/hero/erectus_walk/ewalk_3.png', '/hero/erectus_walk/ewalk_4.png'], h: 130, flip: false },
-  eatk1: { srcs: ['/hero/erectus_atk1/eatk1_1.png', '/hero/erectus_atk1/eatk1_2.png', '/hero/erectus_atk1/eatk1_3.png'], h: 165, flip: false },
-  nwalk: { srcs: ['/hero/neander_walk/nwalk_1.png', '/hero/neander_walk/nwalk_2.png', '/hero/neander_walk/nwalk_3.png', '/hero/neander_walk/nwalk_4.png'], h: 135, flip: false },
-  natk1: { srcs: ['/hero/neander_atk1/natk1_1.png', '/hero/neander_atk1/natk1_2.png'], h: 165, flip: false },
+  walk:  { srcs: ['/hero/walk/walk_1.png', '/hero/walk/walk_2.png', '/hero/walk/walk_3.png', '/hero/walk/walk_4.png'], h: 120, flip: false },
+  run:   { srcs: ['/hero/run/run_1.png', '/hero/run/run_2.png', '/hero/run/run_3.png', '/hero/run/run_4.png'], h: 120, flip: false },
+  punch: { srcs: ['/hero/punch/punch_1.png', '/hero/punch/punch_2.png', '/hero/punch/punch_3.png'], h: 100, flip: false },
+  throw: { srcs: ['/hero/throw/hero_windup.png', '/hero/throw/hero_release.png'], h: 120, flip: false },
+  idle:  { srcs: ['/hero/idle/idle_1.png'], h: 120, flip: false },
+  ewalk: { srcs: ['/hero/erectus_walk/ewalk_1.png', '/hero/erectus_walk/ewalk_2.png', '/hero/erectus_walk/ewalk_3.png', '/hero/erectus_walk/ewalk_4.png'], h: 120, flip: false },
+  eatk1: { srcs: ['/hero/erectus_atk1/eatk1_1.png', '/hero/erectus_atk1/eatk1_2.png', '/hero/erectus_atk1/eatk1_3.png'], h: 135, flip: false },
+  nwalk: { srcs: ['/hero/neander_walk/nwalk_1.png', '/hero/neander_walk/nwalk_2.png', '/hero/neander_walk/nwalk_3.png', '/hero/neander_walk/nwalk_4.png'], h: 120, flip: false },
+  natk1: { srcs: ['/hero/neander_atk1/natk1_1.png', '/hero/neander_atk1/natk1_2.png'], h: 135, flip: false },
 }
 // 스킬 정의 — charSeq: 히어로가 재생할 프레임(1-based, 없으면 전체), fx: 분리 이펙트
 //   fx proj  = 투사체: fly 프레임이 몬스터 쪽으로 날아가 명중 시 데미지(+impact 프레임)
@@ -114,7 +114,7 @@ const GACHA_CATS = {
   유물: { kinds: 6, tiers: 10, img: (k, t) => `/relic/r${k}_${t}.png`, weights: [23, 18, 15, 12, 9, 7, 5.5, 4.5, 3.5, 2.5] },
 }
 const GACHA_COST = { 1: 10, 10: 100, 30: 300 }
-const GRADE_BANDS = { 10: ['일반', '일반', '고급', '고급', '레어', '레어', '영웅', '영웅', '전설', '전설'], 7: ['일반', '일반', '고급', '고급', '레어', '영웅', '전설'] }
+const GRADE_BANDS = { 10: ['일반', '일반', '일반', '고급', '고급', '레어', '레어', '영웅', '영웅', '전설'], 7: ['일반', '일반', '고급', '고급', '레어', '영웅', '전설'] }
 const GRADE_COLOR = { 일반: '#b7bcc2', 고급: '#54c964', 레어: '#ff9430', 영웅: '#c05cff', 전설: '#ff4038' }
 const gradeOf = (cat, tier) => GRADE_BANDS[GACHA_CATS[cat].tiers][tier - 1]
 const rollTier = cat => {
@@ -146,14 +146,14 @@ const SKILLS = SKILL_SHEET.map(c => {
 // ── 동료 정의: 영웅 뒤에서 투사체 공격 (겹침 허용, 소형) ──
 const ALLY_DEFS = {
   hunter: {
-    name: '헌터', h: 72, xOff: -50, atkMult: 0.45, cd: 1.15, range: 470,
+    name: '헌터', h: 72, xOff: -25, atkMult: 0.45, cd: 1.15, range: 470,
     projSpd: 560, projW: 62, projBob: 0, atkDur: 0.42, throwAt: 0.16, projYr: 0.62,
     walk: [1, 2, 3, 4].map(i => `/ally/hunter/hwalk_${i}.png`),
     atk: [1, 2].map(i => `/ally/hunter/hatk_${i}.png`),
     proj: '/ally/hunter/spear.png',
   },
   shaman: {
-    name: '주술사', h: 78, xOff: -92, atkMult: 0.55, cd: 1.6, range: 500,
+    name: '주술사', h: 78, xOff: -25, atkMult: 0.55, cd: 1.6, range: 500,
     projSpd: 400, projW: 26, projBob: 5, atkDur: 0.5, throwAt: 0.2, projYr: 0.75,
     walk: [1, 2, 3, 4].map(i => `/ally/shaman/swalk_${i}.png`),
     atk: [1].map(i => `/ally/shaman/satk_${i}.png`),
