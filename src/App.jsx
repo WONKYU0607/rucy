@@ -146,14 +146,14 @@ const SKILLS = SKILL_SHEET.map(c => {
 // ── 동료 정의: 영웅 뒤에서 투사체 공격 (겹침 허용, 소형) ──
 const ALLY_DEFS = {
   hunter: {
-    name: '헌터', h: 70, xOff: -50, atkMult: 0.45, cd: 1.15, range: 470,
+    name: '헌터', h: 70, xOff: -78, yOff: -6, atkMult: 0.45, cd: 1.15, range: 470,
     projSpd: 560, projW: 62, projBob: 0, atkDur: 0.42, throwAt: 0.16, projYr: 0.62,
     walk: [1, 2, 3, 4].map(i => `/ally/hunter/hwalk_${i}.png`),
     atk: [1, 2].map(i => `/ally/hunter/hatk_${i}.png`),
     proj: '/ally/hunter/spear.png',
   },
   shaman: {
-    name: '주술사', h: 70, xOff: -50, atkMult: 0.55, cd: 1.6, range: 500,
+    name: '주술사', h: 70, xOff: -128, yOff: -26, atkMult: 0.55, cd: 1.6, range: 500,
     projSpd: 400, projW: 26, projBob: 5, atkDur: 0.5, throwAt: 0.2, projYr: 0.75,
     walk: [1, 2, 3, 4].map(i => `/ally/shaman/swalk_${i}.png`),
     atk: [1].map(i => `/ally/shaman/satk_${i}.png`),
@@ -170,7 +170,7 @@ for (const k in ALLY_DEFS) {
   }
 }
 const BOSS_TIME = 20  // 보스 제한시간(초)
-const HERO_X = 110  // 평상시 영웅 x (보스전에선 화면 중앙 쪽으로 이동)
+const HERO_X = 200  // 평상시 영웅 x (동료가 설 왼쪽 공간 확보 / 보스전에선 화면 중앙 쪽으로 이동)
 const SPEED = 1                                      // 전역 속도 배율
 const SCROLL = 140 * SPEED                            // 전진 속도 (px/s)
 const PUNCH = { hitAt: 0.12, total: 0.3, range: 95 } // 4족 주먹질
@@ -845,7 +845,7 @@ export default function App() {
               au.t += dt
               if (!au.thrown && au.t >= d.throwAt) {
                 au.thrown = true
-                w.spears.push({ ally: ak, t: 0, x: au.x + d.h * 0.4, y: w.groundY - d.h * d.projYr })
+                w.spears.push({ ally: ak, t: 0, x: au.x + d.h * 0.4, y: w.groundY - d.h * d.projYr + (d.yOff || 0) })
               }
               if (au.t >= d.atkDur) { au.state = 'walk'; au.cd = d.cd }
             }
@@ -1062,7 +1062,7 @@ export default function App() {
             const hh = d.h
             const ww2 = hh * (im2.naturalWidth / im2.naturalHeight)
             const bob = au.state === 'walk' ? Math.abs(Math.sin(au.animT * 3.1)) * 3 : 0
-            ctx.drawImage(im2, au.x - ww2 / 2, w.groundY - hh - bob, ww2, hh)
+            ctx.drawImage(im2, au.x - ww2 / 2, w.groundY - hh - bob + (d.yOff || 0), ww2, hh)
           }
         }
         for (const sp2 of w.spears) {
