@@ -487,6 +487,7 @@ export default function App() {
         exp: Math.floor(t.exp * (1 + 0.2 * (w.waveNum - 1))) * (boss ? 15 : 1),
         acc: t.acc, eva: t.eva, air: t.air || 0,
         h: boss ? BOSS_TYPES[bi].h : t.h, color: t.color, cd: 0, flash: 0, animT: Math.random() * 10,
+        scaleV: boss ? 1 : 0.95 + Math.random() * 0.1, yOff: boss ? 0 : Math.random() * 8 - 4, spdV: boss ? 1 : 0.93 + Math.random() * 0.14,
       })
     }
 
@@ -529,6 +530,7 @@ export default function App() {
     }
     function killEnemy(t, st) {
       t.dead = true
+      t.dieT = 0.22
       w.killed++
       const gm = Math.floor(t.meat * st.meatMult)
       const ge = Math.floor(t.exp * st.expMult)
@@ -585,6 +587,7 @@ export default function App() {
 
         // 적: 접근 (전진 스크롤만큼 상대속도 가산) + 근접 공격
         for (const e of w.enemies) {
+          if (e.dead) continue
           e.flash = Math.max(0, e.flash - dt * 5)
           if (e.air) e.airT = Math.min(1, (e.airT ?? 0) + dt * 1.2)   // 서서히 떠오름
           if (e.stun > 0) { e.stun -= dt; continue }  // 기절 중 정지
@@ -595,8 +598,8 @@ export default function App() {
           const stopX = w.heroX + Math.min(atkRange - 15, 45 + e.h * 0.4)
           if (e.x > stopX) {
             const near = Math.min(1, Math.max(0.3, (e.x - stopX) / 55))  // 정지 전 감속
-            e.x -= (e.speed * SPEED * 1.3 * e.vt * near + scroll) * dt
-            e.animT += dt * SPEED * (0.4 + 0.6 * e.vt * near) * (1 + scroll / SCROLL * 0.4)
+            e.x -= (e.speed * (e.spdV || 1) * SPEED * 1.3 * e.vt * near + scroll) * dt
+            e.animT += dt * SPEED * (0.4 + 0.6 * e.vt * near) * (1 + scroll / SCROLL * 0.4) * Math.min(1.5, Math.max(0.6, 0.55 + e.speed / 160))
           } else {
             e.cd -= dt * 1000
             if (e.cd <= 0) {
@@ -775,7 +778,8 @@ export default function App() {
           if (k >= 1) { p.dead = true; dealDamage(t, st) }
         }
 
-        w.enemies = w.enemies.filter(e => !e.dead)
+        for (const e of w.enemies) if (e.dead && e.dieT > 0) e.dieT -= dt
+        w.enemies = w.enemies.filter(e => !e.dead || e.dieT > 0)
         w.stones = w.stones.filter(p => !p.dead)
 
         if (w.killMeat) { const g = w.killMeat; w.killMeat = 0; setMeat(m => m + g) }
@@ -898,16 +902,20 @@ export default function App() {
       const stunned = e.stun > 0
       const gall = e.animT * 9
       const fi = stunned ? 0 : Math.floor(gall / Math.PI) % imgs.length  // 기절 시 프레임 고정
-      const bounce = stunned ? 0 : Math.abs(Math.sin(gall)) * e.h * 0.08
-      const rock = stunned ? 0 : Math.sin(gall) * 0.06
+      const wf = e.boss ? 0.55 : Math.min(1.15, Math.max(0.45, 62 / e.h))  // 무게 차등: 클수록 덜 들썩임
+      const bounce = stunned ? 0 : e.air
+        ? Math.sin(gall * 0.45 + (e.yOff || 0)) * 5                        // 공중: 부드러운 부유
+        : Math.abs(Math.sin(gall)) * e.h * 0.08 * wf
+      const rock = stunned ? 0 : Math.sin(gall) * 0.06 * (e.air ? 0.35 : wf)
       const im = imgs[fi]
       ctx.save()
-      ctx.translate(e.x, y - bounce)
+      ctx.translate(e.x, y - bounce + (e.air ? 0 : (e.yOff || 0)))
       ctx.rotate(rock)
       if (e.sq > 0) { const q = e.sq / 0.18; ctx.scale(1 + 0.10 * q, 1 - 0.14 * q) }
+      if (e.dead) { const dq = 1 - Math.max(0, e.dieT) / 0.22; ctx.globalAlpha = 1 - dq; ctx.scale(1 + 0.15 * dq, 1 - 0.35 * dq) }
       if (e.flash > 0.5) ctx.filter = 'brightness(3)'
       if (im.complete && im.naturalWidth > 0) {
-        const eh = e.h
+        const eh = e.h * (e.scaleV || 1)
         const ew = eh * (im.naturalWidth / im.naturalHeight)
         if (t.flip) ctx.scale(-1, 1)
         ctx.drawImage(im, -ew / 2, -eh, ew, eh)
