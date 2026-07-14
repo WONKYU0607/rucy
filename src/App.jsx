@@ -186,14 +186,6 @@ for (const k in ALLY_DEFS) {
 }
 const BOSS_TIME = 20  // 보스 제한시간(초)
 const HERO_X = 200  // 평상시 영웅 x (동료가 설 왼쪽 공간 확보 / 보스전에선 화면 중앙 쪽으로 이동)
-// ── 폰트 프리셋 (편집 패널에서 즉시 전환하며 비교) ──
-const FONT_SETS = {
-  dohyeon: { label: '도현(현재)', ui: "'Do Hyeon','Jua',-apple-system,'Noto Sans KR',sans-serif", num: "'Do Hyeon', sans-serif", pixel: false },
-  pixel:   { label: '갈무리+둥근모', ui: "'Galmuri11','Do Hyeon',sans-serif", num: "'DungGeunMo','Do Hyeon',sans-serif", pixel: true },
-  neo:     { label: '갈무리+Neo둥근모', ui: "'Galmuri11','Do Hyeon',sans-serif", num: "'NeoDunggeunmo','Do Hyeon',sans-serif", pixel: true },
-  galmuri: { label: '갈무리 단독', ui: "'Galmuri11','Do Hyeon',sans-serif", num: "'Galmuri11', sans-serif", pixel: true },
-}
-let CANVAS_NUM_FONT = FONT_SETS.dohyeon.num   // 캔버스 데미지 숫자용 (토글 시 갱신)
 const SPEED = 1                                      // 전역 속도 배율
 const SCROLL = 140 * SPEED                            // 전진 속도 (px/s)
 const PUNCH = { hitAt: 0.12, total: 0.3, range: 95 } // 4족 주먹질
@@ -368,12 +360,6 @@ export default function App() {
   const [inv, setInv] = useState(init.inv || {})     // 뽑은 장비 보유 수량 { 'w1_3': n }
   const [gacha, setGacha] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [fontKey, setFontKey] = useState(() => (localStorage.getItem('paleoFont') in FONT_SETS ? localStorage.getItem('paleoFont') : 'dohyeon'))
-  useEffect(() => {
-    localStorage.setItem('paleoFont', fontKey)
-    CANVAS_NUM_FONT = FONT_SETS[fontKey].num
-    document.fonts?.load('16px Galmuri11'); document.fonts?.load('16px DungGeunMo'); document.fonts?.load('16px NeoDunggeunmo')
-  }, [fontKey])
   const [alliesOn, setAlliesOn] = useState(init.alliesOn || {})  // 장착된 동료 (보유/성장 시스템은 추후)
   const [allySub, setAllySub] = useState('동료')           // 소환 결과 오버레이 { cat, items:[{k,t}] }
   const [uiCfg, setUiCfg] = useState(() => { try { const sv = JSON.parse(localStorage.getItem('paleoUiCfg') || '{}'); return { ...UI_DEFAULT, ...Object.fromEntries(Object.entries(sv).filter(([k]) => k in UI_DEFAULT)) } } catch { return { ...UI_DEFAULT } } })
@@ -1230,7 +1216,7 @@ export default function App() {
       ctx.textAlign = 'center'
       for (const d of w.dmgTexts) {
         ctx.globalAlpha = Math.min(1, d.life * 2.5)
-        ctx.font = (d.crit ? '900 22px ' : d.miss ? '800 14px ' : '800 16px ') + CANVAS_NUM_FONT
+        ctx.font = (d.crit ? '900 22px' : d.miss ? '800 14px' : '800 16px') + ' sans-serif'
         ctx.fillStyle = d.miss ? '#8ab4ff' : d.crit ? '#ffca28' : '#fff'
         ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 3
         ctx.strokeText(d.val, d.x, d.y)
@@ -1393,14 +1379,10 @@ export default function App() {
     <div style={st.outer}>
     <style>{`
       @import url('https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Jua&display=swap');
-      @import url('https://cdn.jsdelivr.net/npm/galmuri@latest/dist/galmuri.css');
-      @font-face { font-family: 'DungGeunMo'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff'); font-display: swap; }
-      @font-face { font-family: 'NeoDunggeunmo'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.3/NeoDunggeunmo.woff') format('woff'); font-display: swap; }
-      .pd-pixelfont, .pd-pixelfont * { -webkit-font-smoothing: none; -moz-osx-font-smoothing: grayscale; text-rendering: geometricPrecision; }
       * { box-sizing: border-box; scrollbar-width: none; }
       *::-webkit-scrollbar { width: 0; height: 0; display: none; }
       button { cursor: pointer; font-family: inherit; }
-      .pd-num { font-family: var(--pd-numfont); letter-spacing: 0.02em; }
+      .pd-num { font-family: 'Do Hyeon', sans-serif; letter-spacing: 0.02em; }
       @keyframes pdPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
       @keyframes pdGachaPop { 0% { transform: scale(0.2); opacity: 0; } 70% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
       .pd-gacha-pop { animation: pdGachaPop 0.35s ease-out backwards; }
@@ -1409,8 +1391,7 @@ export default function App() {
         mask-image: linear-gradient(180deg, transparent 0, #000 var(--fadeT), #000 calc(100% - var(--fadeB)), transparent 100%); }
     `}</style>
     <style>{uiVars(uiCfg)}</style>
-    <style>{`:root{--pd-uifont:${FONT_SETS[fontKey].ui};--pd-numfont:${FONT_SETS[fontKey].num};}`}</style>
-    <div className={FONT_SETS[fontKey].pixel ? 'pd-pixelfont' : ''} style={st.root} onClickCapture={e => {
+    <div style={st.root} onClickCapture={e => {
       if (!uiEdit) return
       const t = e.target.closest('[data-edit]')
       if (t) { e.stopPropagation(); e.preventDefault(); setEditSel(t.dataset.edit) }
@@ -1509,12 +1490,6 @@ export default function App() {
               })}
             </div>
           })()}
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 8, borderTop: '1px solid #3a2a14', paddingTop: 8, alignItems: 'center' }}>
-            <span style={{ fontSize: 12, opacity: 0.7, marginRight: 2 }}>폰트</span>
-            {Object.keys(FONT_SETS).map(k => (
-              <button key={k} style={{ ...st.cloudBtn, ...(fontKey === k ? { color: GOLD, borderColor: GOLD_D, background: '#3a2a14' } : {}) }} onClick={() => setFontKey(k)}>{FONT_SETS[k].label}</button>
-            ))}
-          </div>
           <div style={{ display: 'flex', gap: 6, marginTop: 8, borderTop: '1px solid #3a2a14', paddingTop: 8 }}>
             <button onClick={() => { navigator.clipboard?.writeText(JSON.stringify(uiCfg)); setCopiedUi(true); setTimeout(() => setCopiedUi(false), 1200) }} style={{ flex: 1, padding: '9px', borderRadius: 6, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontSize: 13 }}>{copiedUi ? '복사됨! 개발자에게 전달' : '전체 값 복사'}</button>
             <button onClick={() => setUiCfg({ ...UI_DEFAULT })} style={{ padding: '9px 12px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontSize: 13 }}>초기화</button>
@@ -1853,19 +1828,19 @@ const UI_DEFAULT = {
   evoimg0: 56, evoimg1: 56, evoimg2: 56, evoimg3: 56, evoimg4: 56, evoimg5: 56,
   evoimg0X: 0, evoimg0Y: 1, evoimg1X: 0, evoimg1Y: 1, evoimg2X: 0, evoimg2Y: 1,
   evoimg3X: 0, evoimg3Y: 1, evoimg4X: 0, evoimg4Y: 1, evoimg5X: 0, evoimg5Y: 1,
-  gachacell: 62, gachafz: 10, gtierfz: 10, gachaimg: 74, gainfz: 13,
-  shoprowmin: 46, shopic: 38, shoptfz: 13, shopsubfz: 11, shopbw: 62, shopbh: 62, shopbbv: 9, shopbbh: 12, shopbfz: 12, shopgem: 12,
-  gainic: 19, gainpv: 2, gainph: 8,
+  gachacell: 62, gachafz: 10, gtierfz: 10, gachaimg: 74, gainfz: 10,
+  shoprowmin: 46, shopic: 43, shoptfz: 14, shopsubfz: 11, shopbw: 3, shopbh: 49, shopbbv: 30, shopbbh: 26, shopbfz: 13, shopgem: 12,
+  gainic: 15, gainpv: 0, gainph: 6,
   gbtnfz: 13, gbtnpw: 16, gbtnph: 10,
   pbsz: 30, wjfz: 13, caslot: 81, caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 160, bth: 28, bhpw: 163, bhph: 30, pmw: 70, pmh: 23, pmfz: 11, pgw: 70, pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 40, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
   // 위치 이동(px): 요소별 X/Y
   avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: -1, pillY: 2, iconX: -3, iconY: 1,
-  panelX: 0, panelY: 0, rowX: 0, rowY: -2, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0,
-  spX: 0, spY: 0, slotX: 23, slotY: 8, catX: 21, catY: -5, spbarX: 20, spbarY: 1, equipX: -4, equipY: -3, spbarAX: 13, spbarAY: 12,
-  spbarBX: 15, spbarBY: 0, spbarCX: 14, spbarCY: -3, nickX: 0, nickY: 0, expX: 0, expY: 0, gainX: 0, gainY: 0,
+  panelX: 0, panelY: 0, rowX: 0, rowY: -7, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0,
+  spX: 0, spY: 0, slotX: 23, slotY: 8, catX: 21, catY: -5, spbarX: 20, spbarY: 1, equipX: -4, equipY: -3, spbarAX: 18, spbarAY: 12,
+  spbarBX: 18, spbarBY: 0, spbarCX: 19, spbarCY: -8, nickX: 0, nickY: 0, expX: 0, expY: 0, gainX: 0, gainY: 0,
   hpX: -1, hpY: 1, bossX: 0, bossY: -4, clearX: 0, clearY: 0, waveX: -1, waveY: 1, gachaX: 0, gachaY: 0, eqtierX: -1, eqtierY: 1, eqimgX: 0, eqimgY: 0,
   shoprowX: 0, shoprowY: 0, shopicX: 0, shopicY: 0, shoptX: 0, shoptY: 0, shopsubX: 0, shopsubY: 0,
-  shopbX: 0, shopbY: 0, shopbtX: 0, shopbtY: 0, shopgemX: 0, shopgemY: 0, gainicX: 0, gainicY: 0, gaintX: 0, gaintY: 0,
+  shopbX: -2, shopbY: 0, shopbtX: 0, shopbtY: 0, shopgemX: 0, shopgemY: 0, gainicX: 0, gainicY: 0, gaintX: 0, gaintY: 0,
   gbtnX: 0, gbtnY: 0, gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0, hambX: 1, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: 0, bhpX: 0, bhpY: 0, pbX: 0, pbY: 0, wjX: 0, wjY: 0, caslotX: 3, caslotY: 16, caimgX: 0, caimgY: 0, canameX: 0, canameY: 0, catabX: 15, catabY: 14, cabtnX: 0, cabtnY: 0, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: 0, btextY: 7,
 }
 const EDIT_GROUPS = {
@@ -1985,7 +1960,7 @@ const st = {
     width: '100%', maxWidth: 420, height: '100%', position: 'relative',
     display: 'flex', flexDirection: 'column',
     background: 'linear-gradient(180deg,#1c130a,#140d06)', color: '#f3e6d0',
-    fontFamily: 'var(--pd-uifont)',
+    fontFamily: "'Do Hyeon','Jua',-apple-system,'Noto Sans KR',sans-serif",
   },
   topBar: {
     display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
@@ -2229,7 +2204,7 @@ const st = {
   rowLv: { fontSize: 'var(--pd-lv)', color: GOLD, marginLeft: 4 },
   rowVal: { fontSize: 'var(--pd-val)', opacity: 0.82, marginTop: 1, whiteSpace: 'nowrap', transform: 'translate(var(--pd-val-x), var(--pd-val-y))' },
   dbgBtn: { width: 27, padding: '7px 0', borderRadius: 6, border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#f3e6d0', fontSize: 15, flexShrink: 0 },
-  dbgInput: { width: 'var(--pd-inputw)', padding: '6px 2px', borderRadius: 6, border: '1px solid #5a4028', background: '#160e07', color: GOLD, fontSize: 'var(--pd-inputfz)', textAlign: 'center', flexShrink: 0, fontFamily: 'var(--pd-numfont)', transform: 'translate(var(--pd-input-x), var(--pd-input-y))' },
+  dbgInput: { width: 'var(--pd-inputw)', padding: '6px 2px', borderRadius: 6, border: '1px solid #5a4028', background: '#160e07', color: GOLD, fontSize: 'var(--pd-inputfz)', textAlign: 'center', flexShrink: 0, fontFamily: "'Do Hyeon',sans-serif", transform: 'translate(var(--pd-input-x), var(--pd-input-y))' },
   costBtn: {
     touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none',
     minWidth: 'var(--pd-costw)', height: 'var(--pd-costh)', padding: '0 8px', border: 'none', background: 'transparent',
