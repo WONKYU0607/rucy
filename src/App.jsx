@@ -168,7 +168,7 @@ const ALLY_DEFS = {
   },
   giant: {
     // 근접 주먹 — 투사체 없이 히어로 타격 순간에 맨 앞 적을 직접 타격
-    name: '거인', kind: 'melee', h: 125, xOff: -150, yOff: 3, atkMult: 0.8, range: 360,
+    name: '거인', kind: 'melee', h: 125, xOff: -155, yOff: 3, atkMult: 0.8, range: 360,
     atkDur: 0.5,
     walk: [1, 2, 3].map(i => `/ally/giant/gwalk_${i}.png`),
     atk: [1, 2, 3].map(i => `/ally/giant/gatk_${i}.png`),
