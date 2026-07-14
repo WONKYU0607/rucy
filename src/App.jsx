@@ -162,13 +162,13 @@ const ALLY_DEFS = {
   },
   healer: {
     // 공격 없음 — 장착 시 히어로+동료 전체에 이동속도·공격속도·공격력 +5% (패시브)
-    name: '힐러', kind: 'buff', buff: 0.05, h: 62, xOff: -172, yOff: -40,
+    name: '힐러', kind: 'buff', buff: 0.05, h: 62, xOff: -172, yOff: -8,
     walk: [1, 2, 3, 4, 5, 6, 7, 8].map(i => `/ally/healer/heal_${i}.png`),
     atk: [],
   },
   giant: {
     // 근접 주먹 — 투사체 없이 히어로 타격 순간에 맨 앞 적을 직접 타격
-    name: '거인', kind: 'melee', h: 104, xOff: -218, yOff: -8, atkMult: 0.8, range: 360,
+    name: '거인', kind: 'melee', h: 104, xOff: -78, yOff: 8, atkMult: 0.8, range: 360,
     atkDur: 0.5,
     walk: [1, 2, 3].map(i => `/ally/giant/gwalk_${i}.png`),
     atk: [1, 2, 3].map(i => `/ally/giant/gatk_${i}.png`),
