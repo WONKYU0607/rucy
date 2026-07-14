@@ -160,14 +160,28 @@ const ALLY_DEFS = {
     atk: [1].map(i => `/ally/shaman/satk_${i}.png`),
     proj: '/ally/shaman/fire.png',
   },
+  healer: {
+    // 공격 없음 — 장착 시 히어로+동료 전체에 이동속도·공격속도·공격력 +5% (패시브)
+    name: '힐러', kind: 'buff', buff: 0.05, h: 62, xOff: -172, yOff: -40,
+    walk: [1, 2, 3, 4, 5, 6, 7, 8].map(i => `/ally/healer/heal_${i}.png`),
+    atk: [],
+  },
+  giant: {
+    // 근접 주먹 — 투사체 없이 히어로 타격 순간에 맨 앞 적을 직접 타격
+    name: '거인', kind: 'melee', h: 104, xOff: -218, yOff: -8, atkMult: 0.8, range: 360,
+    atkDur: 0.5,
+    walk: [1, 2, 3].map(i => `/ally/giant/gwalk_${i}.png`),
+    atk: [1, 2, 3].map(i => `/ally/giant/gatk_${i}.png`),
+  },
 }
 const ALLY_IMG = {}
 for (const k in ALLY_DEFS) {
   const d = ALLY_DEFS[k]
+  const mk = s => { const i = new Image(); i.onerror = () => console.warn('[ally] 로드 실패:', s); i.src = s; return i }
   ALLY_IMG[k] = {
-    walk: d.walk.map(s => { const i = new Image(); i.onerror = () => console.warn('[ally] 로드 실패:', s); i.src = s; return i }),
-    atk: d.atk.map(s => { const i = new Image(); i.onerror = () => console.warn('[ally] 로드 실패:', s); i.src = s; return i }),
-    proj: (() => { const i = new Image(); i.onerror = () => console.warn('[ally] 로드 실패:', d.proj); i.src = d.proj; return i })(),
+    walk: d.walk.map(mk),
+    atk: (d.atk || []).map(mk),
+    proj: d.proj ? mk(d.proj) : null,
   }
 }
 const BOSS_TIME = 20  // 보스 제한시간(초)
@@ -391,12 +405,14 @@ export default function App() {
   // 스탯 총 레벨 = 강화(고기) + 스킬(SP), 효과는 STAT_LIST.per 기준
   const tot = k => (lv[k] || 0) + (skill[k] || 0)
   const ATK_BASE = 10, HP_BASE = 100, ASPD = 1.0
-  const aspdMult = 1 + Math.min(200, tot('aspd') * STAT_LIST.aspd.per) / 100   // 공격속도 배율
-  const mspdMult = 1 + Math.min(200, tot('mspd') * STAT_LIST.mspd.per) / 100   // 이동속도 배율
+  // 힐러 패시브: 장착 시 히어로+동료 전체 공격력·공속·이속 상승
+  const allyBuff = alliesOn.healer ? 1 + (ALLY_DEFS.healer.buff || 0) : 1
+  const aspdMult = (1 + Math.min(200, tot('aspd') * STAT_LIST.aspd.per) / 100) * allyBuff   // 공격속도 배율
+  const mspdMult = (1 + Math.min(200, tot('mspd') * STAT_LIST.mspd.per) / 100) * allyBuff   // 이동속도 배율
   const maxHp = HP_BASE * (1 + tot('hp') * STAT_LIST.hp.per / 100)
   const S = useRef({})
   S.current = {
-    atk: ATK_BASE * EVOS[evo].mult * (1 + tot('atk') * STAT_LIST.atk.per / 100),
+    atk: ATK_BASE * EVOS[evo].mult * (1 + tot('atk') * STAT_LIST.atk.per / 100) * allyBuff,
     cd: 1000 / (ASPD * aspdMult) / SPEED,
     aspdMult, mspdMult,
     maxHp, wave, phase, alliesOn,
@@ -847,8 +863,8 @@ export default function App() {
             const d = ALLY_DEFS[ak]
             const au = w.allyU[ak] || (w.allyU[ak] = { state: 'walk', t: 0, rt: 0, animT: 0, thrown: false, seq: -1, hitIn: 0.3 })
             au.x = w.heroX + d.xOff
-            // 히어로가 공격을 시작하면 동료도 같은 프레임에 공격 개시
-            if (hero.state === 'attack' && au.seq !== w.atkSeq) {
+            // 히어로가 공격을 시작하면 동료도 같은 프레임에 공격 개시 (버프형 제외)
+            if (d.kind !== 'buff' && hero.state === 'attack' && au.seq !== w.atkSeq) {
               au.seq = w.atkSeq
               au.state = 'atk'; au.t = 0; au.rt = 0; au.thrown = false
               au.hitIn = w.heroHitIn || 0.3
@@ -856,7 +872,14 @@ export default function App() {
             if (au.state === 'atk') {
               au.t += dt * SPEED * st.aspdMult   // 공격 모션도 히어로 공속에 맞춤
               au.rt += dt
-              if (!au.thrown && au.t >= d.throwAt) {
+              if (d.kind === 'melee') {
+                // 근접: 히어로 타격 순간에 맨 앞 적을 직접 타격
+                if (!au.thrown && au.rt >= au.hitIn) {
+                  au.thrown = true
+                  const tgt = w.enemies.find(e => !e.dead && e.x > au.x && e.x - au.x < d.range)
+                  if (tgt) dealDamage(tgt, { ...st, atk: st.atk * d.atkMult })
+                }
+              } else if (!au.thrown && au.t >= d.throwAt) {
                 au.thrown = true
                 const lx = au.x + d.h * 0.4
                 const ly = w.groundY - d.h * d.projYr + (d.yOff || 0)
@@ -1079,8 +1102,9 @@ export default function App() {
           const d = ALLY_DEFS[ak]
           const au = w.allyU[ak]
           if (!au) continue
-          const arr = au.state === 'atk' ? ALLY_IMG[ak].atk : ALLY_IMG[ak].walk
-          const fi = au.state === 'atk' ? Math.min(arr.length - 1, Math.floor(au.t / d.atkDur * arr.length)) : Math.floor(au.animT) % arr.length
+          const atkArr = ALLY_IMG[ak].atk
+          const arr = au.state === 'atk' && atkArr.length ? atkArr : ALLY_IMG[ak].walk
+          const fi = (au.state === 'atk' && atkArr.length) ? Math.min(arr.length - 1, Math.floor(au.t / d.atkDur * arr.length)) : Math.floor(au.animT) % arr.length
           const im2 = arr[fi]
           const ok = im2 && im2.complete && im2.naturalWidth > 0
           const hh = d.h
@@ -1526,10 +1550,10 @@ export default function App() {
           </div>
         )}
         <div data-edit="gain" style={st.gainWrap}>
-          {gains.map(g => (
+          {(gains.length ? gains : (uiEdit ? [{ id: '__s', exp: 1234, meat: 567 }] : [])).map(g => (
             <div key={g.id} style={st.gainItem}>
-              <span style={st.gainCell}><img src="/ui/ic_exp.png" alt="" style={st.gainIcon} /><span style={{ color: '#6ec4ff' }}>+{g.exp}</span></span>
-              <span style={st.gainCell}><img src="/ui/ic_meat.png" alt="" style={st.gainIcon} /><span style={{ color: '#ff9d6a' }}>+{g.meat}</span></span>
+              <span style={st.gainCell}><img data-edit="gainicon" src="/ui/ic_exp.png" alt="" style={st.gainIcon} /><span data-edit="gaintext" style={{ ...st.gainNum, color: '#6ec4ff' }}>+{g.exp}</span></span>
+              <span style={st.gainCell}><img data-edit="gainicon" src="/ui/ic_meat.png" alt="" style={st.gainIcon} /><span data-edit="gaintext" style={{ ...st.gainNum, color: '#ff9d6a' }}>+{g.meat}</span></span>
             </div>
           ))}
         </div>
@@ -1731,7 +1755,7 @@ export default function App() {
           </div>
           {allySub === '동료' ? (
             <div style={st.allyGrid}>
-              {['hunter', 'shaman', null, null].map((ak, i) => {
+              {['hunter', 'shaman', 'healer', 'giant'].map((ak, i) => {
                 const a = ak ? ALLY_DEFS[ak] : null
                 const on = ak && alliesOn[ak]
                 return (
@@ -1796,24 +1820,25 @@ const UI_DEFAULT = {
   panelbwV: 2, panelbwH: 4, rowbwV: 2, rowbwH: 19, rowmin: 38, rowgap: 7, icon: 27, name: 12,
   lv: 11, val: 12, costw: 35, costh: 28, costfz: 14, inputw: 43, inputfz: 12, spw: 35,
   sph: 4, spfz: 13, tabpt: 7, tabpb: 10, tabfz: 13, navicon: 26, navpt: 10, navpb: 8,
-  avatar: 40, slotmax: 50, equipcols: 5, equipgap: 11, slotfz: 23, catfz: 13, spbarfz: 12,
-  equipimg: 60, equiptier: 13, equipcell: 54, nickfz: 15, lvbadgefz: 12, exph: 11, pillfz: 14, wavefz: 12,
+  avatar: 40, slotmax: 50, equipcols: 5, equipgap: 14, slotfz: 23, catfz: 13, spbarfz: 12,
+  equipimg: 60, equiptier: 10, equipcell: 54, nickfz: 15, lvbadgefz: 12, exph: 11, pillfz: 72, wavefz: 11,
   evoimg0: 56, evoimg1: 56, evoimg2: 56, evoimg3: 56, evoimg4: 56, evoimg5: 56,
   evoimg0X: 0, evoimg0Y: 1, evoimg1X: 0, evoimg1Y: 1, evoimg2X: 0, evoimg2Y: 1,
   evoimg3X: 0, evoimg3Y: 1, evoimg4X: 0, evoimg4Y: 1, evoimg5X: 0, evoimg5Y: 1,
   gachacell: 62, gachafz: 10, gtierfz: 10, gachaimg: 74, gainfz: 13,
-  shoprowmin: 46, shopic: 38, shoptfz: 13, shopsubfz: 11, shopbw: 62, shopbfz: 12, shopgem: 12,
+  shoprowmin: 46, shopic: 38, shoptfz: 13, shopsubfz: 11, shopbw: 62, shopbh: 62, shopbbv: 9, shopbbh: 12, shopbfz: 12, shopgem: 12,
+  gainic: 19, gainpv: 2, gainph: 8,
   gbtnfz: 13, gbtnpw: 16, gbtnph: 10,
-  pbsz: 30, wjfz: 13, caslot: 82, caimg: 42, canamefz: 12, catabfz: 12, cabtnfz: 11, btw: 210, bth: 30, bhpw: 250, bhph: 36, pmw: 92, pmh: 26, pmfz: 13, pgw: 92, pgh: 26, pgfz: 13, hambsz: 26, menufz: 13, hph: 11, hpfz: 10, bossfz: 11, bossh: 40, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
+  pbsz: 30, wjfz: 13, caslot: 81, caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 160, bth: 28, bhpw: 163, bhph: 30, pmw: 70, pmh: 23, pmfz: 11, pgw: 70, pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 40, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
   // 위치 이동(px): 요소별 X/Y
-  avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: 2, pillY: 2, iconX: -3, iconY: 1,
-  panelX: 0, panelY: 0, rowX: 0, rowY: -3, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0,
-  spX: 0, spY: 0, slotX: 23, slotY: 8, catX: 21, catY: -5, spbarX: 20, spbarY: 1, equipX: -9, equipY: -4, spbarAX: 13, spbarAY: 12,
+  avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: -1, pillY: 2, iconX: -3, iconY: 1,
+  panelX: 0, panelY: 0, rowX: 0, rowY: -2, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0,
+  spX: 0, spY: 0, slotX: 23, slotY: 8, catX: 21, catY: -5, spbarX: 20, spbarY: 1, equipX: -4, equipY: -3, spbarAX: 13, spbarAY: 12,
   spbarBX: 15, spbarBY: 0, spbarCX: 14, spbarCY: -3, nickX: 0, nickY: 0, expX: 0, expY: 0, gainX: 0, gainY: 0,
-  hpX: -3, hpY: 1, bossX: 1, bossY: -4, clearX: 0, clearY: 0, waveX: 0, waveY: 1, gachaX: 0, gachaY: 0, eqtierX: 0, eqtierY: 0, eqimgX: 0, eqimgY: 0,
+  hpX: -1, hpY: 1, bossX: 0, bossY: -4, clearX: 0, clearY: 0, waveX: -1, waveY: 1, gachaX: 0, gachaY: 0, eqtierX: -1, eqtierY: 1, eqimgX: 0, eqimgY: 0,
   shoprowX: 0, shoprowY: 0, shopicX: 0, shopicY: 0, shoptX: 0, shoptY: 0, shopsubX: 0, shopsubY: 0,
-  shopbX: 0, shopbY: 0, shopbtX: 0, shopbtY: 0, shopgemX: 0, shopgemY: 0,
-  gbtnX: 0, gbtnY: 0, gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0, hambX: 0, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: 0, bhpX: 0, bhpY: 0, pbX: 0, pbY: 0, wjX: 0, wjY: 0, caslotX: 0, caslotY: 0, caimgX: 0, caimgY: 0, canameX: 0, canameY: 0, catabX: 0, catabY: 0, cabtnX: 0, cabtnY: 0, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: -1, btextY: 6,
+  shopbX: 0, shopbY: 0, shopbtX: 0, shopbtY: 0, shopgemX: 0, shopgemY: 0, gainicX: 0, gainicY: 0, gaintX: 0, gaintY: 0,
+  gbtnX: 0, gbtnY: 0, gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0, hambX: 1, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: 0, bhpX: 0, bhpY: 0, pbX: 0, pbY: 0, wjX: 0, wjY: 0, caslotX: 3, caslotY: 16, caimgX: 0, caimgY: 0, canameX: 0, canameY: 0, catabX: 15, catabY: 14, cabtnX: 0, cabtnY: 0, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: 0, btextY: 7,
 }
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
@@ -1838,7 +1863,9 @@ const EDIT_GROUPS = {
   eqtier: { label: '장비 등급 글자', size: ['equiptier'], pos: 'eqtier' },
   nick: { label: '닉네임/레벨', size: ['nickfz', 'lvbadgefz'], pos: 'nick' },
   expbar: { label: 'EXP바', size: ['exph'], pos: 'exp' },
-  gain: { label: '획득 팝업', size: ['gainfz'], pos: 'gain' },
+  gain: { label: '획득 팝업(판)', size: ['gainpv', 'gainph'], pos: 'gain' },
+  gaintext: { label: '획득 글자', size: ['gainfz'], pos: 'gaint' },
+  gainicon: { label: '획득 아이콘', size: ['gainic'], pos: 'gainic' },
   hppill: { label: 'HP 알약', size: ['hph', 'hpfz'], pos: 'hp' },
   waveband: { label: '웨이브 현판(판)', size: ['wavebh'], pos: 'wave' },
   wavetitle: { label: '현판 글자', size: ['wavefz'], pos: 'wtitle' },
@@ -1854,7 +1881,7 @@ const EDIT_GROUPS = {
   shopic: { label: '소환 아이콘', size: ['shopic'], pos: 'shopic' },
   shoptitle: { label: '소환 제목 글자', size: ['shoptfz'], pos: 'shopt' },
   shopsub: { label: '소환 부제 글자', size: ['shopsubfz'], pos: 'shopsub' },
-  shopbtn: { label: '소환 버튼(판)', size: ['shopbw'], pos: 'shopb' },
+  shopbtn: { label: '소환 버튼(판)', size: ['shopbw', 'shopbh', 'shopbbv', 'shopbbh'], pos: 'shopb' },
   shopbtext: { label: '소환 버튼 글자', size: ['shopbfz'], pos: 'shopbt' },
   shopgem: { label: '다이아 아이콘', size: ['shopgem'], pos: 'shopgem' },
   pillmeat: { label: '고기 알약', size: ['pmw', 'pmh', 'pmfz'], pos: 'pm' },
@@ -1884,7 +1911,8 @@ const UI_LABELS = {
   equipcell: '장비칸 크기', nickfz: '닉네임 글자', lvbadgefz: 'Lv뱃지 글자', exph: 'EXP바 높이', pillfz: '자원 글자', wavefz: '웨이브 글자',
   gainfz: '팝업 글자', hph: 'HP알약 높이', hpfz: 'HP 글자', bossfz: '버튼 글자', clearfz: '문구 글자', navfz: '네비 글자', diasz: '다이아 크기', bossh: '버튼 판 크기', wavebh: '현판 높이', gachacell: '결과 셀 크기', gachafz: '등급 글자', gtierfz: '티어 글자', gachaimg: '아이콘 %',
   shoprowmin: '박스 높이', shopic: '아이콘 크기', shoptfz: '제목 글자', shopsubfz: '부제 글자',
-  shopbw: '버튼 너비', shopbfz: '버튼 글자', shopgem: '다이아 크기', gbtnfz: '버튼 글자', gbtnpw: '판 가로', gbtnph: '판 세로',
+  shopbw: '버튼 너비', shopbh: '버튼 높이', shopbbv: '프레임 두께↕', shopbbh: '프레임 두께↔', shopbfz: '버튼 글자',
+  gainic: '아이콘 크기', gainpv: '판 두께↕', gainph: '판 두께↔', shopgem: '다이아 크기', gbtnfz: '버튼 글자', gbtnpw: '판 가로', gbtnph: '판 세로',
   pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
 }
 for (let i = 0; i < 6; i++) UI_LABELS[`evoimg${i}`] = `${i + 1}단계 크기`
@@ -1910,7 +1938,8 @@ ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg$
 --pd-pillfz:${c.pillfz}px;--pd-wavefz:${c.wavefz}px;--pd-gainfz:${c.gainfz}px;
 --pd-hph:${c.hph}px;--pd-hpfz:${c.hpfz}px;--pd-bossfz:${c.bossfz}px;--pd-clearfz:${c.clearfz}px;--pd-navfz:${c.navfz}px;--pd-diasz:${c.diasz}px;--pd-bossh:${c.bossh}px;--pd-wavebh:${c.wavebh}px;--pd-gachacell:${c.gachacell}px;--pd-gachafz:${c.gachafz}px;--pd-gacha-x:${c.gachaX}px;--pd-gacha-y:${c.gachaY}px;
 --pd-gtierfz:${c.gtierfz}px;--pd-gachaimg:${c.gachaimg};--pd-shoprowmin:${c.shoprowmin}px;--pd-shopic:${c.shopic}px;
---pd-shoptfz:${c.shoptfz}px;--pd-shopsubfz:${c.shopsubfz}px;--pd-shopbw:${c.shopbw}px;--pd-shopbfz:${c.shopbfz}px;--pd-shopgem:${c.shopgem}px;
+--pd-shoptfz:${c.shoptfz}px;--pd-shopsubfz:${c.shopsubfz}px;--pd-shopbw:${c.shopbw}px;--pd-shopbh:${c.shopbh}px;--pd-shopbbv:${c.shopbbv}px;--pd-shopbbh:${c.shopbbh}px;--pd-shopbfz:${c.shopbfz}px;
+--pd-gainic:${c.gainic}px;--pd-gainpv:${c.gainpv}px;--pd-gainph:${c.gainph}px;--pd-gainic-x:${c.gainicX}px;--pd-gainic-y:${c.gainicY}px;--pd-gaint-x:${c.gaintX}px;--pd-gaint-y:${c.gaintY}px;--pd-shopgem:${c.shopgem}px;
 --pd-gbtnfz:${c.gbtnfz}px;--pd-gbtnpw:${c.gbtnpw}px;--pd-gbtnph:${c.gbtnph}px;
 --pd-pmw:${c.pmw}px;--pd-pmh:${c.pmh}px;--pd-pmfz:${c.pmfz}px;--pd-pgw:${c.pgw}px;--pd-pgh:${c.pgh}px;--pd-pgfz:${c.pgfz}px;--pd-hambsz:${c.hambsz}px;--pd-menufz:${c.menufz}px;--pd-pbsz:${c.pbsz}px;--pd-wjfz:${c.wjfz}px;--pd-caslot:${c.caslot}px;--pd-caimg:${c.caimg}px;--pd-canamefz:${c.canamefz}px;--pd-catabfz:${c.catabfz}px;
 --pd-cabtnfz:${c.cabtnfz}px;
@@ -1997,8 +2026,9 @@ const st = {
   bhInner: { height: '100%', background: 'linear-gradient(180deg,#e05038,#8e1f14)', transition: 'width 0.12s' },
   gainWrap: { position: 'absolute', left: 8, top: 44, transform: 'translate(var(--pd-gain-x), var(--pd-gain-y))', display: 'flex', flexDirection: 'column', gap: 3, pointerEvents: 'none' },
   gainCell: { display: 'flex', alignItems: 'center', gap: 3 },
-  gainIcon: { height: 'calc(var(--pd-gainfz) + 6px)', objectFit: 'contain' },
-  gainItem: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 'var(--pd-gainfz)', background: 'rgba(10,6,3,0.6)', padding: '2px 8px', borderRadius: 6 },
+  gainIcon: { height: 'var(--pd-gainic)', objectFit: 'contain', transform: 'translate(var(--pd-gainic-x), var(--pd-gainic-y))' },
+  gainNum: { display: 'inline-block', fontSize: 'var(--pd-gainfz)', transform: 'translate(var(--pd-gaint-x), var(--pd-gaint-y))' },
+  gainItem: { display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(10,6,3,0.6)', padding: 'var(--pd-gainpv) var(--pd-gainph)', borderRadius: 6 },
   spBar: { padding: '3px 5px 5px', fontSize: 'var(--pd-spbarfz)', color: '#c9b596' },
   spBtn: {
     touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none',
@@ -2037,12 +2067,13 @@ const st = {
   cloudBox: { display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', fontSize: 12 },
   cloudBtn: { flexShrink: 0, padding: '6px 10px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 12 },
   shopBtn: {
-    flexShrink: 0, padding: '6px 10px',
-    borderStyle: 'solid', borderWidth: '9px 12px',
-    borderImage: 'url(/ui/frame_btn.png) 90 130 fill / 9px 12px stretch',
+    flexShrink: 0, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    width: 'var(--pd-shopbw)', height: 'var(--pd-shopbh)',
+    borderStyle: 'solid', borderWidth: 'var(--pd-shopbbv) var(--pd-shopbbh)',
+    borderImage: 'url(/ui/frame_btn.png) 90 130 fill / var(--pd-shopbbv) var(--pd-shopbbh) stretch',
     background: 'rgba(18,11,5,0.85)', color: '#f3e6d0', lineHeight: 1.35,
     touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none',
-    minWidth: 'var(--pd-shopbw)', transform: 'translate(var(--pd-shopb-x), var(--pd-shopb-y))',
+    transform: 'translate(var(--pd-shopb-x), var(--pd-shopb-y))',
   },
   shopBtnText: { display: 'inline-block', fontSize: 'var(--pd-shopbfz)', transform: 'translate(var(--pd-shopbt-x), var(--pd-shopbt-y))' },
   shopCost: { display: 'inline-flex', alignItems: 'center', gap: 2, color: '#8fd0ff' },
