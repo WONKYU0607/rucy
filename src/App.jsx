@@ -147,7 +147,7 @@ const SKILLS = SKILL_SHEET.map(c => {
 // cd는 미사용 — 동료 공격은 히어로 기본공격에 동기화되고, 투사체는 히어로 타격 순간에 맞춰 속도가 역산됨
 const ALLY_DEFS = {
   hunter: {
-    name: '헌터', h: 68, xOff: -80, yOff: 25, atkMult: 0.45, cd: 1.15, range: 470,
+    name: '헌터', h: 68, xOff: -75, yOff: 27, atkMult: 0.45, cd: 1.15, range: 470,
     projSpd: 560, projW: 62, projBob: 0, atkDur: 0.42, throwAt: 0.16, projYr: 0.62,
     walk: [1, 2, 3, 4].map(i => `/ally/hunter/hwalk_${i}.png`),
     atk: [1, 2].map(i => `/ally/hunter/hatk_${i}.png`),
