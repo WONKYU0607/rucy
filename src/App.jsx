@@ -144,16 +144,17 @@ const SKILLS = SKILL_SHEET.map(c => {
 // 대시 프레임 타이밍: 0=기모으기 앞부분 짧게, 주먹뻗기(3,4번) 길게
 
 // ── 동료 정의: 영웅 뒤에서 투사체 공격 (겹침 허용, 소형) ──
+// cd는 미사용 — 동료 공격은 히어로 기본공격에 동기화되고, 투사체는 히어로 타격 순간에 맞춰 속도가 역산됨
 const ALLY_DEFS = {
   hunter: {
-    name: '헌터', h: 75, xOff: -78, yOff: -6, atkMult: 0.45, cd: 1.15, range: 470,
+    name: '헌터', h: 70, xOff: -78, yOff: -6, atkMult: 0.45, cd: 1.15, range: 470,
     projSpd: 560, projW: 62, projBob: 0, atkDur: 0.42, throwAt: 0.16, projYr: 0.62,
     walk: [1, 2, 3, 4].map(i => `/ally/hunter/hwalk_${i}.png`),
     atk: [1, 2].map(i => `/ally/hunter/hatk_${i}.png`),
     proj: '/ally/hunter/spear.png',
   },
   shaman: {
-    name: '주술사', h: 75, xOff: -138, yOff: -6, atkMult: 0.55, cd: 1.6, range: 500,
+    name: '주술사', h: 70, xOff: -128, yOff: -26, atkMult: 0.55, cd: 1.6, range: 500,
     projSpd: 400, projW: 26, projBob: 5, atkDur: 0.5, throwAt: 0.2, projYr: 0.75,
     walk: [1, 2, 3, 4].map(i => `/ally/shaman/swalk_${i}.png`),
     atk: [1].map(i => `/ally/shaman/satk_${i}.png`),
@@ -748,6 +749,16 @@ export default function App() {
           if (hero.cd <= 0 && target) {
             hero.state = 'attack'; hero.t = 0; hero.did = false
             hero.cd = st.cd
+            // 동료 동기화: 히어로 타격까지 걸리는 실제 시간(초) → 동료 투사체가 같은 순간 명중하도록 역산에 사용
+            const rate = SPEED * st.aspdMult
+            if (st.mode === 'quad') w.heroHitIn = PUNCH.hitAt / rate
+            else if (st.mode === 'erectus' || st.mode === 'neander') w.heroHitIn = (ECLUB.total * ECLUB.hitAt) / rate
+            else {
+              const sx0 = w.heroX + 32, sy0 = w.groundY - 130 * 0.78
+              const dd = Math.hypot(target.x - sx0, (w.groundY - target.h * 0.55) - sy0)
+              w.heroHitIn = THROW.windupEnd / rate + Math.min(0.45, Math.max(0.18, dd / 900))
+            }
+            w.atkSeq = (w.atkSeq || 0) + 1
           }
         } else if (hero.state === 'attack') {
           hero.t += dt * SPEED * st.aspdMult
@@ -834,26 +845,37 @@ export default function App() {
           for (const ak in ALLY_DEFS) {
             if (!st.alliesOn?.[ak]) continue
             const d = ALLY_DEFS[ak]
-            const au = w.allyU[ak] || (w.allyU[ak] = { cd: 0, state: 'walk', t: 0, animT: 0, thrown: false })
+            const au = w.allyU[ak] || (w.allyU[ak] = { state: 'walk', t: 0, rt: 0, animT: 0, thrown: false, seq: -1, hitIn: 0.3 })
             au.x = w.heroX + d.xOff
-            au.cd -= dt
-            if (au.state === 'walk') {
-              au.animT += dt * 6
-              const tgt = w.enemies.find(e => !e.dead && e.x > au.x && e.x - au.x < d.range)
-              if (au.cd <= 0 && tgt) { au.state = 'atk'; au.t = 0; au.thrown = false }
-            } else {
-              au.t += dt
+            // 히어로가 공격을 시작하면 동료도 같은 프레임에 공격 개시
+            if (hero.state === 'attack' && au.seq !== w.atkSeq) {
+              au.seq = w.atkSeq
+              au.state = 'atk'; au.t = 0; au.rt = 0; au.thrown = false
+              au.hitIn = w.heroHitIn || 0.3
+            }
+            if (au.state === 'atk') {
+              au.t += dt * SPEED * st.aspdMult   // 공격 모션도 히어로 공속에 맞춤
+              au.rt += dt
               if (!au.thrown && au.t >= d.throwAt) {
                 au.thrown = true
-                w.spears.push({ ally: ak, t: 0, x: au.x + d.h * 0.4, y: w.groundY - d.h * d.projYr + (d.yOff || 0) })
+                const lx = au.x + d.h * 0.4
+                const ly = w.groundY - d.h * d.projYr + (d.yOff || 0)
+                const tgt = w.enemies.find(e => !e.dead && e.x > lx)
+                // 남은 시간에 맞춰 속도 역산 → 히어로 타격 순간에 명중
+                const remain = Math.max(0.05, au.hitIn - au.rt)
+                let spd = d.projSpd
+                if (tgt) spd = Math.min(2000, Math.max(200, (tgt.x - (26 + tgt.h * 0.2) - lx) / remain))
+                w.spears.push({ ally: ak, t: 0, x: lx, y: ly, spd })
               }
-              if (au.t >= d.atkDur) { au.state = 'walk'; au.cd = d.cd }
+              if (au.t >= d.atkDur) { au.state = 'walk'; au.t = 0 }
+            } else if (!w._blocked && hero.state === 'move') {
+              au.animT += dt * 6 * (st.mspdMult || 1)   // 걷기 애니: 히어로가 실제 이동 중일 때만
             }
           }
           for (const sp2 of w.spears) {
             const d = ALLY_DEFS[sp2.ally]
             sp2.t += dt
-            sp2.x += d.projSpd * dt
+            sp2.x += (sp2.spd || d.projSpd) * dt
             const hit = w.enemies.find(e => !e.dead && Math.abs(e.x - sp2.x) < 26 + e.h * 0.2)
             if (hit) { sp2.dead = true; dealDamage(hit, { ...st, atk: st.atk * d.atkMult }) }
             else if (sp2.x > w.W + 80) sp2.dead = true
