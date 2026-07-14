@@ -29,6 +29,8 @@ const ANIM = {
   eatk1: { srcs: ['/hero/erectus_atk1/eatk1_1.png', '/hero/erectus_atk1/eatk1_2.png', '/hero/erectus_atk1/eatk1_3.png'], h: 135, flip: false },
   nwalk: { srcs: ['/hero/neander_walk/nwalk_1.png', '/hero/neander_walk/nwalk_2.png', '/hero/neander_walk/nwalk_3.png', '/hero/neander_walk/nwalk_4.png'], h: 120, flip: false },
   natk1: { srcs: ['/hero/neander_atk1/natk1_1.png', '/hero/neander_atk1/natk1_2.png'], h: 130, flip: false },
+  pwalk: { srcs: [1, 2, 3, 4, 5, 6, 7, 8].map(i => `/hero/sapiens_walk/pwalk_${i}.png`), h: 140, flip: false },
+  patk1: { srcs: [1, 2, 3, 4, 5].map(i => `/hero/sapiens_atk1/patk1_${i}.png`), h: 140, flip: false },
 }
 // 스킬 정의 — charSeq: 히어로가 재생할 프레임(1-based, 없으면 전체), fx: 분리 이펙트
 //   fx proj  = 투사체: fly 프레임이 몬스터 쪽으로 날아가 명중 시 데미지(+impact 프레임)
@@ -192,6 +194,8 @@ const PUNCH = { hitAt: 0.12, total: 0.3, range: 95 } // 4족 주먹질
 const THROW = { windupEnd: 0.14, releaseEnd: 0.30, total: 0.42, range: 340 }
 // 에렉투스 몽둥이: 1타 내려치기(위→아래), 2타 올려치기(아래→위) 번갈아
 const ECLUB = { total: 0.65, range: 150, hitAt: 0.55 }  // 몽둥이 내려치기 (단일 모션)
+const SPIN = { total: 0.6, range: 160, hitAt: 0.7 }    // 사피엔스 회전 베기 (5프레임)
+const MC = m => (m === 'sapiens' ? SPIN : ECLUB)       // 근접 모드별 타이밍
 
 // ── 적 정의 ──
 const ENEMY_TYPES = {
@@ -312,7 +316,7 @@ const EVOS = [
   { name: '오스트랄로피테쿠스 (직립보행)', mult: 3, cost: 1500, mode: 'biped' },
   { name: '호모 에렉투스', mult: 27, cost: 300000, mode: 'erectus' },
   { name: '호모 네안데르탈인', mult: 81, cost: 3000000, mode: 'neander' },
-  { name: '호모 사피엔스', mult: 243, cost: 30000000, mode: 'biped' },
+  { name: '호모 사피엔스', mult: 243, cost: 30000000, mode: 'sapiens' },
   { name: '인간', mult: 729, cost: 300000000, mode: 'biped' },
 ]
 
@@ -539,7 +543,7 @@ export default function App() {
       })
     }
 
-    function addDmg(x, y, val, crit, miss) { w.dmgTexts.push({ x, y, val: typeof val === 'number' ? fmt(val) : val, life: 0.8, crit, miss }) }
+    function addDmg(x, y, val, crit, miss) { w.dmgTexts.push({ x, y, val: typeof val === 'number' ? String(Math.round(val)) : val, life: 0.8, crit, miss }) }
     function burst(x, y, color, n = 10, blood = false) {
       for (let i = 0; i < n; i++) {
         const a = blood ? -Math.PI / 2 + (Math.random() - 0.5) * 2.2 : Math.random() * Math.PI * 2
@@ -611,13 +615,13 @@ export default function App() {
       w.hsCd = Math.max(0, (w.hsCd || 0) - rawDt)  // 기본공격 히트스톱 재발동 쿨
       const st = S.current
       const hero = w.hero
-      const melee = st.mode === 'erectus' || st.mode === 'neander'
-      const atkRange = st.mode === 'quad' ? PUNCH.range : melee ? ECLUB.range : THROW.range
+      const melee = st.mode === 'erectus' || st.mode === 'neander' || st.mode === 'sapiens'
+      const atkRange = st.mode === 'quad' ? PUNCH.range : melee ? MC(st.mode).range : THROW.range
 
       // 배경 스크롤: 이동 상태 + 앞을 막는 적이 없을 때만 전진
       const heroTargetX = w.bossBattle ? Math.round(w.W * 0.34) : HERO_X
       w.heroX += (heroTargetX - w.heroX) * Math.min(1, dt * 4)
-      const atkRange0 = st.mode === 'quad' ? PUNCH.range : (st.mode === 'erectus' || st.mode === 'neander') ? ECLUB.range : THROW.range
+      const atkRange0 = st.mode === 'quad' ? PUNCH.range : (st.mode === 'erectus' || st.mode === 'neander' || st.mode === 'sapiens') ? MC(st.mode).range : THROW.range
       const blocked = w.enemies.some(e => !e.dead && e.x - w.heroX < atkRange0)
       w._blocked = blocked
       const moving = (st.phase === 'fighting' || st.phase === 'cleared') && hero.state === 'move' && !blocked
@@ -771,7 +775,7 @@ export default function App() {
             // 동료 동기화: 히어로 타격까지 걸리는 실제 시간(초) → 동료 투사체가 같은 순간 명중하도록 역산에 사용
             const rate = SPEED * st.aspdMult
             if (st.mode === 'quad') w.heroHitIn = PUNCH.hitAt / rate
-            else if (st.mode === 'erectus' || st.mode === 'neander') w.heroHitIn = (ECLUB.total * ECLUB.hitAt) / rate
+            else if (st.mode === 'erectus' || st.mode === 'neander' || st.mode === 'sapiens') w.heroHitIn = (MC(st.mode).total * MC(st.mode).hitAt) / rate
             else {
               const sx0 = w.heroX + 32, sy0 = w.groundY - 130 * 0.78
               const dd = Math.hypot(target.x - sx0, (w.groundY - target.h * 0.55) - sy0)
@@ -788,18 +792,19 @@ export default function App() {
               if (t) dealDamage(t, st)
             }
             if (hero.t >= PUNCH.total) { hero.state = 'move'; hero.t = 0 }
-          } else if (st.mode === 'erectus' || st.mode === 'neander') {
-            const prog = hero.t / ECLUB.total
-            const inRange = w.enemies.find(e => !e.dead && e.x - w.heroX < ECLUB.range + 40)
+          } else if (st.mode === 'erectus' || st.mode === 'neander' || st.mode === 'sapiens') {
+            const mc = MC(st.mode)
+            const prog = hero.t / mc.total
+            const inRange = w.enemies.find(e => !e.dead && e.x - w.heroX < mc.range + 40)
             if (!hero.did && !inRange) {
               // 타격 전에 사거리 내 적이 사라짐(스킬 등으로 처치) → 헛스윙 방지, 걷기로 복귀
               hero.state = 'move'; hero.t = 0
             } else {
-              if (!hero.did && prog >= ECLUB.hitAt) {
+              if (!hero.did && prog >= mc.hitAt) {
                 hero.did = true
                 if (inRange) dealDamage(inRange, st)
               }
-              if (hero.t >= ECLUB.total) { hero.state = 'move'; hero.t = 0 }
+              if (hero.t >= mc.total) { hero.state = 'move'; hero.t = 0 }
             }
           } else {
             if (!hero.did && hero.t >= THROW.windupEnd) {
@@ -976,22 +981,25 @@ export default function App() {
           const k = hero.t < PUNCH.hitAt ? 0 : hero.t < PUNCH.hitAt + 0.1 ? 1 : 2
           return ['punch', k]
         }
-        if (st.mode === 'erectus' || st.mode === 'neander') {
-          const ak = st.mode === 'neander' ? 'natk1' : 'eatk1'
+        if (st.mode === 'erectus' || st.mode === 'neander' || st.mode === 'sapiens') {
+          const ak = st.mode === 'neander' ? 'natk1' : st.mode === 'sapiens' ? 'patk1' : 'eatk1'
           const arr = ANIM[ak].srcs
-          const k = Math.min(arr.length - 1, Math.floor(hero.t / ECLUB.total * arr.length))
+          const k = Math.min(arr.length - 1, Math.floor(hero.t / MC(st.mode).total * arr.length))
           return [ak, k]
         }
         const k = hero.t < THROW.windupEnd ? 0 : 1
         return ['throw', k]
       }
-      const key = st.mode === 'quad' ? 'quad' : st.mode === 'erectus' ? 'ewalk' : st.mode === 'neander' ? 'nwalk' : 'walk'
+      const key = st.mode === 'quad' ? 'quad' : st.mode === 'erectus' ? 'ewalk' : st.mode === 'neander' ? 'nwalk' : st.mode === 'sapiens' ? 'pwalk' : 'walk'
       // 근접 모드: 적을 앞에 두고 대기 중(막힘)일 땐 걷기 대신 마지막 스윙 프레임 유지 → 공격↔대기 스냅 깜빡임 방지
       if (st.mode === 'erectus' && key === 'ewalk' && w._blocked) {
         return ['eatk1', ANIM.eatk1.srcs.length - 1]
       }
       if (st.mode === 'neander' && key === 'nwalk' && w._blocked) {
         return ['natk1', 0]
+      }
+      if (st.mode === 'sapiens' && key === 'pwalk' && w._blocked) {
+        return ['patk1', 0]
       }
       const fi = Math.floor(hero.animT * 10) % ANIM[key].srcs.length
       return [key, fi]
@@ -1217,7 +1225,7 @@ export default function App() {
       for (const d of w.dmgTexts) {
         ctx.globalAlpha = Math.min(1, d.life * 2.5)
         ctx.font = (d.crit ? '900 22px' : d.miss ? '800 14px' : '800 16px') + ' sans-serif'
-        ctx.fillStyle = d.miss ? '#8ab4ff' : d.crit ? '#ffca28' : '#fff'
+        ctx.fillStyle = d.miss ? '#8ab4ff' : d.crit ? '#e01414' : '#ffffff'
         ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 3
         ctx.strokeText(d.val, d.x, d.y)
         ctx.fillText(d.val, d.x, d.y)
@@ -1599,7 +1607,7 @@ export default function App() {
         {tab === '진화' && (
           <div data-edit="row" style={st.row}>
             <img
-              src={EVOS[evo].mode === 'quad' ? '/hero/quad/quad_1.png' : EVOS[evo].mode === 'erectus' ? '/hero/erectus_walk/ewalk_1.png' : EVOS[evo].mode === 'neander' ? '/hero/neander_walk/nwalk_1.png' : '/hero/misc/hero_idle.png'}
+              src={EVOS[evo].mode === 'quad' ? '/hero/quad/quad_1.png' : EVOS[evo].mode === 'erectus' ? '/hero/erectus_walk/ewalk_1.png' : EVOS[evo].mode === 'neander' ? '/hero/neander_walk/nwalk_1.png' : EVOS[evo].mode === 'sapiens' ? '/hero/sapiens_walk/pwalk_1.png' : '/hero/misc/hero_idle.png'}
               alt=""
               data-edit={`evoimg${evo}`}
               style={{ height: `var(--pd-evoimg${evo})`, transform: `translate(var(--pd-evoimg${evo}-x), var(--pd-evoimg${evo}-y))` }}
@@ -1607,7 +1615,7 @@ export default function App() {
             <div style={{ flex: 1, marginLeft: 12 }}>
               <div data-edit="name" style={st.rowName}>{EVOS[evo].name}</div>
               <div data-edit="val" style={st.rowVal}>
-                {EVOS[evo].mode === 'quad' ? '4족 질주 · 주먹질' : EVOS[evo].mode === 'erectus' ? '몽둥이 · 내려치기/올려치기' : EVOS[evo].mode === 'neander' ? '돌도끼 · 내려찍기' : '직립 보행 · 돌 던지기'} · 공격력 ×{EVOS[evo].mult}
+                {EVOS[evo].mode === 'quad' ? '4족 질주 · 주먹질' : EVOS[evo].mode === 'erectus' ? '몽둥이 · 내려치기/올려치기' : EVOS[evo].mode === 'neander' ? '돌도끼 · 내려찍기' : EVOS[evo].mode === 'sapiens' ? '단검 · 회전 베기' : '직립 보행 · 돌 던지기'} · 공격력 ×{EVOS[evo].mult}
                 {evo < EVOS.length - 1 && <span style={{ color: '#7cb35c' }}> → ×{EVOS[evo + 1].mult}</span>}
               </div>
             </div>
