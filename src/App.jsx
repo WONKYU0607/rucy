@@ -154,7 +154,7 @@ const ALLY_DEFS = {
     proj: '/ally/hunter/spear.png',
   },
   shaman: {
-    name: '주술사', h: 68, xOff: -128, yOff: -30, atkMult: 0.55, cd: 1.6, range: 500,
+    name: '주술사', h: 68, xOff: -128, yOff: -33, atkMult: 0.55, cd: 1.6, range: 500,
     projSpd: 400, projW: 26, projBob: 5, atkDur: 0.5, throwAt: 0.2, projYr: 0.75,
     walk: [1, 2, 3, 4].map(i => `/ally/shaman/swalk_${i}.png`),
     atk: [1].map(i => `/ally/shaman/satk_${i}.png`),
