@@ -147,7 +147,7 @@ const SKILLS = SKILL_SHEET.map(c => {
 // cd는 미사용 — 동료 공격은 히어로 기본공격에 동기화되고, 투사체는 히어로 타격 순간에 맞춰 속도가 역산됨
 const ALLY_DEFS = {
   hunter: {
-    name: '헌터', h: 68, xOff: -132, yOff: 20, atkMult: 0.45, cd: 1.15, range: 470,
+    name: '헌터', h: 68, xOff: -130, yOff: 23, atkMult: 0.45, cd: 1.15, range: 470,
     projSpd: 560, projW: 62, projBob: 0, atkDur: 0.42, throwAt: 0.16, projYr: 0.62,
     walk: [1, 2, 3, 4].map(i => `/ally/hunter/hwalk_${i}.png`),
     atk: [1, 2].map(i => `/ally/hunter/hatk_${i}.png`),
@@ -168,7 +168,7 @@ const ALLY_DEFS = {
   },
   giant: {
     // 근접 주먹 — 투사체 없이 히어로 타격 순간에 맨 앞 적을 직접 타격
-    name: '거인', kind: 'melee', h: 100, xOff: -75, yOff: -8, atkMult: 0.8, range: 360,
+    name: '거인', kind: 'melee', h: 100, xOff: -74, yOff: -2, atkMult: 0.8, range: 360,
     atkDur: 0.5,
     walk: [1, 2, 3].map(i => `/ally/giant/gwalk_${i}.png`),
     atk: [1, 2, 3].map(i => `/ally/giant/gatk_${i}.png`),
