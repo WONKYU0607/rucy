@@ -29,7 +29,7 @@ const ANIM = {
   eatk1: { srcs: ['/hero/erectus_atk1/eatk1_1.png', '/hero/erectus_atk1/eatk1_2.png', '/hero/erectus_atk1/eatk1_3.png'], h: 135, flip: false },
   nwalk: { srcs: ['/hero/neander_walk/nwalk_1.png', '/hero/neander_walk/nwalk_2.png', '/hero/neander_walk/nwalk_3.png', '/hero/neander_walk/nwalk_4.png'], h: 120, flip: false },
   natk1: { srcs: ['/hero/neander_atk1/natk1_1.png', '/hero/neander_atk1/natk1_2.png'], h: 130, flip: false },
-  pwalk: { srcs: [1, 2, 3, 4, 5, 6, 7, 8].map(i => `/hero/sapiens_walk/pwalk_${i}.png`), h: 140, flip: false },
+  pwalk: { srcs: [1, 2, 3, 4, 5, 6, 7, 8].map(i => `/hero/sapiens_walk/pwalk_${i}.png`), h: 120, flip: false },
   patk1: { srcs: [1, 2, 3, 4, 5].map(i => `/hero/sapiens_atk1/patk1_${i}.png`), h: 140, flip: false },
 }
 // 스킬 정의 — charSeq: 히어로가 재생할 프레임(1-based, 없으면 전체), fx: 분리 이펙트
