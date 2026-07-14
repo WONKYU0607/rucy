@@ -147,14 +147,14 @@ const SKILLS = SKILL_SHEET.map(c => {
 // cd는 미사용 — 동료 공격은 히어로 기본공격에 동기화되고, 투사체는 히어로 타격 순간에 맞춰 속도가 역산됨
 const ALLY_DEFS = {
   hunter: {
-    name: '헌터', h: 68, xOff: -128, yOff: 20, atkMult: 0.45, cd: 1.15, range: 470,
+    name: '헌터', h: 70, xOff: -78, yOff: -6, atkMult: 0.45, cd: 1.15, range: 470,
     projSpd: 560, projW: 62, projBob: 0, atkDur: 0.42, throwAt: 0.16, projYr: 0.62,
     walk: [1, 2, 3, 4].map(i => `/ally/hunter/hwalk_${i}.png`),
     atk: [1, 2].map(i => `/ally/hunter/hatk_${i}.png`),
     proj: '/ally/hunter/spear.png',
   },
   shaman: {
-    name: '주술사', h: 68, xOff: -128, yOff: -33, atkMult: 0.55, cd: 1.6, range: 500,
+    name: '주술사', h: 70, xOff: -128, yOff: -26, atkMult: 0.55, cd: 1.6, range: 500,
     projSpd: 400, projW: 26, projBob: 5, atkDur: 0.5, throwAt: 0.2, projYr: 0.75,
     walk: [1, 2, 3, 4].map(i => `/ally/shaman/swalk_${i}.png`),
     atk: [1].map(i => `/ally/shaman/satk_${i}.png`),
@@ -162,13 +162,13 @@ const ALLY_DEFS = {
   },
   healer: {
     // 공격 없음 — 장착 시 히어로+동료 전체에 이동속도·공격속도·공격력 +5% (패시브)
-    name: '힐러', kind: 'buff', buff: 0.05, h: 62, xOff: -172, yOff: -6,
+    name: '힐러', kind: 'buff', buff: 0.05, h: 62, xOff: -172, yOff: -40,
     walk: [1, 2, 3, 4, 5, 6, 7, 8].map(i => `/ally/healer/heal_${i}.png`),
     atk: [],
   },
   giant: {
     // 근접 주먹 — 투사체 없이 히어로 타격 순간에 맨 앞 적을 직접 타격
-    name: '거인', kind: 'melee', h: 100, xOff: -78, yOff: 10, atkMult: 0.8, range: 360,
+    name: '거인', kind: 'melee', h: 104, xOff: -218, yOff: -8, atkMult: 0.8, range: 360,
     atkDur: 0.5,
     walk: [1, 2, 3].map(i => `/ally/giant/gwalk_${i}.png`),
     atk: [1, 2, 3].map(i => `/ally/giant/gatk_${i}.png`),
@@ -186,6 +186,14 @@ for (const k in ALLY_DEFS) {
 }
 const BOSS_TIME = 20  // 보스 제한시간(초)
 const HERO_X = 200  // 평상시 영웅 x (동료가 설 왼쪽 공간 확보 / 보스전에선 화면 중앙 쪽으로 이동)
+// ── 폰트 프리셋 (편집 패널에서 즉시 전환하며 비교) ──
+const FONT_SETS = {
+  dohyeon: { label: '도현(현재)', ui: "'Do Hyeon','Jua',-apple-system,'Noto Sans KR',sans-serif", num: "'Do Hyeon', sans-serif", pixel: false },
+  pixel:   { label: '갈무리+둥근모', ui: "'Galmuri11','Do Hyeon',sans-serif", num: "'DungGeunMo','Do Hyeon',sans-serif", pixel: true },
+  neo:     { label: '갈무리+Neo둥근모', ui: "'Galmuri11','Do Hyeon',sans-serif", num: "'NeoDunggeunmo','Do Hyeon',sans-serif", pixel: true },
+  galmuri: { label: '갈무리 단독', ui: "'Galmuri11','Do Hyeon',sans-serif", num: "'Galmuri11', sans-serif", pixel: true },
+}
+let CANVAS_NUM_FONT = FONT_SETS.dohyeon.num   // 캔버스 데미지 숫자용 (토글 시 갱신)
 const SPEED = 1                                      // 전역 속도 배율
 const SCROLL = 140 * SPEED                            // 전진 속도 (px/s)
 const PUNCH = { hitAt: 0.12, total: 0.3, range: 95 } // 4족 주먹질
@@ -328,9 +336,12 @@ function loadSave() {
       skill: { ...statInit(), ...s.skill },
       equipped: (Array.isArray(s.equipped) ? s.equipped.slice(0, SLOT_COUNT) : [null, null, null, null]).map(si => (si != null && si < SKILLS.length ? si : null)),
       cdConf: Array.isArray(s.cdConf) && s.cdConf.length === SKILLS.length ? s.cdConf : SKILLS.map(k => k.cd),
+      // 장착·재화·기록: 저장된 값 그대로 복원 (누락 시 기본값)
+      alliesOn: s.alliesOn && typeof s.alliesOn === 'object' ? s.alliesOn : {},
+      gem: s.gem ?? 0, inv: s.inv && typeof s.inv === 'object' ? s.inv : {}, best: s.best ?? s.wave ?? 1,
     }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), equipped: [null, null, null, null], cdConf: SKILLS.map(k => k.cd), ts: null }
+  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), equipped: [null, null, null, null], cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null }
 }
 const fmt = n => n >= 1e8 ? (n/1e8).toFixed(1)+'억' : n >= 1e4 ? (n/1e4).toFixed(1)+'만' : Math.floor(n).toLocaleString()
 
@@ -357,6 +368,12 @@ export default function App() {
   const [inv, setInv] = useState(init.inv || {})     // 뽑은 장비 보유 수량 { 'w1_3': n }
   const [gacha, setGacha] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [fontKey, setFontKey] = useState(() => (localStorage.getItem('paleoFont') in FONT_SETS ? localStorage.getItem('paleoFont') : 'dohyeon'))
+  useEffect(() => {
+    localStorage.setItem('paleoFont', fontKey)
+    CANVAS_NUM_FONT = FONT_SETS[fontKey].num
+    document.fonts?.load('16px Galmuri11'); document.fonts?.load('16px DungGeunMo'); document.fonts?.load('16px NeoDunggeunmo')
+  }, [fontKey])
   const [alliesOn, setAlliesOn] = useState(init.alliesOn || {})  // 장착된 동료 (보유/성장 시스템은 추후)
   const [allySub, setAllySub] = useState('동료')           // 소환 결과 오버레이 { cat, items:[{k,t}] }
   const [uiCfg, setUiCfg] = useState(() => { try { const sv = JSON.parse(localStorage.getItem('paleoUiCfg') || '{}'); return { ...UI_DEFAULT, ...Object.fromEntries(Object.entries(sv).filter(([k]) => k in UI_DEFAULT)) } } catch { return { ...UI_DEFAULT } } })
@@ -1213,7 +1230,7 @@ export default function App() {
       ctx.textAlign = 'center'
       for (const d of w.dmgTexts) {
         ctx.globalAlpha = Math.min(1, d.life * 2.5)
-        ctx.font = (d.crit ? '900 22px' : d.miss ? '800 14px' : '800 16px') + ' sans-serif'
+        ctx.font = (d.crit ? '900 22px ' : d.miss ? '800 14px ' : '800 16px ') + CANVAS_NUM_FONT
         ctx.fillStyle = d.miss ? '#8ab4ff' : d.crit ? '#ffca28' : '#fff'
         ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 3
         ctx.strokeText(d.val, d.x, d.y)
@@ -1376,10 +1393,14 @@ export default function App() {
     <div style={st.outer}>
     <style>{`
       @import url('https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Jua&display=swap');
+      @import url('https://cdn.jsdelivr.net/npm/galmuri@latest/dist/galmuri.css');
+      @font-face { font-family: 'DungGeunMo'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff'); font-display: swap; }
+      @font-face { font-family: 'NeoDunggeunmo'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.3/NeoDunggeunmo.woff') format('woff'); font-display: swap; }
+      .pd-pixelfont, .pd-pixelfont * { -webkit-font-smoothing: none; -moz-osx-font-smoothing: grayscale; text-rendering: geometricPrecision; }
       * { box-sizing: border-box; scrollbar-width: none; }
       *::-webkit-scrollbar { width: 0; height: 0; display: none; }
       button { cursor: pointer; font-family: inherit; }
-      .pd-num { font-family: 'Do Hyeon', sans-serif; letter-spacing: 0.02em; }
+      .pd-num { font-family: var(--pd-numfont); letter-spacing: 0.02em; }
       @keyframes pdPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
       @keyframes pdGachaPop { 0% { transform: scale(0.2); opacity: 0; } 70% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
       .pd-gacha-pop { animation: pdGachaPop 0.35s ease-out backwards; }
@@ -1388,7 +1409,8 @@ export default function App() {
         mask-image: linear-gradient(180deg, transparent 0, #000 var(--fadeT), #000 calc(100% - var(--fadeB)), transparent 100%); }
     `}</style>
     <style>{uiVars(uiCfg)}</style>
-    <div style={st.root} onClickCapture={e => {
+    <style>{`:root{--pd-uifont:${FONT_SETS[fontKey].ui};--pd-numfont:${FONT_SETS[fontKey].num};}`}</style>
+    <div className={FONT_SETS[fontKey].pixel ? 'pd-pixelfont' : ''} style={st.root} onClickCapture={e => {
       if (!uiEdit) return
       const t = e.target.closest('[data-edit]')
       if (t) { e.stopPropagation(); e.preventDefault(); setEditSel(t.dataset.edit) }
@@ -1487,6 +1509,12 @@ export default function App() {
               })}
             </div>
           })()}
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 8, borderTop: '1px solid #3a2a14', paddingTop: 8, alignItems: 'center' }}>
+            <span style={{ fontSize: 12, opacity: 0.7, marginRight: 2 }}>폰트</span>
+            {Object.keys(FONT_SETS).map(k => (
+              <button key={k} style={{ ...st.cloudBtn, ...(fontKey === k ? { color: GOLD, borderColor: GOLD_D, background: '#3a2a14' } : {}) }} onClick={() => setFontKey(k)}>{FONT_SETS[k].label}</button>
+            ))}
+          </div>
           <div style={{ display: 'flex', gap: 6, marginTop: 8, borderTop: '1px solid #3a2a14', paddingTop: 8 }}>
             <button onClick={() => { navigator.clipboard?.writeText(JSON.stringify(uiCfg)); setCopiedUi(true); setTimeout(() => setCopiedUi(false), 1200) }} style={{ flex: 1, padding: '9px', borderRadius: 6, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontSize: 13 }}>{copiedUi ? '복사됨! 개발자에게 전달' : '전체 값 복사'}</button>
             <button onClick={() => setUiCfg({ ...UI_DEFAULT })} style={{ padding: '9px 12px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontSize: 13 }}>초기화</button>
@@ -1549,7 +1577,7 @@ export default function App() {
             )}
           </div>
         )}
-        <div data-edit="gain" style={st.gainWrap}>
+        <div data-edit="gain" style={{ ...st.gainWrap, ...(uiEdit ? { pointerEvents: 'auto' } : {}) }}>
           {(gains.length ? gains : (uiEdit ? [{ id: '__s', exp: 1234, meat: 567 }] : [])).map(g => (
             <div key={g.id} style={st.gainItem}>
               <span style={st.gainCell}><img data-edit="gainicon" src="/ui/ic_exp.png" alt="" style={st.gainIcon} /><span data-edit="gaintext" style={{ ...st.gainNum, color: '#6ec4ff' }}>+{g.exp}</span></span>
@@ -1557,7 +1585,7 @@ export default function App() {
             </div>
           ))}
         </div>
-        {clearMsg != null && <div data-edit="clearmsg" style={st.overlayText}>{typeof clearMsg === 'number' ? `웨이브 ${clearMsg} 클리어!` : clearMsg}</div>}
+        {clearMsg != null && <div data-edit="clearmsg" style={{ ...st.overlayText, ...(uiEdit ? { pointerEvents: 'auto' } : {}) }}>{typeof clearMsg === 'number' ? `웨이브 ${clearMsg} 클리어!` : clearMsg}</div>}
         {phase === 'gameover' && (
           <div style={st.overlay}>
             <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 12 }}>쓰러졌다...</div>
@@ -1957,7 +1985,7 @@ const st = {
     width: '100%', maxWidth: 420, height: '100%', position: 'relative',
     display: 'flex', flexDirection: 'column',
     background: 'linear-gradient(180deg,#1c130a,#140d06)', color: '#f3e6d0',
-    fontFamily: "'Do Hyeon','Jua',-apple-system,'Noto Sans KR',sans-serif",
+    fontFamily: 'var(--pd-uifont)',
   },
   topBar: {
     display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
@@ -2201,7 +2229,7 @@ const st = {
   rowLv: { fontSize: 'var(--pd-lv)', color: GOLD, marginLeft: 4 },
   rowVal: { fontSize: 'var(--pd-val)', opacity: 0.82, marginTop: 1, whiteSpace: 'nowrap', transform: 'translate(var(--pd-val-x), var(--pd-val-y))' },
   dbgBtn: { width: 27, padding: '7px 0', borderRadius: 6, border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#f3e6d0', fontSize: 15, flexShrink: 0 },
-  dbgInput: { width: 'var(--pd-inputw)', padding: '6px 2px', borderRadius: 6, border: '1px solid #5a4028', background: '#160e07', color: GOLD, fontSize: 'var(--pd-inputfz)', textAlign: 'center', flexShrink: 0, fontFamily: "'Do Hyeon',sans-serif", transform: 'translate(var(--pd-input-x), var(--pd-input-y))' },
+  dbgInput: { width: 'var(--pd-inputw)', padding: '6px 2px', borderRadius: 6, border: '1px solid #5a4028', background: '#160e07', color: GOLD, fontSize: 'var(--pd-inputfz)', textAlign: 'center', flexShrink: 0, fontFamily: 'var(--pd-numfont)', transform: 'translate(var(--pd-input-x), var(--pd-input-y))' },
   costBtn: {
     touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none',
     minWidth: 'var(--pd-costw)', height: 'var(--pd-costh)', padding: '0 8px', border: 'none', background: 'transparent',
