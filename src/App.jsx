@@ -2149,7 +2149,7 @@ const st = {
   allyBtnOn: { color: GOLD, borderColor: GOLD_D, background: '#3a2a14' },
   allyImg: { height: 'var(--pd-caimg)', objectFit: 'contain', imageRendering: 'pixelated', transform: 'translate(var(--pd-caimg-x), var(--pd-caimg-y))' },
   splashWrap: {
-    position: 'fixed', inset: 0, zIndex: 200,
+    position: 'absolute', inset: 0, zIndex: 200,
     background: '#0a0603 url(/startbg/startbg.jpg) center / cover no-repeat',
     display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
     cursor: 'pointer',
