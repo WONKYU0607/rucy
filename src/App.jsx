@@ -29,7 +29,7 @@ const ANIM = {
   eatk1: { srcs: ['/hero/erectus_atk1/eatk1_1.png', '/hero/erectus_atk1/eatk1_2.png', '/hero/erectus_atk1/eatk1_3.png'], h: 135, flip: false },
   nwalk: { srcs: ['/hero/neander_walk/nwalk_1.png', '/hero/neander_walk/nwalk_2.png', '/hero/neander_walk/nwalk_3.png', '/hero/neander_walk/nwalk_4.png'], h: 120, flip: false },
   natk1: { srcs: ['/hero/neander_atk1/natk1_1.png', '/hero/neander_atk1/natk1_2.png'], h: 130, flip: false },
-  pwalk: { srcs: [1, 2, 3, 4, 5, 6, 7, 8].map(i => `/hero/sapiens_walk/pwalk_${i}.png`), h: 130, flip: false },
+  pwalk: { srcs: [1, 2, 3, 4, 5, 6, 7, 8].map(i => `/hero/sapiens_walk/pwalk_${i}.png`), h: 140, flip: false },
   patk1: { srcs: [1, 2, 3, 4, 5].map(i => `/hero/sapiens_atk1/patk1_${i}.png`), h: 157, flip: false },
   hmwalk: { srcs: [1, 2, 3, 4, 5, 6, 7, 8].map(i => `/hero/human_walk/hmwalk_${i}.png`), h: 140, flip: false },
   hmatk1: { srcs: [1, 2, 3, 4].map(i => `/hero/human_atk1/hmatk1_${i}.png`), h: 157, flip: false },
@@ -368,6 +368,7 @@ export default function App() {
   const [inv, setInv] = useState(init.inv || {})     // 뽑은 장비 보유 수량 { 'w1_3': n }
   const [gacha, setGacha] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [splash, setSplash] = useState(true)
   const [alliesOn, setAlliesOn] = useState(init.alliesOn || {})  // 장착된 동료 (보유/성장 시스템은 추후)
   const [allySub, setAllySub] = useState('동료')           // 소환 결과 오버레이 { cat, items:[{k,t}] }
   const [uiCfg, setUiCfg] = useState(() => { try { const sv = JSON.parse(localStorage.getItem('paleoUiCfg') || '{}'); return { ...UI_DEFAULT, ...Object.fromEntries(Object.entries(sv).filter(([k]) => k in UI_DEFAULT)) } } catch { return { ...UI_DEFAULT } } })
@@ -1401,16 +1402,23 @@ export default function App() {
       @keyframes pdPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
       @keyframes pdGachaPop { 0% { transform: scale(0.2); opacity: 0; } 70% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
       .pd-gacha-pop { animation: pdGachaPop 0.35s ease-out backwards; }
+      @keyframes pdBlink { 0%,100% { opacity: 0.12; } 50% { opacity: 1; } }
+      @keyframes pdSplashOut { from { opacity: 1; } to { opacity: 0; } }
       .pd-fade { --fadeT: 0px; --fadeB: 28px;
         -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 var(--fadeT), #000 calc(100% - var(--fadeB)), transparent 100%);
         mask-image: linear-gradient(180deg, transparent 0, #000 var(--fadeT), #000 calc(100% - var(--fadeB)), transparent 100%); }
     `}</style>
     <style>{uiVars(uiCfg)}</style>
     <div style={st.root} onClickCapture={e => {
-      if (!uiEdit) return
+      if (splash || !uiEdit) return
       const t = e.target.closest('[data-edit]')
       if (t) { e.stopPropagation(); e.preventDefault(); setEditSel(t.dataset.edit) }
     }}>
+      {splash && (
+        <div style={st.splashWrap} onClick={() => setSplash(false)}>
+          <div style={st.splashTap}>TAP TO START</div>
+        </div>
+      )}
       {uiEdit && <style>{`[data-edit]{outline:1px dashed rgba(232,185,98,0.35);outline-offset:-1px;cursor:pointer}${editSel ? `[data-edit="${editSel}"]{outline:2px solid ${GOLD} !important}` : ''}`}</style>}
       <button onClick={() => { setUiEdit(v => !v); setEditSel(null) }} style={{ position: 'absolute', top: 4, right: 4, zIndex: 60, padding: '3px 8px', borderRadius: 6, border: '1px solid #6b4a24', background: uiEdit ? GOLD_D : 'rgba(20,13,7,0.8)', color: uiEdit ? '#fff' : GOLD, fontSize: 12 }}>{uiEdit ? '편집중' : '⚙'}</button>
       {menuOpen && (
@@ -2140,6 +2148,18 @@ const st = {
   },
   allyBtnOn: { color: GOLD, borderColor: GOLD_D, background: '#3a2a14' },
   allyImg: { height: 'var(--pd-caimg)', objectFit: 'contain', imageRendering: 'pixelated', transform: 'translate(var(--pd-caimg-x), var(--pd-caimg-y))' },
+  splashWrap: {
+    position: 'fixed', inset: 0, zIndex: 200,
+    background: '#0a0603 url(/startbg/startbg.jpg) center / cover no-repeat',
+    display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+    cursor: 'pointer',
+  },
+  splashTap: {
+    position: 'absolute', left: 0, right: 0, bottom: '18%', textAlign: 'center',
+    color: '#fff', fontSize: 22, fontWeight: 700, letterSpacing: '0.15em',
+    textShadow: '0 2px 10px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.9)',
+    animation: 'pdBlink 1.4s ease-in-out infinite', pointerEvents: 'none',
+  },
   comingSoon: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#20160c', color: '#f3e6d0' },
   cdOverlay: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.72)', fontSize: 13, color: '#7ce0ff' },
   slotRow: { display: 'flex', gap: 6, padding: '2px 2px 5px' },
