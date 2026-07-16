@@ -370,7 +370,8 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [splash, setSplash] = useState(true)
   const [alliesOn, setAlliesOn] = useState(init.alliesOn || {})  // 장착된 동료 (보유/성장 시스템은 추후)
-  const [allySub, setAllySub] = useState('동료')           // 소환 결과 오버레이 { cat, items:[{k,t}] }
+  const [allySub, setAllySub] = useState('동료')
+  const [mapSeg, setMapSeg] = useState(1)  // 모험 지도 구간(0~2), 아프리카 중심=1 시작           // 소환 결과 오버레이 { cat, items:[{k,t}] }
   const [uiCfg, setUiCfg] = useState(() => { try { const sv = JSON.parse(localStorage.getItem('paleoUiCfg') || '{}'); return { ...UI_DEFAULT, ...Object.fromEntries(Object.entries(sv).filter(([k]) => k in UI_DEFAULT)) } } catch { return { ...UI_DEFAULT } } })
   const [uiEdit, setUiEdit] = useState(false)
   const [copiedUi, setCopiedUi] = useState(false)
@@ -1804,7 +1805,27 @@ export default function App() {
           )}
         </div>
       )}
-      {nav !== '영웅' && nav !== '스킬' && nav !== '장비' && nav !== '상점' && nav !== '동료' && (
+      {nav === '모험' && (
+        <div style={st.advWrap}>
+          <div style={st.advViewport}>
+            <div style={{ ...st.advTrack, transform: `translateX(-${mapSeg * 33.3333}%)` }}>
+              <img src="/adventure/worldmap.jpg" alt="" style={st.advMap} draggable={false} />
+            </div>
+            {mapSeg > 0 && (
+              <button style={{ ...st.advArrow, left: 8 }} onClick={() => setMapSeg(s => Math.max(0, s - 1))}>‹</button>
+            )}
+            {mapSeg < 2 && (
+              <button style={{ ...st.advArrow, right: 8 }} onClick={() => setMapSeg(s => Math.min(2, s + 1))}>›</button>
+            )}
+            <div style={st.advDots}>
+              {[0, 1, 2].map(i => (
+                <span key={i} style={{ ...st.advDot, ...(mapSeg === i ? st.advDotOn : {}) }} onClick={() => setMapSeg(i)} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {nav !== '영웅' && nav !== '스킬' && nav !== '장비' && nav !== '상점' && nav !== '동료' && nav !== '모험' && (
         <div style={st.comingSoon}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>🔒</div>
           <div style={{ fontSize: 16, fontWeight: 700 }}>{nav}</div>
@@ -2160,6 +2181,19 @@ const st = {
     textShadow: '0 2px 10px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.9)',
     animation: 'pdBlink 1.4s ease-in-out infinite', pointerEvents: 'none',
   },
+  advWrap: { flex: 1, minHeight: 0, background: '#1a1109', display: 'flex', padding: 8 },
+  advViewport: { position: 'relative', flex: 1, minHeight: 0, borderRadius: 10, overflow: 'hidden', border: '2px solid #4a3418', background: '#0d0904' },
+  advTrack: { width: '300%', height: '100%', transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)' },
+  advMap: { width: '100%', height: '100%', objectFit: 'cover', imageRendering: 'auto', userSelect: 'none', WebkitUserSelect: 'none' },
+  advArrow: {
+    position: 'absolute', top: '50%', transform: 'translateY(-50%)', zIndex: 5,
+    width: 40, height: 60, borderRadius: 10, border: '1px solid #6b4a24',
+    background: 'rgba(20,13,7,0.75)', color: GOLD, fontSize: 30, lineHeight: 1, padding: 0,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  },
+  advDots: { position: 'absolute', bottom: 10, left: 0, right: 0, display: 'flex', gap: 8, justifyContent: 'center', zIndex: 5 },
+  advDot: { width: 9, height: 9, borderRadius: '50%', background: 'rgba(243,230,208,0.35)', border: '1px solid rgba(0,0,0,0.4)' },
+  advDotOn: { background: GOLD },
   comingSoon: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#20160c', color: '#f3e6d0' },
   cdOverlay: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.72)', fontSize: 13, color: '#7ce0ff' },
   slotRow: { display: 'flex', gap: 6, padding: '2px 2px 5px' },
