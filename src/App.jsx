@@ -358,10 +358,10 @@ function loadSave() {
       alliesOn: s.alliesOn && typeof s.alliesOn === 'object' ? s.alliesOn : {},
       gem: s.gem ?? 0, inv: s.inv && typeof s.inv === 'object' ? s.inv : {}, best: s.best ?? s.wave ?? 1,
       gearEq: s.gearEq && typeof s.gearEq === 'object' ? s.gearEq : { 무기: null, 방어구: null, 유물: null },
-      mats: Array.isArray(s.mats) ? s.mats : [0, 0, 0, 0, 0], enh: s.enh && typeof s.enh === 'object' ? s.enh : {},
+      mats: Array.isArray(s.mats) && s.mats.some(x => x > 0) ? s.mats : [99999, 99999, 99999, 99999, 99999], enh: s.enh && typeof s.enh === 'object' ? s.enh : {},
     }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), equipped: [null, null, null, null], cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, mats: [0, 0, 0, 0, 0], enh: {} }
+  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), equipped: [null, null, null, null], cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, mats: [99999, 99999, 99999, 99999, 99999], enh: {} }
 }
 const fmt = n => n >= 1e8 ? (n/1e8).toFixed(1)+'억' : n >= 1e4 ? (n/1e4).toFixed(1)+'만' : Math.floor(n).toLocaleString()
 const fmtPct = v => v >= 10000 ? fmt(Math.round(v)) : (Math.round(v * 10) / 10).toString()
@@ -1540,7 +1540,7 @@ export default function App() {
             const stats = gearStats(cat, i, lv)
             const statsNext = gearStats(cat, i, lv + 1)
             const cost = enhCost(lv)
-            const canEnh = cat === '무기' && mats[4] >= cost
+            const canEnh = mats[4] >= cost
             const hasNext = i < EQUIP_MAX
             const nextCnt = hasNext ? (inv[invKey(cat, i + 1)] || 0) : 0
             const maxFuse = Math.floor(cnt / 5)
@@ -1571,18 +1571,14 @@ export default function App() {
                         {stats.map(([nm, val], x) => (
                           <div key={x} style={st.dStatRow}>
                             <span>{nm}</span>
-                            <span><span style={{ color: '#e8d5b0' }}>+{fmtPct(val)}%</span>{cat === '무기' && <span style={{ color: '#8fe36b', fontWeight: 700, marginLeft: 6 }}>▶ +{fmtPct(statsNext[x][1])}%</span>}</span>
+                            <span><span style={{ color: '#e8d5b0' }}>+{fmtPct(val)}%</span><span style={{ color: '#8fe36b', fontWeight: 700, marginLeft: 6 }}>▶ +{fmtPct(statsNext[x][1])}%</span></span>
                           </div>
                         ))}
                       </div>
                       <div style={st.dBtns}>
-                        {cat === '무기' ? (
-                          <button style={{ ...st.dEnhBtn, ...(canEnh ? st.dEnhBtnOn : {}) }} onClick={() => { if (canEnh) { setMats(m => { const n = [...m]; n[4] -= cost; return n }); setEnh(e => ({ ...e, [key]: lv + 1 })) } }}>
-                            <img src={MAT_IMG(4)} alt="" style={st.dEnhIc} /><span style={{ fontFamily: "'Do Hyeon',sans-serif" }}>{fmt(cost)}</span>
-                          </button>
-                        ) : (
-                          <button style={st.dEnhBtn} disabled>강화 (준비중)</button>
-                        )}
+                        <button style={{ ...st.dEnhBtn, ...(canEnh ? st.dEnhBtnOn : {}) }} onClick={() => { if (canEnh) { setMats(m => { const n = [...m]; n[4] -= cost; return n }); setEnh(e => ({ ...e, [key]: lv + 1 })) } }}>
+                          <img src={MAT_IMG(4)} alt="" style={st.dEnhIc} /><span style={{ fontFamily: "'Do Hyeon',sans-serif" }}>{fmt(cost)}</span>
+                        </button>
                         <button style={{ ...st.dEquipBtn, ...(isEq ? st.dEquipOn : {}) }} onClick={() => { if (cnt > 0 || isEq) setGearEq(g => ({ ...g, [cat]: isEq ? null : i })) }}>{isEq ? '장착중' : '장착'}</button>
                       </div>
                     </div>
@@ -1902,7 +1898,10 @@ export default function App() {
           )}
           </div>
           {EQUIP_CATS.includes(equipTab) && (
-            <button data-edit="fuseall" style={st.fuseAllBtn} onClick={() => { if (!uiEdit) fuseAll(equipTab) }}>일괄 융합</button>
+            <div style={st.equipBottomBar}>
+              <div style={st.matChip}><img src={MAT_IMG(4)} alt="" style={st.matChipIc} /><span style={{ fontFamily: "'Do Hyeon',sans-serif" }}>{fmt(mats[4])}</span></div>
+              <button data-edit="fuseall" style={st.fuseAllBtn} onClick={() => { if (!uiEdit) fuseAll(equipTab) }}>일괄 융합</button>
+            </div>
           )}
         </div>
       )}
@@ -1930,6 +1929,11 @@ export default function App() {
             {['동료', '전직'].map(t => (
               <button key={t} data-edit="allytab" style={{ ...st.allySubTab, ...(allySub === t ? st.allySubOn : {}) }} onClick={() => setAllySub(t)}>{t}</button>
             ))}
+            <div style={st.allyMats}>
+              {[0, 1, 2, 3].map(mi => (
+                <div key={mi} style={st.matChip}><img src={MAT_IMG(mi)} alt="" style={st.matChipIc} /><span style={{ fontFamily: "'Do Hyeon',sans-serif" }}>{fmt(mats[mi])}</span></div>
+              ))}
+            </div>
           </div>
           {allySub === '동료' ? (
             <div style={st.allyGrid}>
@@ -2394,6 +2398,10 @@ const st = {
   eqCount: { position: 'absolute', left: 3, bottom: 1, fontSize: 'var(--pd-equiptier)', fontWeight: 700, textShadow: '0 0 3px #000' },
   fuseBadge: { position: 'absolute', top: 2, left: 2, fontSize: 9, fontWeight: 800, color: '#1a1206', background: '#ffd24a', borderRadius: 4, padding: '0 3px', lineHeight: '13px', pointerEvents: 'none' },
   fuseAllBtn: { flexShrink: 0, width: 'var(--pd-fuseallw)', maxWidth: '92%', height: 'var(--pd-fuseallh)', margin: '2px auto 8px', border: 'none', borderRadius: 10, background: 'linear-gradient(180deg,#f0a740,#d07f1e)', color: '#3a1e02', fontSize: 'var(--pd-fuseallfz)', fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 0 #8a5410', transform: 'translate(var(--pd-fuseall-x), var(--pd-fuseall-y))' },
+  equipBottomBar: { flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, padding: '0 8px' },
+  matChip: { display: 'flex', alignItems: 'center', gap: 3, background: 'rgba(0,0,0,0.4)', borderRadius: 8, padding: '3px 7px', border: '1px solid #5a4632', flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#f3e6d0' },
+  matChipIc: { width: 22, height: 22, objectFit: 'contain' },
+  allyMats: { display: 'flex', gap: 4, marginLeft: 'auto', flexWrap: 'wrap', justifyContent: 'flex-end' },
   offOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   offBox: { background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: `2px solid ${GOLD_D}`, borderRadius: 16, padding: '20px 24px', textAlign: 'center', minWidth: 240, color: '#f3e6d0', boxShadow: '0 8px 30px rgba(0,0,0,0.6)' },
   skillIcon: { width: 'var(--pd-icon)', height: 'var(--pd-icon)', transform: 'translate(var(--pd-icon-x), var(--pd-icon-y))', borderRadius: 8, background: 'linear-gradient(180deg,#2c2013,#1a1208)', border: '1px solid #5a4028', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 },
