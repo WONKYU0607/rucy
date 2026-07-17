@@ -105,28 +105,32 @@ const STRIKE_DUR_BY = {
   18: 0.55,   // 점프낙석
 }
 
-// 무기 7종 (각 10티어, /equip/w{종류}_{티어}.png)
-const WEAPON_TYPES = ['몽둥이', '창', '도끼', '망치', '활', '지팡이', '클로']
-// 방어구 5종 (각 7티어, /equip/a{종류}_{티어}.png)
-const ARMOR_TYPES = ['방어구 1', '방어구 2', '방어구 3', '방어구 4', '방어구 5']
-// 유물 6종 (각 10개, /relic/r{행}_{n}.png)
-const RELIC_ROWS = ['반지', '목걸이', '왕관', '펜던트', '룬 반지', '부적']
-// ── 가챠(소환) 정의: 티어가 높을수록 희박 ──
-const GACHA_CATS = {
-  무기: { kinds: 7, tiers: 10, img: (k, t) => `/equip/A/w${k}_${t}.png`, weights: [23, 18, 15, 12, 9, 7, 5.5, 4.5, 3.5, 2.5] },
-  방어구: { kinds: 5, tiers: 7, img: (k, t) => `/equip/B/a${k}_${t}.png`, weights: [30, 22, 16, 12, 9, 6.5, 4.5] },
-  유물: { kinds: 6, tiers: 10, img: (k, t) => `/relic/r${k}_${t}.png`, weights: [23, 18, 15, 12, 9, 7, 5.5, 4.5, 3.5, 2.5] },
-}
+// 무기/방어구/유물 각 30개 (6등급대 × 5티어, 1→30 강해짐). /equip/A/w01.png 등
+const EQUIP_CATS = ['무기', '방어구', '유물']
+const CAT_DIR = { 무기: '/equip/A/w', 방어구: '/equip/B/a', 유물: '/relic/r' }
+const pad2 = i => String(i).padStart(2, '0')
+const equipImg = (cat, i) => `${CAT_DIR[cat]}${pad2(i)}.png`
+const GACHA_CATS = { 무기: {}, 방어구: {}, 유물: {} }   // 3 카테고리, 각 30개 동일 규격
 const GACHA_COST = { 1: 10, 10: 100, 30: 300 }
-const GRADE_BANDS = { 10: ['일반', '일반', '일반', '고급', '고급', '레어', '레어', '영웅', '영웅', '전설'], 7: ['일반', '일반', '고급', '고급', '레어', '영웅', '전설'] }
-const GRADE_COLOR = { 일반: '#b7bcc2', 고급: '#54c964', 레어: '#ff9430', 영웅: '#c05cff', 전설: '#ff4038' }
-const gradeOf = (cat, tier) => GRADE_BANDS[GACHA_CATS[cat].tiers][tier - 1]
-const rollTier = cat => {
-  const w = GACHA_CATS[cat].weights
-  let r = Math.random() * w.reduce((a, b) => a + b, 0)
-  for (let i = 0; i < w.length; i++) { r -= w[i]; if (r <= 0) return i + 1 }
-  return w.length
+const EQUIP_MAX = 30
+// 등급: 5개 묶음이 한 등급대(줄), 줄 안에서 5등급(약)→1등급(강)
+const GRADE_NAMES = ['일반', '고급', '레어', '영웅', '전설', '신화']
+const GRADE_COLOR = { 일반: '#b7bcc2', 고급: '#54c964', 레어: '#4aa3ff', 영웅: '#c05cff', 전설: '#ff9430', 신화: '#ff4038' }
+const bandOf = i => Math.floor((i - 1) / 5)          // 0~5 (등급대 = 줄)
+const tierOf = i => 5 - ((i - 1) % 5)                // 5→1 (줄 안 등급)
+const gradeNameOf = i => GRADE_NAMES[bandOf(i)]
+const gradeColorOf = i => GRADE_COLOR[GRADE_NAMES[bandOf(i)]]
+// 가챠 확률: 등급대 가중치 × 티어 가중치 (낮은 등급 흔함)
+const BAND_W = [40, 26, 17, 10, 5, 2]
+const TIER_W = [40, 27, 18, 10, 5]                   // 5등급→1등급
+const itemWeight = i => BAND_W[bandOf(i)] * TIER_W[5 - tierOf(i)]
+const _WSUM = Array.from({ length: EQUIP_MAX }, (_, x) => itemWeight(x + 1)).reduce((a, b) => a + b, 0)
+const rollItem = () => {
+  let r = Math.random() * _WSUM
+  for (let i = 1; i <= EQUIP_MAX; i++) { r -= itemWeight(i); if (r <= 0) return i }
+  return EQUIP_MAX
 }
+const invKey = (cat, i) => `${cat}:${i}`
 
 // ── 오프라인 보상 설정 (직접 수정 가능) ─────────────────────────
 const OFFLINE_MIN_SEC = 60          // 이 시간 이상 부재 시에만 보상
@@ -1305,13 +1309,33 @@ export default function App() {
       if (gem < cost) return
       setGem(g => g - cost)
     }
-    const items = Array.from({ length: n }, () => ({ k: 1 + Math.floor(Math.random() * GACHA_CATS[cat].kinds), t: rollTier(cat) }))
+    const items = Array.from({ length: n }, () => ({ i: rollItem() }))
     setInv(v => {
       const nv = { ...v }
-      for (const it of items) { const key = `${cat}:${it.k}_${it.t}`; nv[key] = (nv[key] || 0) + 1 }
+      for (const it of items) { const key = invKey(cat, it.i); nv[key] = (nv[key] || 0) + 1 }
       return nv
     })
     setGacha({ cat, items, roll: Date.now() })
+  }
+  // 융합: 같은 장비 5개 → 다음 장비 1개
+  function fuseOne(cat, i) {
+    if (i >= EQUIP_MAX) return
+    setInv(v => {
+      const k = invKey(cat, i), nk = invKey(cat, i + 1)
+      if ((v[k] || 0) < 5) return v
+      return { ...v, [k]: v[k] - 5, [nk]: (v[nk] || 0) + 1 }
+    })
+  }
+  // 일괄 융합: 낮은 등급부터 가능한 만큼 연쇄 융합
+  function fuseAll(cat) {
+    setInv(v => {
+      const nv = { ...v }
+      for (let i = 1; i < EQUIP_MAX; i++) {
+        const k = invKey(cat, i), nk = invKey(cat, i + 1)
+        while ((nv[k] || 0) >= 5) { nv[k] -= 5; nv[nk] = (nv[nk] || 0) + 1 }
+      }
+      return nv
+    })
   }
   // 길게 누르면 연속 실행 (400ms 후 80ms 간격)
   const holdRef = useRef(null)
@@ -1492,16 +1516,17 @@ export default function App() {
             <div style={st.gachaGrid}>
               {gacha.items.map((it, i) => {
                 const cellKey = `${gacha.roll}_${i}`
-                const gr = gradeOf(gacha.cat, it.t)
-                const hi = gr === '영웅' || gr === '전설'
+                const gr = gradeNameOf(it.i)
+                const col = GRADE_COLOR[gr]
+                const hi = gr === '전설' || gr === '신화'
                 return (
                   <div key={cellKey} data-edit="gacha" className="pd-gacha-pop" style={{
-                    ...st.gachaCell, borderColor: GRADE_COLOR[gr], animationDelay: `${Math.min(i * 60, 1800)}ms`,
-                    boxShadow: hi ? `0 0 18px 4px ${GRADE_COLOR[gr]}66` : 'none',
+                    ...st.gachaCell, borderColor: col, animationDelay: `${Math.min(i * 60, 1800)}ms`,
+                    boxShadow: hi ? `0 0 18px 4px ${col}66` : 'none',
                   }}>
-                    <span data-edit="ggrade" style={{ ...st.gachaGrade, color: GRADE_COLOR[gr] }}>{gr}</span>
-                    <img src={GACHA_CATS[gacha.cat].img(it.k, it.t)} alt="" data-edit="gimg" style={st.gachaImg} />
-                    <span data-edit="gtier" style={st.gachaTier}>{it.t}등급</span>
+                    <span data-edit="ggrade" style={{ ...st.gachaGrade, color: col }}>{gr}</span>
+                    <img src={equipImg(gacha.cat, it.i)} alt="" data-edit="gimg" style={st.gachaImg} />
+                    <span data-edit="gtier" style={st.gachaTier}>{tierOf(it.i)}등급</span>
                   </div>
                 )
               })}
@@ -1754,46 +1779,28 @@ export default function App() {
             ))}
           </div>
           <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.panelInner}>
-          {equipTab === '무기' && WEAPON_TYPES.map((wt, wi) => (
-            <div key={wi}>
-              <div data-edit="cat" style={{ fontSize: 'var(--pd-catfz)', fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85, transform: 'translate(var(--pd-cat-x), var(--pd-cat-y))' }}>{wt}</div>
-              <div style={st.equipGrid}>
-                {Array.from({ length: 10 }, (_, ti) => (
-                  <div key={ti} data-edit="equip" style={st.equipCell}>
-                    <img src={`/equip/A/w${wi + 1}_${ti + 1}.png`} alt="" data-edit="eqimg" style={st.equipImg} />
-                    <div data-edit="eqtier" style={st.equipTier}>{ti + 1}등급</div>
+          {EQUIP_CATS.includes(equipTab) && (
+            <div style={st.equipGrid}>
+              {Array.from({ length: EQUIP_MAX }, (_, idx) => {
+                const i = idx + 1
+                const cnt = inv[invKey(equipTab, i)] || 0
+                const col = gradeColorOf(i)
+                const canFuse = cnt >= 5 && i < EQUIP_MAX
+                return (
+                  <div key={i} data-edit="equip" style={{ ...st.equipCell, borderColor: col + '99' }} onClick={() => { if (!uiEdit && canFuse) fuseOne(equipTab, i) }}>
+                    <span data-edit="eqtier" style={{ ...st.equipTier, color: col }}>{tierOf(i)}등급</span>
+                    <img src={equipImg(equipTab, i)} alt="" data-edit="eqimg" style={st.equipImg} />
+                    <span style={{ ...st.eqCount, color: canFuse ? '#ffd24a' : '#d8ccb3' }}>{cnt}/5</span>
+                    {canFuse && <span style={st.fuseBadge}>융합</span>}
                   </div>
-                ))}
-              </div>
+                )
+              })}
             </div>
-          ))}
-          {equipTab === '방어구' && ARMOR_TYPES.map((at, ai) => (
-            <div key={ai}>
-              <div data-edit="cat" style={{ fontSize: 'var(--pd-catfz)', fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85, transform: 'translate(var(--pd-cat-x), var(--pd-cat-y))' }}>{at}</div>
-              <div style={st.equipGrid}>
-                {Array.from({ length: 7 }, (_, ti) => (
-                  <div key={ti} data-edit="equip" style={st.equipCell}>
-                    <img src={`/equip/B/a${ai + 1}_${ti + 1}.png`} alt="" data-edit="eqimg" style={st.equipImg} />
-                    <div data-edit="eqtier" style={st.equipTier}>{ti + 1}등급</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-          {equipTab === '유물' && RELIC_ROWS.map((rn, ri) => (
-            <div key={ri}>
-              <div data-edit="cat" style={{ fontSize: 'var(--pd-catfz)', fontWeight: 700, margin: '4px 2px 4px', opacity: 0.85, transform: 'translate(var(--pd-cat-x), var(--pd-cat-y))' }}>{rn}</div>
-              <div style={st.equipGrid}>
-                {Array.from({ length: 10 }, (_, ti) => (
-                  <div key={ti} data-edit="equip" style={st.equipCell}>
-                    <img src={`/relic/r${ri + 1}_${ti + 1}.png`} alt="" data-edit="eqimg" style={st.equipImg} />
-                    <div data-edit="eqtier" style={st.equipTier}>{ti + 1}등급</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+          )}
           </div>
+          {EQUIP_CATS.includes(equipTab) && (
+            <button style={st.fuseAllBtn} onClick={() => { if (!uiEdit) fuseAll(equipTab) }}>일괄 융합</button>
+          )}
         </div>
       )}
 
@@ -1802,10 +1809,10 @@ export default function App() {
           <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.panelInner}>
             {Object.keys(GACHA_CATS).map(cat => (
               <div key={cat} data-edit="shoprow" style={{ ...st.row, minHeight: 'var(--pd-shoprowmin)', transform: 'translate(var(--pd-shoprow-x), var(--pd-shoprow-y))' }}>
-                <img src={GACHA_CATS[cat].img(1, GACHA_CATS[cat].tiers)} alt="" data-edit="shopic" style={{ height: 'var(--pd-shopic)', objectFit: 'contain', transform: 'translate(var(--pd-shopic-x), var(--pd-shopic-y))' }} />
+                <img src={equipImg(cat, EQUIP_MAX)} alt="" data-edit="shopic" style={{ height: 'var(--pd-shopic)', objectFit: 'contain', transform: 'translate(var(--pd-shopic-x), var(--pd-shopic-y))' }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div data-edit="shoptitle" style={{ fontWeight: 700, fontSize: 'var(--pd-shoptfz)', transform: 'translate(var(--pd-shopt-x), var(--pd-shopt-y))' }}>{cat} 소환</div>
-                  <div data-edit="shopsub" style={{ fontSize: 'var(--pd-shopsubfz)', opacity: 0.6, transform: 'translate(var(--pd-shopsub-x), var(--pd-shopsub-y))' }}>티어가 높을수록 희귀</div>
+                  <div data-edit="shopsub" style={{ fontSize: 'var(--pd-shopsubfz)', opacity: 0.6, transform: 'translate(var(--pd-shopsub-x), var(--pd-shopsub-y))' }}>상위 등급일수록 희귀 · 5개 융합</div>
                 </div>
                 <button data-edit="shopbtn" style={st.shopBtn} onClick={() => pullGacha(cat, 1)}><span data-edit="shopbtext" style={st.shopBtnText}>1회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />10</span></span></button>
                 <button data-edit="shopbtn" style={st.shopBtn} onClick={() => pullGacha(cat, 10)}><span data-edit="shopbtext" style={st.shopBtnText}>10회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />100</span></span></button>
@@ -2279,6 +2286,9 @@ const st = {
   statIconImg: { width: '100%', height: '100%', objectFit: 'contain' },
   navIconImg: { width: 'var(--pd-navicon)', height: 'var(--pd-navicon)', objectFit: 'contain' },
   equipTier: { position: 'absolute', right: 3, bottom: 1, fontSize: 'var(--pd-equiptier)', color: GOLD, textShadow: '0 0 3px #000', transform: 'translate(var(--pd-eqtier-x), var(--pd-eqtier-y))' },
+  eqCount: { position: 'absolute', left: 3, bottom: 1, fontSize: 'var(--pd-equiptier)', fontWeight: 700, textShadow: '0 0 3px #000' },
+  fuseBadge: { position: 'absolute', top: 2, left: 2, fontSize: 9, fontWeight: 800, color: '#1a1206', background: '#ffd24a', borderRadius: 4, padding: '0 3px', lineHeight: '13px', pointerEvents: 'none' },
+  fuseAllBtn: { flexShrink: 0, margin: '2px 8px 8px', height: 42, border: 'none', borderRadius: 10, background: 'linear-gradient(180deg,#f0a740,#d07f1e)', color: '#3a1e02', fontSize: 15, fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 0 #8a5410' },
   offOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   offBox: { background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: `2px solid ${GOLD_D}`, borderRadius: 16, padding: '20px 24px', textAlign: 'center', minWidth: 240, color: '#f3e6d0', boxShadow: '0 8px 30px rgba(0,0,0,0.6)' },
   skillIcon: { width: 'var(--pd-icon)', height: 'var(--pd-icon)', transform: 'translate(var(--pd-icon-x), var(--pd-icon-y))', borderRadius: 8, background: 'linear-gradient(180deg,#2c2013,#1a1208)', border: '1px solid #5a4028', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 },
