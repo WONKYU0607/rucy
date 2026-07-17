@@ -39,19 +39,19 @@ const ANIM = {
 //   fx strike = 낙하/타격: 적 위치에 frames 재생, 중반에 데미지
 // stage — 0:4족보행 1:직립보행 2:에렉투스 3:네안데르탈인 4:사피엔스 5:인간
 const SKILL_SHEET = [
-  { id: 1, n: 6, h: 280, stage: 3, title: '번개 바위', charSeq: [1, 2, 3, 4], fx: { type: 'strike', frames: [5, 6], fxH: 240 } },
-  { id: 2, n: 5, h: 250, stage: 3, title: '전기 작살', charSeq: [1, 2], fx: { type: 'proj', fly: [3, 4], impact: 5, fxH: 200 } },
-  { id: 3, n: 4, h: 235, stage: 3, title: '불바위', charSeq: [1, 2, 3], fx: { type: 'proj', fly: [4], impact: 4, flyScale: 0.3, fxH: 200 } },
+  { id: 1, n: 6, h: 280, stage: 1, title: '번개 바위', charSeq: [1, 2, 3, 4], fx: { type: 'strike', frames: [5, 6], fxH: 240 } },
+  { id: 2, n: 5, h: 250, stage: 1, title: '전기 작살', charSeq: [1, 2], fx: { type: 'proj', fly: [3, 4], impact: 5, fxH: 200 } },
+  { id: 3, n: 4, h: 235, stage: 1, title: '불바위', charSeq: [1, 2, 3], fx: { type: 'proj', fly: [4], impact: 4, flyScale: 0.3, fxH: 200 } },
   { id: 7, n: 6, h: 110, stage: 0, title: '할퀴기' },
   { id: 8, n: 6, h: 140, stage: 0, title: '내려치기' },
   { id: 12, n: 7, h: 110, stage: 0, title: '빙글빙글' },
   { id: 13, n: 7, h: 120, stage: 0, title: '데굴데굴' },
-  { id: 15, n: 5, h: 120, stage: 1, title: '로우킥' },
-  { id: 16, n: 6, h: 145, stage: 1, title: '바위치기', charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5, 6] } },
-  { id: 17, n: 5, h: 133, stage: 1, title: '포효' },
-  { id: 18, n: 5, h: 210, stage: 2, title: '바위치기 (강화)', charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5] } },
-  { id: 19, n: 4, h: 220, stage: 2, title: '불곰', charSeq: [1], fx: { type: 'proj', fly: [2, 3, 4, 4, 4], flyScale: 0.6, yOff: 0 } },
-  { id: 20, n: 5, h: 195, stage: 2, title: '바위 회오리', charSeq: [1, 2, 3, 5], fx: { type: 'proj', fly: [4], flyScale: 0.9, yOff: 0 } },
+  { id: 15, n: 5, h: 120, stage: 0, title: '로우킥' },
+  { id: 16, n: 6, h: 145, stage: 0, title: '바위치기', charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5, 6] } },
+  { id: 17, n: 5, h: 133, stage: 0, title: '포효' },
+  { id: 18, n: 5, h: 210, stage: 1, title: '바위치기 (강화)', charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5] } },
+  { id: 19, n: 4, h: 220, stage: 1, title: '불곰', charSeq: [1], fx: { type: 'proj', fly: [2, 3, 4, 4, 4], flyScale: 0.6, yOff: 0 } },
+  { id: 20, n: 5, h: 195, stage: 1, title: '바위 회오리', charSeq: [1, 2, 3, 5], fx: { type: 'proj', fly: [4], flyScale: 0.9, yOff: 0 } },
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
 const SIMG = {}
