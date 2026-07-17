@@ -2181,7 +2181,11 @@ const st = {
     textShadow: '0 2px 10px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.9)',
     animation: 'pdBlink 1.4s ease-in-out infinite', pointerEvents: 'none',
   },
-  advWrap: { flex: 1, minHeight: 0, background: '#1a1109', display: 'flex', padding: 8 },
+  advWrap: {
+    position: 'absolute', left: 0, right: 0, bottom: 0,
+    top: 'calc(max(10px, env(safe-area-inset-top)) + 96px)',  // 상단바(HP·웨이브·보스) 아래부터
+    zIndex: 40, background: '#1a1109', display: 'flex', padding: 8,
+  },
   advViewport: { position: 'relative', flex: 1, minHeight: 0, borderRadius: 10, overflow: 'hidden', border: '2px solid #4a3418', background: '#0d0904' },
   advTrack: { width: '300%', height: '100%', transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)' },
   advMap: { width: '100%', height: '100%', objectFit: 'cover', imageRendering: 'auto', userSelect: 'none', WebkitUserSelect: 'none' },
