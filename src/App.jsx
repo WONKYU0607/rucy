@@ -2198,8 +2198,9 @@ const st = {
     animation: 'pdBlink 1.4s ease-in-out infinite', pointerEvents: 'none',
   },
   advWrap: {
-    position: 'absolute', left: 0, right: 0, bottom: 0,
-    top: 'calc(max(10px, env(safe-area-inset-top)) + 96px)',  // 상단바(HP·웨이브·보스) 아래부터
+    position: 'absolute', left: 0, right: 0,
+    top: 'calc(max(10px, env(safe-area-inset-top)) + 96px)',      // 상단바 아래부터
+    bottom: 'calc(64px + env(safe-area-inset-bottom))',           // 하단 네비 위까지 (네비는 원래 자리 유지)
     zIndex: 40, background: '#1a1109', display: 'flex', padding: 8,
   },
   advViewport: { position: 'relative', flex: 1, minHeight: 0, borderRadius: 10, overflow: 'hidden', border: '2px solid #4a3418', background: '#0d0904' },
