@@ -189,6 +189,9 @@ for (const k in ALLY_DEFS) {
   }
 }
 const BOSS_TIME = 20  // 보스 제한시간(초)
+// 죽음 실루엣 색 처리용 오프스크린(스프라이트만 있는 투명 캔버스에서 source-atop 사용 → 메인 배경 오염 방지)
+const _deadCv = typeof document !== 'undefined' ? document.createElement('canvas') : null
+const _deadCtx = _deadCv ? _deadCv.getContext('2d') : null
 const HERO_X = 200  // 평상시 영웅 x (동료가 설 왼쪽 공간 확보 / 보스전에선 화면 중앙 쪽으로 이동)
 const SPEED = 1                                      // 전역 속도 배율
 const SCROLL = 140 * SPEED                            // 전진 속도 (px/s)
@@ -1055,16 +1058,25 @@ export default function App() {
       ctx.translate(e.x, y - bounce + (e.air ? 0 : (e.yOff || 0)))
       ctx.rotate(rock)
       if (e.sq > 0) { const q = e.sq / 0.18; ctx.scale(1 + 0.10 * q, 1 - 0.14 * q) }
-      if (e.dead) { const p = Math.max(0, e.dieT) / 0.5; ctx.filter = 'brightness(0)'; ctx.globalAlpha = Math.min(1, p * 2) * 0.9 }
+      if (e.dead) { const p = Math.max(0, e.dieT) / 0.5; ctx.globalAlpha = Math.min(1, p * 2) * 0.9 }
       if (!e.dead && e.flash > 0.5) ctx.filter = 'brightness(3)'
       if (im.complete && im.naturalWidth > 0) {
         const eh = e.h * (e.scaleV || 1)
         const ew = eh * (im.naturalWidth / im.naturalHeight)
         if (t.flip) ctx.scale(-1, 1)
-        ctx.drawImage(im, -ew / 2, -eh, ew, eh)
-        if (e.dead) {
-          const rp = Math.max(0, (e.dieT / 0.5 - 0.5) * 2)  // 초반 진한 빨강 → 중반부터 검정
-          if (rp > 0) { ctx.filter = 'none'; ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = `rgba(200,20,20,${rp})`; ctx.fillRect(-ew / 2, -eh, ew, eh) }
+        if (e.dead && _deadCtx) {
+          const p = Math.max(0, e.dieT) / 0.5
+          const rp = Math.max(0, (p - 0.5) * 2)  // 초반 진한 빨강 → 중반부터 검정
+          const iw = im.naturalWidth, ih = im.naturalHeight
+          if (_deadCv.width !== iw || _deadCv.height !== ih) { _deadCv.width = iw; _deadCv.height = ih } else _deadCtx.clearRect(0, 0, iw, ih)
+          _deadCtx.globalCompositeOperation = 'source-over'
+          _deadCtx.filter = 'brightness(0)'
+          _deadCtx.drawImage(im, 0, 0, iw, ih)     // 검정 실루엣
+          _deadCtx.filter = 'none'
+          if (rp > 0) { _deadCtx.globalCompositeOperation = 'source-atop'; _deadCtx.fillStyle = `rgba(210,25,25,${rp})`; _deadCtx.fillRect(0, 0, iw, ih) }  // 스프라이트 위에만 빨강
+          ctx.drawImage(_deadCv, -ew / 2, -eh, ew, eh)
+        } else {
+          ctx.drawImage(im, -ew / 2, -eh, ew, eh)
         }
       } else {
         ctx.fillStyle = e.color
@@ -1932,9 +1944,9 @@ const UI_DEFAULT = {
   shopbX: -2, shopbY: 0, shopbtX: 0, shopbtY: 0, shopgemX: 0, shopgemY: 0, gainicX: 0, gainicY: 0, gaintX: 0, gaintY: 0,
   gbtnX: 0, gbtnY: 0, gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0, hambX: 1, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: 0, bhpX: 0, bhpY: 0, pbX: 0, pbY: 0, wjX: 0, wjY: 0, caslotX: 3, caslotY: 16, caimgX: 0, caimgY: 0, canameX: 0, canameY: 0, catabX: 15, catabY: 14, cabtnX: 0, cabtnY: 0, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: 0, btextY: 7,
   // 오프라인 보상: 보물상자 + 창(헤더/항목/버튼)
-  trsz: 72, offw: 322, offtfz: 14, offnfz: 13, offiw: 77, offih: 66, offic: 28, offifz: 11, offrfz: 11,
+  trsz: 55, offw: 322, offtfz: 14, offnfz: 13, offiw: 58, offih: 58, offic: 29, offifz: 10, offrfz: 10,
   offbtw: 135, offbth: 51, offbfz: 14, offclw: 100, offclh: 50, offcfz: 15,
-  trX: 0, trY: 0, offtX: 0, offtY: 0, offnX: 0, offnY: 0, offitX: -79, offitY: -14, offitiX: 0, offitiY: 6, offvX: 0, offvY: 1, offrX: 0, offrY: 0, offbtX: 0, offbtY: 42, offclX: 0, offclY: 42,
+  trX: -2, trY: 11, offtX: 0, offtY: 36, offnX: 0, offnY: 38, offitX: -79, offitY: 15, offitiX: 0, offitiY: 6, offvX: 0, offvY: 2, offrX: 0, offrY: -3, offbtX: 0, offbtY: 42, offclX: 0, offclY: 42,
 }
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
