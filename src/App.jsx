@@ -643,7 +643,7 @@ export default function App() {
       const atkRange = st.mode === 'quad' ? PUNCH.range : melee ? MC(st.mode).range : THROW.range
 
       // 배경 스크롤: 이동 상태 + 앞을 막는 적이 없을 때만 전진
-      const heroTargetX = w.bossBattle ? Math.round(w.W * 0.34) : HERO_X
+      const heroTargetX = w.bossBattle ? Math.max(HERO_X, Math.round(w.W * 0.34)) : HERO_X
       w.heroX += (heroTargetX - w.heroX) * Math.min(1, dt * 4)
       const atkRange0 = st.mode === 'quad' ? PUNCH.range : MELEE_MODES.includes(st.mode) ? MC(st.mode).range : THROW.range
       const blocked = w.enemies.some(e => !e.dead && e.x - w.heroX < atkRange0)
@@ -1055,13 +1055,17 @@ export default function App() {
       ctx.translate(e.x, y - bounce + (e.air ? 0 : (e.yOff || 0)))
       ctx.rotate(rock)
       if (e.sq > 0) { const q = e.sq / 0.18; ctx.scale(1 + 0.10 * q, 1 - 0.14 * q) }
-      if (e.dead) { ctx.filter = 'brightness(0)'; ctx.globalAlpha = Math.max(0, e.dieT) / 0.5 * 0.85 }
+      if (e.dead) { const p = Math.max(0, e.dieT) / 0.5; ctx.filter = 'brightness(0)'; ctx.globalAlpha = Math.min(1, p * 2) * 0.9 }
       if (!e.dead && e.flash > 0.5) ctx.filter = 'brightness(3)'
       if (im.complete && im.naturalWidth > 0) {
         const eh = e.h * (e.scaleV || 1)
         const ew = eh * (im.naturalWidth / im.naturalHeight)
         if (t.flip) ctx.scale(-1, 1)
         ctx.drawImage(im, -ew / 2, -eh, ew, eh)
+        if (e.dead) {
+          const rp = Math.max(0, (e.dieT / 0.5 - 0.5) * 2)  // 초반 진한 빨강 → 중반부터 검정
+          if (rp > 0) { ctx.filter = 'none'; ctx.globalCompositeOperation = 'source-atop'; ctx.fillStyle = `rgba(200,20,20,${rp})`; ctx.fillRect(-ew / 2, -eh, ew, eh) }
+        }
       } else {
         ctx.fillStyle = e.color
         ctx.beginPath(); ctx.ellipse(0, -e.h * 0.5, e.h * 0.6, e.h * 0.4, 0, 0, Math.PI * 2); ctx.fill()
