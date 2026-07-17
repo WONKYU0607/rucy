@@ -1577,7 +1577,7 @@ export default function App() {
         </div>
       </div>
 
-      <div ref={wrapRef} style={st.canvasWrap}>
+      <div ref={wrapRef} style={{ ...st.canvasWrap, ...(nav === '모험' ? { display: 'none' } : {}) }}>
         <canvas ref={canvasRef} />
         <button data-edit="pausebtn" style={{ ...st.pauseBtn, opacity: paused ? 1 : 0.65 }} onClick={() => { if (!uiEdit) setPaused(p => !p) }}>{paused ? '▶' : 'II'}</button>
         {bossUI && (
