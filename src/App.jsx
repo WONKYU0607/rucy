@@ -1554,8 +1554,8 @@ export default function App() {
         </div>
       )}
       {uiEdit && (
-        <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, margin: '0 auto', maxWidth: 420, zIndex: 61, background: 'rgba(16,10,5,0.32)', border: `2px solid ${GOLD_D}`, textShadow: '0 1px 3px rgba(0,0,0,0.9)', borderBottom: 'none', borderRadius: '10px 10px 0 0', padding: '8px 12px calc(8px + env(safe-area-inset-bottom))', maxHeight: '46%', overflowY: 'auto' }}>
-          {!editSel && <div style={{ fontSize: 13, color: '#c9b596', textAlign: 'center', padding: '8px 0' }}>조정할 요소를 화면에서 탭하세요 (틀·아이콘·글자·숫자·버튼)</div>}
+        <div style={{ position: 'fixed', left: 0, right: 0, ...(editSel ? { bottom: 0, borderBottom: 'none', borderRadius: '10px 10px 0 0' } : { top: 0, borderTop: 'none', borderRadius: '0 0 10px 10px' }), margin: '0 auto', maxWidth: 420, zIndex: 61, background: 'rgba(16,10,5,0.94)', border: `2px solid ${GOLD_D}`, textShadow: '0 1px 3px rgba(0,0,0,0.9)', padding: '8px 12px calc(8px + env(safe-area-inset-bottom))', maxHeight: '46%', overflowY: 'auto' }}>
+          {!editSel && <div style={{ fontSize: 13, color: '#c9b596', textAlign: 'center', padding: '4px 0 8px' }}>조정할 요소를 화면에서 탭하세요 (틀·아이콘·글자·숫자·버튼)</div>}
           {editSel && (() => {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) }))
@@ -2377,7 +2377,7 @@ const st = {
   offBox: { background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: `2px solid ${GOLD_D}`, borderRadius: 16, padding: '20px 24px', textAlign: 'center', minWidth: 240, color: '#f3e6d0', boxShadow: '0 8px 30px rgba(0,0,0,0.6)' },
   skillIcon: { width: 'var(--pd-icon)', height: 'var(--pd-icon)', transform: 'translate(var(--pd-icon-x), var(--pd-icon-y))', borderRadius: 8, background: 'linear-gradient(180deg,#2c2013,#1a1208)', border: '1px solid #5a4028', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 },
   progOuter: { height: 8, background: '#2a1d0d', borderRadius: 4, overflow: 'hidden', border: '1px solid #3a2a14' },
-  canvasWrap: { height: '42%', position: 'relative', minHeight: 220 },
+  canvasWrap: { height: '42%', position: 'relative', minHeight: 220, overflow: 'hidden' },
   statusBar: { display: 'flex', alignItems: 'center', gap: 6, padding: '3px 8px 2px' },
   hpPill: {
     position: 'relative', flex: 1.1, minWidth: 0, height: 'var(--pd-hph)',
@@ -2477,8 +2477,8 @@ const st = {
   offBtnClaim: { width: 'var(--pd-offclw)', height: 'var(--pd-offclh)', background: 'url(/ui/off_claim.png) center / 100% 100% no-repeat', border: 'none', color: '#f0f0f0', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0, transform: 'translate(var(--pd-offcl-x), var(--pd-offcl-y))' },
   offBtnClaimText: { fontSize: 'var(--pd-offcfz)', textShadow: '0 1px 2px #000' },
   // ── 장비 상세창 ──
-  dOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60, padding: 16 },
-  dBox: { position: 'relative', width: '100%', maxWidth: 360, maxHeight: '88vh', overflowY: 'auto', background: 'linear-gradient(180deg,#3a2a1a,#2a1d10)', border: '2px solid #6b4a2a', borderRadius: 14, padding: 12, boxShadow: '0 8px 30px rgba(0,0,0,0.6)' },
+  dOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60, padding: '16px 16px calc(78px + env(safe-area-inset-bottom))' },
+  dBox: { position: 'relative', width: '100%', maxWidth: 360, maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', background: 'linear-gradient(180deg,#3a2a1a,#2a1d10)', border: '2px solid #6b4a2a', borderRadius: 14, padding: 12, boxShadow: '0 8px 30px rgba(0,0,0,0.6)' },
   dTabs: { display: 'flex', gap: 6, marginBottom: 10 },
   dTab: { flex: 1, height: 40, border: 'none', borderRadius: 8, background: '#4a3826', color: '#c9b596', fontSize: 15, fontWeight: 700, cursor: 'pointer' },
   dTabOn: { background: 'linear-gradient(180deg,#f0a740,#d07f1e)', color: '#3a1e02' },
