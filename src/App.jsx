@@ -1524,6 +1524,74 @@ export default function App() {
           </div>
         </div>
       )}
+      {nav === '장비' && detailItem && (() => {
+            const { cat, i } = detailItem
+            const cnt = inv[invKey(cat, i)] || 0
+            const col = gradeColorOf(i)
+            const isEq = gearEq[cat] === i
+            const stats = gearStats(cat, i)
+            const hasNext = i < EQUIP_MAX
+            const nextCnt = hasNext ? (inv[invKey(cat, i + 1)] || 0) : 0
+            const maxFuse = Math.floor(cnt / 5)
+            const go = (ni) => { if (ni >= 1 && ni <= EQUIP_MAX) { setDetailItem({ cat, i: ni }); setFuseQty(0) } }
+            return (
+              <div style={st.dOverlay} onClick={e => { if (e.target === e.currentTarget) setDetailItem(null) }}>
+                <div style={st.dBox}>
+                  <div style={st.dTabs}>
+                    <button style={{ ...st.dTab, ...(detailTab === '강화' ? st.dTabOn : {}) }} onClick={() => setDetailTab('강화')}>강화</button>
+                    <button style={{ ...st.dTab, ...(detailTab === '융합' ? st.dTabOn : {}) }} onClick={() => setDetailTab('융합')}>융합</button>
+                  </div>
+                  {detailTab === '강화' ? (
+                    <div style={st.dBody}>
+                      <div style={{ ...st.dGrade, color: col }}>{gradeNameOf(i)}</div>
+                      <div style={st.dName}>{cat} {i}번</div>
+                      <div style={st.dIconRow}>
+                        <button style={st.dArrow} onClick={() => go(i - 1)}>◀</button>
+                        <div style={{ ...st.dIconWrap, borderColor: col }}>
+                          <img src={equipImg(cat, i)} alt="" style={st.dIcon} />
+                          <span style={{ ...st.dIconTier, color: col }}>{tierOf(i)}등급</span>
+                        </div>
+                        <button style={st.dArrow} onClick={() => go(i + 1)}>▶</button>
+                      </div>
+                      <div style={st.dCnt}>{cnt}/5</div>
+                      <div style={st.dSecTitle}>장착 효과</div>
+                      <div style={st.dStatBox}>
+                        {stats.map(([nm, val], x) => (
+                          <div key={x} style={st.dStatRow}><span>{nm}</span><span style={{ color: '#8fe36b', fontWeight: 700 }}>+{fmtPct(val)}%</span></div>
+                        ))}
+                      </div>
+                      <div style={st.dBtns}>
+                        <button style={st.dEnhBtn} disabled>강화 (준비중)</button>
+                        <button style={{ ...st.dEquipBtn, ...(isEq ? st.dEquipOn : {}) }} onClick={() => { if (cnt > 0 || isEq) setGearEq(g => ({ ...g, [cat]: isEq ? null : i })) }}>{isEq ? '장착중' : '장착'}</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={st.dBody}>
+                      <div style={st.dFuseNote}>* 보유 {cat} 5개로 다음 단계 제작</div>
+                      {hasNext ? (
+                        <>
+                          <div style={st.dName}>{cat} {i}번</div>
+                          <div style={{ ...st.dIconWrap, borderColor: col }}><img src={equipImg(cat, i)} alt="" style={st.dIcon} /><span style={{ ...st.dIconTier, color: col }}>{tierOf(i)}등급</span></div>
+                          <div style={st.dCnt}>{cnt} <span style={{ color: '#ff6b6b' }}>(-{fuseQty * 5})</span></div>
+                          <div style={st.dArrowDown}>▼</div>
+                          <div style={st.dName}>{cat} {i + 1}번</div>
+                          <div style={{ ...st.dIconWrap, borderColor: gradeColorOf(i + 1) }}><img src={equipImg(cat, i + 1)} alt="" style={st.dIcon} /><span style={{ ...st.dIconTier, color: gradeColorOf(i + 1) }}>{tierOf(i + 1)}등급</span></div>
+                          <div style={st.dCnt}>{nextCnt} <span style={{ color: '#8fe36b' }}>(+{fuseQty})</span></div>
+                          <div style={st.dStepper}>
+                            <button style={st.dStepBtn} onClick={() => setFuseQty(q => Math.max(0, q - 1))}>-</button>
+                            <span style={st.dStepVal}>{fuseQty}</span>
+                            <button style={st.dStepBtn} onClick={() => setFuseQty(q => Math.min(maxFuse, q + 1))}>+</button>
+                          </div>
+                          <button style={st.dFuseBtn} onClick={() => { if (fuseQty > 0) { setInv(v => { const k = invKey(cat, i), nk = invKey(cat, i + 1); const use = Math.min(fuseQty, Math.floor((v[k] || 0) / 5)); if (use <= 0) return v; return { ...v, [k]: v[k] - use * 5, [nk]: (v[nk] || 0) + use } }); setFuseQty(0) } }}>융합</button>
+                        </>
+                      ) : (<div style={st.dMaxNote}>최종 단계 장비입니다</div>)}
+                    </div>
+                  )}
+                  <button style={st.dClose} onClick={() => setDetailItem(null)}>✕</button>
+                </div>
+              </div>
+            )
+          })()}
       {gacha && (
         <div style={st.gachaOverlay}>
           <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.gachaScroll}>
@@ -1815,74 +1883,6 @@ export default function App() {
           {EQUIP_CATS.includes(equipTab) && (
             <button data-edit="fuseall" style={st.fuseAllBtn} onClick={() => { if (!uiEdit) fuseAll(equipTab) }}>일괄 융합</button>
           )}
-          {detailItem && (() => {
-            const { cat, i } = detailItem
-            const cnt = inv[invKey(cat, i)] || 0
-            const col = gradeColorOf(i)
-            const isEq = gearEq[cat] === i
-            const stats = gearStats(cat, i)
-            const hasNext = i < EQUIP_MAX
-            const nextCnt = hasNext ? (inv[invKey(cat, i + 1)] || 0) : 0
-            const maxFuse = Math.floor(cnt / 5)
-            const go = (ni) => { if (ni >= 1 && ni <= EQUIP_MAX) { setDetailItem({ cat, i: ni }); setFuseQty(0) } }
-            return (
-              <div style={st.dOverlay} onClick={e => { if (e.target === e.currentTarget) setDetailItem(null) }}>
-                <div style={st.dBox}>
-                  <div style={st.dTabs}>
-                    <button style={{ ...st.dTab, ...(detailTab === '강화' ? st.dTabOn : {}) }} onClick={() => setDetailTab('강화')}>강화</button>
-                    <button style={{ ...st.dTab, ...(detailTab === '융합' ? st.dTabOn : {}) }} onClick={() => setDetailTab('융합')}>융합</button>
-                  </div>
-                  {detailTab === '강화' ? (
-                    <div style={st.dBody}>
-                      <div style={{ ...st.dGrade, color: col }}>{gradeNameOf(i)}</div>
-                      <div style={st.dName}>{cat} {i}번</div>
-                      <div style={st.dIconRow}>
-                        <button style={st.dArrow} onClick={() => go(i - 1)}>◀</button>
-                        <div style={{ ...st.dIconWrap, borderColor: col }}>
-                          <img src={equipImg(cat, i)} alt="" style={st.dIcon} />
-                          <span style={{ ...st.dIconTier, color: col }}>{tierOf(i)}등급</span>
-                        </div>
-                        <button style={st.dArrow} onClick={() => go(i + 1)}>▶</button>
-                      </div>
-                      <div style={st.dCnt}>{cnt}/5</div>
-                      <div style={st.dSecTitle}>장착 효과</div>
-                      <div style={st.dStatBox}>
-                        {stats.map(([nm, val], x) => (
-                          <div key={x} style={st.dStatRow}><span>{nm}</span><span style={{ color: '#8fe36b', fontWeight: 700 }}>+{fmtPct(val)}%</span></div>
-                        ))}
-                      </div>
-                      <div style={st.dBtns}>
-                        <button style={st.dEnhBtn} disabled>강화 (준비중)</button>
-                        <button style={{ ...st.dEquipBtn, ...(isEq ? st.dEquipOn : {}) }} onClick={() => { if (cnt > 0 || isEq) setGearEq(g => ({ ...g, [cat]: isEq ? null : i })) }}>{isEq ? '장착중' : '장착'}</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={st.dBody}>
-                      <div style={st.dFuseNote}>* 보유 {cat} 5개로 다음 단계 제작</div>
-                      {hasNext ? (
-                        <>
-                          <div style={st.dName}>{cat} {i}번</div>
-                          <div style={{ ...st.dIconWrap, borderColor: col }}><img src={equipImg(cat, i)} alt="" style={st.dIcon} /><span style={{ ...st.dIconTier, color: col }}>{tierOf(i)}등급</span></div>
-                          <div style={st.dCnt}>{cnt} <span style={{ color: '#ff6b6b' }}>(-{fuseQty * 5})</span></div>
-                          <div style={st.dArrowDown}>▼</div>
-                          <div style={st.dName}>{cat} {i + 1}번</div>
-                          <div style={{ ...st.dIconWrap, borderColor: gradeColorOf(i + 1) }}><img src={equipImg(cat, i + 1)} alt="" style={st.dIcon} /><span style={{ ...st.dIconTier, color: gradeColorOf(i + 1) }}>{tierOf(i + 1)}등급</span></div>
-                          <div style={st.dCnt}>{nextCnt} <span style={{ color: '#8fe36b' }}>(+{fuseQty})</span></div>
-                          <div style={st.dStepper}>
-                            <button style={st.dStepBtn} onClick={() => setFuseQty(q => Math.max(0, q - 1))}>-</button>
-                            <span style={st.dStepVal}>{fuseQty}</span>
-                            <button style={st.dStepBtn} onClick={() => setFuseQty(q => Math.min(maxFuse, q + 1))}>+</button>
-                          </div>
-                          <button style={st.dFuseBtn} onClick={() => { if (fuseQty > 0) { setInv(v => { const k = invKey(cat, i), nk = invKey(cat, i + 1); const use = Math.min(fuseQty, Math.floor((v[k] || 0) / 5)); if (use <= 0) return v; return { ...v, [k]: v[k] - use * 5, [nk]: (v[nk] || 0) + use } }); setFuseQty(0) } }}>융합</button>
-                        </>
-                      ) : (<div style={st.dMaxNote}>최종 단계 장비입니다</div>)}
-                    </div>
-                  )}
-                  <button style={st.dClose} onClick={() => setDetailItem(null)}>✕</button>
-                </div>
-              </div>
-            )
-          })()}
         </div>
       )}
 
