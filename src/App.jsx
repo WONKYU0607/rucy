@@ -131,6 +131,14 @@ const rollItem = () => {
   return EQUIP_MAX
 }
 const invKey = (cat, i) => `${cat}:${i}`
+// 장착 능력치 (임시 수치 — 추후 교체). 주능력치: 1번 10%, ×1.5. 보조: 번호 비례
+const ATK_MULT = i => 10 * Math.pow(1.5, i - 1)
+const gearStats = (cat, i) => {
+  const b = ATK_MULT(i)
+  if (cat === '무기') return [['공격력 증가', b], ['치명타 데미지', i], ['골드 획득량', i * 0.7]]
+  if (cat === '방어구') return [['체력 증가', b], ['체력 회복량', i], ['경험치 획득량', i * 0.7]]
+  return [['회피 증가', i * 0.5], ['명중률 증가', i], ['이동속도 증가', i * 0.3]]
+}
 
 // ── 오프라인 보상 설정 (직접 수정 가능) ─────────────────────────
 const OFFLINE_MIN_SEC = 60          // 이 시간 이상 부재 시에만 보상
@@ -346,11 +354,13 @@ function loadSave() {
       // 장착·재화·기록: 저장된 값 그대로 복원 (누락 시 기본값)
       alliesOn: s.alliesOn && typeof s.alliesOn === 'object' ? s.alliesOn : {},
       gem: s.gem ?? 0, inv: s.inv && typeof s.inv === 'object' ? s.inv : {}, best: s.best ?? s.wave ?? 1,
+      gearEq: s.gearEq && typeof s.gearEq === 'object' ? s.gearEq : { 무기: null, 방어구: null, 유물: null },
     }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), equipped: [null, null, null, null], cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null }
+  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), equipped: [null, null, null, null], cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null } }
 }
 const fmt = n => n >= 1e8 ? (n/1e8).toFixed(1)+'억' : n >= 1e4 ? (n/1e4).toFixed(1)+'만' : Math.floor(n).toLocaleString()
+const fmtPct = v => v >= 10000 ? fmt(Math.round(v)) : (Math.round(v * 10) / 10).toString()
 
 export default function App() {
   const canvasRef = useRef(null)
@@ -367,6 +377,10 @@ export default function App() {
   const [skill, setSkill] = useState(init.skill)
   const [nav, setNav] = useState('영웅')     // 하단 네비: 영웅/스킬/장비/동료/퀴즈/상점
   const [equipTab, setEquipTab] = useState('무기')  // 장비 서브탭: 무기/방어구/유물
+  const [detailItem, setDetailItem] = useState(null)  // 장비 상세창 { cat, i } | null
+  const [detailTab, setDetailTab] = useState('강화')  // 상세창 탭: 강화/융합
+  const [fuseQty, setFuseQty] = useState(0)           // 융합 수량
+  const [gearEq, setGearEq] = useState(init.gearEq || { 무기: null, 방어구: null, 유물: null })  // 장착 슬롯
   const [tab, setTab] = useState('강화')      // 영웅 서브탭: 강화/성장/진화
   const [phase, setPhase] = useState('fighting')
   const [clearMsg, setClearMsg] = useState(null)   // 웨이브 클리어 배너 (멈춤 없음)
@@ -468,8 +482,8 @@ export default function App() {
   }
 
   useEffect(() => {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, alliesOn, ts: Date.now() }))
-  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, alliesOn])
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, alliesOn, gearEq, ts: Date.now() }))
+  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, alliesOn, gearEq])
 
   // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제
   useEffect(() => {
@@ -1546,7 +1560,7 @@ export default function App() {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) }))
             const nbtn = { width: 26, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
-            const rng = k => k === 'offw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
+            const rng = k => k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
             const rmin = k => k === 'equipcols' ? 3 : 0
             return <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -1787,7 +1801,7 @@ export default function App() {
                 const col = gradeColorOf(i)
                 const canFuse = cnt >= 5 && i < EQUIP_MAX
                 return (
-                  <div key={i} data-edit="equip" style={{ ...st.equipCell, borderColor: col + '99' }} onClick={() => { if (!uiEdit && canFuse) fuseOne(equipTab, i) }}>
+                  <div key={i} data-edit="equip" style={{ ...st.equipCell, borderColor: col + '99' }} onClick={() => { if (!uiEdit) { setDetailItem({ cat: equipTab, i }); setDetailTab('강화'); setFuseQty(0) } }}>
                     <span data-edit="eqtier" style={{ ...st.equipTier, color: col }}>{tierOf(i)}등급</span>
                     <img src={equipImg(equipTab, i)} alt="" data-edit="eqimg" style={st.equipImg} />
                     <span style={{ ...st.eqCount, color: canFuse ? '#ffd24a' : '#d8ccb3' }}>{cnt}/5</span>
@@ -1799,8 +1813,76 @@ export default function App() {
           )}
           </div>
           {EQUIP_CATS.includes(equipTab) && (
-            <button style={st.fuseAllBtn} onClick={() => { if (!uiEdit) fuseAll(equipTab) }}>일괄 융합</button>
+            <button data-edit="fuseall" style={st.fuseAllBtn} onClick={() => { if (!uiEdit) fuseAll(equipTab) }}>일괄 융합</button>
           )}
+          {detailItem && (() => {
+            const { cat, i } = detailItem
+            const cnt = inv[invKey(cat, i)] || 0
+            const col = gradeColorOf(i)
+            const isEq = gearEq[cat] === i
+            const stats = gearStats(cat, i)
+            const hasNext = i < EQUIP_MAX
+            const nextCnt = hasNext ? (inv[invKey(cat, i + 1)] || 0) : 0
+            const maxFuse = Math.floor(cnt / 5)
+            const go = (ni) => { if (ni >= 1 && ni <= EQUIP_MAX) { setDetailItem({ cat, i: ni }); setFuseQty(0) } }
+            return (
+              <div style={st.dOverlay} onClick={e => { if (e.target === e.currentTarget) setDetailItem(null) }}>
+                <div style={st.dBox}>
+                  <div style={st.dTabs}>
+                    <button style={{ ...st.dTab, ...(detailTab === '강화' ? st.dTabOn : {}) }} onClick={() => setDetailTab('강화')}>강화</button>
+                    <button style={{ ...st.dTab, ...(detailTab === '융합' ? st.dTabOn : {}) }} onClick={() => setDetailTab('융합')}>융합</button>
+                  </div>
+                  {detailTab === '강화' ? (
+                    <div style={st.dBody}>
+                      <div style={{ ...st.dGrade, color: col }}>{gradeNameOf(i)}</div>
+                      <div style={st.dName}>{cat} {i}번</div>
+                      <div style={st.dIconRow}>
+                        <button style={st.dArrow} onClick={() => go(i - 1)}>◀</button>
+                        <div style={{ ...st.dIconWrap, borderColor: col }}>
+                          <img src={equipImg(cat, i)} alt="" style={st.dIcon} />
+                          <span style={{ ...st.dIconTier, color: col }}>{tierOf(i)}등급</span>
+                        </div>
+                        <button style={st.dArrow} onClick={() => go(i + 1)}>▶</button>
+                      </div>
+                      <div style={st.dCnt}>{cnt}/5</div>
+                      <div style={st.dSecTitle}>장착 효과</div>
+                      <div style={st.dStatBox}>
+                        {stats.map(([nm, val], x) => (
+                          <div key={x} style={st.dStatRow}><span>{nm}</span><span style={{ color: '#8fe36b', fontWeight: 700 }}>+{fmtPct(val)}%</span></div>
+                        ))}
+                      </div>
+                      <div style={st.dBtns}>
+                        <button style={st.dEnhBtn} disabled>강화 (준비중)</button>
+                        <button style={{ ...st.dEquipBtn, ...(isEq ? st.dEquipOn : {}) }} onClick={() => { if (cnt > 0 || isEq) setGearEq(g => ({ ...g, [cat]: isEq ? null : i })) }}>{isEq ? '장착중' : '장착'}</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={st.dBody}>
+                      <div style={st.dFuseNote}>* 보유 {cat} 5개로 다음 단계 제작</div>
+                      {hasNext ? (
+                        <>
+                          <div style={st.dName}>{cat} {i}번</div>
+                          <div style={{ ...st.dIconWrap, borderColor: col }}><img src={equipImg(cat, i)} alt="" style={st.dIcon} /><span style={{ ...st.dIconTier, color: col }}>{tierOf(i)}등급</span></div>
+                          <div style={st.dCnt}>{cnt} <span style={{ color: '#ff6b6b' }}>(-{fuseQty * 5})</span></div>
+                          <div style={st.dArrowDown}>▼</div>
+                          <div style={st.dName}>{cat} {i + 1}번</div>
+                          <div style={{ ...st.dIconWrap, borderColor: gradeColorOf(i + 1) }}><img src={equipImg(cat, i + 1)} alt="" style={st.dIcon} /><span style={{ ...st.dIconTier, color: gradeColorOf(i + 1) }}>{tierOf(i + 1)}등급</span></div>
+                          <div style={st.dCnt}>{nextCnt} <span style={{ color: '#8fe36b' }}>(+{fuseQty})</span></div>
+                          <div style={st.dStepper}>
+                            <button style={st.dStepBtn} onClick={() => setFuseQty(q => Math.max(0, q - 1))}>-</button>
+                            <span style={st.dStepVal}>{fuseQty}</span>
+                            <button style={st.dStepBtn} onClick={() => setFuseQty(q => Math.min(maxFuse, q + 1))}>+</button>
+                          </div>
+                          <button style={st.dFuseBtn} onClick={() => { if (fuseQty > 0) { setInv(v => { const k = invKey(cat, i), nk = invKey(cat, i + 1); const use = Math.min(fuseQty, Math.floor((v[k] || 0) / 5)); if (use <= 0) return v; return { ...v, [k]: v[k] - use * 5, [nk]: (v[nk] || 0) + use } }); setFuseQty(0) } }}>융합</button>
+                        </>
+                      ) : (<div style={st.dMaxNote}>최종 단계 장비입니다</div>)}
+                    </div>
+                  )}
+                  <button style={st.dClose} onClick={() => setDetailItem(null)}>✕</button>
+                </div>
+              </div>
+            )
+          })()}
         </div>
       )}
 
@@ -1954,6 +2036,7 @@ const UI_DEFAULT = {
   trsz: 55, offw: 322, offtfz: 14, offnfz: 13, offiw: 58, offih: 58, offic: 29, offifz: 10, offrfz: 10,
   offbtw: 135, offbth: 51, offbfz: 14, offclw: 100, offclh: 50, offcfz: 15,
   trX: -2, trY: 11, offtX: 0, offtY: 36, offnX: 0, offnY: 38, offitX: -79, offitY: 15, offitiX: 0, offitiY: 6, offvX: 0, offvY: 2, offrX: 0, offrY: -3, offbtX: 0, offbtY: 42, offclX: 0, offclY: 42,
+  fuseallw: 200, fuseallh: 42, fuseallfz: 15, fuseallX: 0, fuseallY: 0,
 }
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
@@ -2024,6 +2107,7 @@ const EDIT_GROUPS = {
   offitemrate: { label: '오프 분당량', size: ['offrfz'], pos: 'offr' },
   offbtn: { label: '추가보상 버튼', size: ['offbtw', 'offbth', 'offbfz'], pos: 'offbt' },
   offclaim: { label: '받기 버튼', size: ['offclw', 'offclh', 'offcfz'], pos: 'offcl' },
+  fuseall: { label: '일괄융합 버튼', size: ['fuseallw', 'fuseallh', 'fuseallfz'], pos: 'fuseall' },
 }
 for (let i = 0; i < 6; i++) EDIT_GROUPS[`evoimg${i}`] = { label: `진화캐릭 ${i + 1}단계`, size: [`evoimg${i}`], pos: `evoimg${i}` }
 const UI_LABELS = {
@@ -2039,7 +2123,7 @@ const UI_LABELS = {
   shopbw: '버튼 너비', shopbh: '버튼 높이', shopbbv: '프레임 두께↕', shopbbh: '프레임 두께↔', shopbfz: '버튼 글자',
   gainic: '아이콘 크기', gainpv: '판 두께↕', gainph: '판 두께↔', shopgem: '다이아 크기', gbtnfz: '버튼 글자', gbtnpw: '판 가로', gbtnph: '판 세로',
   pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
-  trsz: '상자 크기', offw: '창 너비', offtfz: '제목 글자', offnfz: '정보 글자', offiw: '항목 너비', offih: '항목 높이', offic: '아이콘 크기', offifz: '획득 글자', offrfz: '분당 글자', offbtw: '버튼 너비', offbth: '버튼 높이', offbfz: '버튼 글자', offclw: '버튼 너비', offclh: '버튼 높이', offcfz: '버튼 글자',
+  trsz: '상자 크기', offw: '창 너비', offtfz: '제목 글자', offnfz: '정보 글자', offiw: '항목 너비', offih: '항목 높이', offic: '아이콘 크기', offifz: '획득 글자', offrfz: '분당 글자', offbtw: '버튼 너비', offbth: '버튼 높이', offbfz: '버튼 글자', offclw: '버튼 너비', offclh: '버튼 높이', offcfz: '버튼 글자', fuseallw: '융합버튼 너비', fuseallh: '융합버튼 높이', fuseallfz: '융합버튼 글자',
 }
 for (let i = 0; i < 6; i++) UI_LABELS[`evoimg${i}`] = `${i + 1}단계 크기`
 const uiVars = c => `:root{
@@ -2076,8 +2160,8 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-nick-x:${c.nickX}px;--pd-nick-y:${c.nickY}px;--pd-exp-x:${c.expX}px;--pd-exp-y:${c.expY}px;
 --pd-gain-x:${c.gainX}px;--pd-gain-y:${c.gainY}px;
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
---pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+--pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center' },
@@ -2288,7 +2372,7 @@ const st = {
   equipTier: { position: 'absolute', right: 3, bottom: 1, fontSize: 'var(--pd-equiptier)', color: GOLD, textShadow: '0 0 3px #000', transform: 'translate(var(--pd-eqtier-x), var(--pd-eqtier-y))' },
   eqCount: { position: 'absolute', left: 3, bottom: 1, fontSize: 'var(--pd-equiptier)', fontWeight: 700, textShadow: '0 0 3px #000' },
   fuseBadge: { position: 'absolute', top: 2, left: 2, fontSize: 9, fontWeight: 800, color: '#1a1206', background: '#ffd24a', borderRadius: 4, padding: '0 3px', lineHeight: '13px', pointerEvents: 'none' },
-  fuseAllBtn: { flexShrink: 0, margin: '2px 8px 8px', height: 42, border: 'none', borderRadius: 10, background: 'linear-gradient(180deg,#f0a740,#d07f1e)', color: '#3a1e02', fontSize: 15, fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 0 #8a5410' },
+  fuseAllBtn: { flexShrink: 0, width: 'var(--pd-fuseallw)', maxWidth: '92%', height: 'var(--pd-fuseallh)', margin: '2px auto 8px', border: 'none', borderRadius: 10, background: 'linear-gradient(180deg,#f0a740,#d07f1e)', color: '#3a1e02', fontSize: 'var(--pd-fuseallfz)', fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 0 #8a5410', transform: 'translate(var(--pd-fuseall-x), var(--pd-fuseall-y))' },
   offOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   offBox: { background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: `2px solid ${GOLD_D}`, borderRadius: 16, padding: '20px 24px', textAlign: 'center', minWidth: 240, color: '#f3e6d0', boxShadow: '0 8px 30px rgba(0,0,0,0.6)' },
   skillIcon: { width: 'var(--pd-icon)', height: 'var(--pd-icon)', transform: 'translate(var(--pd-icon-x), var(--pd-icon-y))', borderRadius: 8, background: 'linear-gradient(180deg,#2c2013,#1a1208)', border: '1px solid #5a4028', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 },
@@ -2392,5 +2476,35 @@ const st = {
   offBtnAdText: { fontSize: 'var(--pd-offbfz)', lineHeight: 1.1, textAlign: 'center', textShadow: '0 1px 1px rgba(255,220,150,0.4)' },
   offBtnClaim: { width: 'var(--pd-offclw)', height: 'var(--pd-offclh)', background: 'url(/ui/off_claim.png) center / 100% 100% no-repeat', border: 'none', color: '#f0f0f0', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0, transform: 'translate(var(--pd-offcl-x), var(--pd-offcl-y))' },
   offBtnClaimText: { fontSize: 'var(--pd-offcfz)', textShadow: '0 1px 2px #000' },
+  // ── 장비 상세창 ──
+  dOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60, padding: 16 },
+  dBox: { position: 'relative', width: '100%', maxWidth: 360, maxHeight: '88vh', overflowY: 'auto', background: 'linear-gradient(180deg,#3a2a1a,#2a1d10)', border: '2px solid #6b4a2a', borderRadius: 14, padding: 12, boxShadow: '0 8px 30px rgba(0,0,0,0.6)' },
+  dTabs: { display: 'flex', gap: 6, marginBottom: 10 },
+  dTab: { flex: 1, height: 40, border: 'none', borderRadius: 8, background: '#4a3826', color: '#c9b596', fontSize: 15, fontWeight: 700, cursor: 'pointer' },
+  dTabOn: { background: 'linear-gradient(180deg,#f0a740,#d07f1e)', color: '#3a1e02' },
+  dBody: { display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  dGrade: { fontSize: 14, fontWeight: 800, marginTop: 4 },
+  dName: { fontSize: 17, fontWeight: 800, color: '#f3e6d0', margin: '2px 0 8px' },
+  dIconRow: { display: 'flex', alignItems: 'center', gap: 12 },
+  dArrow: { width: 40, height: 60, border: 'none', background: 'transparent', color: '#e0c9a0', fontSize: 26, cursor: 'pointer', padding: 0 },
+  dIconWrap: { position: 'relative', width: 92, height: 92, background: 'linear-gradient(180deg,#1a2540,#0f1730)', border: '3px solid #888', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  dIcon: { width: '78%', height: '78%', objectFit: 'contain', imageRendering: 'pixelated' },
+  dIconTier: { position: 'absolute', right: 4, bottom: 2, fontSize: 12, fontWeight: 800, textShadow: '0 1px 2px #000' },
+  dCnt: { fontSize: 15, fontWeight: 700, color: '#e8d5b0', margin: '4px 0' },
+  dSecTitle: { alignSelf: 'flex-start', fontSize: 14, color: '#c9b596', fontWeight: 700, margin: '10px 0 4px' },
+  dStatBox: { width: '100%', background: 'rgba(0,0,0,0.28)', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8, boxSizing: 'border-box' },
+  dStatRow: { display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#e8d5b0' },
+  dBtns: { display: 'flex', gap: 8, width: '100%', marginTop: 14 },
+  dEnhBtn: { flex: 1, height: 48, border: 'none', borderRadius: 10, background: '#5a4632', color: '#9a8a72', fontSize: 14, fontWeight: 800, cursor: 'not-allowed', opacity: 0.6 },
+  dEquipBtn: { flex: 1, height: 48, border: 'none', borderRadius: 10, background: 'linear-gradient(180deg,#c89a5a,#a06f2e)', color: '#3a1e02', fontSize: 15, fontWeight: 800, cursor: 'pointer' },
+  dEquipOn: { background: '#4a3826', color: '#c9b596' },
+  dFuseNote: { fontSize: 13, color: '#e0c9a0', margin: '2px 0 12px', textAlign: 'center' },
+  dArrowDown: { fontSize: 22, color: '#e23b3b', margin: '4px 0' },
+  dStepper: { display: 'flex', alignItems: 'center', gap: 14, margin: '12px 0' },
+  dStepBtn: { width: 48, height: 44, border: 'none', borderRadius: 8, background: '#c8b090', color: '#2a1d10', fontSize: 22, fontWeight: 800, cursor: 'pointer' },
+  dStepVal: { fontSize: 20, fontWeight: 800, color: '#f3e6d0', minWidth: 40, textAlign: 'center' },
+  dFuseBtn: { width: '100%', height: 50, border: 'none', borderRadius: 10, background: 'linear-gradient(180deg,#f0a740,#d07f1e)', color: '#3a1e02', fontSize: 17, fontWeight: 800, cursor: 'pointer', marginTop: 6 },
+  dMaxNote: { fontSize: 15, color: '#c9b596', padding: '30px 0' },
+  dClose: { position: 'absolute', top: 8, right: 10, width: 28, height: 28, border: 'none', borderRadius: '50%', background: 'rgba(0,0,0,0.4)', color: '#f3e6d0', fontSize: 15, cursor: 'pointer', padding: 0 },
 }
 
