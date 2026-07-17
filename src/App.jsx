@@ -371,7 +371,23 @@ export default function App() {
   const [splash, setSplash] = useState(true)
   const [alliesOn, setAlliesOn] = useState(init.alliesOn || {})  // 장착된 동료 (보유/성장 시스템은 추후)
   const [allySub, setAllySub] = useState('동료')
-  const [mapSeg, setMapSeg] = useState(1)  // 모험 지도 구간(0~2), 아프리카 중심=1 시작           // 소환 결과 오버레이 { cat, items:[{k,t}] }
+  const [mapSeg, setMapSeg] = useState(1)  // 모험 지도 구간(0~2), 아프리카 중심=1 시작
+  const advTrackRef = useRef(null)
+  const [advMax, setAdvMax] = useState(0)  // 좌우로 밀 수 있는 최대 px (지도폭-뷰폭)
+  function recalcAdv() {
+    const el = advTrackRef.current
+    if (!el) return
+    const viewW = el.parentElement.clientWidth
+    const mapW = el.scrollWidth
+    setAdvMax(Math.max(0, mapW - viewW))
+  }
+  useEffect(() => {
+    if (nav !== '모험') return
+    recalcAdv()
+    window.addEventListener('resize', recalcAdv)
+    return () => window.removeEventListener('resize', recalcAdv)
+  }, [nav])
+  const advOffset = -(advMax * (mapSeg / 2))  // 0→0, 1→중앙, 2→끝           // 소환 결과 오버레이 { cat, items:[{k,t}] }
   const [uiCfg, setUiCfg] = useState(() => { try { const sv = JSON.parse(localStorage.getItem('paleoUiCfg') || '{}'); return { ...UI_DEFAULT, ...Object.fromEntries(Object.entries(sv).filter(([k]) => k in UI_DEFAULT)) } } catch { return { ...UI_DEFAULT } } })
   const [uiEdit, setUiEdit] = useState(false)
   const [copiedUi, setCopiedUi] = useState(false)
@@ -1808,8 +1824,8 @@ export default function App() {
       {nav === '모험' && (
         <div style={st.advWrap}>
           <div style={st.advViewport}>
-            <div style={{ ...st.advTrack, transform: `translateX(-${mapSeg * 33.3333}%)` }}>
-              <img src="/adventure/worldmap.jpg" alt="" style={st.advMap} draggable={false} />
+            <div ref={advTrackRef} style={{ ...st.advTrack, transform: `translateX(${advOffset}px)` }}>
+              <img src="/adventure/worldmap.jpg" alt="" style={st.advMap} draggable={false} onLoad={recalcAdv} />
             </div>
             {mapSeg > 0 && (
               <button style={{ ...st.advArrow, left: 8 }} onClick={() => setMapSeg(s => Math.max(0, s - 1))}>‹</button>
@@ -2086,7 +2102,7 @@ const st = {
   spDot: { marginLeft: 5, fontSize: 11, color: '#fff', background: '#e05a4e', borderRadius: 8, padding: '0 6px' },
   bottomNav: {
     display: 'flex', background: 'linear-gradient(180deg,#241811,#160e07)', borderTop: '2px solid #4a3418', transform: 'translate(var(--pd-nav-x), var(--pd-nav-y))',
-    paddingBottom: 'env(safe-area-inset-bottom)',
+    paddingBottom: 'env(safe-area-inset-bottom)', position: 'relative', zIndex: 50,
   },
   navBtn: {
     flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
@@ -2187,8 +2203,8 @@ const st = {
     zIndex: 40, background: '#1a1109', display: 'flex', padding: 8,
   },
   advViewport: { position: 'relative', flex: 1, minHeight: 0, borderRadius: 10, overflow: 'hidden', border: '2px solid #4a3418', background: '#0d0904' },
-  advTrack: { width: '300%', height: '100%', transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)' },
-  advMap: { width: '100%', height: '100%', objectFit: 'cover', imageRendering: 'auto', userSelect: 'none', WebkitUserSelect: 'none' },
+  advTrack: { height: '100%', display: 'flex', transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)' },
+  advMap: { display: 'block', height: '100%', width: 'auto', maxWidth: 'none', imageRendering: 'auto', userSelect: 'none', WebkitUserSelect: 'none' },
   advArrow: {
     position: 'absolute', top: '50%', transform: 'translateY(-50%)', zIndex: 5,
     width: 40, height: 60, borderRadius: 10, border: '1px solid #6b4a24',
