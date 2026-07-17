@@ -2164,7 +2164,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 ${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
-  outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center' },
+  outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', overflow: 'hidden' },
   root: {
     width: '100%', maxWidth: 420, height: '100%', position: 'relative',
     display: 'flex', flexDirection: 'column',
@@ -2477,8 +2477,8 @@ const st = {
   offBtnClaim: { width: 'var(--pd-offclw)', height: 'var(--pd-offclh)', background: 'url(/ui/off_claim.png) center / 100% 100% no-repeat', border: 'none', color: '#f0f0f0', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0, transform: 'translate(var(--pd-offcl-x), var(--pd-offcl-y))' },
   offBtnClaimText: { fontSize: 'var(--pd-offcfz)', textShadow: '0 1px 2px #000' },
   // ── 장비 상세창 ──
-  dOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60, padding: '16px 16px calc(78px + env(safe-area-inset-bottom))' },
-  dBox: { position: 'relative', width: '100%', maxWidth: 360, maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', background: 'linear-gradient(180deg,#3a2a1a,#2a1d10)', border: '2px solid #6b4a2a', borderRadius: 14, padding: 12, boxShadow: '0 8px 30px rgba(0,0,0,0.6)' },
+  dOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 'calc(70px + env(safe-area-inset-bottom))', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60, padding: 14 },
+  dBox: { position: 'relative', width: '100%', maxWidth: 360, maxHeight: '100%', overflowY: 'auto', background: 'linear-gradient(180deg,#3a2a1a,#2a1d10)', border: '2px solid #6b4a2a', borderRadius: 14, padding: 12, boxShadow: '0 8px 30px rgba(0,0,0,0.6)' },
   dTabs: { display: 'flex', gap: 6, marginBottom: 10 },
   dTab: { flex: 1, height: 40, border: 'none', borderRadius: 8, background: '#4a3826', color: '#c9b596', fontSize: 15, fontWeight: 700, cursor: 'pointer' },
   dTabOn: { background: 'linear-gradient(180deg,#f0a740,#d07f1e)', color: '#3a1e02' },
