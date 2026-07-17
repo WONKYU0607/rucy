@@ -133,12 +133,15 @@ const rollItem = () => {
 const invKey = (cat, i) => `${cat}:${i}`
 // 장착 능력치 (임시 수치 — 추후 교체). 주능력치: 1번 10%, ×1.5. 보조: 번호 비례
 const ATK_MULT = i => 10 * Math.pow(1.5, i - 1)
-const gearStats = (cat, i) => {
-  const b = ATK_MULT(i)
-  if (cat === '무기') return [['공격력 증가', b], ['치명타 데미지', i], ['골드 획득량', i * 0.7]]
-  if (cat === '방어구') return [['체력 증가', b], ['체력 회복량', i], ['경험치 획득량', i * 0.7]]
-  return [['회피 증가', i * 0.5], ['명중률 증가', i], ['이동속도 증가', i * 0.3]]
+const gearStats = (cat, i, lv = 0) => {
+  const m = Math.pow(1.2, lv)                          // 강화당 ×1.2
+  const b = ATK_MULT(i) * m
+  if (cat === '무기') return [['공격력 증가', b], ['치명타 데미지', i * m], ['골드 획득량', i * 0.7 * m]]
+  if (cat === '방어구') return [['체력 증가', b], ['체력 회복량', i * m], ['경험치 획득량', i * 0.7 * m]]
+  return [['회피 증가', i * 0.5 * m], ['명중률 증가', i * m], ['이동속도 증가', i * 0.3 * m]]
 }
+const enhCost = lv => Math.floor(100 * Math.pow(1.5, lv))   // 강화 비용: 100, 150, 225 …
+const MAT_IMG = i => `/ui/mat${i}.png`
 
 // ── 오프라인 보상 설정 (직접 수정 가능) ─────────────────────────
 const OFFLINE_MIN_SEC = 60          // 이 시간 이상 부재 시에만 보상
@@ -355,9 +358,10 @@ function loadSave() {
       alliesOn: s.alliesOn && typeof s.alliesOn === 'object' ? s.alliesOn : {},
       gem: s.gem ?? 0, inv: s.inv && typeof s.inv === 'object' ? s.inv : {}, best: s.best ?? s.wave ?? 1,
       gearEq: s.gearEq && typeof s.gearEq === 'object' ? s.gearEq : { 무기: null, 방어구: null, 유물: null },
+      mats: Array.isArray(s.mats) ? s.mats : [0, 0, 0, 0, 0], enh: s.enh && typeof s.enh === 'object' ? s.enh : {},
     }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), equipped: [null, null, null, null], cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null } }
+  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), equipped: [null, null, null, null], cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, mats: [0, 0, 0, 0, 0], enh: {} }
 }
 const fmt = n => n >= 1e8 ? (n/1e8).toFixed(1)+'억' : n >= 1e4 ? (n/1e4).toFixed(1)+'만' : Math.floor(n).toLocaleString()
 const fmtPct = v => v >= 10000 ? fmt(Math.round(v)) : (Math.round(v * 10) / 10).toString()
@@ -381,6 +385,8 @@ export default function App() {
   const [detailTab, setDetailTab] = useState('강화')  // 상세창 탭: 강화/융합
   const [fuseQty, setFuseQty] = useState(0)           // 융합 수량
   const [gearEq, setGearEq] = useState(init.gearEq || { 무기: null, 방어구: null, 유물: null })  // 장착 슬롯
+  const [mats, setMats] = useState(init.mats || [0, 0, 0, 0, 0])   // 재화 5종 (0~3 동료용, 4 무기강화용)
+  const [enh, setEnh] = useState(init.enh || {})                   // 강화레벨 { '무기:1': lv }
   const [tab, setTab] = useState('강화')      // 영웅 서브탭: 강화/성장/진화
   const [phase, setPhase] = useState('fighting')
   const [clearMsg, setClearMsg] = useState(null)   // 웨이브 클리어 배너 (멈춤 없음)
@@ -482,8 +488,8 @@ export default function App() {
   }
 
   useEffect(() => {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, alliesOn, gearEq, ts: Date.now() }))
-  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, alliesOn, gearEq])
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, alliesOn, gearEq, mats, enh, ts: Date.now() }))
+  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, alliesOn, gearEq, mats, enh])
 
   // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제
   useEffect(() => {
@@ -1526,10 +1532,15 @@ export default function App() {
       )}
       {nav === '장비' && detailItem && (() => {
             const { cat, i } = detailItem
-            const cnt = inv[invKey(cat, i)] || 0
+            const key = invKey(cat, i)
+            const cnt = inv[key] || 0
             const col = gradeColorOf(i)
             const isEq = gearEq[cat] === i
-            const stats = gearStats(cat, i)
+            const lv = enh[key] || 0
+            const stats = gearStats(cat, i, lv)
+            const statsNext = gearStats(cat, i, lv + 1)
+            const cost = enhCost(lv)
+            const canEnh = cat === '무기' && mats[4] >= cost
             const hasNext = i < EQUIP_MAX
             const nextCnt = hasNext ? (inv[invKey(cat, i + 1)] || 0) : 0
             const maxFuse = Math.floor(cnt / 5)
@@ -1549,6 +1560,7 @@ export default function App() {
                         <button style={st.dArrow} onClick={() => go(i - 1)}>◀</button>
                         <div style={{ ...st.dIconWrap, borderColor: col }}>
                           <img src={equipImg(cat, i)} alt="" style={st.dIcon} />
+                          {lv > 0 && <span style={st.dEnhLv}>+{lv}</span>}
                           <span style={{ ...st.dIconTier, color: col }}>{tierOf(i)}등급</span>
                         </div>
                         <button style={st.dArrow} onClick={() => go(i + 1)}>▶</button>
@@ -1557,11 +1569,20 @@ export default function App() {
                       <div style={st.dSecTitle}>장착 효과</div>
                       <div style={st.dStatBox}>
                         {stats.map(([nm, val], x) => (
-                          <div key={x} style={st.dStatRow}><span>{nm}</span><span style={{ color: '#8fe36b', fontWeight: 700 }}>+{fmtPct(val)}%</span></div>
+                          <div key={x} style={st.dStatRow}>
+                            <span>{nm}</span>
+                            <span><span style={{ color: '#e8d5b0' }}>+{fmtPct(val)}%</span>{cat === '무기' && <span style={{ color: '#8fe36b', fontWeight: 700, marginLeft: 6 }}>▶ +{fmtPct(statsNext[x][1])}%</span>}</span>
+                          </div>
                         ))}
                       </div>
                       <div style={st.dBtns}>
-                        <button style={st.dEnhBtn} disabled>강화 (준비중)</button>
+                        {cat === '무기' ? (
+                          <button style={{ ...st.dEnhBtn, ...(canEnh ? st.dEnhBtnOn : {}) }} onClick={() => { if (canEnh) { setMats(m => { const n = [...m]; n[4] -= cost; return n }); setEnh(e => ({ ...e, [key]: lv + 1 })) } }}>
+                            <img src={MAT_IMG(4)} alt="" style={st.dEnhIc} /><span style={{ fontFamily: "'Do Hyeon',sans-serif" }}>{fmt(cost)}</span>
+                          </button>
+                        ) : (
+                          <button style={st.dEnhBtn} disabled>강화 (준비중)</button>
+                        )}
                         <button style={{ ...st.dEquipBtn, ...(isEq ? st.dEquipOn : {}) }} onClick={() => { if (cnt > 0 || isEq) setGearEq(g => ({ ...g, [cat]: isEq ? null : i })) }}>{isEq ? '장착중' : '장착'}</button>
                       </div>
                     </div>
@@ -2495,7 +2516,10 @@ const st = {
   dStatBox: { width: '100%', background: 'rgba(0,0,0,0.28)', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8, boxSizing: 'border-box' },
   dStatRow: { display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#e8d5b0' },
   dBtns: { display: 'flex', gap: 8, width: '100%', marginTop: 14 },
-  dEnhBtn: { flex: 1, height: 48, border: 'none', borderRadius: 10, background: '#5a4632', color: '#9a8a72', fontSize: 14, fontWeight: 800, cursor: 'not-allowed', opacity: 0.6 },
+  dEnhBtn: { flex: 1, height: 48, border: 'none', borderRadius: 10, background: '#5a4632', color: '#c9b596', fontSize: 14, fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 },
+  dEnhBtnOn: { background: 'linear-gradient(180deg,#e85adf,#b02ea8)', color: '#fff' },
+  dEnhIc: { width: 22, height: 22, objectFit: 'contain' },
+  dEnhLv: { position: 'absolute', top: 3, right: 4, fontSize: 13, fontWeight: 800, color: '#ffd24a', textShadow: '0 1px 2px #000', pointerEvents: 'none' },
   dEquipBtn: { flex: 1, height: 48, border: 'none', borderRadius: 10, background: 'linear-gradient(180deg,#c89a5a,#a06f2e)', color: '#3a1e02', fontSize: 15, fontWeight: 800, cursor: 'pointer' },
   dEquipOn: { background: '#4a3826', color: '#c9b596' },
   dFuseNote: { fontSize: 13, color: '#e0c9a0', margin: '2px 0 12px', textAlign: 'center' },
