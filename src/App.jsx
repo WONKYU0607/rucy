@@ -393,7 +393,8 @@ export default function App() {
   const [copiedUi, setCopiedUi] = useState(false)
   const [editSel, setEditSel] = useState(null)   // 편집 모드에서 선택된 요소
   useEffect(() => { localStorage.setItem('paleoUiCfg', JSON.stringify(uiCfg)) }, [uiCfg])
-  const [offReward, setOffReward] = useState(null) // 오프라인 보상 팝업
+  const [offReward, setOffReward] = useState(null) // 오프라인 보상 대기(pending)
+  const [offOpen, setOffOpen] = useState(false)    // 오프라인 보상 창 열림
   const offDone = useRef(false)
 
   // 오프라인 보상: 부재 시간 동안 나갈 당시 웨이브에서 무한 전투한 것으로 계산
@@ -416,9 +417,9 @@ export default function App() {
     if (kills <= 0) return
     const gm = Math.floor(kills * avgMeat * st2.meatMult)
     const ge = Math.floor(kills * avgExp * st2.expMult)
-    setMeat(m => m + gm)
-    setHexp(x => x + ge)
-    setOffReward({ sec: Math.floor(away), kills, meat: gm, exp: ge })
+    const mins = Math.max(1, away / 60)
+    // 지급은 보물상자 → 받기 버튼에서. 여기선 대기 보상만 저장 (다이아는 추후 공식)
+    setOffReward({ sec: Math.floor(away), kills, meat: gm, exp: ge, gem: 0, meatRate: Math.floor(gm / mins), expRate: Math.floor(ge / mins), gemRate: 0 })
   }, [])
   const [heroHpUI, setHeroHpUI] = useState(100)
   const [bossUI, setBossUI] = useState(null)   // 보스전 타이머/체력 바
@@ -1408,6 +1409,7 @@ export default function App() {
     setEquipped(eq => { const next = [...eq]; next[slot] = null; return next })
   }
 
+  const offData = offReward || (uiEdit ? { sec: 7200, kills: 1234, meat: 12345, exp: 6789, gem: 0, meatRate: 102, expRate: 56, gemRate: 0 } : null)
   return (
     <div style={st.outer}>
     <style>{`
@@ -1429,7 +1431,7 @@ export default function App() {
     <div style={st.root} onClickCapture={e => {
       if (splash || !uiEdit) return
       const t = e.target.closest('[data-edit]')
-      if (t) { e.stopPropagation(); e.preventDefault(); setEditSel(t.dataset.edit) }
+      if (t) { e.stopPropagation(); e.preventDefault(); setEditSel(t.dataset.edit); if (t.dataset.edit === 'treasure') setOffOpen(true) }
     }}>
       {splash && (
         <div style={st.splashWrap} onClick={() => setSplash(false)}>
@@ -1502,7 +1504,7 @@ export default function App() {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) }))
             const nbtn = { width: 26, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
-            const rng = k => k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
+            const rng = k => k === 'offw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
             const rmin = k => k === 'equipcols' ? 3 : 0
             return <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -1606,6 +1608,12 @@ export default function App() {
             <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 12 }}>쓰러졌다...</div>
             <button style={st.retryBtn} onClick={retry}>다시 도전</button>
           </div>
+        )}
+        {offData && !offOpen && (
+          <button data-edit="treasure" style={st.treasureBtn} onClick={() => { if (!uiEdit) setOffOpen(true) }}>
+            <img src="/ui/treasure.png" alt="" style={st.treasureImg} />
+            <span style={st.treasureDot} />
+          </button>
         )}
       </div>
 
@@ -1849,15 +1857,32 @@ export default function App() {
         </div>
       )}
 
-      {offReward && (
+      {offData && offOpen && (
         <div style={st.offOverlay}>
-          <div style={st.offBox}>
-            <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 8 }}>오프라인 보상</div>
-            <div style={{ fontSize: 13, opacity: 0.8, marginBottom: 10 }}>
-              {Math.floor(offReward.sec / 3600)}시간 {Math.floor(offReward.sec % 3600 / 60)}분 · 웨이브 {wave} · {fmt(offReward.kills)}마리 사냥
+          <div style={st.offWin}>
+            <button style={st.offClose} onClick={() => setOffOpen(false)}>✕</button>
+            <div data-edit="offhdr" style={st.offHdr}>
+              <span style={st.offHdrText}>{Math.floor(offData.sec / 3600)}시간 {Math.floor(offData.sec % 3600 / 60)}분 · {fmt(offData.kills)}마리</span>
             </div>
-            <div style={{ fontSize: 15, marginBottom: 14 }}>🍖 +{fmt(offReward.meat)} · <span style={{ color: '#8ab4ff' }}>EXP +{fmt(offReward.exp)}</span></div>
-            <button data-edit="cost" style={{ ...st.costBtn, width: '100%' }} onClick={() => setOffReward(null)}>받기</button>
+            <div style={st.offItems}>
+              {[['/ui/ic_meat.png', offData.meat, offData.meatRate, '#ff9d6a'],
+                ['/ui/ic_exp.png', offData.exp, offData.expRate, '#6ec4ff'],
+                ['/ui/gem.png', offData.gem, offData.gemRate, '#cfe8ff']].map(([ic, v, rate, col], i) => (
+                <div key={i} data-edit="offitem" style={st.offItem}>
+                  <img data-edit="offitemic" src={ic} alt="" style={st.offItemIc} />
+                  <span data-edit="offitemval" style={{ ...st.offItemVal, color: col }}>+{fmt(v)}</span>
+                  <span data-edit="offitemrate" style={st.offItemRate}>{fmt(rate)}/분</span>
+                </div>
+              ))}
+            </div>
+            <div style={st.offBtns}>
+              <button data-edit="offbtn" style={st.offBtnAd} onClick={() => { if (!uiEdit) { /* TODO: 광고 시청 → 오프라인 보상 +50% */ } }}>
+                <span style={st.offBtnAdText}>추가 보상<br />(광고)</span>
+              </button>
+              <button data-edit="offclaim" style={st.offBtnClaim} onClick={() => { if (uiEdit) return; if (offReward) { setMeat(m => m + offReward.meat); setHexp(x => x + offReward.exp); if (offReward.gem) setGem(g => g + offReward.gem) } setOffReward(null); setOffOpen(false) }}>
+                <span style={st.offBtnClaimText}>받기</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1902,6 +1927,10 @@ const UI_DEFAULT = {
   shoprowX: 0, shoprowY: 0, shopicX: 0, shopicY: 0, shoptX: 0, shoptY: 0, shopsubX: 0, shopsubY: 0,
   shopbX: -2, shopbY: 0, shopbtX: 0, shopbtY: 0, shopgemX: 0, shopgemY: 0, gainicX: 0, gainicY: 0, gaintX: 0, gaintY: 0,
   gbtnX: 0, gbtnY: 0, gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0, hambX: 1, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: 0, bhpX: 0, bhpY: 0, pbX: 0, pbY: 0, wjX: 0, wjY: 0, caslotX: 3, caslotY: 16, caimgX: 0, caimgY: 0, canameX: 0, canameY: 0, catabX: 15, catabY: 14, cabtnX: 0, cabtnY: 0, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: 0, btextY: 7,
+  // 오프라인 보상: 보물상자 + 창(헤더/항목/버튼)
+  trsz: 72, offw: 322, offhh: 46, offhfz: 14, offiw: 82, offih: 90, offic: 34, offifz: 15, offrfz: 11,
+  offbtw: 140, offbth: 54, offbfz: 13, offclw: 108, offclh: 54, offcfz: 15,
+  trX: 0, trY: 0, offhdX: 0, offhdY: 0, offitX: 0, offitY: 0, offitiX: 0, offitiY: 0, offvX: 0, offvY: 0, offrX: 0, offrY: 0, offbtX: 0, offbtY: 0, offclX: 0, offclY: 0,
 }
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
@@ -1962,6 +1991,15 @@ const EDIT_GROUPS = {
   menu: { label: '메뉴 패널', size: ['menufz'], pos: 'menu' },
   bosstext: { label: '보스 버튼 글자', size: ['bossfz'], pos: 'btext' },
   clearmsg: { label: '클리어 문구', size: ['clearfz'], pos: 'clear' },
+  treasure: { label: '보물상자', size: ['trsz'], pos: 'tr' },
+  offframe: { label: '오프 창틀', size: ['offw'], pos: null },
+  offhdr: { label: '오프 헤더', size: ['offhh', 'offhfz'], pos: 'offhd' },
+  offitem: { label: '오프 항목틀', size: ['offiw', 'offih'], pos: 'offit' },
+  offitemic: { label: '오프 항목 아이콘', size: ['offic'], pos: 'offiti' },
+  offitemval: { label: '오프 획득량', size: ['offifz'], pos: 'offv' },
+  offitemrate: { label: '오프 분당량', size: ['offrfz'], pos: 'offr' },
+  offbtn: { label: '추가보상 버튼', size: ['offbtw', 'offbth', 'offbfz'], pos: 'offbt' },
+  offclaim: { label: '받기 버튼', size: ['offclw', 'offclh', 'offcfz'], pos: 'offcl' },
 }
 for (let i = 0; i < 6; i++) EDIT_GROUPS[`evoimg${i}`] = { label: `진화캐릭 ${i + 1}단계`, size: [`evoimg${i}`], pos: `evoimg${i}` }
 const UI_LABELS = {
@@ -1977,6 +2015,7 @@ const UI_LABELS = {
   shopbw: '버튼 너비', shopbh: '버튼 높이', shopbbv: '프레임 두께↕', shopbbh: '프레임 두께↔', shopbfz: '버튼 글자',
   gainic: '아이콘 크기', gainpv: '판 두께↕', gainph: '판 두께↔', shopgem: '다이아 크기', gbtnfz: '버튼 글자', gbtnpw: '판 가로', gbtnph: '판 세로',
   pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
+  trsz: '상자 크기', offw: '창 너비', offhh: '헤더 높이', offhfz: '헤더 글자', offiw: '항목 너비', offih: '항목 높이', offic: '아이콘 크기', offifz: '획득 글자', offrfz: '분당 글자', offbtw: '버튼 너비', offbth: '버튼 높이', offbfz: '버튼 글자', offclw: '버튼 너비', offclh: '버튼 높이', offcfz: '버튼 글자',
 }
 for (let i = 0; i < 6; i++) UI_LABELS[`evoimg${i}`] = `${i + 1}단계 크기`
 const uiVars = c => `:root{
@@ -2013,6 +2052,8 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-nick-x:${c.nickX}px;--pd-nick-y:${c.nickY}px;--pd-exp-x:${c.expX}px;--pd-exp-y:${c.expY}px;
 --pd-gain-x:${c.gainX}px;--pd-gain-y:${c.gainY}px;
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
+--pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offhh:${c.offhh}px;--pd-offhfz:${c.offhfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;
+${['tr', 'offhd', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center' },
@@ -2305,5 +2346,24 @@ const st = {
     color: '#ffe0d0', whiteSpace: 'nowrap', lineHeight: 1,
   },
   bossText: { display: 'inline-block', fontSize: 'var(--pd-bossfz)', textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-btext-x), var(--pd-btext-y))' },
+  // ── 오프라인 보상: 보물상자 ──
+  treasureBtn: { position: 'absolute', left: 6, bottom: 6, width: 'var(--pd-trsz)', height: 'var(--pd-trsz)', padding: 0, border: 'none', background: 'transparent', zIndex: 6, transform: 'translate(var(--pd-tr-x), var(--pd-tr-y))', cursor: 'pointer' },
+  treasureImg: { width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.55))' },
+  treasureDot: { position: 'absolute', top: '2%', right: '2%', width: 12, height: 12, borderRadius: '50%', background: '#e23b3b', border: '2px solid #2a1a0c', boxShadow: '0 0 6px #ff5a5a', pointerEvents: 'none' },
+  // ── 오프라인 보상: 창 ──
+  offWin: { position: 'relative', width: 'var(--pd-offw)', maxWidth: '94vw', aspectRatio: '1024 / 1536', background: 'url(/ui/off_frame.png) center / 100% 100% no-repeat', padding: '8% 8% 7%', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' },
+  offClose: { position: 'absolute', top: '2.5%', right: '4%', width: 26, height: 26, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.35)', color: '#f3e6d0', fontSize: 14, lineHeight: 1, cursor: 'pointer', zIndex: 2, padding: 0 },
+  offHdr: { position: 'relative', height: 'var(--pd-offhh)', background: 'url(/ui/off_header.png) center / 100% 100% no-repeat', display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'translate(var(--pd-offhd-x), var(--pd-offhd-y))', flexShrink: 0 },
+  offHdrText: { fontSize: 'var(--pd-offhfz)', color: '#f3e6d0', fontWeight: 700, textShadow: '0 1px 2px #000', paddingLeft: '13%', whiteSpace: 'nowrap' },
+  offItems: { display: 'flex', justifyContent: 'space-between', gap: '3%', margin: 'auto 0' },
+  offItem: { position: 'relative', width: 'var(--pd-offiw)', height: 'var(--pd-offih)', background: 'url(/ui/off_item.png) center / 100% 100% no-repeat', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, transform: 'translate(var(--pd-offit-x), var(--pd-offit-y))', flexShrink: 0 },
+  offItemIc: { width: 'var(--pd-offic)', height: 'var(--pd-offic)', objectFit: 'contain', transform: 'translate(var(--pd-offiti-x), var(--pd-offiti-y))' },
+  offItemVal: { fontSize: 'var(--pd-offifz)', fontWeight: 800, textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-offv-x), var(--pd-offv-y))' },
+  offItemRate: { fontSize: 'var(--pd-offrfz)', color: '#c9b596', textShadow: '0 1px 1px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-offr-x), var(--pd-offr-y))' },
+  offBtns: { display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4%', marginTop: 'auto' },
+  offBtnAd: { width: 'var(--pd-offbtw)', height: 'var(--pd-offbth)', background: 'url(/ui/off_btn.png) center / 100% 100% no-repeat', border: 'none', color: '#4a2e0e', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0, transform: 'translate(var(--pd-offbt-x), var(--pd-offbt-y))' },
+  offBtnAdText: { fontSize: 'var(--pd-offbfz)', lineHeight: 1.1, textAlign: 'center', textShadow: '0 1px 1px rgba(255,220,150,0.4)' },
+  offBtnClaim: { width: 'var(--pd-offclw)', height: 'var(--pd-offclh)', background: 'url(/ui/off_claim.png) center / 100% 100% no-repeat', border: 'none', color: '#f0f0f0', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0, transform: 'translate(var(--pd-offcl-x), var(--pd-offcl-y))' },
+  offBtnClaimText: { fontSize: 'var(--pd-offcfz)', textShadow: '0 1px 2px #000' },
 }
 
