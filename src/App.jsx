@@ -2102,7 +2102,7 @@ const st = {
   spDot: { marginLeft: 5, fontSize: 11, color: '#fff', background: '#e05a4e', borderRadius: 8, padding: '0 6px' },
   bottomNav: {
     display: 'flex', background: 'linear-gradient(180deg,#241811,#160e07)', borderTop: '2px solid #4a3418', transform: 'translate(var(--pd-nav-x), var(--pd-nav-y))',
-    paddingBottom: 'env(safe-area-inset-bottom)', position: 'relative', zIndex: 50,
+    paddingBottom: 'env(safe-area-inset-bottom)',
   },
   navBtn: {
     flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
@@ -2197,12 +2197,7 @@ const st = {
     textShadow: '0 2px 10px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.9)',
     animation: 'pdBlink 1.4s ease-in-out infinite', pointerEvents: 'none',
   },
-  advWrap: {
-    position: 'absolute', left: 0, right: 0,
-    top: 'calc(max(10px, env(safe-area-inset-top)) + 96px)',      // 상단바 아래부터
-    bottom: 'calc(64px + env(safe-area-inset-bottom))',           // 하단 네비 위까지 (네비는 원래 자리 유지)
-    zIndex: 40, background: '#1a1109', display: 'flex', padding: 8,
-  },
+  advWrap: { flex: 1, minHeight: 0, background: '#1a1109', display: 'flex', padding: 8 },
   advViewport: { position: 'relative', flex: 1, minHeight: 0, borderRadius: 10, overflow: 'hidden', border: '2px solid #4a3418', background: '#0d0904' },
   advTrack: { height: '100%', display: 'flex', transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)' },
   advMap: { display: 'block', height: '100%', width: 'auto', maxWidth: 'none', imageRendering: 'auto', userSelect: 'none', WebkitUserSelect: 'none' },
