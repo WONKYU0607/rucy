@@ -1932,7 +1932,7 @@ export default function App() {
             ))}
             <div style={st.allyMats}>
               {[0, 1, 2, 3].map(mi => (
-                <div key={mi} data-edit="matchip" style={st.matChip}><img src={MAT_IMG(mi)} alt="" style={st.matChipIc} /><span style={{ fontFamily: "'Do Hyeon',sans-serif" }}>{fmt(mats[mi])}</span></div>
+                <div key={mi} data-edit="allymat" style={st.allyChip}><img src={MAT_IMG(mi)} alt="" style={st.allyChipIc} /><span style={{ fontFamily: "'Do Hyeon',sans-serif" }}>{fmt(mats[mi])}</span></div>
               ))}
             </div>
           </div>
@@ -2063,7 +2063,7 @@ const UI_DEFAULT = {
   offbtw: 135, offbth: 51, offbfz: 14, offclw: 100, offclh: 50, offcfz: 15,
   trX: -2, trY: 11, offtX: 0, offtY: 36, offnX: 0, offnY: 38, offitX: -79, offitY: 15, offitiX: 0, offitiY: 6, offvX: 0, offvY: 2, offrX: 0, offrY: -3, offbtX: 0, offbtY: 42, offclX: 0, offclY: 42,
   fuseallw: 94, fuseallh: 26, fuseallfz: 15, fuseallX: -36, fuseallY: -10,
-  matchipic: 17, matchipfz: 13,
+  matchipic: 17, matchipfz: 13, allychipic: 17, allychipfz: 13,
   dtabh: 40, dtabfz: 15, dgradefz: 14, dtitlefz: 17, darrowfz: 26, diconsz: 92, dtierfz: 12, dstatfz: 14, denhh: 48, denhfz: 14, denhic: 22, dequiph: 48, dequipfz: 15, dfuseh: 50, dfusefz: 17, dstepsz: 46, dstepfz: 20,
   mailsz: 26, questsz: 40, mailboxX: 0, mailboxY: 0, questX: 0, questY: 2,
   matchipX: 23, matchipY: -14, allymatX: 0, allymatY: 0, dtabX: 0, dtabY: 0, dtitleX: 0, dtitleY: 0, darrowX: 0, darrowY: 0, diconX: 0, diconY: 0, dstatX: 0, dstatY: 0, denhX: 0, denhY: 0, dequipX: 0, dequipY: 0, dfusebtnX: 0, dfusebtnY: 0, dstepX: 0, dstepY: 0,
@@ -2141,7 +2141,7 @@ const EDIT_GROUPS = {
   offclaim: { label: '받기 버튼', size: ['offclw', 'offclh', 'offcfz'], pos: 'offcl' },
   fuseall: { label: '일괄융합 버튼', size: ['fuseallw', 'fuseallh', 'fuseallfz'], pos: 'fuseall' },
   matchip: { label: '재화 칩', size: ['matchipic', 'matchipfz'], pos: 'matchip' },
-  allymat: { label: '동료 재화 위치', size: [], pos: 'allymat' },
+  allymat: { label: '동료 재화칩', size: ['allychipic', 'allychipfz'], pos: 'allymat' },
   dtab: { label: '상세 탭버튼', size: ['dtabh', 'dtabfz'], pos: 'dtab' },
   dtitle: { label: '상세 등급/이름', size: ['dgradefz', 'dtitlefz'], pos: 'dtitle' },
   darrow: { label: '상세 화살표', size: ['darrowfz'], pos: 'darrow' },
@@ -2167,7 +2167,7 @@ const UI_LABELS = {
   gainic: '아이콘 크기', gainpv: '판 두께↕', gainph: '판 두께↔', shopgem: '다이아 크기', gbtnfz: '버튼 글자', gbtnpw: '판 가로', gbtnph: '판 세로',
   pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', mailsz: '우편함 크기', questsz: '퀘스트 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
   trsz: '상자 크기', offw: '창 너비', offtfz: '제목 글자', offnfz: '정보 글자', offiw: '항목 너비', offih: '항목 높이', offic: '아이콘 크기', offifz: '획득 글자', offrfz: '분당 글자', offbtw: '버튼 너비', offbth: '버튼 높이', offbfz: '버튼 글자', offclw: '버튼 너비', offclh: '버튼 높이', offcfz: '버튼 글자', fuseallw: '융합버튼 너비', fuseallh: '융합버튼 높이', fuseallfz: '융합버튼 글자',
-  matchipic: '아이콘 크기', matchipfz: '글자 크기', dtabh: '탭 높이', dtabfz: '탭 글자', dgradefz: '등급 글자', dtitlefz: '이름 글자', darrowfz: '화살표 크기', diconsz: '아이콘틀 크기', dtierfz: '등급표시 글자', dstatfz: '능력치 글자', denhh: '강화버튼 높이', denhfz: '강화버튼 글자', denhic: '강화 재화아이콘', dequiph: '장착버튼 높이', dequipfz: '장착버튼 글자', dfuseh: '융합버튼 높이', dfusefz: '융합버튼 글자', dstepsz: '조절버튼 크기', dstepfz: '수량 글자',
+  matchipic: '아이콘 크기', matchipfz: '글자 크기', allychipic: '동료 아이콘', allychipfz: '동료 글자', dtabh: '탭 높이', dtabfz: '탭 글자', dgradefz: '등급 글자', dtitlefz: '이름 글자', darrowfz: '화살표 크기', diconsz: '아이콘틀 크기', dtierfz: '등급표시 글자', dstatfz: '능력치 글자', denhh: '강화버튼 높이', denhfz: '강화버튼 글자', denhic: '강화 재화아이콘', dequiph: '장착버튼 높이', dequipfz: '장착버튼 글자', dfuseh: '융합버튼 높이', dfusefz: '융합버튼 글자', dstepsz: '조절버튼 크기', dstepfz: '수량 글자',
 }
 for (let i = 0; i < 6; i++) UI_LABELS[`evoimg${i}`] = `${i + 1}단계 크기`
 const uiVars = c => `:root{
@@ -2205,7 +2205,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-gain-x:${c.gainX}px;--pd-gain-y:${c.gainY}px;
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
---pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
+--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
 ${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'mailbox', 'quest', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
@@ -2421,6 +2421,8 @@ const st = {
   equipBottomBar: { flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, padding: '0 8px' },
   matChip: { display: 'flex', alignItems: 'center', gap: 3, background: 'rgba(0,0,0,0.4)', borderRadius: 8, padding: '3px 7px', border: '1px solid #5a4632', flexShrink: 0, fontSize: 'var(--pd-matchipfz)', fontWeight: 700, color: '#f3e6d0', transform: 'translate(var(--pd-matchip-x), var(--pd-matchip-y))' },
   matChipIc: { width: 'var(--pd-matchipic)', height: 'var(--pd-matchipic)', objectFit: 'contain' },
+  allyChip: { display: 'flex', alignItems: 'center', gap: 3, background: 'rgba(0,0,0,0.4)', borderRadius: 8, padding: '3px 7px', border: '1px solid #5a4632', flexShrink: 0, fontSize: 'var(--pd-allychipfz)', fontWeight: 700, color: '#f3e6d0' },
+  allyChipIc: { width: 'var(--pd-allychipic)', height: 'var(--pd-allychipic)', objectFit: 'contain' },
   allyMats: { display: 'flex', gap: 4, marginLeft: 'auto', flexWrap: 'wrap', justifyContent: 'flex-end', transform: 'translate(var(--pd-allymat-x), var(--pd-allymat-y))' },
   offOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   offBox: { background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: `2px solid ${GOLD_D}`, borderRadius: 16, padding: '20px 24px', textAlign: 'center', minWidth: 240, color: '#f3e6d0', boxShadow: '0 8px 30px rgba(0,0,0,0.6)' },
