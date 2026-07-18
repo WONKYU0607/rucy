@@ -1504,7 +1504,7 @@ export default function App() {
       {menuOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 80 }} onClick={() => setMenuOpen(false)}>
           <div data-edit="menu" style={st.menuPanel} onClick={e => e.stopPropagation()}>
-            <button style={{ ...st.menuItem, opacity: 0.5 }} onClick={() => {}}>우편함 <span style={{ fontSize: 11, opacity: 0.7 }}>준비 중</span></button>
+            <button style={{ ...st.menuItem, opacity: 0.5, display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => {}}><img data-edit="mailbox" src="/ui/mailbox.png" alt="" style={st.mailImg} />우편함 <span style={{ fontSize: 11, opacity: 0.7 }}>준비 중</span></button>
             <div style={{ borderTop: '1px solid #3a2a14', margin: '4px 0' }} />
             {FB_ON && (fbUser ? (
               <>
@@ -1695,7 +1695,6 @@ export default function App() {
           <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
             <span data-edit="pillmeat" style={st.pillMeat}><b style={{ color: '#ffe6c0' }}>{fmt(meat)}</b></span>
             <span data-edit="pillgem" style={st.pillGem}><b style={{ color: '#cfe8ff' }}>{DEBUG ? '∞' : fmt(gem)}</b></span>
-            <button data-edit="mailbox" style={st.mailBtn} onClick={() => { if (!uiEdit) { /* TODO: 우편함 */ } }}><img src="/ui/mailbox.png" alt="" style={st.iconImg} /></button>
             <button data-edit="hamb" style={st.hambBtn} onClick={() => setMenuOpen(o => !o)}>☰</button>
           </div>
         </div>
@@ -1718,13 +1717,13 @@ export default function App() {
           <button style={{ ...st.bossBtn, opacity: bossReady && phase === 'fighting' ? 1 : 0.45, animation: bossReady && phase === 'fighting' ? 'pdPulse 1.2s ease-in-out infinite' : 'none' }} disabled={!uiEdit && !(bossReady && phase === 'fighting')} onClick={() => { if (!uiEdit) challengeBoss() }}>
             <span data-edit="bosstext" style={st.bossText}>보스 도전</span>
           </button>
-          <button data-edit="quest" style={st.questBtn} onClick={() => { if (!uiEdit) { /* TODO: 퀘스트 */ } }}><img src="/ui/quest.png" alt="" style={st.iconImg} /></button>
         </div>
       </div>
 
       <div ref={wrapRef} style={{ ...st.canvasWrap, ...(nav === '모험' ? { display: 'none' } : {}) }}>
         <canvas ref={canvasRef} />
         <button data-edit="pausebtn" style={{ ...st.pauseBtn, opacity: paused ? 1 : 0.65 }} onClick={() => { if (!uiEdit) setPaused(p => !p) }}>{paused ? '▶' : 'II'}</button>
+        <button data-edit="quest" style={st.questBtn} onClick={() => { if (!uiEdit) { /* TODO: 퀘스트 */ } }}><img src="/ui/quest.png" alt="" style={st.iconImg} /></button>
         {bossUI && (
           <div style={st.bossBars}>
             <div data-edit="btimer" style={st.btOuter}>
@@ -2063,11 +2062,11 @@ const UI_DEFAULT = {
   trsz: 55, offw: 322, offtfz: 14, offnfz: 13, offiw: 58, offih: 58, offic: 29, offifz: 10, offrfz: 10,
   offbtw: 135, offbth: 51, offbfz: 14, offclw: 100, offclh: 50, offcfz: 15,
   trX: -2, trY: 11, offtX: 0, offtY: 36, offnX: 0, offnY: 38, offitX: -79, offitY: 15, offitiX: 0, offitiY: 6, offvX: 0, offvY: 2, offrX: 0, offrY: -3, offbtX: 0, offbtY: 42, offclX: 0, offclY: 42,
-  fuseallw: 200, fuseallh: 42, fuseallfz: 15, fuseallX: 0, fuseallY: 0,
-  matchipic: 22, matchipfz: 13,
+  fuseallw: 94, fuseallh: 26, fuseallfz: 15, fuseallX: -36, fuseallY: -10,
+  matchipic: 17, matchipfz: 13,
   dtabh: 40, dtabfz: 15, dgradefz: 14, dtitlefz: 17, darrowfz: 26, diconsz: 92, dtierfz: 12, dstatfz: 14, denhh: 48, denhfz: 14, denhic: 22, dequiph: 48, dequipfz: 15, dfuseh: 50, dfusefz: 17, dstepsz: 46, dstepfz: 20,
-  mailsz: 26, questsz: 40, mailboxX: 0, mailboxY: 0, questX: 0, questY: 0,
-  matchipX: 0, matchipY: 0, allymatX: 0, allymatY: 0, dtabX: 0, dtabY: 0, dtitleX: 0, dtitleY: 0, darrowX: 0, darrowY: 0, diconX: 0, diconY: 0, dstatX: 0, dstatY: 0, denhX: 0, denhY: 0, dequipX: 0, dequipY: 0, dfusebtnX: 0, dfusebtnY: 0, dstepX: 0, dstepY: 0,
+  mailsz: 26, questsz: 40, mailboxX: 0, mailboxY: 0, questX: 0, questY: 2,
+  matchipX: 23, matchipY: -14, allymatX: 0, allymatY: 0, dtabX: 0, dtabY: 0, dtitleX: 0, dtitleY: 0, darrowX: 0, darrowY: 0, diconX: 0, diconY: 0, dstatX: 0, dstatY: 0, denhX: 0, denhY: 0, dequipX: 0, dequipY: 0, dfusebtnX: 0, dfusebtnY: 0, dstepX: 0, dstepY: 0,
 }
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
@@ -2526,8 +2525,8 @@ const st = {
   offBtnAdText: { fontSize: 'var(--pd-offbfz)', lineHeight: 1.1, textAlign: 'center', textShadow: '0 1px 1px rgba(255,220,150,0.4)' },
   offBtnClaim: { width: 'var(--pd-offclw)', height: 'var(--pd-offclh)', background: 'url(/ui/off_claim.png) center / 100% 100% no-repeat', border: 'none', color: '#f0f0f0', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0, transform: 'translate(var(--pd-offcl-x), var(--pd-offcl-y))' },
   offBtnClaimText: { fontSize: 'var(--pd-offcfz)', textShadow: '0 1px 2px #000' },
-  mailBtn: { width: 'var(--pd-mailsz)', height: 'var(--pd-mailsz)', padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', flexShrink: 0, transform: 'translate(var(--pd-mailbox-x), var(--pd-mailbox-y))' },
-  questBtn: { width: 'var(--pd-questsz)', height: 'var(--pd-questsz)', padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', transform: 'translate(var(--pd-quest-x), var(--pd-quest-y))' },
+  mailImg: { width: 'var(--pd-mailsz)', height: 'var(--pd-mailsz)', objectFit: 'contain', flexShrink: 0, transform: 'translate(var(--pd-mailbox-x), var(--pd-mailbox-y))' },
+  questBtn: { position: 'absolute', top: 8, right: 8, width: 'var(--pd-questsz)', height: 'var(--pd-questsz)', padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', zIndex: 5, transform: 'translate(var(--pd-quest-x), var(--pd-quest-y))' },
   iconImg: { width: '100%', height: '100%', objectFit: 'contain' },
   // ── 장비 상세창 ──
   dOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 'calc(70px + env(safe-area-inset-bottom))', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60, padding: 14 },
