@@ -1695,6 +1695,7 @@ export default function App() {
           <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
             <span data-edit="pillmeat" style={st.pillMeat}><b style={{ color: '#ffe6c0' }}>{fmt(meat)}</b></span>
             <span data-edit="pillgem" style={st.pillGem}><b style={{ color: '#cfe8ff' }}>{DEBUG ? '∞' : fmt(gem)}</b></span>
+            <button data-edit="mailbox" style={st.mailBtn} onClick={() => { if (!uiEdit) { /* TODO: 우편함 */ } }}><img src="/ui/mailbox.png" alt="" style={st.iconImg} /></button>
             <button data-edit="hamb" style={st.hambBtn} onClick={() => setMenuOpen(o => !o)}>☰</button>
           </div>
         </div>
@@ -1717,6 +1718,7 @@ export default function App() {
           <button style={{ ...st.bossBtn, opacity: bossReady && phase === 'fighting' ? 1 : 0.45, animation: bossReady && phase === 'fighting' ? 'pdPulse 1.2s ease-in-out infinite' : 'none' }} disabled={!uiEdit && !(bossReady && phase === 'fighting')} onClick={() => { if (!uiEdit) challengeBoss() }}>
             <span data-edit="bosstext" style={st.bossText}>보스 도전</span>
           </button>
+          <button data-edit="quest" style={st.questBtn} onClick={() => { if (!uiEdit) { /* TODO: 퀘스트 */ } }}><img src="/ui/quest.png" alt="" style={st.iconImg} /></button>
         </div>
       </div>
 
@@ -2064,6 +2066,8 @@ const UI_DEFAULT = {
   fuseallw: 200, fuseallh: 42, fuseallfz: 15, fuseallX: 0, fuseallY: 0,
   matchipic: 22, matchipfz: 13,
   dtabh: 40, dtabfz: 15, dgradefz: 14, dtitlefz: 17, darrowfz: 26, diconsz: 92, dtierfz: 12, dstatfz: 14, denhh: 48, denhfz: 14, denhic: 22, dequiph: 48, dequipfz: 15, dfuseh: 50, dfusefz: 17, dstepsz: 46, dstepfz: 20,
+  mailsz: 26, questsz: 40, mailboxX: 0, mailboxY: 0, questX: 0, questY: 0,
+  matchipX: 0, matchipY: 0, allymatX: 0, allymatY: 0, dtabX: 0, dtabY: 0, dtitleX: 0, dtitleY: 0, darrowX: 0, darrowY: 0, diconX: 0, diconY: 0, dstatX: 0, dstatY: 0, denhX: 0, denhY: 0, dequipX: 0, dequipY: 0, dfusebtnX: 0, dfusebtnY: 0, dstepX: 0, dstepY: 0,
 }
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
@@ -2112,6 +2116,8 @@ const EDIT_GROUPS = {
   pillmeat: { label: '고기 알약', size: ['pmw', 'pmh', 'pmfz'], pos: 'pm' },
   pillgem: { label: '다이아 알약', size: ['pgw', 'pgh', 'pgfz'], pos: 'pg' },
   hamb: { label: '메뉴 버튼', size: ['hambsz'], pos: 'hamb' },
+  mailbox: { label: '우편함', size: ['mailsz'], pos: 'mailbox' },
+  quest: { label: '퀘스트 아이콘', size: ['questsz'], pos: 'quest' },
   pausebtn: { label: '일시정지 버튼', size: ['pbsz'], pos: 'pb' },
   allytab: { label: '동료 서브탭', size: ['catabfz'], pos: 'catab' },
   allyslot: { label: '동료 칸', size: ['caslot'], pos: 'caslot' },
@@ -2135,16 +2141,17 @@ const EDIT_GROUPS = {
   offbtn: { label: '추가보상 버튼', size: ['offbtw', 'offbth', 'offbfz'], pos: 'offbt' },
   offclaim: { label: '받기 버튼', size: ['offclw', 'offclh', 'offcfz'], pos: 'offcl' },
   fuseall: { label: '일괄융합 버튼', size: ['fuseallw', 'fuseallh', 'fuseallfz'], pos: 'fuseall' },
-  matchip: { label: '재화 칩', size: ['matchipic', 'matchipfz'], pos: null },
-  dtab: { label: '상세 탭버튼', size: ['dtabh', 'dtabfz'], pos: null },
-  dtitle: { label: '상세 등급/이름', size: ['dgradefz', 'dtitlefz'], pos: null },
-  darrow: { label: '상세 화살표', size: ['darrowfz'], pos: null },
-  dicon: { label: '상세 아이콘틀', size: ['diconsz', 'dtierfz'], pos: null },
-  dstat: { label: '상세 능력치', size: ['dstatfz'], pos: null },
-  denh: { label: '강화 버튼', size: ['denhh', 'denhfz', 'denhic'], pos: null },
-  dequip: { label: '장착 버튼', size: ['dequiph', 'dequipfz'], pos: null },
-  dfusebtn: { label: '융합 버튼', size: ['dfuseh', 'dfusefz'], pos: null },
-  dstep: { label: '융합 수량조절', size: ['dstepsz', 'dstepfz'], pos: null },
+  matchip: { label: '재화 칩', size: ['matchipic', 'matchipfz'], pos: 'matchip' },
+  allymat: { label: '동료 재화 위치', size: [], pos: 'allymat' },
+  dtab: { label: '상세 탭버튼', size: ['dtabh', 'dtabfz'], pos: 'dtab' },
+  dtitle: { label: '상세 등급/이름', size: ['dgradefz', 'dtitlefz'], pos: 'dtitle' },
+  darrow: { label: '상세 화살표', size: ['darrowfz'], pos: 'darrow' },
+  dicon: { label: '상세 아이콘틀', size: ['diconsz', 'dtierfz'], pos: 'dicon' },
+  dstat: { label: '상세 능력치', size: ['dstatfz'], pos: 'dstat' },
+  denh: { label: '강화 버튼', size: ['denhh', 'denhfz', 'denhic'], pos: 'denh' },
+  dequip: { label: '장착 버튼', size: ['dequiph', 'dequipfz'], pos: 'dequip' },
+  dfusebtn: { label: '융합 버튼', size: ['dfuseh', 'dfusefz'], pos: 'dfusebtn' },
+  dstep: { label: '융합 수량조절', size: ['dstepsz', 'dstepfz'], pos: 'dstep' },
 }
 for (let i = 0; i < 6; i++) EDIT_GROUPS[`evoimg${i}`] = { label: `진화캐릭 ${i + 1}단계`, size: [`evoimg${i}`], pos: `evoimg${i}` }
 const UI_LABELS = {
@@ -2159,7 +2166,7 @@ const UI_LABELS = {
   shoprowmin: '박스 높이', shopic: '아이콘 크기', shoptfz: '제목 글자', shopsubfz: '부제 글자',
   shopbw: '버튼 너비', shopbh: '버튼 높이', shopbbv: '프레임 두께↕', shopbbh: '프레임 두께↔', shopbfz: '버튼 글자',
   gainic: '아이콘 크기', gainpv: '판 두께↕', gainph: '판 두께↔', shopgem: '다이아 크기', gbtnfz: '버튼 글자', gbtnpw: '판 가로', gbtnph: '판 세로',
-  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
+  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', mailsz: '우편함 크기', questsz: '퀘스트 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
   trsz: '상자 크기', offw: '창 너비', offtfz: '제목 글자', offnfz: '정보 글자', offiw: '항목 너비', offih: '항목 높이', offic: '아이콘 크기', offifz: '획득 글자', offrfz: '분당 글자', offbtw: '버튼 너비', offbth: '버튼 높이', offbfz: '버튼 글자', offclw: '버튼 너비', offclh: '버튼 높이', offcfz: '버튼 글자', fuseallw: '융합버튼 너비', fuseallh: '융합버튼 높이', fuseallfz: '융합버튼 글자',
   matchipic: '아이콘 크기', matchipfz: '글자 크기', dtabh: '탭 높이', dtabfz: '탭 글자', dgradefz: '등급 글자', dtitlefz: '이름 글자', darrowfz: '화살표 크기', diconsz: '아이콘틀 크기', dtierfz: '등급표시 글자', dstatfz: '능력치 글자', denhh: '강화버튼 높이', denhfz: '강화버튼 글자', denhic: '강화 재화아이콘', dequiph: '장착버튼 높이', dequipfz: '장착버튼 글자', dfuseh: '융합버튼 높이', dfusefz: '융합버튼 글자', dstepsz: '조절버튼 크기', dstepfz: '수량 글자',
 }
@@ -2199,8 +2206,8 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-gain-x:${c.gainX}px;--pd-gain-y:${c.gainY}px;
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
---pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'mailbox', 'quest', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', overflow: 'hidden' },
@@ -2413,9 +2420,9 @@ const st = {
   fuseBadge: { position: 'absolute', top: 2, left: 2, fontSize: 9, fontWeight: 800, color: '#1a1206', background: '#ffd24a', borderRadius: 4, padding: '0 3px', lineHeight: '13px', pointerEvents: 'none' },
   fuseAllBtn: { flexShrink: 0, width: 'var(--pd-fuseallw)', maxWidth: '92%', height: 'var(--pd-fuseallh)', margin: '2px auto 8px', border: 'none', borderRadius: 10, background: 'linear-gradient(180deg,#f0a740,#d07f1e)', color: '#3a1e02', fontSize: 'var(--pd-fuseallfz)', fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 0 #8a5410', transform: 'translate(var(--pd-fuseall-x), var(--pd-fuseall-y))' },
   equipBottomBar: { flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8, padding: '0 8px' },
-  matChip: { display: 'flex', alignItems: 'center', gap: 3, background: 'rgba(0,0,0,0.4)', borderRadius: 8, padding: '3px 7px', border: '1px solid #5a4632', flexShrink: 0, fontSize: 'var(--pd-matchipfz)', fontWeight: 700, color: '#f3e6d0' },
+  matChip: { display: 'flex', alignItems: 'center', gap: 3, background: 'rgba(0,0,0,0.4)', borderRadius: 8, padding: '3px 7px', border: '1px solid #5a4632', flexShrink: 0, fontSize: 'var(--pd-matchipfz)', fontWeight: 700, color: '#f3e6d0', transform: 'translate(var(--pd-matchip-x), var(--pd-matchip-y))' },
   matChipIc: { width: 'var(--pd-matchipic)', height: 'var(--pd-matchipic)', objectFit: 'contain' },
-  allyMats: { display: 'flex', gap: 4, marginLeft: 'auto', flexWrap: 'wrap', justifyContent: 'flex-end' },
+  allyMats: { display: 'flex', gap: 4, marginLeft: 'auto', flexWrap: 'wrap', justifyContent: 'flex-end', transform: 'translate(var(--pd-allymat-x), var(--pd-allymat-y))' },
   offOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   offBox: { background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: `2px solid ${GOLD_D}`, borderRadius: 16, padding: '20px 24px', textAlign: 'center', minWidth: 240, color: '#f3e6d0', boxShadow: '0 8px 30px rgba(0,0,0,0.6)' },
   skillIcon: { width: 'var(--pd-icon)', height: 'var(--pd-icon)', transform: 'translate(var(--pd-icon-x), var(--pd-icon-y))', borderRadius: 8, background: 'linear-gradient(180deg,#2c2013,#1a1208)', border: '1px solid #5a4028', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 },
@@ -2519,37 +2526,40 @@ const st = {
   offBtnAdText: { fontSize: 'var(--pd-offbfz)', lineHeight: 1.1, textAlign: 'center', textShadow: '0 1px 1px rgba(255,220,150,0.4)' },
   offBtnClaim: { width: 'var(--pd-offclw)', height: 'var(--pd-offclh)', background: 'url(/ui/off_claim.png) center / 100% 100% no-repeat', border: 'none', color: '#f0f0f0', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0, transform: 'translate(var(--pd-offcl-x), var(--pd-offcl-y))' },
   offBtnClaimText: { fontSize: 'var(--pd-offcfz)', textShadow: '0 1px 2px #000' },
+  mailBtn: { width: 'var(--pd-mailsz)', height: 'var(--pd-mailsz)', padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', flexShrink: 0, transform: 'translate(var(--pd-mailbox-x), var(--pd-mailbox-y))' },
+  questBtn: { width: 'var(--pd-questsz)', height: 'var(--pd-questsz)', padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', transform: 'translate(var(--pd-quest-x), var(--pd-quest-y))' },
+  iconImg: { width: '100%', height: '100%', objectFit: 'contain' },
   // ── 장비 상세창 ──
   dOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 'calc(70px + env(safe-area-inset-bottom))', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60, padding: 14 },
   dBox: { position: 'relative', width: '100%', maxWidth: 360, maxHeight: '100%', overflowY: 'auto', background: 'linear-gradient(180deg,#3a2a1a,#2a1d10)', border: '2px solid #6b4a2a', borderRadius: 14, padding: 12, boxShadow: '0 8px 30px rgba(0,0,0,0.6)' },
   dTabs: { display: 'flex', gap: 6, marginBottom: 10 },
-  dTab: { flex: 1, height: 'var(--pd-dtabh)', border: 'none', borderRadius: 8, background: '#4a3826', color: '#c9b596', fontSize: 'var(--pd-dtabfz)', fontWeight: 700, cursor: 'pointer' },
+  dTab: { flex: 1, height: 'var(--pd-dtabh)', border: 'none', borderRadius: 8, background: '#4a3826', color: '#c9b596', fontSize: 'var(--pd-dtabfz)', fontWeight: 700, cursor: 'pointer', transform: 'translate(var(--pd-dtab-x), var(--pd-dtab-y))' },
   dTabOn: { background: 'linear-gradient(180deg,#f0a740,#d07f1e)', color: '#3a1e02' },
   dBody: { display: 'flex', flexDirection: 'column', alignItems: 'center' },
-  dGrade: { fontSize: 'var(--pd-dgradefz)', fontWeight: 800, marginTop: 4 },
-  dName: { fontSize: 'var(--pd-dtitlefz)', fontWeight: 800, color: '#f3e6d0', margin: '2px 0 8px' },
+  dGrade: { fontSize: 'var(--pd-dgradefz)', fontWeight: 800, marginTop: 4, transform: 'translate(var(--pd-dtitle-x), var(--pd-dtitle-y))' },
+  dName: { fontSize: 'var(--pd-dtitlefz)', fontWeight: 800, color: '#f3e6d0', margin: '2px 0 8px', transform: 'translate(var(--pd-dtitle-x), var(--pd-dtitle-y))' },
   dIconRow: { display: 'flex', alignItems: 'center', gap: 12 },
-  dArrow: { width: 40, height: 60, border: 'none', background: 'transparent', color: '#e0c9a0', fontSize: 'var(--pd-darrowfz)', cursor: 'pointer', padding: 0 },
-  dIconWrap: { position: 'relative', width: 'var(--pd-diconsz)', height: 'var(--pd-diconsz)', background: 'linear-gradient(180deg,#1a2540,#0f1730)', border: '3px solid #888', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  dArrow: { width: 40, height: 60, border: 'none', background: 'transparent', color: '#e0c9a0', fontSize: 'var(--pd-darrowfz)', cursor: 'pointer', padding: 0, transform: 'translate(var(--pd-darrow-x), var(--pd-darrow-y))' },
+  dIconWrap: { position: 'relative', width: 'var(--pd-diconsz)', height: 'var(--pd-diconsz)', background: 'linear-gradient(180deg,#1a2540,#0f1730)', border: '3px solid #888', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transform: 'translate(var(--pd-dicon-x), var(--pd-dicon-y))' },
   dIcon: { width: '78%', height: '78%', objectFit: 'contain', imageRendering: 'pixelated' },
   dIconTier: { position: 'absolute', right: 4, bottom: 2, fontSize: 'var(--pd-dtierfz)', fontWeight: 800, textShadow: '0 1px 2px #000' },
   dCnt: { fontSize: 15, fontWeight: 700, color: '#e8d5b0', margin: '4px 0' },
   dSecTitle: { alignSelf: 'flex-start', fontSize: 14, color: '#c9b596', fontWeight: 700, margin: '10px 0 4px' },
   dStatBox: { width: '100%', background: 'rgba(0,0,0,0.28)', borderRadius: 10, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8, boxSizing: 'border-box' },
-  dStatRow: { display: 'flex', justifyContent: 'space-between', fontSize: 'var(--pd-dstatfz)', color: '#e8d5b0' },
+  dStatRow: { display: 'flex', justifyContent: 'space-between', fontSize: 'var(--pd-dstatfz)', color: '#e8d5b0', transform: 'translate(var(--pd-dstat-x), var(--pd-dstat-y))' },
   dBtns: { display: 'flex', gap: 8, width: '100%', marginTop: 14 },
-  dEnhBtn: { flex: 1, height: 'var(--pd-denhh)', border: 'none', borderRadius: 10, background: '#5a4632', color: '#c9b596', fontSize: 'var(--pd-denhfz)', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 },
+  dEnhBtn: { flex: 1, height: 'var(--pd-denhh)', border: 'none', borderRadius: 10, background: '#5a4632', color: '#c9b596', fontSize: 'var(--pd-denhfz)', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, transform: 'translate(var(--pd-denh-x), var(--pd-denh-y))' },
   dEnhBtnOn: { background: 'linear-gradient(180deg,#e85adf,#b02ea8)', color: '#fff' },
   dEnhIc: { width: 'var(--pd-denhic)', height: 'var(--pd-denhic)', objectFit: 'contain' },
   dEnhLv: { position: 'absolute', top: 3, right: 4, fontSize: 13, fontWeight: 800, color: '#ffd24a', textShadow: '0 1px 2px #000', pointerEvents: 'none' },
-  dEquipBtn: { flex: 1, height: 'var(--pd-dequiph)', border: 'none', borderRadius: 10, background: 'linear-gradient(180deg,#c89a5a,#a06f2e)', color: '#3a1e02', fontSize: 'var(--pd-dequipfz)', fontWeight: 800, cursor: 'pointer' },
+  dEquipBtn: { flex: 1, height: 'var(--pd-dequiph)', border: 'none', borderRadius: 10, background: 'linear-gradient(180deg,#c89a5a,#a06f2e)', color: '#3a1e02', fontSize: 'var(--pd-dequipfz)', fontWeight: 800, cursor: 'pointer', transform: 'translate(var(--pd-dequip-x), var(--pd-dequip-y))' },
   dEquipOn: { background: '#4a3826', color: '#c9b596' },
   dFuseNote: { fontSize: 13, color: '#e0c9a0', margin: '2px 0 12px', textAlign: 'center' },
   dArrowDown: { fontSize: 22, color: '#e23b3b', margin: '4px 0' },
   dStepper: { display: 'flex', alignItems: 'center', gap: 14, margin: '12px 0' },
-  dStepBtn: { width: 'var(--pd-dstepsz)', height: 'var(--pd-dstepsz)', border: 'none', borderRadius: 8, background: '#c8b090', color: '#2a1d10', fontSize: 22, fontWeight: 800, cursor: 'pointer' },
+  dStepBtn: { width: 'var(--pd-dstepsz)', height: 'var(--pd-dstepsz)', border: 'none', borderRadius: 8, background: '#c8b090', color: '#2a1d10', fontSize: 22, fontWeight: 800, cursor: 'pointer', transform: 'translate(var(--pd-dstep-x), var(--pd-dstep-y))' },
   dStepVal: { fontSize: 'var(--pd-dstepfz)', fontWeight: 800, color: '#f3e6d0', minWidth: 40, textAlign: 'center' },
-  dFuseBtn: { width: '100%', height: 'var(--pd-dfuseh)', border: 'none', borderRadius: 10, background: 'linear-gradient(180deg,#f0a740,#d07f1e)', color: '#3a1e02', fontSize: 'var(--pd-dfusefz)', fontWeight: 800, cursor: 'pointer', marginTop: 6 },
+  dFuseBtn: { width: '100%', height: 'var(--pd-dfuseh)', border: 'none', borderRadius: 10, background: 'linear-gradient(180deg,#f0a740,#d07f1e)', color: '#3a1e02', fontSize: 'var(--pd-dfusefz)', fontWeight: 800, cursor: 'pointer', marginTop: 6, transform: 'translate(var(--pd-dfusebtn-x), var(--pd-dfusebtn-y))' },
   dMaxNote: { fontSize: 15, color: '#c9b596', padding: '30px 0' },
   dClose: { position: 'absolute', top: 8, right: 10, width: 28, height: 28, border: 'none', borderRadius: '50%', background: 'rgba(0,0,0,0.4)', color: '#f3e6d0', fontSize: 15, cursor: 'pointer', padding: 0 },
 }
