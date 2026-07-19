@@ -67,6 +67,10 @@ const BG_NORMAL = BG_THEMES.map(t => { const i = new Image(); i.src = `/bg/n_${t
 const BG_BOSS = BG_THEMES.map(t => { const i = new Image(); i.src = `/bg/b_${t}.jpg`; return i })
 const bgFor = (wave, boss) => (boss ? BG_BOSS : BG_NORMAL)[Math.floor((wave - 1) / 10) % BG_THEMES.length]
 const STONE = new Image(); STONE.src = '/misc/stone.png'
+// 타격 이펙트 (effect/eN_1~8.png · 8프레임, 시트 절반축소본)
+const FXF = 8, FX_DUR = 0.045
+const FX_IMGS = {}
+for (let n = 1; n <= 5; n++) FX_IMGS[n] = Array.from({ length: FXF }, (_, f) => { const i = new Image(); i.src = `/effect/e${n}_${f + 1}.png`; return i })
 
 // ── 스킬 프레임 시간 설정 (초, 직접 수정) ─────────────────────────
 // 각 원소 = 그 순서의 히어로 프레임 표시 시간. 배열 길이 = 히어로 프레임 수.
@@ -527,7 +531,7 @@ export default function App() {
       hero: { hp: maxHp, cd: 0, state: 'move', t: 0, did: false, flash: 0, animT: 0 },
       spawnLeft: 0, spawnTimer: 0, killed: 0, total: 1,
       shake: 0, scrollX: 0, needStart: true, W: 0, H: 0, groundY: 0, heroX: HERO_X, bossTimer: 0, hitstop: 0, allyU: {}, spears: [],
-      skillCd: SKILLS.map(() => 0), skill: null, skillT: 0, skillDid: false, rocks: [], projs: [], strikes: [],
+      skillCd: SKILLS.map(() => 0), skill: null, skillT: 0, skillDid: false, rocks: [], projs: [], strikes: [], fx: [],
     }
   }
 
@@ -611,6 +615,7 @@ export default function App() {
       w.pools = w.pools || []
       w.pools.push({ x, y, r: 4, max: 14 + Math.random() * 10, life: 1.2 })
     }
+    function spawnFx(n, x, y, size) { (w.fx = w.fx || []).push({ n, x, y, size, t: 0 }) }
     function dealDamage(t, st) {
       // 명중 판정: 적 회피율 − 내 명중 보너스
       const missChance = Math.max(0, t.eva - st.acc)
@@ -628,6 +633,7 @@ export default function App() {
       const ty = w.groundY - t.h * 0.55
       addDmg(t.x, ty - t.h * 0.5 - 12, Math.round(dmg), crit)
       burst(t.x, ty, '#c81818', crit ? 20 : 10, true)   // 빨간 피 튀김
+      spawnFx(3, t.x, ty, crit ? 88 : 66)                // 기본공격: 흰 슬래시 (임시 배정)
       w.shake = Math.max(w.shake, crit ? 5 : 2)
       if (t.hp <= 0 && !t.dead) killEnemy(t, st)
     }
@@ -655,6 +661,7 @@ export default function App() {
       const ty = w.groundY - t.h * 0.55
       addDmg(t.x, ty - t.h * 0.5 - 12, Math.round(dmg), true)
       burst(t.x, ty, '#c81818', 18, true)
+      spawnFx(1, t.x, ty, 120)                           // 스킬: 빨간 폭발 (임시 배정)
       if (t.hp <= 0 && !t.dead) killEnemy(t, S.current)
     }
 
@@ -1008,6 +1015,7 @@ export default function App() {
       for (const d of w.dmgTexts) { d.life -= dt; d.y -= 45 * dt }
       w.dmgTexts = w.dmgTexts.filter(d => d.life > 0)
       for (const p of w.particles) { p.life -= dt; p.x += p.vx * dt * SPEED; p.y += p.vy * dt * SPEED; p.vy += 600 * dt }
+      if (w.fx) { for (const f of w.fx) f.t += dt; w.fx = w.fx.filter(f => f.t < FX_DUR * FXF) }
       w.particles = w.particles.filter(p => p.life > 0)
       if (w.pools) {
         for (const pl of w.pools) { pl.life -= dt; pl.r = Math.min(pl.max, pl.r + 40 * dt) }
@@ -1287,6 +1295,15 @@ export default function App() {
         }
       }
       ctx.globalAlpha = 1
+
+      if (w.fx) for (const f of w.fx) {
+        const fi = Math.min(FXF - 1, Math.floor(f.t / FX_DUR))
+        const im = FX_IMGS[f.n] && FX_IMGS[f.n][fi]
+        if (im && im.complete && im.naturalWidth) {
+          const fh = f.size, fw = fh * 0.75
+          ctx.drawImage(im, f.x - fw / 2, f.y - fh * 0.6, fw, fh)
+        }
+      }
 
       ctx.textAlign = 'center'
       for (const d of w.dmgTexts) {
@@ -1844,7 +1861,7 @@ export default function App() {
           </div>
           <div data-edit="spbarB" style={{ ...st.spBar, marginTop: 4, transform: 'translate(var(--pd-spbarB-x), var(--pd-spbarB-y))' }}>보유 스킬 · 탭하여 장착 <span style={{ opacity: 0.6, fontSize: 11 }}>· {EVOS[evo].name} 전용</span></div>
           </div>
-          <div style={st.skillScroll}>
+          <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.skillScroll}>
           {SKILLS.map((s, i) => {
             if (s.stage !== evo) return null
             const cd = skillCdUI[i] || 0
@@ -2049,10 +2066,10 @@ const UI_DEFAULT = {
   evoimg0X: 0, evoimg0Y: 1, evoimg1X: 0, evoimg1Y: 1, evoimg2X: 0, evoimg2Y: 1,
   evoimg3X: 0, evoimg3Y: 1, evoimg4X: 0, evoimg4Y: 1, evoimg5X: 0, evoimg5Y: 1,
   gachacell: 62, gachafz: 10, gtierfz: 10, gachaimg: 74, gainfz: 10,
-  shoprowmin: 46, shopic: 43, shopic0: 43, shopic1: 43, shopic2: 43, shoptfz: 14, shopsubfz: 11, shopbw: 3, shopbh: 49, shopbbv: 0, shopbbh: 22, shopbfz: 11, shopgem: 12,
-  gainic: 15, gainpv: 0, gainph: 6,
+  shoprowmin: 46, shopic: 43, shopic0: 43, shopic1: 57, shopic2: 43, shoptfz: 14, shopsubfz: 11, shopbw: 4, shopbh: 40, shopbbv: 0, shopbbh: 21, shopbfz: 11, shopgem: 12,
+  gainic: 14, gainpv: 0, gainph: 6,
   gbtnfz: 13, gbtnpw: 16, gbtnph: 10,
-  pbsz: 30, wjfz: 13, caslot: 81, caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 160, bth: 28, bhpw: 163, bhph: 30, pmw: 70, pmh: 23, pmfz: 11, pgw: 70, pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 40, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
+  pbsz: 30, wjfz: 13, caslot: 81, caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 169, bth: 28, bhpw: 172, bhph: 30, pmw: 70, pmh: 23, pmfz: 11, pgw: 70, pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 40, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
   // 위치 이동(px): 요소별 X/Y
   avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: -1, pillY: 2, iconX: -3, iconY: 1,
   panelX: 0, panelY: 0, rowX: 0, rowY: -7, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0,
