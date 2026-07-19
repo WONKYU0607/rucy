@@ -70,7 +70,7 @@ const STONE = new Image(); STONE.src = '/misc/stone.png'
 // 타격 이펙트 (effect/eN_1~8.png · 8프레임, 시트 절반축소본)
 const FXF = 8, FX_DUR = 0.045
 const FX_IMGS = {}
-for (let n = 1; n <= 5; n++) FX_IMGS[n] = Array.from({ length: FXF }, (_, f) => { const i = new Image(); i.src = `/effect/e${n}_${f + 1}.png`; return i })
+for (let n = 1; n <= 5; n++) FX_IMGS[n] = Array.from({ length: FXF }, (_, f) => { const i = new Image(); i.src = `/effect/effect_frames/effect${n}/e${n}-${f + 1}.png`; return i })
 
 // ── 스킬 프레임 시간 설정 (초, 직접 수정) ─────────────────────────
 // 각 원소 = 그 순서의 히어로 프레임 표시 시간. 배열 길이 = 히어로 프레임 수.
@@ -633,7 +633,7 @@ export default function App() {
       const ty = w.groundY - t.h * 0.55
       addDmg(t.x, ty - t.h * 0.5 - 12, Math.round(dmg), crit)
       burst(t.x, ty, '#c81818', crit ? 20 : 10, true)   // 빨간 피 튀김
-      spawnFx(3, t.x, ty, crit ? 88 : 66)                // 기본공격: 흰 슬래시 (임시 배정)
+      spawnFx(1, t.x, ty, crit ? 92 : 72)                // 기본공격 타격: effect1
       w.shake = Math.max(w.shake, crit ? 5 : 2)
       if (t.hp <= 0 && !t.dead) killEnemy(t, st)
     }
@@ -650,6 +650,7 @@ export default function App() {
       const ty = w.groundY - t.h * 0.55
       burst(t.x, ty, '#a01010', 24, true)
       bloodPool(t.x, w.groundY - 4)
+      spawnFx(5, t.x, ty, 100)                           // 사망: effect5
     }
     // 스킬 데미지 (명중 무시, 항상 적중 + 큰 피 이펙트)
     function applySkillDmg(t, dmg) {
@@ -661,7 +662,6 @@ export default function App() {
       const ty = w.groundY - t.h * 0.55
       addDmg(t.x, ty - t.h * 0.5 - 12, Math.round(dmg), true)
       burst(t.x, ty, '#c81818', 18, true)
-      spawnFx(1, t.x, ty, 120)                           // 스킬: 빨간 폭발 (임시 배정)
       if (t.hp <= 0 && !t.dead) killEnemy(t, S.current)
     }
 
