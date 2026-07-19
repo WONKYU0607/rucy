@@ -1633,8 +1633,8 @@ export default function App() {
           </div>
           <div style={st.gachaBtns}>
             <button data-edit="gbtn" style={st.gachaBtn} onClick={() => setGacha(null)}><span data-edit="gbtntext" style={st.gachaBtnText}>확인</span></button>
-            <button data-edit="gbtn" style={st.gachaBtn} onClick={() => pullGacha(gacha.cat, 10)}><span data-edit="gbtntext" style={st.gachaBtnText}>10회 소환 <span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />100</span></span></button>
-            <button data-edit="gbtn" style={st.gachaBtn} onClick={() => pullGacha(gacha.cat, 30)}><span data-edit="gbtntext" style={st.gachaBtnText}>30회 소환 <span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />300</span></span></button>
+            <button data-edit="gbtn" style={st.gachaBtn} onClick={() => { if (!uiEdit) pullGacha(gacha.cat, 10) }}><span data-edit="gbtntext" style={st.gachaBtnText}>10회 소환 <span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />100</span></span></button>
+            <button data-edit="gbtn" style={st.gachaBtn} onClick={() => { if (!uiEdit) pullGacha(gacha.cat, 30) }}><span data-edit="gbtntext" style={st.gachaBtnText}>30회 소환 <span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />300</span></span></button>
           </div>
         </div>
       )}
@@ -1921,8 +1921,8 @@ export default function App() {
                   <div data-edit="shoptitle" style={{ fontWeight: 700, fontSize: 'var(--pd-shoptfz)', transform: 'translate(var(--pd-shopt-x), var(--pd-shopt-y))' }}>{cat} 소환</div>
                   <div data-edit="shopsub" style={{ fontSize: 'var(--pd-shopsubfz)', opacity: 0.6, transform: 'translate(var(--pd-shopsub-x), var(--pd-shopsub-y))' }}>상위 등급일수록 희귀 · 5개 융합</div>
                 </div>
-                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => pullGacha(cat, 1)}><span data-edit="shopbtext" style={st.shopBtnText}>1회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />10</span></span></button>
-                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => pullGacha(cat, 10)}><span data-edit="shopbtext" style={st.shopBtnText}>10회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />100</span></span></button>
+                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullGacha(cat, 1) }}><span data-edit="shopbtext" style={st.shopBtnText}>1회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />10</span></span></button>
+                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullGacha(cat, 10) }}><span data-edit="shopbtext" style={st.shopBtnText}>10회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />100</span></span></button>
               </div>
             ))}
           </div>
@@ -2329,7 +2329,7 @@ const st = {
   cloudBtn: { flexShrink: 0, padding: '6px 10px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 12 },
   shopBtn: {
     flexShrink: 0, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-    width: 'var(--pd-shopbw)', height: 'var(--pd-shopbh)',
+    width: 'calc(var(--pd-shopbw) + var(--pd-shopbbh) * 2)', height: 'calc(var(--pd-shopbh) + var(--pd-shopbbv) * 2)',
     border: '1px solid #5a4630', borderRadius: 9,
     background: 'linear-gradient(180deg,#332415,#211710)', boxShadow: 'inset 0 1px 0 rgba(255,220,150,0.08)',
     color: '#f3e6d0', lineHeight: 1.35,
@@ -2356,7 +2356,7 @@ const st = {
   gachaTier: { position: 'absolute', bottom: 2, right: 5, fontSize: 'var(--pd-gtierfz)', color: '#ffd98a', textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-gtier-x), var(--pd-gtier-y))' },
   gachaBtns: { display: 'flex', gap: 8, justifyContent: 'center', paddingTop: 10 },
   gachaBtn: {
-    padding: 'var(--pd-gbtnph) var(--pd-gbtnpw)',
+    padding: 'calc(var(--pd-gbtnph) + 10px) calc(var(--pd-gbtnpw) + 14px)',
     border: '1px solid #5a4630', borderRadius: 9,
     background: 'linear-gradient(180deg,#332415,#211710)', boxShadow: 'inset 0 1px 0 rgba(255,220,150,0.08)',
     color: '#f3e6d0',
@@ -2412,7 +2412,7 @@ const st = {
   cdOverlay: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,6,3,0.72)', fontSize: 13, color: '#7ce0ff' },
   slotRow: { display: 'flex', gap: 6, padding: '2px 2px 5px' },
   skillFixed: { flexShrink: 0 },
-  skillScroll: { flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 'var(--pd-rowgap)' },
+  skillScroll: { flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 'var(--pd-rowgap)', padding: '0 0 10px' },
   slot: { flex: 1, aspectRatio: '1', maxWidth: 'var(--pd-slotmax)', transform: 'translate(var(--pd-slot-x), var(--pd-slot-y))', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(180deg,#2c2013,#20160c)', border: '2px solid #5a4028', borderRadius: 10 },
   slotEmpty: { fontSize: 'var(--pd-slotfz)', color: '#6a4f30' },
   equipGrid: { display: 'grid', gridTemplateColumns: 'repeat(var(--pd-equipcols), minmax(0, var(--pd-equipcell)))', gap: 'var(--pd-equipgap)', justifyContent: 'center' },
