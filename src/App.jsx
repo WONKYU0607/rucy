@@ -52,6 +52,9 @@ const SKILL_SHEET = [
   { id: 20, n: 5, h: 195, stage: 1, title: '바위 회오리', charSeq: [1, 2, 3, 5], fx: { type: 'proj', fly: [4], flyScale: 0.9, yOff: 0 } },
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
+// 스킬 아이콘: 해당 스킬 시트의 지정 프레임 사용 (없으면 번호 텍스트)
+const SKILL_ICON_FRAME = { 1: 6, 2: 2, 7: 3, 8: 4, 12: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4 }
+const skillIconSrc = id => SKILL_ICON_FRAME[id] ? `/skill/s${id}/s${id}_${SKILL_ICON_FRAME[id]}.png` : null
 const SIMG = {}
 SKILL_SHEET.forEach(c => {
   SIMG[c.id] = Array.from({ length: c.n }, (_, j) => { const im = new Image(); im.src = `/skill/s${c.id}/s${c.id}_${j + 1}.png`; return im })
@@ -1848,7 +1851,7 @@ export default function App() {
           <div style={st.slotRow}>
             {equipped.map((si, slot) => (
               <button key={slot} data-edit="slot" style={st.slot} onClick={() => si != null && unequipSkill(slot)}>
-                {si != null ? <span style={{ fontSize: 'var(--pd-slotfz)' }}>{SKILLS[si].icon}</span> : <span style={st.slotEmpty}>+</span>}
+                {si != null ? (skillIconSrc(SKILLS[si].id) ? <img src={skillIconSrc(SKILLS[si].id)} alt="" style={st.skillIconImg} /> : <span style={{ fontSize: 'var(--pd-slotfz)' }}>{SKILLS[si].icon}</span>) : <span style={st.slotEmpty}>+</span>}
               </button>
             ))}
           </div>
@@ -1864,7 +1867,7 @@ export default function App() {
             return (
               <div key={s.key} style={{ ...st.row, opacity: isEq ? 0.55 : 1 }} onClick={() => isEq ? unequipSkill(eqSlot) : equipSkill(i)}>
                 <div style={{ ...st.skillIcon, position: 'relative', overflow: 'hidden' }}>
-                  {s.icon}
+                  {skillIconSrc(s.id) ? <img src={skillIconSrc(s.id)} alt="" style={st.skillIconImg} /> : s.icon}
                   {isEq && !ready && <div style={st.cdOverlay}>{cd.toFixed(1)}</div>}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -2075,7 +2078,7 @@ const UI_DEFAULT = {
   // 오프라인 보상: 보물상자 + 창(헤더/항목/버튼)
   trsz: 41, offw: 322, offtfz: 14, offnfz: 13, offiw: 52, offih: 45, offgap: 9, offic: 24, offifz: 10, offrfz: 10,
   offbtw: 135, offbth: 51, offbfz: 14, offclw: 100, offclh: 50, offcfz: 15,
-  trX: 0, trY: 8, offtX: 0, offtY: 36, offnX: 0, offnY: 38, offitX: -29, offitY: -10, offitiX: 0, offitiY: 6, offvX: 0, offvY: 2, offrX: 0, offrY: -3, offbtX: 0, offbtY: 42, offclX: 0, offclY: 42,
+  trX: 0, trY: 8, offtX: 0, offtY: 36, offnX: 0, offnY: 38, offitX: -29, offitY: -10, offitiX: 0, offitiY: 6, offvX: 0, offvY: 2, offrX: 0, offrY: -3, offbtX: 0, offbtY: 55, offclX: 0, offclY: 54,
   fuseallw: 94, fuseallh: 26, fuseallfz: 15, fuseallX: -36, fuseallY: -10,
   matchipic: 17, matchipfz: 13, allychipic: 15, allychipfz: 10,
   dtabh: 40, dtabfz: 15, dgradefz: 14, dtitlefz: 17, darrowfz: 26, diconsz: 92, dtierfz: 12, dstatfz: 14, denhh: 48, denhfz: 14, denhic: 22, dequiph: 48, dequipfz: 15, dfuseh: 50, dfusefz: 17, dstepsz: 46, dstepfz: 20,
@@ -2444,6 +2447,7 @@ const st = {
   allyMats: { display: 'flex', gap: 4, marginLeft: 'auto', alignItems: 'center', flexShrink: 0, transform: 'translate(var(--pd-allymat-x), var(--pd-allymat-y))' },
   offOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   offBox: { background: 'linear-gradient(180deg,#2c2013,#1e150b)', border: `2px solid ${GOLD_D}`, borderRadius: 16, padding: '20px 24px', textAlign: 'center', minWidth: 240, color: '#f3e6d0', boxShadow: '0 8px 30px rgba(0,0,0,0.6)' },
+  skillIconImg: { width: '88%', height: '88%', objectFit: 'contain', imageRendering: 'pixelated' },
   skillIcon: { width: 'var(--pd-icon)', height: 'var(--pd-icon)', transform: 'translate(var(--pd-icon-x), var(--pd-icon-y))', borderRadius: 8, background: 'linear-gradient(180deg,#2c2013,#1a1208)', border: '1px solid #5a4028', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 },
   progOuter: { height: 8, background: '#2a1d0d', borderRadius: 4, overflow: 'hidden', border: '1px solid #3a2a14' },
   canvasWrap: { height: '42%', position: 'relative', minHeight: 220, overflow: 'hidden' },
