@@ -41,7 +41,6 @@ const ANIM = {
 const SKILL_SHEET = [
   { id: 1, n: 6, h: 280, stage: 1, title: '번개 바위', charSeq: [1, 2, 3, 4], fx: { type: 'strike', frames: [5, 6], fxH: 240 } },
   { id: 2, n: 5, h: 250, stage: 1, title: '전기 작살', charSeq: [1, 2], fx: { type: 'proj', fly: [3, 4], impact: 5, fxH: 200 } },
-  { id: 3, n: 4, h: 235, stage: 1, title: '불바위', charSeq: [1, 2, 3], fx: { type: 'proj', fly: [4], impact: 4, flyScale: 0.3, fxH: 200 } },
   { id: 7, n: 6, h: 110, stage: 0, title: '할퀴기' },
   { id: 8, n: 6, h: 140, stage: 0, title: '내려치기' },
   { id: 12, n: 7, h: 110, stage: 0, title: '빙글빙글' },
@@ -50,7 +49,6 @@ const SKILL_SHEET = [
   { id: 16, n: 6, h: 145, stage: 0, title: '바위치기', charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5, 6] } },
   { id: 17, n: 5, h: 133, stage: 0, title: '포효' },
   { id: 18, n: 5, h: 210, stage: 1, title: '바위치기 (강화)', charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5] } },
-  { id: 19, n: 4, h: 220, stage: 1, title: '불곰', charSeq: [1], fx: { type: 'proj', fly: [2, 3, 4, 4, 4], flyScale: 0.6, yOff: 0 } },
   { id: 20, n: 5, h: 195, stage: 1, title: '바위 회오리', charSeq: [1, 2, 3, 5], fx: { type: 'proj', fly: [4], flyScale: 0.9, yOff: 0 } },
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
@@ -78,7 +76,6 @@ for (let n = 1; n <= 5; n++) FX_IMGS[n] = Array.from({ length: FXF }, (_, f) => 
 const SKILL_FRAME_T = {
   1:  [0.15, 0.15, 0.15, 0.15],           // 몽둥이번개 (4프레임)
   2:  [0.20, 0.20],                        // 창던지기 (2)
-  3:  [0.15, 0.15, 0.15],                  // 불창 (3)
   7:  [0.15, 0.15, 0.15, 0.15, 0.15, 0.15],       // (6)
   8:  [0.15, 0.15, 0.15, 0.15, 0.15, 0.15],       // (6)
   12: [0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15], // (7)
@@ -87,7 +84,6 @@ const SKILL_FRAME_T = {
   16: [0.25, 0.25],                        // 낙석 시전 (2)
   17: [0.15, 0.15, 0.15, 0.15, 0.15],      // (5)
   18: [0.25, 0.25],                        // 점프낙석 시전 (2)
-  19: [0.30],                              // 화염 시전 (1)
   20: [0.15, 0.15, 0.15, 0.15],            // 토네이도 (4: 휘두르기3+복귀1)
 }
 // 이펙트 타이밍
@@ -98,8 +94,6 @@ const PROJ_FPS = 8        // 투사체 프레임 전환 속도(초당) 기본값
 // fly 배열과 같은 길이. 순환 재생됨. 없는 스킬은 1/PROJ_FPS 균등.
 const FX_FRAME_T = {
   2:  [0.08, 0.08],                       // 창 (fly 2프레임)
-  3:  [0.09],                             // 불덩이 (1)
-  19: [0.06, 0.10, 0.20, 0.20, 0.25],     // 화염 (빔,빔,곰,곰,곰)
   20: [0.12],                             // 회오리 (1)
 }
 // 낙하/타격 이펙트 재생 시간 (초, 스킬별) — 없으면 STRIKE_DUR
@@ -592,7 +586,7 @@ export default function App() {
         dmg: t.dmg * (1 + 0.1 * (w.waveNum - 1)) * (boss ? 3 : 1),
         meat: Math.floor(t.meat * (1 + 0.2 * (w.waveNum - 1))) * (boss ? 15 : 1),
         exp: Math.floor(t.exp * (1 + 0.2 * (w.waveNum - 1))) * (boss ? 15 : 1),
-        acc: t.acc, eva: t.eva, air: t.air || 0,
+        acc: t.acc, eva: t.eva, air: boss ? 0 : (t.air || 0),
         h: boss ? BOSS_TYPES[bi].h : t.h, color: t.color, cd: 0, flash: 0, animT: Math.random() * 10,
         scaleV: boss ? 1 : 0.95 + Math.random() * 0.1, yOff: boss ? 0 : Math.random() * 8 - 4, spdV: boss ? 1 : 0.93 + Math.random() * 0.14,
       })
@@ -633,7 +627,7 @@ export default function App() {
       const ty = w.groundY - t.h * 0.55
       addDmg(t.x, ty - t.h * 0.5 - 12, Math.round(dmg), crit)
       burst(t.x, ty, '#c81818', crit ? 20 : 10, true)   // 빨간 피 튀김
-      spawnFx(1, t.x, ty, crit ? 92 : 72)                // 기본공격 타격: effect1
+      spawnFx(1, t.x + (Math.random() - 0.5) * Math.max(34, t.h * 0.55), ty + (Math.random() - 0.5) * Math.max(26, t.h * 0.4), (crit ? 92 : 72) * (0.85 + Math.random() * 0.3))   // 기본공격: effect1, 몬스터 주변 랜덤
       w.shake = Math.max(w.shake, crit ? 5 : 2)
       if (t.hp <= 0 && !t.dead) killEnemy(t, st)
     }
@@ -699,7 +693,6 @@ export default function App() {
         for (const e of w.enemies) {
           if (e.dead) continue
           e.flash = Math.max(0, e.flash - dt * 5)
-          if (e.air) e.airT = Math.min(1, (e.airT ?? 0) + dt * 1.2)   // 서서히 떠오름
           if (e.stun > 0) { e.stun -= dt; continue }  // 기절 중 정지
           // 넉백: ease-out 감쇠하며 뒤로 밀림 / 스쿼시 타이머
           if (e.kb > 0.5) { e.x += e.kb * dt; e.kb -= e.kb * Math.min(1, dt * 9) } else e.kb = 0
@@ -854,9 +847,9 @@ export default function App() {
             const mc = MC(st.mode)
             const prog = hero.t / mc.total
             const inRange = w.enemies.find(e => !e.dead && e.x - w.heroX < mc.range + 40)
-            if (!hero.did && !inRange) {
-              // 타격 전에 사거리 내 적이 사라짐(스킬 등으로 처치) → 헛스윙 방지, 걷기로 복귀
-              hero.state = 'move'; hero.t = 0
+            if (!hero.did && !inRange && prog < 0.35) {
+              // 스윙 초반에 대상 소멸 → 취소 + 쿨다운 환불 (헛스윙/헛대기 방지)
+              hero.state = 'move'; hero.t = 0; hero.cd = Math.min(hero.cd, 100)
             } else {
               if (!hero.did && prog >= mc.hitAt) {
                 hero.did = true
@@ -1052,7 +1045,7 @@ export default function App() {
       const key = st.mode === 'quad' ? 'quad' : st.mode === 'erectus' ? 'ewalk' : st.mode === 'neander' ? 'nwalk' : st.mode === 'sapiens' ? 'pwalk' : st.mode === 'human' ? 'hmwalk' : 'walk'
       // 근접 모드: 적을 앞에 두고 대기 중(막힘)일 땐 걷기 대신 마지막 스윙 프레임 유지 → 공격↔대기 스냅 깜빡임 방지
       if (st.mode === 'erectus' && key === 'ewalk' && w._blocked) {
-        return ['eatk1', ANIM.eatk1.srcs.length - 1]
+        return ['eatk1', 0]
       }
       if (st.mode === 'neander' && key === 'nwalk' && w._blocked) {
         return ['natk1', 0]
@@ -1073,7 +1066,7 @@ export default function App() {
     }
 
     function drawEnemy(ctx, e, now) {
-      const air = e.air ? e.air * (e.airT ?? 1) : 0   // 공중 높이 (등장 시 0→air 상승)
+      const air = e.air ? e.air * (e.airT ?? 1) : 0   // 공중 높이 (스폰부터 고정 고도)
       const y = w.groundY - air
       const t = ENEMY_TYPES[e.type]
       const imgs = e.boss ? BIMG[e.bossIdx] : EIMG[e.type]
