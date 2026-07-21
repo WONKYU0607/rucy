@@ -2056,7 +2056,7 @@ export default function App() {
               <img src="/adventure/worldmap.jpg" alt="" style={st.advMap} draggable={false} onLoad={() => { recalcAdv(); requestAnimationFrame(() => setAdvLoaded(true)) }} />
               {CONTINENTS.map((ct, i) => (
                 <button key={ct.key} data-edit={`advbtn${i}`} style={{ ...st.advContBtn, left: `${ct.x}%`, top: `${ct.y}%`, transform: `translate(calc(-50% + var(--pd-advbtn${i}-x)), calc(-50% + var(--pd-advbtn${i}-y)))` }} onClick={() => { if (!uiEdit) setAdvSel(ct) }}>
-                  <span style={st.advContName}>{ct.name}</span>
+                  <span data-edit="advtxt" style={st.advContName}>{ct.name}</span>
                 </button>
               ))}
             </div>
@@ -2159,7 +2159,7 @@ const UI_DEFAULT = {
   matchipic: 17, matchipfz: 13, allychipic: 14, allychipfz: 9,
   dtabh: 40, dtabfz: 15, dgradefz: 14, dtitlefz: 17, darrowfz: 26, diconsz: 92, dtierfz: 12, dstatfz: 14, denhh: 48, denhfz: 14, denhic: 22, dequiph: 48, dequipfz: 15, dfuseh: 50, dfusefz: 17, dstepsz: 46, dstepfz: 20,
   skicon: 120, skiconX: 0, skiconY: 0, slicon: 100, sliconX: 0, sliconY: 0,
-  advbw: 72, advbh: 26, advbfz: 11, advbtn0X: 0, advbtn0Y: 0, advbtn1X: 0, advbtn1Y: 0, advbtn2X: 0, advbtn2Y: 0, advbtn3X: 0, advbtn3Y: 0, advbtn4X: 0, advbtn4Y: 0, advbtn5X: 0, advbtn5Y: 0, advbtn6X: 0, advbtn6Y: 0, advbtn7X: 0, advbtn7Y: 0,
+  advbw: 40, advbh: 19, advbfz: 11, advtxtX: 0, advtxtY: 0, advbtn0X: 172, advbtn0Y: -13, advbtn1X: 251, advbtn1Y: 0, advbtn2X: 326, advbtn2Y: -5, advbtn3X: 200, advbtn3Y: 27, advbtn4X: 66, advbtn4Y: 11, advbtn5X: 121, advbtn5Y: 4, advbtn6X: 305, advbtn6Y: 36, advbtn7X: 188, advbtn7Y: 0,
   mailsz: 26, questsz: 40, mailboxX: 0, mailboxY: 0, questX: 6, questY: -8,
   matchipX: 23, matchipY: -14, allymatX: -17, allymatY: 14, dtabX: 0, dtabY: 0, dtitleX: 0, dtitleY: 0, darrowX: 0, darrowY: 0, diconX: 0, diconY: 0, dstatX: 0, dstatY: 0, denhX: 0, denhY: 0, dequipX: 0, dequipY: 0, dfusebtnX: 0, dfusebtnY: 0, dstepX: 0, dstepY: 0,
 }
@@ -2221,6 +2221,7 @@ const EDIT_GROUPS = {
   advbtn5: { label: '남미 버튼', size: ['advbw', 'advbh', 'advbfz'], pos: 'advbtn5' },
   advbtn6: { label: '오세아니아 버튼', size: ['advbw', 'advbh', 'advbfz'], pos: 'advbtn6' },
   advbtn7: { label: '그린란드 버튼', size: ['advbw', 'advbh', 'advbfz'], pos: 'advbtn7' },
+  advtxt: { label: '대륙 버튼 글자', size: ['advbfz'], pos: 'advtxt' },
   slicon: { label: '슬롯 아이콘 그림', size: ['slicon'], pos: 'slicon' },
   mailbox: { label: '우편함', size: ['mailsz'], pos: 'mailbox' },
   quest: { label: '퀘스트 아이콘', size: ['questsz'], pos: 'quest' },
@@ -2313,7 +2314,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
 --pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', overflow: 'hidden' },
@@ -2502,7 +2503,7 @@ const st = {
   advViewport: { position: 'relative', flex: 1, minHeight: 0, borderRadius: 10, overflow: 'hidden', border: '2px solid #4a3418', background: '#0d0904' },
   advTrack: { position: 'relative', height: '100%', display: 'flex', transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)' },
   advContBtn: { position: 'absolute', width: 'var(--pd-advbw)', height: 'var(--pd-advbh)', padding: 0, border: 'none', background: 'url(/ui/off_header.png) center / 100% 100% no-repeat', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', boxSizing: 'border-box', paddingRight: '14%', zIndex: 3 },
-  advContName: { fontSize: 'var(--pd-advbfz)', fontWeight: 800, color: '#f3e6d0', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap' },
+  advContName: { fontSize: 'var(--pd-advbfz)', fontWeight: 800, color: '#f3e6d0', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-advtxt-x), var(--pd-advtxt-y))' },
   advMap: { display: 'block', height: '100%', width: 'auto', maxWidth: 'none', imageRendering: 'auto', userSelect: 'none', WebkitUserSelect: 'none' },
   advArrow: {
     position: 'absolute', top: '50%', transform: 'translateY(-50%)', zIndex: 5,
