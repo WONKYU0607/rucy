@@ -72,6 +72,17 @@ function LootPiece({ p, done }) {
   }, [])
   return <img ref={r} src={LOOT_IMG[p.k]} alt="" style={{ position: 'fixed', left: p.x - 5, top: p.y - 5, width: 10, height: 10, objectFit: 'contain', imageRendering: 'pixelated', transition: 'transform 0.55s cubic-bezier(0.55,-0.05,0.85,0.4), opacity 0.55s', zIndex: 55, pointerEvents: 'none' }} />
 }
+// 모험 대륙 (지도 위 버튼 → 진입창 → 전투). x/y=지도상 기본 위치%
+const CONTINENTS = [
+  { key: 'africa', name: '아프리카', x: 52, y: 52 },
+  { key: 'middle_east', name: '중동', x: 60, y: 42 },
+  { key: 'asia', name: '아시아', x: 73, y: 40 },
+  { key: 'europe', name: '유럽', x: 50, y: 26 },
+  { key: 'north_america', name: '북미', x: 16, y: 30 },
+  { key: 'south_america', name: '남미', x: 26, y: 66 },
+  { key: 'oceania', name: '오세아니아', x: 86, y: 70 },
+  { key: 'greenland', name: '그린란드', x: 32, y: 12 },
+]
 const SIMG = {}
 SKILL_SHEET.forEach(c => {
   SIMG[c.id] = Array.from({ length: c.n }, (_, j) => { const im = new Image(); im.src = `/skill/s${c.id}/s${c.id}_${j + 1}.png`; return im })
@@ -417,6 +428,7 @@ export default function App() {
   const [splash, setSplash] = useState(true)
   const [alliesOn, setAlliesOn] = useState(init.alliesOn || {})  // 장착된 동료 (보유/성장 시스템은 추후)
   const [allySub, setAllySub] = useState('동료')
+  const [advSel, setAdvSel] = useState(null)  // 진입창에 띄울 대륙
   const [mapSeg, setMapSeg] = useState(1)  // 모험 지도 구간(0~2), 아프리카 중심=1 시작
   const [advLoaded, setAdvLoaded] = useState(false)  // 지도 이미지 로드 완료(초기 위치 점프 방지)
   const advTrackRef = useRef(null)
@@ -2041,6 +2053,11 @@ export default function App() {
           <div style={st.advViewport}>
             <div ref={advTrackRef} style={{ ...st.advTrack, transform: `translateX(${advOffset}px)`, transition: advLoaded ? st.advTrack.transition : 'none', opacity: advLoaded ? 1 : 0 }}>
               <img src="/adventure/worldmap.jpg" alt="" style={st.advMap} draggable={false} onLoad={() => { recalcAdv(); requestAnimationFrame(() => setAdvLoaded(true)) }} />
+              {CONTINENTS.map((ct, i) => (
+                <button key={ct.key} data-edit={`advbtn${i}`} style={{ ...st.advContBtn, left: `${ct.x}%`, top: `${ct.y}%`, transform: `translate(calc(-50% + var(--pd-advbtn${i}-x)), calc(-50% + var(--pd-advbtn${i}-y)))` }} onClick={() => { if (!uiEdit) setAdvSel(ct) }}>
+                  <span style={st.advContName}>{ct.name}</span>
+                </button>
+              ))}
             </div>
             {mapSeg > 0 && (
               <button style={{ ...st.advArrow, left: 8 }} onClick={() => setMapSeg(s => Math.max(0, s - 1))}>‹</button>
@@ -2136,13 +2153,14 @@ const UI_DEFAULT = {
   // 오프라인 보상: 보물상자 + 창(헤더/항목/버튼)
   trsz: 41, offw: 322, offtfz: 14, offnfz: 13, offiw: 52, offih: 45, offgap: 9, offic: 24, offifz: 10, offrfz: 10,
   offbtw: 135, offbth: 51, offbfz: 14, offclw: 100, offclh: 50, offcfz: 15,
-  trX: 0, trY: 8, offtX: 0, offtY: 0, offnX: 0, offnY: 0, offitX: 0, offitY: 0, offitiX: 0, offitiY: 6, offvX: 0, offvY: 2, offrX: 0, offrY: -3, offbtX: 0, offbtY: 0, offclX: 0, offclY: 0,
+  trX: 0, trY: 8, offtX: -37, offtY: 7, offnX: -55, offnY: -58, offitX: -33, offitY: -5, offitiX: 0, offitiY: 6, offvX: 0, offvY: 2, offrX: 0, offrY: -3, offbtX: 0, offbtY: 73, offclX: 0, offclY: 72,
   fuseallw: 94, fuseallh: 26, fuseallfz: 15, fuseallX: -36, fuseallY: -10,
-  matchipic: 17, matchipfz: 13, allychipic: 15, allychipfz: 10,
+  matchipic: 17, matchipfz: 13, allychipic: 14, allychipfz: 9,
   dtabh: 40, dtabfz: 15, dgradefz: 14, dtitlefz: 17, darrowfz: 26, diconsz: 92, dtierfz: 12, dstatfz: 14, denhh: 48, denhfz: 14, denhic: 22, dequiph: 48, dequipfz: 15, dfuseh: 50, dfusefz: 17, dstepsz: 46, dstepfz: 20,
   skicon: 120, skiconX: 0, skiconY: 0, slicon: 100, sliconX: 0, sliconY: 0,
+  advbw: 72, advbh: 26, advbfz: 11, advbtn0X: 0, advbtn0Y: 0, advbtn1X: 0, advbtn1Y: 0, advbtn2X: 0, advbtn2Y: 0, advbtn3X: 0, advbtn3Y: 0, advbtn4X: 0, advbtn4Y: 0, advbtn5X: 0, advbtn5Y: 0, advbtn6X: 0, advbtn6Y: 0, advbtn7X: 0, advbtn7Y: 0,
   mailsz: 26, questsz: 40, mailboxX: 0, mailboxY: 0, questX: 6, questY: -8,
-  matchipX: 23, matchipY: -14, allymatX: -19, allymatY: 14, dtabX: 0, dtabY: 0, dtitleX: 0, dtitleY: 0, darrowX: 0, darrowY: 0, diconX: 0, diconY: 0, dstatX: 0, dstatY: 0, denhX: 0, denhY: 0, dequipX: 0, dequipY: 0, dfusebtnX: 0, dfusebtnY: 0, dstepX: 0, dstepY: 0,
+  matchipX: 23, matchipY: -14, allymatX: -17, allymatY: 14, dtabX: 0, dtabY: 0, dtitleX: 0, dtitleY: 0, darrowX: 0, darrowY: 0, diconX: 0, diconY: 0, dstatX: 0, dstatY: 0, denhX: 0, denhY: 0, dequipX: 0, dequipY: 0, dfusebtnX: 0, dfusebtnY: 0, dstepX: 0, dstepY: 0,
 }
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
@@ -2194,6 +2212,14 @@ const EDIT_GROUPS = {
   pillgem: { label: '다이아 알약', size: ['pgw', 'pgh', 'pgfz'], pos: 'pg' },
   hamb: { label: '메뉴 버튼', size: ['hambsz'], pos: 'hamb' },
   skicon: { label: '스킬 아이콘 그림', size: ['skicon'], pos: 'skicon' },
+  advbtn0: { label: '아프리카 버튼', size: ['advbw', 'advbh', 'advbfz'], pos: 'advbtn0' },
+  advbtn1: { label: '중동 버튼', size: ['advbw', 'advbh', 'advbfz'], pos: 'advbtn1' },
+  advbtn2: { label: '아시아 버튼', size: ['advbw', 'advbh', 'advbfz'], pos: 'advbtn2' },
+  advbtn3: { label: '유럽 버튼', size: ['advbw', 'advbh', 'advbfz'], pos: 'advbtn3' },
+  advbtn4: { label: '북미 버튼', size: ['advbw', 'advbh', 'advbfz'], pos: 'advbtn4' },
+  advbtn5: { label: '남미 버튼', size: ['advbw', 'advbh', 'advbfz'], pos: 'advbtn5' },
+  advbtn6: { label: '오세아니아 버튼', size: ['advbw', 'advbh', 'advbfz'], pos: 'advbtn6' },
+  advbtn7: { label: '그린란드 버튼', size: ['advbw', 'advbh', 'advbfz'], pos: 'advbtn7' },
   slicon: { label: '슬롯 아이콘 그림', size: ['slicon'], pos: 'slicon' },
   mailbox: { label: '우편함', size: ['mailsz'], pos: 'mailbox' },
   quest: { label: '퀘스트 아이콘', size: ['questsz'], pos: 'quest' },
@@ -2245,7 +2271,7 @@ const UI_LABELS = {
   shoprowmin: '박스 높이', shopic0: '무기 아이콘', shopic1: '방어구 아이콘', shopic2: '유물 아이콘', shoptfz: '제목 글자', shopsubfz: '부제 글자',
   shopbw: '버튼 너비', shopbh: '버튼 높이', shopbbv: '프레임 두께↕', shopbbh: '프레임 두께↔', shopbfz: '버튼 글자',
   gainic: '아이콘 크기', gainpv: '판 두께↕', gainph: '판 두께↔', shopgem: '다이아 크기', gbtnfz: '버튼 글자', gbtnpw: '판 가로', gbtnph: '판 세로',
-  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', skicon: '아이콘 크기%', slicon: '아이콘 크기%', mailsz: '우편함 크기', questsz: '퀘스트 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
+  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', skicon: '아이콘 크기%', slicon: '아이콘 크기%', advbw: '버튼 너비', advbh: '버튼 높이', advbfz: '버튼 글자', mailsz: '우편함 크기', questsz: '퀘스트 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
   trsz: '상자 크기', offw: '창 너비', offtfz: '제목 글자', offnfz: '정보 글자', offiw: '항목 너비', offih: '항목 높이', offgap: '항목 간격', offic: '아이콘 크기', offifz: '획득 글자', offrfz: '분당 글자', offbtw: '버튼 너비', offbth: '버튼 높이', offbfz: '버튼 글자', offclw: '버튼 너비', offclh: '버튼 높이', offcfz: '버튼 글자', fuseallw: '융합버튼 너비', fuseallh: '융합버튼 높이', fuseallfz: '융합버튼 글자',
   matchipic: '아이콘 크기', matchipfz: '글자 크기', allychipic: '동료 아이콘', allychipfz: '동료 글자', dtabh: '탭 높이', dtabfz: '탭 글자', dgradefz: '등급 글자', dtitlefz: '이름 글자', darrowfz: '화살표 크기', diconsz: '아이콘틀 크기', dtierfz: '등급표시 글자', dstatfz: '능력치 글자', denhh: '강화버튼 높이', denhfz: '강화버튼 글자', denhic: '강화 재화아이콘', dequiph: '장착버튼 높이', dequipfz: '장착버튼 글자', dfuseh: '융합버튼 높이', dfusefz: '융합버튼 글자', dstepsz: '조절버튼 크기', dstepfz: '수량 글자',
 }
@@ -2285,8 +2311,8 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-gain-x:${c.gainX}px;--pd-gain-y:${c.gainY}px;
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
---pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+--pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', overflow: 'hidden' },
@@ -2473,7 +2499,9 @@ const st = {
   },
   advWrap: { flex: 1, minHeight: 0, background: '#1a1109', display: 'flex', padding: 8 },
   advViewport: { position: 'relative', flex: 1, minHeight: 0, borderRadius: 10, overflow: 'hidden', border: '2px solid #4a3418', background: '#0d0904' },
-  advTrack: { height: '100%', display: 'flex', transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)' },
+  advTrack: { position: 'relative', height: '100%', display: 'flex', transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)' },
+  advContBtn: { position: 'absolute', width: 'var(--pd-advbw)', height: 'var(--pd-advbh)', padding: 0, border: 'none', background: 'url(/ui/off_header.png) center / 100% 100% no-repeat', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', boxSizing: 'border-box', paddingRight: '14%', zIndex: 3 },
+  advContName: { fontSize: 'var(--pd-advbfz)', fontWeight: 800, color: '#f3e6d0', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap' },
   advMap: { display: 'block', height: '100%', width: 'auto', maxWidth: 'none', imageRendering: 'auto', userSelect: 'none', WebkitUserSelect: 'none' },
   advArrow: {
     position: 'absolute', top: '50%', transform: 'translateY(-50%)', zIndex: 5,
