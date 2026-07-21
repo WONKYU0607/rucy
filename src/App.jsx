@@ -55,6 +55,23 @@ const SKILL_SHEET = [
 // 스킬 아이콘: 해당 스킬 시트의 지정 프레임 사용 (없으면 번호 텍스트)
 const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 12: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4 }
 const skillIconSrc = id => SKILL_ICON_FRAME[id] ? `/skill/s${id}/s${id}_${SKILL_ICON_FRAME[id]}.png` : null
+// ── 전리품 조각 (사망 드롭 → 상단 재화칸 흡수 연출) ──
+const LOOT_IMG = { meat: '/ui/ic_meat.png', exp: '/ui/ic_exp.png', dia: '/ui/gem.png', mat: '/ui/mat4.png' }
+const LOOT_CIMG = {}
+for (const k in LOOT_IMG) { const i = new Image(); i.src = LOOT_IMG[k]; LOOT_CIMG[k] = i }
+const DROP_DIA_P = 0.3, DROP_MAT_P = 0.3   // 임시 확률 — 추후 웨이브 비례 공식으로 교체
+function LootPiece({ p, done }) {
+  const r = useRef(null)
+  useEffect(() => {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const el = r.current
+      if (el) { el.style.transform = `translate(${p.tx - p.x}px, ${p.ty - p.y}px) scale(0.35)`; el.style.opacity = '0.5' }
+    }))
+    const t = setTimeout(done, 700)
+    return () => clearTimeout(t)
+  }, [])
+  return <img ref={r} src={LOOT_IMG[p.k]} alt="" style={{ position: 'fixed', left: p.x - 10, top: p.y - 10, width: 20, height: 20, objectFit: 'contain', imageRendering: 'pixelated', transition: 'transform 0.55s cubic-bezier(0.55,-0.05,0.85,0.4), opacity 0.55s', zIndex: 55, pointerEvents: 'none' }} />
+}
 const SIMG = {}
 SKILL_SHEET.forEach(c => {
   SIMG[c.id] = Array.from({ length: c.n }, (_, j) => { const im = new Image(); im.src = `/skill/s${c.id}/s${c.id}_${j + 1}.png`; return im })
@@ -383,6 +400,7 @@ export default function App() {
   const [nav, setNav] = useState('영웅')     // 하단 네비: 영웅/스킬/장비/동료/퀴즈/상점
   const [equipTab, setEquipTab] = useState('무기')  // 장비 서브탭: 무기/방어구/유물
   const [detailItem, setDetailItem] = useState(null)  // 장비 상세창 { cat, i } | null
+  const [lootFly, setLootFly] = useState([])          // 재화칸으로 비행 중인 전리품 조각
   const [detailTab, setDetailTab] = useState('강화')  // 상세창 탭: 강화/융합
   const [fuseQty, setFuseQty] = useState(0)           // 융합 수량
   const [gearEq, setGearEq] = useState(init.gearEq || { 무기: null, 방어구: null, 유물: null })  // 장착 슬롯
@@ -613,6 +631,25 @@ export default function App() {
       w.pools.push({ x, y, r: 4, max: 14 + Math.random() * 10, life: 1.2 })
     }
     function spawnFx(n, x, y, size) { (w.fx = w.fx || []).push({ n, x, y, size, t: 0 }) }
+    function spawnLoot(x, y) {
+      w.loot = w.loot || []
+      const kinds = ['meat', 'meat', 'meat', 'exp', 'exp']
+      if (Math.random() < DROP_DIA_P) kinds.push('dia')
+      if (Math.random() < DROP_MAT_P) kinds.push('mat')
+      for (const k of kinds) w.loot.push({ k, x: x + (Math.random() - 0.5) * 24, y, vx: (Math.random() - 0.5) * 170, vy: -(130 + Math.random() * 150), t: 0 })
+    }
+    function launchLoot(pieces) {
+      const cr = canvas.getBoundingClientRect()
+      const items = []
+      for (const L of pieces) {
+        if (L.k === 'mat') continue   // 재화조각은 흡수 없음 (낙하 후 소멸)
+        const sel = L.k === 'meat' ? '[data-edit="pillmeat"]' : L.k === 'exp' ? '[data-edit="expbar"]' : '[data-edit="pillgem"]'
+        const el = document.querySelector(sel); if (!el) continue
+        const tr = el.getBoundingClientRect()
+        items.push({ id: Date.now() + Math.random(), k: L.k, x: cr.left + L.x, y: cr.top + L.y, tx: tr.left + tr.width / 2, ty: tr.top + tr.height / 2 })
+      }
+      if (items.length) setLootFly(v => [...v, ...items])
+    }
     function dealDamage(t, st) {
       // 명중 판정: 적 회피율 − 내 명중 보너스
       const missChance = Math.max(0, t.eva - st.acc)
@@ -648,6 +685,7 @@ export default function App() {
       burst(t.x, ty, '#a01010', 24, true)
       bloodPool(t.x, w.groundY - 4)
       spawnFx(5, t.x, ty, 100)                           // 사망: effect5
+      spawnLoot(t.x, ty)                                 // 전리품 조각 낙하
     }
     // 스킬 데미지 (명중 무시, 항상 적중 + 큰 피 이펙트)
     function applySkillDmg(t, dmg) {
@@ -1012,6 +1050,16 @@ export default function App() {
       w.dmgTexts = w.dmgTexts.filter(d => d.life > 0)
       for (const p of w.particles) { p.life -= dt; p.x += p.vx * dt * SPEED; p.y += p.vy * dt * SPEED; p.vy += 600 * dt }
       if (w.fx) { for (const f of w.fx) f.t += dt; w.fx = w.fx.filter(f => f.t < FX_DUR * FXF) }
+      if (w.loot) {
+        for (const L of w.loot) {
+          L.t += dt
+          L.x += L.vx * dt; L.y += L.vy * dt; L.vy += 720 * dt
+          const gy = w.groundY - 5
+          if (L.y > gy) { L.y = gy; L.vy *= -0.35; L.vx *= 0.6; if (Math.abs(L.vy) < 45) L.vy = 0 }
+        }
+        const fly = w.loot.filter(L => L.t >= 1.0)
+        if (fly.length) { launchLoot(fly); w.loot = w.loot.filter(L => L.t < 1.0) }
+      }
       w.particles = w.particles.filter(p => p.life > 0)
       if (w.pools) {
         for (const pl of w.pools) { pl.life -= dt; pl.r = Math.min(pl.max, pl.r + 40 * dt) }
@@ -1299,6 +1347,11 @@ export default function App() {
           const fh = f.size, fw = fh * 0.75
           ctx.drawImage(im, f.x - fw / 2, f.y - fh * 0.6, fw, fh)
         }
+      }
+
+      if (w.loot) for (const L of w.loot) {
+        const im = LOOT_CIMG[L.k]
+        if (im.complete && im.naturalWidth) ctx.drawImage(im, L.x - 9, L.y - 18, 18, 18)
       }
 
       ctx.textAlign = 'center'
@@ -1622,6 +1675,7 @@ export default function App() {
               </div>
             )
           })()}
+      {lootFly.map(p => <LootPiece key={p.id} p={p} done={() => setLootFly(v => v.filter(q => q.id !== p.id))} />)}
       {gacha && (
         <div style={st.gachaOverlay}>
           <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.gachaScroll}>
