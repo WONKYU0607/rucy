@@ -74,14 +74,14 @@ function LootPiece({ p, done }) {
 }
 // 모험 대륙 (지도 위 버튼 → 진입창 → 전투). x/y=지도상 기본 위치%
 const CONTINENTS = [
-  { key: 'africa', name: '아프리카', x: 52, y: 52 },
-  { key: 'middle_east', name: '중동', x: 60, y: 42 },
-  { key: 'asia', name: '아시아', x: 73, y: 40 },
-  { key: 'europe', name: '유럽', x: 50, y: 26 },
-  { key: 'north_america', name: '북미', x: 16, y: 30 },
-  { key: 'south_america', name: '남미', x: 26, y: 66 },
-  { key: 'oceania', name: '오세아니아', x: 86, y: 70 },
-  { key: 'greenland', name: '그린란드', x: 32, y: 12 },
+  { key: 'africa', name: '아프리카', x: 50, y: 55 },
+  { key: 'middle_east', name: '중동', x: 57, y: 43 },
+  { key: 'asia', name: '아시아', x: 67, y: 36 },
+  { key: 'europe', name: '유럽', x: 46, y: 23 },
+  { key: 'north_america', name: '북미', x: 15, y: 28 },
+  { key: 'south_america', name: '남미', x: 23, y: 66 },
+  { key: 'oceania', name: '오세아니아', x: 82, y: 72 },
+  { key: 'greenland', name: '그린란드', x: 22, y: 9 },
 ]
 const SIMG = {}
 SKILL_SHEET.forEach(c => {
@@ -1746,11 +1746,12 @@ export default function App() {
               ))}
               {g.pos && ['X', 'Y'].map(ax => {
                 const k = g.pos + ax
+                const pmax = g.pos.startsWith('advbtn') ? 400 : 80
                 return <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <span style={{ width: 92, fontSize: 12, flexShrink: 0 }}>위치 {ax === 'X' ? '←→' : '↑↓'}</span>
-                  <button style={nbtn} onClick={() => nudge(k, -1, -80, 80)}>−</button>
-                  <input type="range" min={-80} max={80} step={1} value={uiCfg[k]} onChange={e => setUiCfg({ ...uiCfg, [k]: parseFloat(e.target.value) })} style={{ flex: 1, minWidth: 0 }} />
-                  <button style={nbtn} onClick={() => nudge(k, 1, -80, 80)}>+</button>
+                  <button style={nbtn} onClick={() => nudge(k, -1, -pmax, pmax)}>−</button>
+                  <input type="range" min={-pmax} max={pmax} step={1} value={uiCfg[k]} onChange={e => setUiCfg({ ...uiCfg, [k]: parseFloat(e.target.value) })} style={{ flex: 1, minWidth: 0 }} />
+                  <button style={nbtn} onClick={() => nudge(k, 1, -pmax, pmax)}>+</button>
                   <span style={{ width: 34, textAlign: 'right', fontSize: 12, color: GOLD }}>{uiCfg[k]}</span>
                 </div>
               })}
