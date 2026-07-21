@@ -70,7 +70,7 @@ function LootPiece({ p, done }) {
     const t = setTimeout(done, 700)
     return () => clearTimeout(t)
   }, [])
-  return <img ref={r} src={LOOT_IMG[p.k]} alt="" style={{ position: 'fixed', left: p.x - 10, top: p.y - 10, width: 20, height: 20, objectFit: 'contain', imageRendering: 'pixelated', transition: 'transform 0.55s cubic-bezier(0.55,-0.05,0.85,0.4), opacity 0.55s', zIndex: 55, pointerEvents: 'none' }} />
+  return <img ref={r} src={LOOT_IMG[p.k]} alt="" style={{ position: 'fixed', left: p.x - 5, top: p.y - 5, width: 10, height: 10, objectFit: 'contain', imageRendering: 'pixelated', transition: 'transform 0.55s cubic-bezier(0.55,-0.05,0.85,0.4), opacity 0.55s', zIndex: 55, pointerEvents: 'none' }} />
 }
 const SIMG = {}
 SKILL_SHEET.forEach(c => {
@@ -636,7 +636,8 @@ export default function App() {
       const kinds = ['meat', 'meat', 'meat', 'exp', 'exp']
       if (Math.random() < DROP_DIA_P) kinds.push('dia')
       if (Math.random() < DROP_MAT_P) kinds.push('mat')
-      for (const k of kinds) w.loot.push({ k, x: x + (Math.random() - 0.5) * 24, y, vx: (Math.random() - 0.5) * 170, vy: -(130 + Math.random() * 150), t: 0 })
+      const sx = Math.max(8, Math.min(w.W - 8, x))   // 스폰 x 화면 안쪽
+      for (const k of kinds) w.loot.push({ k, x: sx + (Math.random() - 0.5) * 24, y, vx: (Math.random() - 0.5) * 170, vy: -(130 + Math.random() * 150), t: 0 })
     }
     function launchLoot(pieces) {
       const cr = canvas.getBoundingClientRect()
@@ -1056,6 +1057,9 @@ export default function App() {
           L.x += L.vx * dt; L.y += L.vy * dt; L.vy += 720 * dt
           const gy = w.groundY - 5
           if (L.y > gy) { L.y = gy; L.vy *= -0.35; L.vx *= 0.6; if (Math.abs(L.vy) < 45) L.vy = 0 }
+          const mx = 8   // 화면 좌우 안쪽 여백
+          if (L.x < mx) { L.x = mx; L.vx = Math.abs(L.vx) * 0.5 }
+          if (L.x > w.W - mx) { L.x = w.W - mx; L.vx = -Math.abs(L.vx) * 0.5 }
         }
         const fly = w.loot.filter(L => L.t >= 1.0)
         if (fly.length) { launchLoot(fly); w.loot = w.loot.filter(L => L.t < 1.0) }
@@ -1351,7 +1355,7 @@ export default function App() {
 
       if (w.loot) for (const L of w.loot) {
         const im = LOOT_CIMG[L.k]
-        if (im.complete && im.naturalWidth) ctx.drawImage(im, L.x - 9, L.y - 18, 18, 18)
+        if (im.complete && im.naturalWidth) ctx.drawImage(im, L.x - 4.5, L.y - 9, 9, 9)
       }
 
       ctx.textAlign = 'center'
@@ -2132,7 +2136,7 @@ const UI_DEFAULT = {
   // 오프라인 보상: 보물상자 + 창(헤더/항목/버튼)
   trsz: 41, offw: 322, offtfz: 14, offnfz: 13, offiw: 52, offih: 45, offgap: 9, offic: 24, offifz: 10, offrfz: 10,
   offbtw: 135, offbth: 51, offbfz: 14, offclw: 100, offclh: 50, offcfz: 15,
-  trX: 0, trY: 8, offtX: 0, offtY: 36, offnX: 0, offnY: 38, offitX: -29, offitY: -10, offitiX: 0, offitiY: 6, offvX: 0, offvY: 2, offrX: 0, offrY: -3, offbtX: 0, offbtY: 55, offclX: 0, offclY: 54,
+  trX: 0, trY: 8, offtX: 0, offtY: 0, offnX: 0, offnY: 0, offitX: 0, offitY: 0, offitiX: 0, offitiY: 6, offvX: 0, offvY: 2, offrX: 0, offrY: -3, offbtX: 0, offbtY: 0, offclX: 0, offclY: 0,
   fuseallw: 94, fuseallh: 26, fuseallfz: 15, fuseallX: -36, fuseallY: -10,
   matchipic: 17, matchipfz: 13, allychipic: 15, allychipfz: 10,
   dtabh: 40, dtabfz: 15, dgradefz: 14, dtitlefz: 17, darrowfz: 26, diconsz: 92, dtierfz: 12, dstatfz: 14, denhh: 48, denhfz: 14, denhic: 22, dequiph: 48, dequipfz: 15, dfuseh: 50, dfusefz: 17, dstepsz: 46, dstepfz: 20,
@@ -2593,11 +2597,11 @@ const st = {
   treasureImg: { width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.55))' },
   treasureDot: { position: 'absolute', top: '2%', right: '2%', width: 12, height: 12, borderRadius: '50%', background: '#e23b3b', border: '2px solid #2a1a0c', boxShadow: '0 0 6px #ff5a5a', pointerEvents: 'none' },
   // ── 오프라인 보상: 창 ──
-  offWin: { position: 'relative', width: 'var(--pd-offw)', maxWidth: '94vw', aspectRatio: '1024 / 1536', background: 'url(/ui/off_frame.png) center / 100% 100% no-repeat', padding: '8% 8% 7%', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' },
+  offWin: { position: 'relative', width: 'var(--pd-offw)', maxWidth: '94vw', aspectRatio: '1024 / 1536', background: 'url(/ui/off_frame.png) center / 100% 100% no-repeat', padding: '9% 9% 8%', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '2.5%', boxSizing: 'border-box' },
   offClose: { position: 'absolute', top: '2.5%', right: '4%', width: 26, height: 26, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.35)', color: '#f3e6d0', fontSize: 14, lineHeight: 1, cursor: 'pointer', zIndex: 2, padding: 0 },
-  offTitle: { position: 'absolute', top: '14%', left: 0, right: 0, textAlign: 'center', fontSize: 'var(--pd-offtfz)', color: '#f3e6d0', fontWeight: 800, textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-offt-x), var(--pd-offt-y))' },
-  offInfo: { position: 'absolute', top: '21.5%', left: 0, right: 0, textAlign: 'center', fontSize: 'var(--pd-offnfz)', color: '#e8d5b0', fontWeight: 700, textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-offn-x), var(--pd-offn-y))' },
-  offItems: { flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', gap: 'var(--pd-offgap)', transform: 'translate(var(--pd-offit-x), var(--pd-offit-y))' },
+  offTitle: { flexShrink: 0, textAlign: 'center', fontSize: 'var(--pd-offtfz)', color: '#f3e6d0', fontWeight: 800, textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-offt-x), var(--pd-offt-y))' },
+  offInfo: { flexShrink: 0, textAlign: 'center', fontSize: 'var(--pd-offnfz)', color: '#e8d5b0', fontWeight: 700, textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-offn-x), var(--pd-offn-y))' },
+  offItems: { flexShrink: 0, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', width: '100%', gap: 'var(--pd-offgap)', marginTop: '2%', transform: 'translate(var(--pd-offit-x), var(--pd-offit-y))' },
   offItem: { position: 'relative', width: 'var(--pd-offiw)', height: 'var(--pd-offih)', background: 'url(/ui/off_item.png) center / 100% 100% no-repeat', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, flexShrink: 0 },
   offItemIc: { width: 'var(--pd-offic)', height: 'var(--pd-offic)', objectFit: 'contain', transform: 'translate(var(--pd-offiti-x), var(--pd-offiti-y))' },
   offItemVal: { fontSize: 'var(--pd-offifz)', fontWeight: 800, textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-offv-x), var(--pd-offv-y))' },
