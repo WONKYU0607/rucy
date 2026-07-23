@@ -442,19 +442,6 @@ export default function App() {
     window.addEventListener('orientationchange', upd)
     return () => { window.removeEventListener('resize', upd); window.removeEventListener('orientationchange', upd) }
   }, [])
-  const trRef = useRef(null)
-  const [trRect, setTrRect] = useState('-')
-  useEffect(() => {
-    if (!uiEdit) return
-    const id = setInterval(() => {
-      const el = trRef.current
-      if (!el) { setTrRect('DOM없음'); return }
-      const r = el.getBoundingClientRect()
-      const im = el.querySelector('img')
-      setTrRect(`${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}×${Math.round(r.height)} img${im && im.naturalWidth ? 'O' : 'X'}`)
-    }, 500)
-    return () => clearInterval(id)
-  }, [uiEdit])
   const [advSel, setAdvSel] = useState(null)  // 진입창에 띄울 대륙
   const [mapSeg, setMapSeg] = useState(1)  // 모험 지도 구간(0~2), 아프리카 중심=1 시작
   const [advLoaded, setAdvLoaded] = useState(false)  // 지도 이미지 로드 완료(초기 위치 점프 방지)
@@ -476,6 +463,19 @@ export default function App() {
   const advOffset = -(advMax * (mapSeg / 2))  // 0→0, 1→중앙, 2→끝           // 소환 결과 오버레이 { cat, items:[{k,t}] }
   const [uiCfg, setUiCfg] = useState(() => { try { const sv = JSON.parse(localStorage.getItem('paleoUiCfg') || '{}'); return { ...UI_DEFAULT, ...Object.fromEntries(Object.entries(sv).filter(([k]) => k in UI_DEFAULT)) } } catch { return { ...UI_DEFAULT } } })
   const [uiEdit, setUiEdit] = useState(false)
+  const trRef = useRef(null)
+  const [trRect, setTrRect] = useState('-')
+  useEffect(() => {
+    if (!uiEdit) return
+    const id = setInterval(() => {
+      const el = trRef.current
+      if (!el) { setTrRect('DOM없음'); return }
+      const r = el.getBoundingClientRect()
+      const im = el.querySelector('img')
+      setTrRect(`${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}×${Math.round(r.height)} img${im && im.naturalWidth ? 'O' : 'X'}`)
+    }, 500)
+    return () => clearInterval(id)
+  }, [uiEdit])
   const rootRef = useRef(null)
   const uiScaleRef = useRef(1)
   const [view, setView] = useState({ s: 1, h: BASE_H, sw: 0, sh: 0 })   // 화면 맞춤 배율/판 높이
