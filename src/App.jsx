@@ -442,6 +442,19 @@ export default function App() {
     window.addEventListener('orientationchange', upd)
     return () => { window.removeEventListener('resize', upd); window.removeEventListener('orientationchange', upd) }
   }, [])
+  const trRef = useRef(null)
+  const [trRect, setTrRect] = useState('-')
+  useEffect(() => {
+    if (!uiEdit) return
+    const id = setInterval(() => {
+      const el = trRef.current
+      if (!el) { setTrRect('DOM없음'); return }
+      const r = el.getBoundingClientRect()
+      const im = el.querySelector('img')
+      setTrRect(`${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}×${Math.round(r.height)} img${im && im.naturalWidth ? 'O' : 'X'}`)
+    }, 500)
+    return () => clearInterval(id)
+  }, [uiEdit])
   const [advSel, setAdvSel] = useState(null)  // 진입창에 띄울 대륙
   const [mapSeg, setMapSeg] = useState(1)  // 모험 지도 구간(0~2), 아프리카 중심=1 시작
   const [advLoaded, setAdvLoaded] = useState(false)  // 지도 이미지 로드 완료(초기 위치 점프 방지)
@@ -1749,7 +1762,7 @@ export default function App() {
         <div style={{ position: 'fixed', left: 0, right: 0, ...(editSel ? { bottom: 0, borderBottom: 'none', borderRadius: '10px 10px 0 0' } : { top: 0, borderTop: 'none', borderRadius: '0 0 10px 10px' }), margin: '0 auto', maxWidth: 420, zIndex: 61, background: 'rgba(16,10,5,0.94)', border: `2px solid ${GOLD_D}`, textShadow: '0 1px 3px rgba(0,0,0,0.9)', padding: '8px 12px calc(8px + env(safe-area-inset-bottom))', maxHeight: '46%', overflowY: 'auto' }}>
           {!editSel && <div style={{ fontSize: 13, color: '#c9b596', textAlign: 'center', padding: '4px 0 8px' }}>조정할 요소를 화면에서 탭하세요 (틀·아이콘·글자·숫자·버튼)</div>}
           <div style={{ fontSize: 13, color: '#ffd98a', textAlign: 'center', padding: '0 0 6px', fontWeight: 800 }}>기준 {BASE_W}×{BASE_H} · 화면 {view.sw}×{view.sh} · 배율 {view.s.toFixed(3)}</div>
-          <div style={{ fontSize: 12, color: '#8ef0a0', textAlign: 'center', padding: '0 0 6px' }}>보상 {offReward ? 'O' : 'X'} · 창 {offOpen ? '열림' : '닫힘'} · ts {init.ts ? '있음' : '없음'} · 탭 {nav} · 상자 {offData && !offOpen ? '표시' : '숨김'}</div>
+          <div style={{ fontSize: 12, color: '#8ef0a0', textAlign: 'center', padding: '0 0 6px' }}>보상 {offReward ? 'O' : 'X'} · 창 {offOpen ? '열림' : '닫힘'} · ts {init.ts ? '있음' : '없음'} · 탭 {nav} · 상자 {offData && !offOpen ? '표시' : '숨김'} · {trRect}</div>
           {editSel && (() => {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) }))
@@ -1862,7 +1875,7 @@ export default function App() {
           </div>
         )}
         {offData && !offOpen && (
-          <button data-edit="treasure" style={st.treasureBtn} onClick={() => { if (!uiEdit) setOffOpen(true) }}>
+          <button ref={trRef} data-edit="treasure" style={{ ...st.treasureBtn, ...(uiEdit ? { outline: '2px solid #ff3b3b', background: 'rgba(255,220,0,0.35)' } : {}) }} onClick={() => { if (!uiEdit) setOffOpen(true) }}>
             <img src="/ui/treasure.png" alt="" style={st.treasureImg} />
             <span style={st.treasureDot} />
           </button>
