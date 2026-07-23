@@ -74,14 +74,14 @@ function LootPiece({ p, done }) {
 }
 // 모험 대륙 (지도 위 버튼 → 진입창 → 전투). x/y=지도상 기본 위치%
 const CONTINENTS = [
-  { key: 'africa', name: '아프리카', x: 50, y: 55 },
-  { key: 'middle_east', name: '중동', x: 57, y: 43 },
-  { key: 'asia', name: '아시아', x: 67, y: 36 },
-  { key: 'europe', name: '유럽', x: 46, y: 23 },
-  { key: 'north_america', name: '북아메리카', x: 15, y: 28 },
-  { key: 'south_america', name: '남아메리카', x: 23, y: 66 },
-  { key: 'oceania', name: '오세아니아', x: 82, y: 72 },
-  { key: 'greenland', name: '그린란드', x: 22, y: 9 },
+  { key: 'africa', name: '아프리카', x: 50, y: 55, mon: '스피노사우루스' },
+  { key: 'middle_east', name: '중동', x: 57, y: 43, mon: '케라토사우루스' },
+  { key: 'asia', name: '아시아', x: 67, y: 36, mon: '벨로키랍토르' },
+  { key: 'europe', name: '유럽', x: 46, y: 23, mon: '이구아노돈' },
+  { key: 'north_america', name: '북아메리카', x: 15, y: 28, mon: '티라노사우루스' },
+  { key: 'south_america', name: '남아메리카', x: 23, y: 66, mon: '아르젠티노사우루스' },
+  { key: 'oceania', name: '오세아니아', x: 82, y: 72, mon: '무타부라사우루스' },
+  { key: 'greenland', name: '그린란드', x: 22, y: 9, mon: '플라테오사우루스' },
 ]
 // UI 기준 해상도 — 모든 편집값(px)이 이 판 위에서 맞춰짐. 실제 화면은 이 판을 통째로 확대/축소
 const BASE_W = 420, BASE_H = 695
@@ -1610,7 +1610,7 @@ export default function App() {
     <div ref={rootRef} style={{ ...st.root, width: BASE_W, maxWidth: 'none', height: view.h, flexShrink: 0, transform: `scale(${view.s})`, transformOrigin: 'top center' }} onClickCapture={e => {
       if (splash || !uiEdit) return
       const t = e.target.closest('[data-edit]')
-      if (t) { e.stopPropagation(); e.preventDefault(); setEditSel(t.dataset.edit); if (t.dataset.edit === 'treasure') setOffOpen(true) }
+      if (t) { e.stopPropagation(); e.preventDefault(); setEditSel(t.dataset.edit); if (t.dataset.edit === 'treasure') setOffOpen(true); const mAdv = /^adv(btn|txt)(\d)$/.exec(t.dataset.edit); if (mAdv) setAdvSel(CONTINENTS[+mAdv[2]]) }
     }}>
       {splash && (
         <div style={st.splashWrap} onClick={() => setSplash(false)}>
@@ -1728,6 +1728,30 @@ export default function App() {
             )
           })()}
       {lootFly.map(p => <LootPiece key={p.id} p={p} done={() => setLootFly(v => v.filter(q => q.id !== p.id))} />)}
+      {advSel && (
+        <div style={st.advOverlay} onClick={() => { if (!uiEdit) setAdvSel(null) }}>
+          <div data-edit="advwin" style={st.advWin} onClick={e => e.stopPropagation()}>
+            <div data-edit="advttl" style={st.advWinTitle}>{advSel.name} 탐험</div>
+            <img data-edit="advthumb" src={`/adventure/bg/${advSel.key}.jpg`} alt="" style={st.advThumb} />
+            <div data-edit="advmon" style={{ ...st.advRow, fontSize: 'var(--pd-advmfz)', transform: 'translate(var(--pd-advmon-x), var(--pd-advmon-y))' }}>
+              <span style={st.advRowKey}>몬스터 정보</span><span>{advSel.mon}</span>
+            </div>
+            <div data-edit="advreg" style={{ ...st.advRow, fontSize: 'var(--pd-advrfz)', transform: 'translate(var(--pd-advreg-x), var(--pd-advreg-y))' }}>
+              <span style={st.advRowKey}>지역 정보</span><span>{advSel.name}</span>
+            </div>
+            <div data-edit="advrew" style={{ ...st.advRow, fontSize: 'var(--pd-advwfz)', transform: 'translate(var(--pd-advrew-x), var(--pd-advrew-y))' }}>
+              <span style={st.advRowKey}>탐험 보상</span>
+              <img src="/ui/ic_meat.png" alt="" style={{ width: 15, height: 15, objectFit: 'contain' }} /><span>?</span>
+              <img src="/ui/gem.png" alt="" style={{ width: 15, height: 15, objectFit: 'contain' }} /><span>?</span>
+            </div>
+            <div style={st.advWinBtns}>
+              <button data-edit="adventer" style={st.advEnterBtn} onClick={() => { if (!uiEdit) setAdvSel(null) }}>진입</button>
+              <button data-edit="advclose" style={st.advCloseBtn} onClick={() => { if (!uiEdit) setAdvSel(null) }}>닫기</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {gacha && (
         <div style={st.gachaOverlay}>
           <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.gachaScroll}>
@@ -2180,25 +2204,30 @@ const UI_DEFAULT = {
   shoprowmin: 46, shopic: 43, shopic0: 43, shopic1: 57, shopic2: 43, shoptfz: 14, shopsubfz: 11, shopbw: 4, shopbh: 40, shopbbv: 0, shopbbh: 21, shopbfz: 11, shopgem: 12,
   gainic: 14, gainpv: 0, gainph: 6,
   gbtnfz: 13, gbtnpw: 16, gbtnph: 10,
-  pbsz: 30, wjfz: 13, caslot: 81, caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 169, bth: 28, bhpw: 172, bhph: 30, pmw: 70, pmh: 23, pmfz: 11, pgw: 70, pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 40, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
+  pbsz: 30, wjfz: 13, caslot: 81, caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 169, bth: 28, bhpw: 172, bhph: 30, pmw: 70, pmh: 23, pmfz: 11, pgw: 70, pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 39, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
   // 위치 이동(px): 요소별 X/Y
   avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: -1, pillY: 2, iconX: -3, iconY: 1,
   panelX: 0, panelY: 0, rowX: 0, rowY: -7, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0,
   spX: 0, spY: 0, slotX: 23, slotY: 8, catX: 21, catY: -5, spbarX: 20, spbarY: 1, equipX: -4, equipY: -3, spbarAX: 18, spbarAY: 12,
   spbarBX: 18, spbarBY: 0, spbarCX: 19, spbarCY: -8, nickX: 0, nickY: 0, expX: 0, expY: 0, gainX: 0, gainY: 0,
-  hpX: -1, hpY: 1, bossX: 0, bossY: -4, clearX: 0, clearY: 0, waveX: -1, waveY: 1, gachaX: 0, gachaY: 0, eqtierX: -1, eqtierY: 1, eqimgX: 0, eqimgY: 0,
+  hpX: -1, hpY: 1, bossX: 2, bossY: -6, clearX: 0, clearY: 0, waveX: -1, waveY: 0, gachaX: 0, gachaY: 0, eqtierX: -1, eqtierY: 1, eqimgX: 0, eqimgY: 0,
   shoprowX: 0, shoprowY: 0, shopicX: 0, shopicY: 0, shopic0X: 0, shopic0Y: 0, shopic1X: 0, shopic1Y: 0, shopic2X: 0, shopic2Y: 0, shoptX: 0, shoptY: 0, shopsubX: 0, shopsubY: 0,
   shopbX: -2, shopbY: 0, shopbtX: 0, shopbtY: 0, shopgemX: 0, shopgemY: 0, gainicX: 0, gainicY: 0, gaintX: 0, gaintY: 0,
   gbtnX: 0, gbtnY: 0, gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0, hambX: 1, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: 0, bhpX: 0, bhpY: 0, pbX: 0, pbY: 0, wjX: 0, wjY: 0, caslotX: 3, caslotY: 16, caimgX: 0, caimgY: 0, canameX: 0, canameY: 0, catabX: 15, catabY: 14, cabtnX: 0, cabtnY: 0, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: 0, btextY: 7,
   // 오프라인 보상: 보물상자 + 창(헤더/항목/버튼)
-  trsz: 41, offw: 322, offtfz: 14, offnfz: 13, offiw: 52, offih: 45, offgap: 9, offic: 24, offifz: 10, offrfz: 10,
+  trsz: 40, offw: 322, offtfz: 14, offnfz: 13, offiw: 52, offih: 45, offgap: 9, offic: 24, offifz: 10, offrfz: 10,
   offbtw: 135, offbth: 51, offbfz: 14, offclw: 100, offclh: 50, offcfz: 15,
-  trX: 0, trY: 8, offtX: -36, offtY: 6, offnX: -59, offnY: -59, offitX: -29, offitY: -10, offitiX: 0, offitiY: 6, offvX: 0, offvY: 2, offrX: 0, offrY: -3, offbtX: 0, offbtY: 71, offclX: -2, offclY: 71,
+  trX: -3, trY: 9, offtX: -1, offtY: 66, offnX: 1, offnY: 76, offitX: -29, offitY: 80, offitiX: 0, offitiY: 6, offvX: 0, offvY: 2, offrX: 0, offrY: -3, offbtX: 0, offbtY: 71, offclX: -2, offclY: 71,
   fuseallw: 94, fuseallh: 26, fuseallfz: 15, fuseallX: -36, fuseallY: -10,
   matchipic: 17, matchipfz: 13, allychipic: 15, allychipfz: 10,
   dtabh: 40, dtabfz: 15, dgradefz: 14, dtitlefz: 17, darrowfz: 26, diconsz: 92, dtierfz: 12, dstatfz: 14, denhh: 48, denhfz: 14, denhic: 22, dequiph: 48, dequipfz: 15, dfuseh: 50, dfusefz: 17, dstepsz: 46, dstepfz: 20,
   skicon: 120, skiconX: 0, skiconY: 0, slicon: 100, sliconX: 0, sliconY: 0,
-  advbw: 40, advbh: 20, advbfz: 10, advtxt0X: 47, advtxt0Y: 1, advtxt1X: 39, advtxt1Y: 1, advtxt2X: 43, advtxt2Y: 2, advtxt3X: 39, advtxt3Y: 1, advtxt4X: 50, advtxt4Y: 1, advtxt5X: 51, advtxt5Y: 2, advtxt6X: 50, advtxt6Y: 2, advtxt7X: 47, advtxt7Y: 2, advbtn0X: 172, advbtn0Y: -13, advbtn1X: 251, advbtn1Y: 0, advbtn2X: 326, advbtn2Y: -5, advbtn3X: 200, advbtn3Y: 27, advbtn4X: 66, advbtn4Y: 11, advbtn5X: 121, advbtn5Y: 4, advbtn6X: 305, advbtn6Y: 36, advbtn7X: 188, advbtn7Y: 0,
+  advbw: 40, advbh: 20, advbfz: 10,
+  advww: 300, advwh: 400, advtfz: 18, advthw: 240, advthh: 96, advmfz: 14, advrfz: 13, advwfz: 13,
+  advew: 120, adveh: 44, advefz: 16, advcw: 100, advch: 44, advcfz: 15,
+  advwinX: 0, advwinY: 0, advttlX: 0, advttlY: 0, advthumbX: 0, advthumbY: 0,
+  advmonX: 0, advmonY: 0, advregX: 0, advregY: 0, advrewX: 0, advrewY: 0,
+  adventerX: 0, adventerY: 0, advcloseX: 0, advcloseY: 0, advtxt0X: 47, advtxt0Y: 1, advtxt1X: 39, advtxt1Y: 1, advtxt2X: 43, advtxt2Y: 2, advtxt3X: 39, advtxt3Y: 1, advtxt4X: 50, advtxt4Y: 1, advtxt5X: 51, advtxt5Y: 2, advtxt6X: 50, advtxt6Y: 2, advtxt7X: 47, advtxt7Y: 2, advbtn0X: 172, advbtn0Y: -13, advbtn1X: 251, advbtn1Y: 0, advbtn2X: 326, advbtn2Y: -5, advbtn3X: 200, advbtn3Y: 27, advbtn4X: 66, advbtn4Y: 11, advbtn5X: 121, advbtn5Y: 4, advbtn6X: 305, advbtn6Y: 36, advbtn7X: 188, advbtn7Y: 0,
   mailsz: 26, questsz: 40, mailboxX: 0, mailboxY: 0, questX: 6, questY: -8,
   matchipX: 23, matchipY: -14, allymatX: -19, allymatY: 14, dtabX: 0, dtabY: 0, dtitleX: 0, dtitleY: 0, darrowX: 0, darrowY: 0, diconX: 0, diconY: 0, dstatX: 0, dstatY: 0, denhX: 0, denhY: 0, dequipX: 0, dequipY: 0, dfusebtnX: 0, dfusebtnY: 0, dstepX: 0, dstepY: 0,
 }
@@ -2268,6 +2297,14 @@ const EDIT_GROUPS = {
   advtxt5: { label: '남아메리카 글자', size: ['advbfz'], pos: 'advtxt5' },
   advtxt6: { label: '오세아니아 글자', size: ['advbfz'], pos: 'advtxt6' },
   advtxt7: { label: '그린란드 글자', size: ['advbfz'], pos: 'advtxt7' },
+  advwin: { label: '진입창 틀', size: ['advww', 'advwh'], pos: 'advwin' },
+  advttl: { label: '진입창 제목', size: ['advtfz'], pos: 'advttl' },
+  advthumb: { label: '진입창 지역그림', size: ['advthw', 'advthh'], pos: 'advthumb' },
+  advmon: { label: '진입창 몬스터정보', size: ['advmfz'], pos: 'advmon' },
+  advreg: { label: '진입창 지역정보', size: ['advrfz'], pos: 'advreg' },
+  advrew: { label: '진입창 탐험보상', size: ['advwfz'], pos: 'advrew' },
+  adventer: { label: '진입 버튼', size: ['advew', 'adveh', 'advefz'], pos: 'adventer' },
+  advclose: { label: '진입창 닫기', size: ['advcw', 'advch', 'advcfz'], pos: 'advclose' },
   slicon: { label: '슬롯 아이콘 그림', size: ['slicon'], pos: 'slicon' },
   mailbox: { label: '우편함', size: ['mailsz'], pos: 'mailbox' },
   quest: { label: '퀘스트 아이콘', size: ['questsz'], pos: 'quest' },
@@ -2319,7 +2356,7 @@ const UI_LABELS = {
   shoprowmin: '박스 높이', shopic0: '무기 아이콘', shopic1: '방어구 아이콘', shopic2: '유물 아이콘', shoptfz: '제목 글자', shopsubfz: '부제 글자',
   shopbw: '버튼 너비', shopbh: '버튼 높이', shopbbv: '프레임 두께↕', shopbbh: '프레임 두께↔', shopbfz: '버튼 글자',
   gainic: '아이콘 크기', gainpv: '판 두께↕', gainph: '판 두께↔', shopgem: '다이아 크기', gbtnfz: '버튼 글자', gbtnpw: '판 가로', gbtnph: '판 세로',
-  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', skicon: '아이콘 크기%', slicon: '아이콘 크기%', advbw: '버튼 너비', advbh: '버튼 높이', advbfz: '버튼 글자', mailsz: '우편함 크기', questsz: '퀘스트 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
+  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', skicon: '아이콘 크기%', slicon: '아이콘 크기%', advbw: '버튼 너비', advbh: '버튼 높이', advbfz: '버튼 글자', advww: '창 너비', advwh: '창 높이', advtfz: '제목 크기', advthw: '그림 너비', advthh: '그림 높이', advmfz: '글자 크기', advrfz: '글자 크기', advwfz: '글자 크기', advew: '버튼 너비', adveh: '버튼 높이', advefz: '버튼 글자', advcw: '버튼 너비', advch: '버튼 높이', advcfz: '버튼 글자', mailsz: '우편함 크기', questsz: '퀘스트 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
   trsz: '상자 크기', offw: '창 너비', offtfz: '제목 글자', offnfz: '정보 글자', offiw: '항목 너비', offih: '항목 높이', offgap: '항목 간격', offic: '아이콘 크기', offifz: '획득 글자', offrfz: '분당 글자', offbtw: '버튼 너비', offbth: '버튼 높이', offbfz: '버튼 글자', offclw: '버튼 너비', offclh: '버튼 높이', offcfz: '버튼 글자', fuseallw: '융합버튼 너비', fuseallh: '융합버튼 높이', fuseallfz: '융합버튼 글자',
   matchipic: '아이콘 크기', matchipfz: '글자 크기', allychipic: '동료 아이콘', allychipfz: '동료 글자', dtabh: '탭 높이', dtabfz: '탭 글자', dgradefz: '등급 글자', dtitlefz: '이름 글자', darrowfz: '화살표 크기', diconsz: '아이콘틀 크기', dtierfz: '등급표시 글자', dstatfz: '능력치 글자', denhh: '강화버튼 높이', denhfz: '강화버튼 글자', denhic: '강화 재화아이콘', dequiph: '장착버튼 높이', dequipfz: '장착버튼 글자', dfuseh: '융합버튼 높이', dfusefz: '융합버튼 글자', dstepsz: '조절버튼 크기', dstepfz: '수량 글자',
 }
@@ -2359,8 +2396,8 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-gain-x:${c.gainX}px;--pd-gain-y:${c.gainY}px;
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
---pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+--pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-advtfz:${c.advtfz}px;--pd-advthw:${c.advthw}px;--pd-advthh:${c.advthh}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advttl', 'advthumb', 'advmon', 'advreg', 'advrew', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -2549,6 +2586,30 @@ const st = {
   advViewport: { position: 'relative', flex: 1, minHeight: 0, borderRadius: 10, overflow: 'hidden', border: '2px solid #4a3418', background: '#0d0904' },
   advTrack: { position: 'relative', height: '100%', display: 'flex', transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)' },
   advContBtn: { position: 'absolute', width: 'var(--pd-advbw)', height: 'var(--pd-advbh)', padding: 0, border: 'none', background: 'url(/ui/off_header.png) center / 100% 100% no-repeat', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', boxSizing: 'border-box', paddingRight: '14%', zIndex: 3 },
+  advOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 55, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  advWin: {
+    position: 'relative', width: 'var(--pd-advww)', height: 'var(--pd-advwh)',
+    background: 'url(/ui/off_frame.png) center / 100% 100% no-repeat',
+    padding: '11% 10% 9%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9,
+    boxSizing: 'border-box', transform: 'translate(var(--pd-advwin-x), var(--pd-advwin-y))',
+  },
+  advWinTitle: { flexShrink: 0, fontSize: 'var(--pd-advtfz)', fontWeight: 800, color: '#f3e6d0', textShadow: '0 1px 3px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-advttl-x), var(--pd-advttl-y))' },
+  advThumb: { flexShrink: 0, width: 'var(--pd-advthw)', height: 'var(--pd-advthh)', objectFit: 'cover', borderRadius: 8, border: '2px solid #5a4028', transform: 'translate(var(--pd-advthumb-x), var(--pd-advthumb-y))' },
+  advRow: { flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, color: '#e8d5b0', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap' },
+  advRowKey: { color: '#c9a86a', fontWeight: 700 },
+  advWinBtns: { marginTop: 'auto', flexShrink: 0, display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'center' },
+  advEnterBtn: {
+    width: 'var(--pd-advew)', height: 'var(--pd-adveh)', fontSize: 'var(--pd-advefz)', fontWeight: 800,
+    color: '#fff5df', border: '1px solid #6b4a22', borderRadius: 9,
+    background: 'linear-gradient(180deg,#d4872e,#a85f1f)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
+    transform: 'translate(var(--pd-adventer-x), var(--pd-adventer-y))', cursor: 'pointer',
+  },
+  advCloseBtn: {
+    width: 'var(--pd-advcw)', height: 'var(--pd-advch)', fontSize: 'var(--pd-advcfz)', fontWeight: 700,
+    color: '#f3e6d0', border: '1px solid #5a4630', borderRadius: 9,
+    background: 'linear-gradient(180deg,#3a2c1b,#241a10)',
+    transform: 'translate(var(--pd-advclose-x), var(--pd-advclose-y))', cursor: 'pointer',
+  },
   advContName: { fontSize: 'var(--pd-advbfz)', fontWeight: 800, color: '#f3e6d0', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap' },
   advMap: { display: 'block', height: '100%', width: 'auto', maxWidth: 'none', imageRendering: 'auto', userSelect: 'none', WebkitUserSelect: 'none' },
   advArrow: {
