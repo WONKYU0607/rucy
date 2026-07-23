@@ -175,7 +175,7 @@ const enhCost = lv => Math.floor(100 * Math.pow(1.5, lv))   // 강화 비용: 10
 const MAT_IMG = i => `/ui/mat${i}.png`
 
 // ── 오프라인 보상 설정 (직접 수정 가능) ─────────────────────────
-const OFFLINE_MIN_SEC = 60          // 이 시간 이상 부재 시에만 보상
+const OFFLINE_MIN_SEC = 1           // 이 시간 이상 부재 시에만 보상 (1초만 나갔다 와도 지급)
 const OFFLINE_CAP_SEC = 8 * 3600    // 최대 인정 시간 (8시간)
 const OFFLINE_RATE = 0.5            // 온라인 대비 효율 (50%)
 
@@ -489,8 +489,7 @@ export default function App() {
     const st2 = S.current
     const dps = st2.atk * (1000 / st2.cd)
     const killT = Math.min(6, Math.max(1, avgHp / Math.max(1, dps) + 1.2))  // 마리당 처치+접근 시간
-    const kills = Math.floor(away * OFFLINE_RATE / killT)
-    if (kills <= 0) return
+    const kills = Math.max(1, Math.floor(away * OFFLINE_RATE / killT))   // 짧게 나갔다 와도 최소 1마리
     const gm = Math.floor(kills * avgMeat * st2.meatMult)
     const ge = Math.floor(kills * avgExp * st2.expMult)
     const mins = Math.max(1, away / 60)
@@ -672,14 +671,20 @@ export default function App() {
       for (const k of kinds) w.loot.push({ k, x: sx + (Math.random() - 0.5) * 24, y, vx: (Math.random() - 0.5) * 170, vy: -(130 + Math.random() * 150), t: 0 })
     }
     function launchLoot(pieces) {
+      const rootEl = rootRef.current; if (!rootEl) return
+      const rr = rootEl.getBoundingClientRect()
+      const sc = uiScaleRef.current || 1
+      const toLX = sx => (sx - rr.left) / sc   // 화면 좌표 → 기준판 좌표
+      const toLY = sy => (sy - rr.top) / sc
       const cr = canvas.getBoundingClientRect()
+      const cx0 = toLX(cr.left), cy0 = toLY(cr.top)
       const items = []
       for (const L of pieces) {
         if (L.k === 'mat') continue   // 재화조각은 흡수 없음 (낙하 후 소멸)
         const sel = L.k === 'meat' ? '[data-edit="pillmeat"]' : L.k === 'exp' ? '[data-edit="expbar"]' : '[data-edit="pillgem"]'
         const el = document.querySelector(sel); if (!el) continue
         const tr = el.getBoundingClientRect()
-        items.push({ id: Date.now() + Math.random(), k: L.k, x: cr.left + L.x, y: cr.top + L.y, tx: tr.left + tr.width / 2, ty: tr.top + tr.height / 2 })
+        items.push({ id: Date.now() + Math.random(), k: L.k, x: cx0 + L.x, y: cy0 + L.y, tx: toLX(tr.left + tr.width / 2), ty: toLY(tr.top + tr.height / 2) })
       }
       if (items.length) setLootFly(v => [...v, ...items])
     }
@@ -1825,7 +1830,7 @@ export default function App() {
         </div>
       </div>
 
-      <div ref={wrapRef} style={{ ...st.canvasWrap, ...(nav === '모험' ? { display: 'none' } : {}) }}>
+      <div ref={wrapRef} style={{ ...st.canvasWrap, height: Math.round(BASE_H * 0.42) + (view.h - BASE_H), ...(nav === '모험' ? { display: 'none' } : {}) }}>
         <canvas ref={canvasRef} />
         <button data-edit="pausebtn" style={{ ...st.pauseBtn, opacity: paused ? 1 : 0.65 }} onClick={() => { if (!uiEdit) setPaused(p => !p) }}>{paused ? '▶' : 'II'}</button>
         <button data-edit="quest" style={st.questBtn} onClick={() => { if (!uiEdit) { /* TODO: 퀘스트 */ } }}><img src="/ui/quest.png" alt="" style={st.iconImg} /></button>
@@ -2095,6 +2100,7 @@ export default function App() {
           </div>
         </div>
       )}
+      {nav === '모험' && view.h > BASE_H && <div style={{ height: view.h - BASE_H, flexShrink: 0, background: '#1a1109' }} />}
       {nav !== '영웅' && nav !== '스킬' && nav !== '장비' && nav !== '상점' && nav !== '동료' && nav !== '모험' && (
         <div style={st.comingSoon}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>🔒</div>
@@ -2397,7 +2403,7 @@ const st = {
     transform: 'translate(var(--pd-pb-x), var(--pd-pb-y))',
   },
   wjPanel: {
-    position: 'fixed', left: '50%', top: '35%', transform: 'translate(calc(-50% + var(--pd-wj-x)), var(--pd-wj-y))',
+    position: 'fixed', left: '50%', top: 243, transform: 'translate(calc(-50% + var(--pd-wj-x)), var(--pd-wj-y))',
     minWidth: 230, background: 'rgba(16,10,5,0.97)', border: `2px solid ${GOLD_D}`, borderRadius: 10,
     padding: 12, fontSize: 'var(--pd-wjfz)',
   },
