@@ -175,7 +175,7 @@ const enhCost = lv => Math.floor(100 * Math.pow(1.5, lv))   // 강화 비용: 10
 const MAT_IMG = i => `/ui/mat${i}.png`
 
 // ── 오프라인 보상 설정 (직접 수정 가능) ─────────────────────────
-const OFFLINE_MIN_SEC = 1           // 이 시간 이상 부재 시에만 보상 (1초만 나갔다 와도 지급)
+const OFFLINE_MIN_SEC = 0           // 부재 시간 조건 없음 (잠깐 나갔다 와도 지급)
 const OFFLINE_CAP_SEC = 8 * 3600    // 최대 인정 시간 (8시간)
 const OFFLINE_RATE = 0.5            // 온라인 대비 효율 (50%)
 
@@ -477,8 +477,7 @@ export default function App() {
   useEffect(() => {
     if (offDone.current) return
     offDone.current = true
-    if (!init.ts) return
-    const away = Math.min(OFFLINE_CAP_SEC, (Date.now() - init.ts) / 1000)
+    const away = init.ts ? Math.min(OFFLINE_CAP_SEC, (Date.now() - init.ts) / 1000) : 60   // ts 없으면 1분으로 간주
     if (away < OFFLINE_MIN_SEC) return
     const types = Object.values(ENEMY_TYPES)
     const avg = arr => arr.reduce((x, y) => x + y, 0) / arr.length
