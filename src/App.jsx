@@ -466,6 +466,18 @@ export default function App() {
   const rootRef = useRef(null)
   const uiScaleRef = useRef(1)
   const [view, setView] = useState({ s: 1, h: BASE_H, sw: 0, sh: 0 })   // 화면 맞춤 배율/판 높이
+  const [canvasBox, setCanvasBox] = useState({ top: 0, h: 0 })          // 전투화면 영역 위치(판 기준) — 보물상자 배치용
+  useEffect(() => {
+    const upd = () => {
+      const el = wrapRef.current
+      if (el && el.offsetHeight) setCanvasBox({ top: el.offsetTop, h: el.offsetHeight })
+    }
+    upd()
+    const ro = new ResizeObserver(upd)
+    if (wrapRef.current) ro.observe(wrapRef.current)
+    const id = setInterval(upd, 400)
+    return () => { ro.disconnect(); clearInterval(id) }
+  }, [])
   const [copiedUi, setCopiedUi] = useState(false)
   const [editSel, setEditSel] = useState(null)   // 편집 모드에서 선택된 요소
   useEffect(() => { localStorage.setItem('paleoUiCfg', JSON.stringify(uiCfg)) }, [uiCfg])
@@ -1860,13 +1872,14 @@ export default function App() {
             <button style={st.retryBtn} onClick={retry}>다시 도전</button>
           </div>
         )}
-        {offData && !offOpen && (
-          <button data-edit="treasure" style={st.treasureBtn} onClick={() => { if (!uiEdit) setOffOpen(true) }}>
-            <img src="/ui/treasure.png" alt="" style={st.treasureImg} />
-            <span style={st.treasureDot} />
-          </button>
-        )}
       </div>
+
+      {offData && !offOpen && nav !== '모험' && canvasBox.h > 0 && (
+        <button data-edit="treasure" style={{ ...st.treasureBtn, top: canvasBox.top + canvasBox.h - 47, bottom: 'auto' }} onClick={() => { if (!uiEdit) setOffOpen(true) }}>
+          <img src="/ui/treasure.png" alt="" style={st.treasureImg} />
+          <span style={st.treasureDot} />
+        </button>
+      )}
 
       {nav === '영웅' && (
       <div data-edit="panel" style={st.frameBox}>
