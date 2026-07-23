@@ -74,16 +74,18 @@ function LootPiece({ p, done }) {
 }
 // 모험 대륙 (지도 위 버튼 → 진입창 → 전투). x/y=지도상 기본 위치%
 const CONTINENTS = [
-  { key: 'africa', name: '아프리카', x: 50, y: 55, mon: '스피노사우루스' },
-  { key: 'middle_east', name: '중동', x: 57, y: 43, mon: '케라토사우루스' },
-  { key: 'asia', name: '아시아', x: 67, y: 36, mon: '벨로키랍토르' },
-  { key: 'europe', name: '유럽', x: 46, y: 23, mon: '이구아노돈' },
-  { key: 'north_america', name: '북아메리카', x: 15, y: 28, mon: '티라노사우루스' },
-  { key: 'south_america', name: '남아메리카', x: 23, y: 66, mon: '아르젠티노사우루스' },
-  { key: 'oceania', name: '오세아니아', x: 82, y: 72, mon: '무타부라사우루스' },
-  { key: 'greenland', name: '그린란드', x: 22, y: 9, mon: '플라테오사우루스' },
+  { key: 'africa', name: '아프리카', x: 50, y: 55, mon: '스피노사우루스', boss: 'spino' },
+  { key: 'middle_east', name: '중동', x: 57, y: 43, mon: '안킬로사우루스', boss: 'anky' },
+  { key: 'asia', name: '아시아', x: 67, y: 36, mon: '벨로키랍토르', boss: 'raptor' },
+  { key: 'europe', name: '유럽', x: 46, y: 23, mon: '트리케라톱스', boss: 'trike' },
+  { key: 'north_america', name: '북아메리카', x: 15, y: 28, mon: '티라노사우루스', boss: 'trex' },
+  { key: 'south_america', name: '남아메리카', x: 23, y: 66, mon: '브라키오사우루스', boss: 'brachio' },
+  { key: 'oceania', name: '오세아니아', x: 82, y: 72, mon: '프테라노돈', boss: 'ptera' },
+  { key: 'greenland', name: '그린란드', x: 22, y: 9, mon: '스테고사우루스', boss: 'stego' },
 ]
 // UI 기준 해상도 — 모든 편집값(px)이 이 판 위에서 맞춰짐. 실제 화면은 이 판을 통째로 확대/축소
+const ADV_STAGES = 10          // 대륙당 탐험 단계 수
+const ADV_COST_RUBY = 1        // 진입 1회당 루비 소모
 const BASE_W = 420, BASE_H = 695
 const SIMG = {}
 SKILL_SHEET.forEach(c => {
@@ -390,9 +392,10 @@ function loadSave() {
       gem: s.gem ?? 0, inv: s.inv && typeof s.inv === 'object' ? s.inv : {}, best: s.best ?? s.wave ?? 1,
       gearEq: s.gearEq && typeof s.gearEq === 'object' ? s.gearEq : { 무기: null, 방어구: null, 유물: null },
       mats: Array.isArray(s.mats) && s.mats.some(x => x > 0) ? s.mats : [99999, 99999, 99999, 99999, 99999], enh: s.enh && typeof s.enh === 'object' ? s.enh : {},
+      ruby: typeof s.ruby === 'number' ? s.ruby : 50, advStage: s.advStage && typeof s.advStage === 'object' ? s.advStage : {},   // ruby 50 = 임시 지급(퀘스트 연동 전)
     }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), equipped: [null, null, null, null], cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, mats: [99999, 99999, 99999, 99999, 99999], enh: {} }
+  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), equipped: [null, null, null, null], cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, mats: [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, advStage: {} }
 }
 const fmt = n => n >= 1e8 ? (n/1e8).toFixed(1)+'억' : n >= 1e4 ? (n/1e4).toFixed(1)+'만' : Math.floor(n).toLocaleString()
 const fmtPct = v => v >= 10000 ? fmt(Math.round(v)) : (Math.round(v * 10) / 10).toString()
@@ -418,6 +421,8 @@ export default function App() {
   const [fuseQty, setFuseQty] = useState(0)           // 융합 수량
   const [gearEq, setGearEq] = useState(init.gearEq || { 무기: null, 방어구: null, 유물: null })  // 장착 슬롯
   const [mats, setMats] = useState(init.mats || [0, 0, 0, 0, 0])   // 재화 5종 (0~3 동료용, 4 무기강화용)
+  const [ruby, setRuby] = useState(init.ruby ?? 0)                 // 루비 수정 (모험 진입 재화)
+  const [advStage, setAdvStage] = useState(init.advStage || {})    // 대륙별 클리어 단계 { key: 0~10 }
   const [enh, setEnh] = useState(init.enh || {})                   // 강화레벨 { '무기:1': lv }
   const [tab, setTab] = useState('강화')      // 영웅 서브탭: 강화/성장/진화
   const [phase, setPhase] = useState('fighting')
@@ -546,8 +551,8 @@ export default function App() {
   }
 
   useEffect(() => {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, alliesOn, gearEq, mats, enh, ts: Date.now() }))
-  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, alliesOn, gearEq, mats, enh])
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, alliesOn, gearEq, mats, enh, ruby, advStage, ts: Date.now() }))
+  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, alliesOn, gearEq, mats, enh, ruby, advStage])
 
   // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제
   useEffect(() => {
@@ -1584,6 +1589,11 @@ export default function App() {
       const next = [...eq]; next[slot] = i; return next
     })
   }
+  function enterAdventure() {
+    if (uiEdit || !advSel || ruby < ADV_COST_RUBY) return
+    setRuby(r => r - ADV_COST_RUBY)
+    setAdvSel(null)   // 전투 연결은 다음 단계
+  }
   function unequipSkill(slot) {
     setEquipped(eq => { const next = [...eq]; next[slot] = null; return next })
   }
@@ -1731,21 +1741,33 @@ export default function App() {
       {advSel && (
         <div style={st.advOverlay} onClick={() => { if (!uiEdit) setAdvSel(null) }}>
           <div data-edit="advwin" style={st.advWin} onClick={e => e.stopPropagation()}>
-            <div data-edit="advttl" style={st.advWinTitle}>{advSel.name} 탐험</div>
-            <img data-edit="advthumb" src={`/adventure/bg/${advSel.key}.jpg`} alt="" style={st.advThumb} />
-            <div data-edit="advmon" style={{ ...st.advRow, fontSize: 'var(--pd-advmfz)', transform: 'translate(var(--pd-advmon-x), var(--pd-advmon-y))' }}>
-              <span style={st.advRowKey}>몬스터 정보</span><span>{advSel.mon}</span>
+            <div style={st.advTop}>
+              <div style={st.advInfoCol}>
+                <div data-edit="advmon" style={{ ...st.advBlock, fontSize: 'var(--pd-advmfz)', transform: 'translate(var(--pd-advmon-x), var(--pd-advmon-y))' }}>
+                  <div style={st.advKey}>몬스터 정보</div><div style={st.advVal}>{advSel.mon}</div>
+                </div>
+                <div data-edit="advreg" style={{ ...st.advBlock, fontSize: 'var(--pd-advrfz)', transform: 'translate(var(--pd-advreg-x), var(--pd-advreg-y))' }}>
+                  <div style={st.advKey}>지역 정보</div><div style={st.advVal}>{advSel.name}</div>
+                </div>
+                <div data-edit="advrew" style={{ ...st.advBlock, fontSize: 'var(--pd-advwfz)', transform: 'translate(var(--pd-advrew-x), var(--pd-advrew-y))' }}>
+                  <div style={st.advKey}>탐험 보상</div><div style={st.advVal}>고기 · 경험치 · 재화</div>
+                </div>
+              </div>
+              <img data-edit="advicon" src={`/dino/boss_${advSel.boss}/w1.png`} alt="" style={st.advIcon} />
             </div>
-            <div data-edit="advreg" style={{ ...st.advRow, fontSize: 'var(--pd-advrfz)', transform: 'translate(var(--pd-advreg-x), var(--pd-advreg-y))' }}>
-              <span style={st.advRowKey}>지역 정보</span><span>{advSel.name}</span>
+
+            <div data-edit="advsign" style={st.advSign}>({Math.min(ADV_STAGES, (advStage[advSel.key] || 0) + 1)}/{ADV_STAGES})</div>
+
+            <div data-edit="advbar" style={st.advBar}>
+              {Array.from({ length: ADV_STAGES }, (_, i) => (
+                <div key={i} style={{ ...st.advBarCell, ...(i < (advStage[advSel.key] || 0) ? st.advBarFill : null) }} />
+              ))}
             </div>
-            <div data-edit="advrew" style={{ ...st.advRow, fontSize: 'var(--pd-advwfz)', transform: 'translate(var(--pd-advrew-x), var(--pd-advrew-y))' }}>
-              <span style={st.advRowKey}>탐험 보상</span>
-              <img src="/ui/ic_meat.png" alt="" style={{ width: 15, height: 15, objectFit: 'contain' }} /><span>?</span>
-              <img src="/ui/gem.png" alt="" style={{ width: 15, height: 15, objectFit: 'contain' }} /><span>?</span>
-            </div>
+
             <div style={st.advWinBtns}>
-              <button data-edit="adventer" style={st.advEnterBtn} onClick={() => { if (!uiEdit) setAdvSel(null) }}>진입</button>
+              <button data-edit="adventer" style={{ ...st.advEnterBtn, ...(ruby < ADV_COST_RUBY ? st.advBtnOff : null) }} onClick={enterAdventure}>
+                진입 <img src="/ui/ruby.png" alt="" style={st.advRuby} />{fmt(ruby)}
+              </button>
               <button data-edit="advclose" style={st.advCloseBtn} onClick={() => { if (!uiEdit) setAdvSel(null) }}>닫기</button>
             </div>
           </div>
@@ -2223,9 +2245,10 @@ const UI_DEFAULT = {
   dtabh: 40, dtabfz: 15, dgradefz: 14, dtitlefz: 17, darrowfz: 26, diconsz: 92, dtierfz: 12, dstatfz: 14, denhh: 48, denhfz: 14, denhic: 22, dequiph: 48, dequipfz: 15, dfuseh: 50, dfusefz: 17, dstepsz: 46, dstepfz: 20,
   skicon: 120, skiconX: 0, skiconY: 0, slicon: 100, sliconX: 0, sliconY: 0,
   advbw: 40, advbh: 20, advbfz: 10,
-  advww: 300, advwh: 400, advtfz: 16, advthw: 240, advthh: 96, advmfz: 14, advrfz: 13, advwfz: 13,
+  advww: 300, advwh: 400, advmfz: 14, advrfz: 13, advwfz: 13,
+  adviw: 110, advih: 96, advsw: 170, advsh: 46, advsfz: 16, advbarw: 200, advbarh: 14,
   advew: 93, adveh: 34, advefz: 13, advcw: 93, advch: 34, advcfz: 13,
-  advwinX: 0, advwinY: 0, advttlX: 0, advttlY: 4, advthumbX: 0, advthumbY: 0,
+  advwinX: 0, advwinY: 0, adviconX: 0, adviconY: 0, advsignX: 0, advsignY: 0, advbarX: 0, advbarY: 0,
   advmonX: 0, advmonY: 0, advregX: 0, advregY: 0, advrewX: 0, advrewY: 0,
   adventerX: 0, adventerY: -5, advcloseX: 0, advcloseY: -5, advtxt0X: 47, advtxt0Y: 1, advtxt1X: 39, advtxt1Y: 1, advtxt2X: 43, advtxt2Y: 2, advtxt3X: 39, advtxt3Y: 1, advtxt4X: 50, advtxt4Y: 1, advtxt5X: 51, advtxt5Y: 2, advtxt6X: 50, advtxt6Y: 2, advtxt7X: 47, advtxt7Y: 2, advbtn0X: 172, advbtn0Y: -13, advbtn1X: 251, advbtn1Y: 0, advbtn2X: 326, advbtn2Y: -5, advbtn3X: 200, advbtn3Y: 27, advbtn4X: 66, advbtn4Y: 11, advbtn5X: 121, advbtn5Y: 4, advbtn6X: 305, advbtn6Y: 36, advbtn7X: 188, advbtn7Y: 0,
   mailsz: 26, questsz: 40, mailboxX: 0, mailboxY: 0, questX: 6, questY: -8,
@@ -2298,8 +2321,9 @@ const EDIT_GROUPS = {
   advtxt6: { label: '오세아니아 글자', size: ['advbfz'], pos: 'advtxt6' },
   advtxt7: { label: '그린란드 글자', size: ['advbfz'], pos: 'advtxt7' },
   advwin: { label: '진입창 틀', size: ['advww', 'advwh'], pos: 'advwin' },
-  advttl: { label: '진입창 제목', size: ['advtfz'], pos: 'advttl' },
-  advthumb: { label: '진입창 지역그림', size: ['advthw', 'advthh'], pos: 'advthumb' },
+  advicon: { label: '보스 아이콘', size: ['adviw', 'advih'], pos: 'advicon' },
+  advsign: { label: '단계 표지판', size: ['advsw', 'advsh', 'advsfz'], pos: 'advsign' },
+  advbar: { label: '단계 진행바', size: ['advbarw', 'advbarh'], pos: 'advbar' },
   advmon: { label: '진입창 몬스터정보', size: ['advmfz'], pos: 'advmon' },
   advreg: { label: '진입창 지역정보', size: ['advrfz'], pos: 'advreg' },
   advrew: { label: '진입창 탐험보상', size: ['advwfz'], pos: 'advrew' },
@@ -2356,7 +2380,7 @@ const UI_LABELS = {
   shoprowmin: '박스 높이', shopic0: '무기 아이콘', shopic1: '방어구 아이콘', shopic2: '유물 아이콘', shoptfz: '제목 글자', shopsubfz: '부제 글자',
   shopbw: '버튼 너비', shopbh: '버튼 높이', shopbbv: '프레임 두께↕', shopbbh: '프레임 두께↔', shopbfz: '버튼 글자',
   gainic: '아이콘 크기', gainpv: '판 두께↕', gainph: '판 두께↔', shopgem: '다이아 크기', gbtnfz: '버튼 글자', gbtnpw: '판 가로', gbtnph: '판 세로',
-  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', skicon: '아이콘 크기%', slicon: '아이콘 크기%', advbw: '버튼 너비', advbh: '버튼 높이', advbfz: '버튼 글자', advww: '창 너비', advwh: '창 높이', advtfz: '제목 크기', advthw: '그림 너비', advthh: '그림 높이', advmfz: '글자 크기', advrfz: '글자 크기', advwfz: '글자 크기', advew: '버튼 너비', adveh: '버튼 높이', advefz: '버튼 글자', advcw: '버튼 너비', advch: '버튼 높이', advcfz: '버튼 글자', mailsz: '우편함 크기', questsz: '퀘스트 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
+  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', skicon: '아이콘 크기%', slicon: '아이콘 크기%', advbw: '버튼 너비', advbh: '버튼 높이', advbfz: '버튼 글자', advww: '창 너비', advwh: '창 높이', adviw: '아이콘 너비', advih: '아이콘 높이', advsw: '표지판 너비', advsh: '표지판 높이', advsfz: '표지판 글자', advbarw: '바 너비', advbarh: '바 높이', advmfz: '글자 크기', advrfz: '글자 크기', advwfz: '글자 크기', advew: '버튼 너비', adveh: '버튼 높이', advefz: '버튼 글자', advcw: '버튼 너비', advch: '버튼 높이', advcfz: '버튼 글자', mailsz: '우편함 크기', questsz: '퀘스트 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
   trsz: '상자 크기', offw: '창 너비', offtfz: '제목 글자', offnfz: '정보 글자', offiw: '항목 너비', offih: '항목 높이', offgap: '항목 간격', offic: '아이콘 크기', offifz: '획득 글자', offrfz: '분당 글자', offbtw: '버튼 너비', offbth: '버튼 높이', offbfz: '버튼 글자', offclw: '버튼 너비', offclh: '버튼 높이', offcfz: '버튼 글자', fuseallw: '융합버튼 너비', fuseallh: '융합버튼 높이', fuseallfz: '융합버튼 글자',
   matchipic: '아이콘 크기', matchipfz: '글자 크기', allychipic: '동료 아이콘', allychipfz: '동료 글자', dtabh: '탭 높이', dtabfz: '탭 글자', dgradefz: '등급 글자', dtitlefz: '이름 글자', darrowfz: '화살표 크기', diconsz: '아이콘틀 크기', dtierfz: '등급표시 글자', dstatfz: '능력치 글자', denhh: '강화버튼 높이', denhfz: '강화버튼 글자', denhic: '강화 재화아이콘', dequiph: '장착버튼 높이', dequipfz: '장착버튼 글자', dfuseh: '융합버튼 높이', dfusefz: '융합버튼 글자', dstepsz: '조절버튼 크기', dstepfz: '수량 글자',
 }
@@ -2396,8 +2420,8 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-gain-x:${c.gainX}px;--pd-gain-y:${c.gainY}px;
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
---pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-advtfz:${c.advtfz}px;--pd-advthw:${c.advthw}px;--pd-advthh:${c.advthh}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advttl', 'advthumb', 'advmon', 'advreg', 'advrew', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+--pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'advsign', 'advbar', 'advmon', 'advreg', 'advrew', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -2586,19 +2610,38 @@ const st = {
   advViewport: { position: 'relative', flex: 1, minHeight: 0, borderRadius: 10, overflow: 'hidden', border: '2px solid #4a3418', background: '#0d0904' },
   advTrack: { position: 'relative', height: '100%', display: 'flex', transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)' },
   advContBtn: { position: 'absolute', width: 'var(--pd-advbw)', height: 'var(--pd-advbh)', padding: 0, border: 'none', background: 'url(/ui/off_header.png) center / 100% 100% no-repeat', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', boxSizing: 'border-box', paddingRight: '14%', zIndex: 3 },
-  advOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 55, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  advOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.68)', zIndex: 55, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   advWin: {
     position: 'relative', width: 'var(--pd-advww)', height: 'var(--pd-advwh)',
-    background: 'url(/ui/off_frame.png) center / 100% 100% no-repeat',
-    padding: '11% 10% 9%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 9,
+    background: 'url(/ui/adv_frame.png) center / 100% 100% no-repeat',
+    padding: '9% 8% 8%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
     boxSizing: 'border-box', transform: 'translate(var(--pd-advwin-x), var(--pd-advwin-y))',
   },
-  advWinTitle: { flexShrink: 0, fontSize: 'var(--pd-advtfz)', fontWeight: 800, color: '#f3e6d0', textShadow: '0 1px 3px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-advttl-x), var(--pd-advttl-y))' },
-  advThumb: { flexShrink: 0, width: 'var(--pd-advthw)', height: 'var(--pd-advthh)', objectFit: 'cover', borderRadius: 8, border: '2px solid #5a4028', transform: 'translate(var(--pd-advthumb-x), var(--pd-advthumb-y))' },
-  advRow: { flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, color: '#e8d5b0', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap' },
-  advRowKey: { color: '#c9a86a', fontWeight: 700 },
-  advWinBtns: { marginTop: 'auto', flexShrink: 0, display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'center' },
+  advTop: { flexShrink: 0, width: '100%', display: 'flex', alignItems: 'flex-start', gap: 8 },
+  advInfoCol: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 },
+  advBlock: { display: 'flex', flexDirection: 'column', gap: 2, whiteSpace: 'nowrap' },
+  advKey: { color: '#f0dfae', fontWeight: 800, textShadow: '0 1px 2px #000' },
+  advVal: { color: '#cbb489', fontWeight: 700, textShadow: '0 1px 2px #000' },
+  advIcon: { flexShrink: 0, width: 'var(--pd-adviw)', height: 'var(--pd-advih)', objectFit: 'contain', imageRendering: 'pixelated', transform: 'translate(var(--pd-advicon-x), var(--pd-advicon-y))' },
+  advSign: {
+    flexShrink: 0, marginTop: 'auto', width: 'var(--pd-advsw)', height: 'var(--pd-advsh)',
+    background: 'url(/ui/adv_sign.png) center / 100% 100% no-repeat',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 'var(--pd-advsfz)', fontWeight: 800, color: '#4a3418',
+    transform: 'translate(var(--pd-advsign-x), var(--pd-advsign-y))',
+  },
+  advBar: {
+    flexShrink: 0, width: 'var(--pd-advbarw)', height: 'var(--pd-advbarh)', display: 'flex', gap: 2,
+    padding: 2, background: 'rgba(0,0,0,0.45)', border: '1px solid #5a4630', borderRadius: 5,
+    boxSizing: 'border-box', transform: 'translate(var(--pd-advbar-x), var(--pd-advbar-y))',
+  },
+  advBarCell: { flex: 1, borderRadius: 2, background: 'rgba(255,255,255,0.10)' },
+  advBarFill: { background: 'linear-gradient(180deg,#5fb8ff,#1f6fd0)', boxShadow: '0 0 4px rgba(80,180,255,0.8)' },
+  advWinBtns: { flexShrink: 0, display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'center' },
+  advRuby: { width: '1.15em', height: '1.15em', objectFit: 'contain', verticalAlign: '-0.2em', margin: '0 2px' },
+  advBtnOff: { filter: 'grayscale(0.85)', opacity: 0.55, cursor: 'default' },
   advEnterBtn: {
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
     width: 'var(--pd-advew)', height: 'var(--pd-adveh)', fontSize: 'var(--pd-advefz)', fontWeight: 800,
     color: '#fff5df', border: '1px solid #6b4a22', borderRadius: 9,
     background: 'linear-gradient(180deg,#d4872e,#a85f1f)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
