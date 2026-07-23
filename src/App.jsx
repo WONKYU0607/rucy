@@ -428,6 +428,13 @@ export default function App() {
   const [splash, setSplash] = useState(true)
   const [alliesOn, setAlliesOn] = useState(init.alliesOn || {})  // 장착된 동료 (보유/성장 시스템은 추후)
   const [allySub, setAllySub] = useState('동료')
+  useEffect(() => {
+    const el = rootRef.current; if (!el) return
+    const upd = () => { const r = el.getBoundingClientRect(); setBoardSize({ w: Math.round(r.width), h: Math.round(r.height) }) }
+    upd()
+    const ro = new ResizeObserver(upd); ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
   const [advSel, setAdvSel] = useState(null)  // 진입창에 띄울 대륙
   const [mapSeg, setMapSeg] = useState(1)  // 모험 지도 구간(0~2), 아프리카 중심=1 시작
   const [advLoaded, setAdvLoaded] = useState(false)  // 지도 이미지 로드 완료(초기 위치 점프 방지)
@@ -449,6 +456,8 @@ export default function App() {
   const advOffset = -(advMax * (mapSeg / 2))  // 0→0, 1→중앙, 2→끝           // 소환 결과 오버레이 { cat, items:[{k,t}] }
   const [uiCfg, setUiCfg] = useState(() => { try { const sv = JSON.parse(localStorage.getItem('paleoUiCfg') || '{}'); return { ...UI_DEFAULT, ...Object.fromEntries(Object.entries(sv).filter(([k]) => k in UI_DEFAULT)) } } catch { return { ...UI_DEFAULT } } })
   const [uiEdit, setUiEdit] = useState(false)
+  const rootRef = useRef(null)
+  const [boardSize, setBoardSize] = useState({ w: 0, h: 0 })   // 게임판 실제 크기 (편집모드 표시용)
   const [copiedUi, setCopiedUi] = useState(false)
   const [editSel, setEditSel] = useState(null)   // 편집 모드에서 선택된 요소
   useEffect(() => { localStorage.setItem('paleoUiCfg', JSON.stringify(uiCfg)) }, [uiCfg])
@@ -1571,7 +1580,7 @@ export default function App() {
         mask-image: linear-gradient(180deg, transparent 0, #000 var(--fadeT), #000 calc(100% - var(--fadeB)), transparent 100%); }
     `}</style>
     <style>{uiVars(uiCfg)}</style>
-    <div style={st.root} onClickCapture={e => {
+    <div ref={rootRef} style={st.root} onClickCapture={e => {
       if (splash || !uiEdit) return
       const t = e.target.closest('[data-edit]')
       if (t) { e.stopPropagation(); e.preventDefault(); setEditSel(t.dataset.edit); if (t.dataset.edit === 'treasure') setOffOpen(true) }
@@ -1724,6 +1733,7 @@ export default function App() {
       {uiEdit && (
         <div style={{ position: 'fixed', left: 0, right: 0, ...(editSel ? { bottom: 0, borderBottom: 'none', borderRadius: '10px 10px 0 0' } : { top: 0, borderTop: 'none', borderRadius: '0 0 10px 10px' }), margin: '0 auto', maxWidth: 420, zIndex: 61, background: 'rgba(16,10,5,0.94)', border: `2px solid ${GOLD_D}`, textShadow: '0 1px 3px rgba(0,0,0,0.9)', padding: '8px 12px calc(8px + env(safe-area-inset-bottom))', maxHeight: '46%', overflowY: 'auto' }}>
           {!editSel && <div style={{ fontSize: 13, color: '#c9b596', textAlign: 'center', padding: '4px 0 8px' }}>조정할 요소를 화면에서 탭하세요 (틀·아이콘·글자·숫자·버튼)</div>}
+          <div style={{ fontSize: 13, color: '#ffd98a', textAlign: 'center', padding: '0 0 6px', fontWeight: 800 }}>게임판 크기: {boardSize.w} × {boardSize.h}</div>
           {editSel && (() => {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) }))
@@ -2154,12 +2164,12 @@ const UI_DEFAULT = {
   // 오프라인 보상: 보물상자 + 창(헤더/항목/버튼)
   trsz: 41, offw: 322, offtfz: 14, offnfz: 13, offiw: 52, offih: 45, offgap: 9, offic: 24, offifz: 10, offrfz: 10,
   offbtw: 135, offbth: 51, offbfz: 14, offclw: 100, offclh: 50, offcfz: 15,
-  trX: 0, trY: 8, offtX: -36, offtY: 6, offnX: -59, offnY: -59, offitX: -29, offitY: -10, offitiX: 0, offitiY: 6, offvX: 0, offvY: 2, offrX: 0, offrY: -3, offbtX: 0, offbtY: 55, offclX: 0, offclY: 54,
+  trX: 0, trY: 8, offtX: -36, offtY: 6, offnX: -59, offnY: -59, offitX: -29, offitY: -10, offitiX: 0, offitiY: 6, offvX: 0, offvY: 2, offrX: 0, offrY: -3, offbtX: 0, offbtY: 71, offclX: -2, offclY: 71,
   fuseallw: 94, fuseallh: 26, fuseallfz: 15, fuseallX: -36, fuseallY: -10,
   matchipic: 17, matchipfz: 13, allychipic: 15, allychipfz: 10,
   dtabh: 40, dtabfz: 15, dgradefz: 14, dtitlefz: 17, darrowfz: 26, diconsz: 92, dtierfz: 12, dstatfz: 14, denhh: 48, denhfz: 14, denhic: 22, dequiph: 48, dequipfz: 15, dfuseh: 50, dfusefz: 17, dstepsz: 46, dstepfz: 20,
   skicon: 120, skiconX: 0, skiconY: 0, slicon: 100, sliconX: 0, sliconY: 0,
-  advbw: 40, advbh: 20, advbfz: 10, advtxt0X: 47, advtxt0Y: 1, advtxt1X: 39, advtxt1Y: 1, advtxt2X: 43, advtxt2Y: 2, advtxt3X: 39, advtxt3Y: 1, advtxt4X: 38, advtxt4Y: 1, advtxt5X: 37, advtxt5Y: 1, advtxt6X: 50, advtxt6Y: 2, advtxt7X: 47, advtxt7Y: 2, advbtn0X: 172, advbtn0Y: -13, advbtn1X: 251, advbtn1Y: 0, advbtn2X: 326, advbtn2Y: -5, advbtn3X: 200, advbtn3Y: 27, advbtn4X: 66, advbtn4Y: 11, advbtn5X: 121, advbtn5Y: 4, advbtn6X: 305, advbtn6Y: 36, advbtn7X: 188, advbtn7Y: 0,
+  advbw: 40, advbh: 20, advbfz: 10, advtxt0X: 47, advtxt0Y: 1, advtxt1X: 39, advtxt1Y: 1, advtxt2X: 43, advtxt2Y: 2, advtxt3X: 39, advtxt3Y: 1, advtxt4X: 50, advtxt4Y: 1, advtxt5X: 51, advtxt5Y: 2, advtxt6X: 50, advtxt6Y: 2, advtxt7X: 47, advtxt7Y: 2, advbtn0X: 172, advbtn0Y: -13, advbtn1X: 251, advbtn1Y: 0, advbtn2X: 326, advbtn2Y: -5, advbtn3X: 200, advbtn3Y: 27, advbtn4X: 66, advbtn4Y: 11, advbtn5X: 121, advbtn5Y: 4, advbtn6X: 305, advbtn6Y: 36, advbtn7X: 188, advbtn7Y: 0,
   mailsz: 26, questsz: 40, mailboxX: 0, mailboxY: 0, questX: 6, questY: -8,
   matchipX: 23, matchipY: -14, allymatX: -19, allymatY: 14, dtabX: 0, dtabY: 0, dtitleX: 0, dtitleY: 0, darrowX: 0, darrowY: 0, diconX: 0, diconY: 0, dstatX: 0, dstatY: 0, denhX: 0, denhY: 0, dequipX: 0, dequipY: 0, dfusebtnX: 0, dfusebtnY: 0, dstepX: 0, dstepY: 0,
 }
