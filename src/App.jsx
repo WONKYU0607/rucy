@@ -83,6 +83,8 @@ const CONTINENTS = [
   { key: 'oceania', name: '오세아니아', x: 82, y: 72 },
   { key: 'greenland', name: '그린란드', x: 22, y: 9 },
 ]
+// UI 기준 해상도 — 모든 편집값(px)이 이 판 위에서 맞춰짐. 실제 화면은 이 판을 통째로 확대/축소
+const BASE_W = 420, BASE_H = 695
 const SIMG = {}
 SKILL_SHEET.forEach(c => {
   SIMG[c.id] = Array.from({ length: c.n }, (_, j) => { const im = new Image(); im.src = `/skill/s${c.id}/s${c.id}_${j + 1}.png`; return im })
@@ -429,11 +431,16 @@ export default function App() {
   const [alliesOn, setAlliesOn] = useState(init.alliesOn || {})  // 장착된 동료 (보유/성장 시스템은 추후)
   const [allySub, setAllySub] = useState('동료')
   useEffect(() => {
-    const el = rootRef.current; if (!el) return
-    const upd = () => { const r = el.getBoundingClientRect(); setBoardSize({ w: Math.round(r.width), h: Math.round(r.height) }) }
+    const upd = () => {
+      const sw = window.innerWidth, sh = window.innerHeight
+      const s = Math.min(sw / BASE_W, sh / BASE_H)
+      uiScaleRef.current = s
+      setView({ s, h: Math.max(BASE_H, sh / s), sw, sh })   // 남는 세로는 판 높이로 → 캔버스가 흡수
+    }
     upd()
-    const ro = new ResizeObserver(upd); ro.observe(el)
-    return () => ro.disconnect()
+    window.addEventListener('resize', upd)
+    window.addEventListener('orientationchange', upd)
+    return () => { window.removeEventListener('resize', upd); window.removeEventListener('orientationchange', upd) }
   }, [])
   const [advSel, setAdvSel] = useState(null)  // 진입창에 띄울 대륙
   const [mapSeg, setMapSeg] = useState(1)  // 모험 지도 구간(0~2), 아프리카 중심=1 시작
@@ -457,7 +464,8 @@ export default function App() {
   const [uiCfg, setUiCfg] = useState(() => { try { const sv = JSON.parse(localStorage.getItem('paleoUiCfg') || '{}'); return { ...UI_DEFAULT, ...Object.fromEntries(Object.entries(sv).filter(([k]) => k in UI_DEFAULT)) } } catch { return { ...UI_DEFAULT } } })
   const [uiEdit, setUiEdit] = useState(false)
   const rootRef = useRef(null)
-  const [boardSize, setBoardSize] = useState({ w: 0, h: 0 })   // 게임판 실제 크기 (편집모드 표시용)
+  const uiScaleRef = useRef(1)
+  const [view, setView] = useState({ s: 1, h: BASE_H, sw: 0, sh: 0 })   // 화면 맞춤 배율/판 높이
   const [copiedUi, setCopiedUi] = useState(false)
   const [editSel, setEditSel] = useState(null)   // 편집 모드에서 선택된 요소
   useEffect(() => { localStorage.setItem('paleoUiCfg', JSON.stringify(uiCfg)) }, [uiCfg])
@@ -579,16 +587,19 @@ export default function App() {
     let raf = 0, last = performance.now()
 
     function resize() {
-      const r = wrapRef.current.getBoundingClientRect()
-      const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      canvas.width = r.width * dpr; canvas.height = r.height * dpr
-      canvas.style.width = r.width + 'px'; canvas.style.height = r.height + 'px'
+      const el = wrapRef.current; if (!el) return
+      const cw = el.clientWidth, ch = el.clientHeight   // 레이아웃 px (transform 영향 없음)
+      if (!cw || !ch) return
+      const dpr = Math.min((window.devicePixelRatio || 1) * (uiScaleRef.current || 1), 2.5)
+      canvas.width = Math.round(cw * dpr); canvas.height = Math.round(ch * dpr)
+      canvas.style.width = cw + 'px'; canvas.style.height = ch + 'px'
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.imageSmoothingEnabled = false
-      w.W = r.width; w.H = r.height
+      w.W = cw; w.H = ch
       w.groundY = w.H - 36
     }
     resize()
+    const ro = new ResizeObserver(resize); if (wrapRef.current) ro.observe(wrapRef.current)
     window.addEventListener('resize', resize)
 
     function startWave(n) {
@@ -1393,7 +1404,7 @@ export default function App() {
     }
 
     raf = requestAnimationFrame(loop)
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize) }
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); ro.disconnect() }
   }, [])
 
   // 강화(고기) — 레벨 직접 설정
@@ -1580,7 +1591,7 @@ export default function App() {
         mask-image: linear-gradient(180deg, transparent 0, #000 var(--fadeT), #000 calc(100% - var(--fadeB)), transparent 100%); }
     `}</style>
     <style>{uiVars(uiCfg)}</style>
-    <div ref={rootRef} style={st.root} onClickCapture={e => {
+    <div ref={rootRef} style={{ ...st.root, width: BASE_W, maxWidth: 'none', height: view.h, flexShrink: 0, transform: `scale(${view.s})`, transformOrigin: 'top center' }} onClickCapture={e => {
       if (splash || !uiEdit) return
       const t = e.target.closest('[data-edit]')
       if (t) { e.stopPropagation(); e.preventDefault(); setEditSel(t.dataset.edit); if (t.dataset.edit === 'treasure') setOffOpen(true) }
@@ -1733,7 +1744,7 @@ export default function App() {
       {uiEdit && (
         <div style={{ position: 'fixed', left: 0, right: 0, ...(editSel ? { bottom: 0, borderBottom: 'none', borderRadius: '10px 10px 0 0' } : { top: 0, borderTop: 'none', borderRadius: '0 0 10px 10px' }), margin: '0 auto', maxWidth: 420, zIndex: 61, background: 'rgba(16,10,5,0.94)', border: `2px solid ${GOLD_D}`, textShadow: '0 1px 3px rgba(0,0,0,0.9)', padding: '8px 12px calc(8px + env(safe-area-inset-bottom))', maxHeight: '46%', overflowY: 'auto' }}>
           {!editSel && <div style={{ fontSize: 13, color: '#c9b596', textAlign: 'center', padding: '4px 0 8px' }}>조정할 요소를 화면에서 탭하세요 (틀·아이콘·글자·숫자·버튼)</div>}
-          <div style={{ fontSize: 13, color: '#ffd98a', textAlign: 'center', padding: '0 0 6px', fontWeight: 800 }}>게임판 크기: {boardSize.w} × {boardSize.h}</div>
+          <div style={{ fontSize: 13, color: '#ffd98a', textAlign: 'center', padding: '0 0 6px', fontWeight: 800 }}>기준 {BASE_W}×{BASE_H} · 화면 {view.sw}×{view.sh} · 배율 {view.s.toFixed(3)}</div>
           {editSel && (() => {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) }))
@@ -2334,7 +2345,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 ${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
-  outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', overflow: 'hidden' },
+  outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
   root: {
     width: '100%', maxWidth: 420, height: '100%', position: 'relative',
     display: 'flex', flexDirection: 'column',
@@ -2437,7 +2448,7 @@ const st = {
     transform: 'translate(var(--pd-hamb-x), var(--pd-hamb-y))',
   },
   menuPanel: {
-    position: 'fixed', right: 'calc((100vw - min(100vw, 420px)) / 2 + 8px)', top: 'calc(max(10px, env(safe-area-inset-top)) + 44px)', minWidth: 210,
+    position: 'fixed', right: 8, top: 'calc(max(10px, env(safe-area-inset-top)) + 44px)', minWidth: 210,
     background: 'rgba(16,10,5,0.97)', border: `2px solid ${GOLD_D}`, borderRadius: 10,
     padding: 8, fontSize: 'var(--pd-menufz)', textAlign: 'left',
     transform: 'translate(var(--pd-menu-x), var(--pd-menu-y))',
@@ -2644,7 +2655,7 @@ const st = {
   treasureImg: { width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.55))' },
   treasureDot: { position: 'absolute', top: '2%', right: '2%', width: 12, height: 12, borderRadius: '50%', background: '#e23b3b', border: '2px solid #2a1a0c', boxShadow: '0 0 6px #ff5a5a', pointerEvents: 'none' },
   // ── 오프라인 보상: 창 ──
-  offWin: { position: 'relative', width: 'var(--pd-offw)', maxWidth: '94vw', aspectRatio: '1024 / 1536', background: 'url(/ui/off_frame.png) center / 100% 100% no-repeat', padding: '9% 9% 8%', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '2.5%', boxSizing: 'border-box' },
+  offWin: { position: 'relative', width: 'var(--pd-offw)', maxWidth: '94%', aspectRatio: '1024 / 1536', background: 'url(/ui/off_frame.png) center / 100% 100% no-repeat', padding: '9% 9% 8%', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '2.5%', boxSizing: 'border-box' },
   offClose: { position: 'absolute', top: '2.5%', right: '4%', width: 26, height: 26, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.35)', color: '#f3e6d0', fontSize: 14, lineHeight: 1, cursor: 'pointer', zIndex: 2, padding: 0 },
   offTitle: { flexShrink: 0, textAlign: 'center', fontSize: 'var(--pd-offtfz)', color: '#f3e6d0', fontWeight: 800, textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-offt-x), var(--pd-offt-y))' },
   offInfo: { flexShrink: 0, textAlign: 'center', fontSize: 'var(--pd-offnfz)', color: '#e8d5b0', fontWeight: 700, textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-offn-x), var(--pd-offn-y))' },
