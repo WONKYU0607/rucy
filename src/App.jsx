@@ -463,19 +463,6 @@ export default function App() {
   const advOffset = -(advMax * (mapSeg / 2))  // 0→0, 1→중앙, 2→끝           // 소환 결과 오버레이 { cat, items:[{k,t}] }
   const [uiCfg, setUiCfg] = useState(() => { try { const sv = JSON.parse(localStorage.getItem('paleoUiCfg') || '{}'); return { ...UI_DEFAULT, ...Object.fromEntries(Object.entries(sv).filter(([k]) => k in UI_DEFAULT)) } } catch { return { ...UI_DEFAULT } } })
   const [uiEdit, setUiEdit] = useState(false)
-  const trRef = useRef(null)
-  const [trRect, setTrRect] = useState('-')
-  useEffect(() => {
-    if (!uiEdit) return
-    const id = setInterval(() => {
-      const el = trRef.current
-      if (!el) { setTrRect('DOM없음'); return }
-      const r = el.getBoundingClientRect()
-      const im = el.querySelector('img')
-      setTrRect(`${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}×${Math.round(r.height)} img${im && im.naturalWidth ? 'O' : 'X'}`)
-    }, 500)
-    return () => clearInterval(id)
-  }, [uiEdit])
   const rootRef = useRef(null)
   const uiScaleRef = useRef(1)
   const [view, setView] = useState({ s: 1, h: BASE_H, sw: 0, sh: 0 })   // 화면 맞춤 배율/판 높이
@@ -1762,7 +1749,6 @@ export default function App() {
         <div style={{ position: 'fixed', left: 0, right: 0, ...(editSel ? { bottom: 0, borderBottom: 'none', borderRadius: '10px 10px 0 0' } : { top: 0, borderTop: 'none', borderRadius: '0 0 10px 10px' }), margin: '0 auto', maxWidth: 420, zIndex: 61, background: 'rgba(16,10,5,0.94)', border: `2px solid ${GOLD_D}`, textShadow: '0 1px 3px rgba(0,0,0,0.9)', padding: '8px 12px calc(8px + env(safe-area-inset-bottom))', maxHeight: '46%', overflowY: 'auto' }}>
           {!editSel && <div style={{ fontSize: 13, color: '#c9b596', textAlign: 'center', padding: '4px 0 8px' }}>조정할 요소를 화면에서 탭하세요 (틀·아이콘·글자·숫자·버튼)</div>}
           <div style={{ fontSize: 13, color: '#ffd98a', textAlign: 'center', padding: '0 0 6px', fontWeight: 800 }}>기준 {BASE_W}×{BASE_H} · 화면 {view.sw}×{view.sh} · 배율 {view.s.toFixed(3)}</div>
-          <div style={{ fontSize: 12, color: '#8ef0a0', textAlign: 'center', padding: '0 0 6px' }}>보상 {offReward ? 'O' : 'X'} · 창 {offOpen ? '열림' : '닫힘'} · ts {init.ts ? '있음' : '없음'} · 탭 {nav} · 상자 {offData && !offOpen ? '표시' : '숨김'} · {trRect}</div>
           {editSel && (() => {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) }))
@@ -1875,7 +1861,7 @@ export default function App() {
           </div>
         )}
         {offData && !offOpen && (
-          <button ref={trRef} data-edit="treasure" style={{ ...st.treasureBtn, ...(uiEdit ? { outline: '2px solid #ff3b3b', background: 'rgba(255,220,0,0.35)' } : {}) }} onClick={() => { if (!uiEdit) setOffOpen(true) }}>
+          <button data-edit="treasure" style={st.treasureBtn} onClick={() => { if (!uiEdit) setOffOpen(true) }}>
             <img src="/ui/treasure.png" alt="" style={st.treasureImg} />
             <span style={st.treasureDot} />
           </button>
@@ -2670,7 +2656,7 @@ const st = {
   },
   bossText: { display: 'inline-block', fontSize: 'var(--pd-bossfz)', textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-btext-x), var(--pd-btext-y))' },
   // ── 오프라인 보상: 보물상자 ──
-  treasureBtn: { position: 'absolute', left: 6, bottom: 6, width: 'var(--pd-trsz)', height: 'var(--pd-trsz)', padding: 0, border: 'none', background: 'transparent', zIndex: 6, transform: 'translate(var(--pd-tr-x), var(--pd-tr-y))', cursor: 'pointer' },
+  treasureBtn: { position: 'absolute', left: 6, bottom: 6, width: 'var(--pd-trsz)', height: 'var(--pd-trsz)', padding: 0, border: 'none', background: 'transparent', zIndex: 40, pointerEvents: 'auto', transform: 'translate(var(--pd-tr-x), var(--pd-tr-y))', cursor: 'pointer' },
   treasureImg: { width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.55))' },
   treasureDot: { position: 'absolute', top: '2%', right: '2%', width: 12, height: 12, borderRadius: '50%', background: '#e23b3b', border: '2px solid #2a1a0c', boxShadow: '0 0 6px #ff5a5a', pointerEvents: 'none' },
   // ── 오프라인 보상: 창 ──
