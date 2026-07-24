@@ -87,6 +87,17 @@ const CONTINENTS = [
 const ADV_STAGES = 10          // 대륙당 탐험 단계 수
 const ADV_COST_RUBY = 1        // 진입 1회당 루비 소모
 const advReward = st => ({ dia: 50 * st, mat: 10 * st })   // 단계별 보상 (임시 수치)
+const ADV_TIME = 60            // 모험 제한시간(초)
+const ADV_MOBS = 50            // 보스 등장 전 처치해야 할 일반몹 수
+const advMult = st => 1 + 0.3 * (st - 1)   // 단계 배율 (1단계 1.0 → 10단계 3.7)
+const DINO_MOB = {}, DINO_BOSS = {}, ADV_BG = {}
+for (const c of CONTINENTS) {
+  const k = c.boss
+  const mk = (pre, n) => [1, 2, 3, 4].map(i => { const im = new Image(); im.src = `/dino/${pre}/${n}${i}.png`; return im })
+  DINO_MOB[k] = mk(`mob_${k}`, 'w')
+  DINO_BOSS[k] = { w: mk(`boss_${k}`, 'w'), a: mk(`boss_${k}`, 'a') }
+  const bg = new Image(); bg.src = `/adventure/bg/${c.key}.jpg`; ADV_BG[c.key] = bg
+}
 const BASE_W = 420, BASE_H = 695
 const SIMG = {}
 SKILL_SHEET.forEach(c => {
@@ -631,6 +642,14 @@ export default function App() {
       w.clearedFlag = false
     }
 
+    function startAdventure(cfg) {
+      w.enemies = []; w.stones = []; w.rocks = []; w.waves = []
+      w.bossBattle = false; w.clearedFlag = false; w.bossPending = false
+      w.adv = { ...cfg, mult: advMult(cfg.stage), bossOut: false, done: false, win: false }
+      w.advTime = ADV_TIME
+      w.spawnLeft = 9999; w.total = ADV_MOBS + 1; w.killed = 0; w.spawnTimer = 200
+    }
+
     function startBossBattle() {
       w.enemies = []; w.stones = []; w.rocks = []; w.waves = []
       w.bossBattle = true
@@ -643,7 +662,28 @@ export default function App() {
       w.clearedFlag = false
     }
 
+    function spawnAdvEnemy() {
+      const a = w.adv
+      const isBoss = w.killed >= ADV_MOBS
+      if (isBoss ? a.bossOut : w.enemies.length >= 8) return
+      if (isBoss) a.bossOut = true
+      const key = WAVE_CYCLE[(a.wave - 1) % WAVE_CYCLE.length]
+      const t = ENEMY_TYPES[key]
+      const sc = (1 + 0.4 * (a.wave - 1)) * a.mult * (isBoss ? 12 : 1)
+      w.enemies.push({
+        type: key, dino: a.boss, boss: isBoss, bossIdx: 0, x: w.W + 40, hp: t.hp * sc, maxHp: t.hp * sc,
+        speed: t.speed * (isBoss ? 0.6 : 0.9 + Math.random() * 0.2),
+        dmg: t.dmg * (1 + 0.1 * (a.wave - 1)) * a.mult * (isBoss ? 3 : 1),
+        meat: Math.floor(t.meat * (1 + 0.2 * (a.wave - 1))) * (isBoss ? 15 : 1),
+        exp: Math.floor(t.exp * (1 + 0.2 * (a.wave - 1))) * (isBoss ? 15 : 1),
+        acc: t.acc, eva: t.eva, air: 0, atkT: 0,
+        h: isBoss ? 120 : 64, color: t.color, cd: 0, flash: 0, animT: Math.random() * 10,
+        scaleV: isBoss ? 1 : 0.95 + Math.random() * 0.1, yOff: 0, spdV: isBoss ? 1 : 0.93 + Math.random() * 0.14,
+      })
+    }
+
     function spawnEnemy() {
+      if (w.adv) return spawnAdvEnemy()
       const key = WAVE_CYCLE[(w.waveNum - 1) % WAVE_CYCLE.length]
       const boss = w.bossPending && w.spawnLeft === 1
       const t = ENEMY_TYPES[key]
@@ -777,6 +817,7 @@ export default function App() {
       w.scrollX += scroll * dt
 
       if (st.phase === 'fighting') {
+        if (w.advStart) { const c = w.advStart; w.advStart = null; w.needStart = false; startAdventure(c); hero.hp = st.maxHp; hero.state = 'move'; hero.t = 0 }
         if (w.startBossFlag) { w.startBossFlag = false; w.needStart = false; startBossBattle(); hero.state = 'move'; hero.t = 0 }
         if (w.needStart) { startWave(st.wave); w.needStart = false; hero.hp = st.maxHp; hero.state = 'move'; hero.t = 0 }
 
@@ -801,6 +842,7 @@ export default function App() {
             e.animT += dt * SPEED * (0.4 + 0.6 * e.vt * near) * (1 + scroll / SCROLL * 0.4) * Math.min(1.5, Math.max(0.6, 0.55 + e.speed / 160))
           } else {
             e.cd -= dt * 1000
+            if (e.atkT > 0) e.atkT -= dt
             if (e.cd <= 0) {
               // 회피 판정: 적 명중률 − 내 회피 보너스
               const hitChance = Math.max(0.05, e.acc + 0.5 - st.eva)
@@ -812,7 +854,7 @@ export default function App() {
               } else {
                 addDmg(w.heroX, w.groundY - 130, 'DODGE', false, true)
               }
-              e.cd = 1200
+              e.cd = 1200; e.atkT = 0.5
             }
           }
         }
@@ -1001,7 +1043,15 @@ export default function App() {
         const prog = w.total ? w.killed / w.total : 0
         if (prog !== w.shownProg) { w.shownProg = prog; setProgress(prog) }
         if (Math.ceil(hero.hp) !== w.shownHp) { w.shownHp = Math.ceil(hero.hp); setHeroHpUI(Math.max(0, w.shownHp)) }
-        if (w.bossBattle) {
+        if (w.adv) {
+          const bEn = w.enemies.find(e => e.boss && !e.dead)
+          const tt = Math.ceil(Math.max(0, w.advTime) * 10)
+          const hh = bEn ? Math.ceil(bEn.hp) : -1
+          if (tt !== w._btShown || hh !== w._bhShown) {
+            w._btShown = tt; w._bhShown = hh
+            setBossUI({ t: Math.max(0, w.advTime), max: ADV_TIME, hp: bEn ? Math.max(0, bEn.hp) : 0, maxHp: bEn ? bEn.maxHp : 1, has: !!bEn })
+          }
+        } else if (w.bossBattle) {
           const bEn = w.enemies.find(e => e.boss && !e.dead)
           const tt = Math.ceil(Math.max(0, w.bossTimer) * 10)
           const hh = bEn ? Math.ceil(bEn.hp) : -1
@@ -1074,8 +1124,33 @@ export default function App() {
           }
         }
 
-        if (hero.hp <= 0) setPhase('gameover')
-        else if (w.spawnLeft === 0 && w.enemies.length === 0 && !w.clearedFlag) {
+        // ── 모험: 제한시간 / 승패 ──
+        if (w.adv && !w.adv.done) {
+          w.advTime -= dt
+          const bossDown = w.adv.bossOut && !w.enemies.some(e => e.boss && !e.dead)
+          if (bossDown) { w.adv.done = true; w.adv.win = true }
+          else if (w.advTime <= 0 || hero.hp <= 0) { w.adv.done = true; w.adv.win = false }
+        }
+        if (w.adv && w.adv.done) {
+          const a = w.adv
+          w.adv = null; w.advTime = 0
+          w.enemies = []; w.stones = []; w.rocks = []; w.waves = []
+          w._btShown = -1; w._bhShown = -1; setBossUI(null)
+          if (a.win) {
+            setAdvStage(v => ({ ...v, [a.key]: Math.max(v[a.key] || 0, a.stage) }))
+            const rw = advReward(a.stage)
+            setGem(g => g + rw.dia)
+            setMats(m => { const n = [...m]; n[4] = (n[4] || 0) + rw.mat; return n })
+            setClearMsg(`${a.name} ${a.stage}단계 클리어!`)
+          } else {
+            setClearMsg(hero.hp <= 0 ? '모험 실패 — 쓰러짐' : '모험 실패 — 시간 초과')
+          }
+          w.needStart = true
+          hero.hp = st.maxHp
+        }
+
+        if (hero.hp <= 0 && !w.adv) setPhase('gameover')
+        else if (!w.adv && w.spawnLeft === 0 && w.enemies.length === 0 && !w.clearedFlag) {
           w.clearedFlag = true
           if (w.bossBattle) {
             // 보스 처치: 보상 크게 + 다음 웨이브 블록으로 진행
@@ -1178,7 +1253,7 @@ export default function App() {
       const air = e.air ? e.air * (e.airT ?? 1) : 0   // 공중 높이 (스폰부터 고정 고도)
       const y = w.groundY - air
       const t = ENEMY_TYPES[e.type]
-      const imgs = e.boss ? BIMG[e.bossIdx] : EIMG[e.type]
+      const imgs = e.dino ? (e.boss ? (e.atkT > 0 ? DINO_BOSS[e.dino].a : DINO_BOSS[e.dino].w) : DINO_MOB[e.dino]) : (e.boss ? BIMG[e.bossIdx] : EIMG[e.type])
       const stunned = e.stun > 0
       const gall = e.animT * 9
       const fi = stunned ? 0 : Math.floor(gall / Math.PI) % imgs.length  // 기절 시 프레임 고정
@@ -1254,7 +1329,7 @@ export default function App() {
       if (w.shake > 0.3) ctx.translate((Math.random() - 0.5) * w.shake, (Math.random() - 0.5) * w.shake)
 
       // 배경: 가로 무한 타일 스크롤 (10웨이브마다 테마 변경, 보스전투 시 보스 배경)
-      const BG = bgFor(w.waveNum || 1, w.bossBattle)
+      const BG = (w.adv && ADV_BG[w.adv.key]) || bgFor(w.waveNum || 1, w.bossBattle)
       if (BG.complete && BG.naturalWidth > 0) {
         const scale = Math.max(w.W / BG.naturalWidth, w.H / BG.naturalHeight)
         const bw = BG.naturalWidth * scale, bh = BG.naturalHeight * scale
@@ -1592,8 +1667,10 @@ export default function App() {
   }
   function enterAdventure() {
     if (uiEdit || !advSel || ruby < ADV_COST_RUBY) return
+    const stage = Math.min(ADV_STAGES, (advStage[advSel.key] || 0) + 1)
     setRuby(r => r - ADV_COST_RUBY)
-    setAdvSel(null)   // 전투 연결은 다음 단계
+    world.current.advStart = { key: advSel.key, boss: advSel.boss, name: advSel.name, stage, wave }
+    setAdvSel(null); setNav('영웅'); setPaused(false)
   }
   function unequipSkill(slot) {
     setEquipped(eq => { const next = [...eq]; next[slot] = null; return next })
@@ -1908,7 +1985,7 @@ export default function App() {
         {bossUI && (
           <div style={st.bossBars}>
             <div data-edit="btimer" style={st.btOuter}>
-              <div style={st.btTrack}><div style={{ ...st.btInner, width: Math.min(100, bossUI.t / BOSS_TIME * 100) + '%' }} /></div>
+              <div style={st.btTrack}><div style={{ ...st.btInner, width: Math.min(100, bossUI.t / (bossUI.max || BOSS_TIME) * 100) + '%' }} /></div>
             </div>
             {bossUI.has && (
               <div data-edit="bosshp" style={st.bhOuter}>
