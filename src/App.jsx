@@ -89,6 +89,7 @@ const ADV_COST_RUBY = 1        // 진입 1회당 루비 소모
 const advReward = st => ({ dia: 50 * st, mat: 10 * st })   // 단계별 보상 (임시 수치)
 const ADV_TIME = 60            // 모험 제한시간(초)
 const ADV_MOBS = 50            // 보스 등장 전 처치해야 할 일반몹 수
+const ADV_WARN = 2.0           // 보스 등장 경고 연출 시간(초)
 const advMult = st => 1 + 0.3 * (st - 1)   // 단계 배율 (1단계 1.0 → 10단계 3.7)
 const DINO_MOB = {}, DINO_BOSS = {}, ADV_BG = {}
 for (const c of CONTINENTS) {
@@ -663,10 +664,12 @@ export default function App() {
     }
 
     function spawnAdvEnemy() {
+      if (w.killed >= ADV_MOBS || w.enemies.length >= 8) return   // 보스는 경고 연출 후 별도 소환
+      pushAdvEnemy(false)
+    }
+
+    function pushAdvEnemy(isBoss) {
       const a = w.adv
-      const isBoss = w.killed >= ADV_MOBS
-      if (isBoss ? a.bossOut : w.enemies.length >= 8) return
-      if (isBoss) a.bossOut = true
       const key = WAVE_CYCLE[(a.wave - 1) % WAVE_CYCLE.length]
       const t = ENEMY_TYPES[key]
       const sc = (1 + 0.4 * (a.wave - 1)) * a.mult * (isBoss ? 12 : 1)
@@ -1127,6 +1130,12 @@ export default function App() {
         // ── 모험: 제한시간 / 승패 ──
         if (w.adv && !w.adv.done) {
           w.advTime -= dt
+          const a = w.adv
+          if (!a.bossOut && w.killed >= ADV_MOBS && w.enemies.length === 0) {
+            if (a.warnT == null) { a.warnT = ADV_WARN; w.shake = 6 }
+            a.warnT -= dt
+            if (a.warnT <= 0) { a.bossOut = true; a.warnT = 0; pushAdvEnemy(true); w.shake = 10 }
+          }
           const bossDown = w.adv.bossOut && !w.enemies.some(e => e.boss && !e.dead)
           if (bossDown) { w.adv.done = true; w.adv.win = true }
           else if (w.advTime <= 0 || hero.hp <= 0) { w.adv.done = true; w.adv.win = false }
@@ -1485,6 +1494,22 @@ export default function App() {
       if (w.loot) for (const L of w.loot) {
         const im = LOOT_CIMG[L.k]
         if (im.complete && im.naturalWidth) ctx.drawImage(im, L.x - 4.5, L.y - 9, 9, 9)
+      }
+
+      if (w.adv && w.adv.warnT > 0) {
+        const puls = 0.45 + 0.55 * Math.abs(Math.sin(w.adv.warnT * 9))
+        const cx = w.W / 2, cy = w.H / 2
+        const g = ctx.createRadialGradient(cx, cy, Math.min(w.W, w.H) * 0.18, cx, cy, Math.max(w.W, w.H) * 0.72)
+        g.addColorStop(0, 'rgba(255,0,0,0)')
+        g.addColorStop(1, `rgba(220,0,0,${(0.62 * puls).toFixed(3)})`)
+        ctx.fillStyle = g; ctx.fillRect(0, 0, w.W, w.H)
+        ctx.save()
+        ctx.textAlign = 'center'
+        ctx.font = `bold ${Math.round(w.H * 0.13)}px 'Do Hyeon', sans-serif`
+        ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,0.85)'
+        ctx.fillStyle = `rgba(255,${Math.round(70 * puls)},${Math.round(60 * puls)},${(0.65 + 0.35 * puls).toFixed(3)})`
+        ctx.strokeText('WARNING', cx, w.H * 0.42); ctx.fillText('WARNING', cx, w.H * 0.42)
+        ctx.restore()
       }
 
       ctx.textAlign = 'center'
@@ -2337,16 +2362,16 @@ const UI_DEFAULT = {
   skicon: 120, skiconX: 0, skiconY: 0, slicon: 100, sliconX: 0, sliconY: 0,
   advbw: 40, advbh: 20, advbfz: 10,
   advww: 301, advwh: 400,
-  advmonkfz: 16, advmonvfz: 15, advregkfz: 16, advregvfz: 15, advrewkfz: 17, advrewvfz: 14, advrewic: 18,
+  advmonkfz: 15, advmonvfz: 13, advregkfz: 15, advregvfz: 13, advrewkfz: 15, advrewvfz: 14, advrewic: 17,
   advibw: 120, advibh: 106, adviw: 100, advih: 88,
-  advmbw: 150, advmbh: 54, advrbw: 150, advrbh: 54, advwbw: 250, advwbh: 44,
+  advmbw: 116, advmbh: 48, advrbw: 115, advrbh: 51, advwbw: 247, advwbh: 38,
   advsw: 249, advsh: 71, advsfz: 17, advbarw: 205, advbarh: 19,
   advew: 93, adveh: 34, advefz: 11, advcw: 93, advch: 35, advcfz: 11,
-  advwinX: 0, advwinY: 0, adviconX: 0, adviconY: 0, adviconbX: 0, adviconbY: 0,
-  advmonbX: 0, advmonbY: 0, advregbX: 0, advregbY: 0, advrewbX: 0, advrewbY: 0,
-  advsignX: 0, advsignY: 0, advsigntX: 0, advsigntY: -7, advbarX: 0, advbarY: -9,
-  advmonkX: -4, advmonkY: 2, advmonvX: -4, advmonvY: 2, advregkX: -4, advregkY: 4, advregvX: -4, advregvY: 4,
-  advrewkX: -28, advrewkY: 28, advrewdX: 0, advrewdY: 28, advrewmX: 0, advrewmY: 28,
+  advwinX: 0, advwinY: 0, adviconX: 0, adviconY: 0, adviconbX: 12, adviconbY: 0,
+  advmonbX: 0, advmonbY: 0, advregbX: 0, advregbY: 0, advrewbX: 0, advrewbY: 29,
+  advsignX: 0, advsignY: 0, advsigntX: 0, advsigntY: -6, advbarX: 0, advbarY: -7,
+  advmonkX: -1, advmonkY: 2, advmonvX: -1, advmonvY: 2, advregkX: -3, advregkY: 2, advregvX: -4, advregvY: 2,
+  advrewkX: -28, advrewkY: 0, advrewdX: 0, advrewdY: -1, advrewmX: 0, advrewmY: -1,
   adventerX: 0, adventerY: 4, advcloseX: 0, advcloseY: 4, advtxt0X: 47, advtxt0Y: 1, advtxt1X: 39, advtxt1Y: 1, advtxt2X: 43, advtxt2Y: 2, advtxt3X: 39, advtxt3Y: 1, advtxt4X: 50, advtxt4Y: 1, advtxt5X: 51, advtxt5Y: 2, advtxt6X: 50, advtxt6Y: 2, advtxt7X: 47, advtxt7Y: 2, advbtn0X: 172, advbtn0Y: -13, advbtn1X: 251, advbtn1Y: 0, advbtn2X: 326, advbtn2Y: -5, advbtn3X: 200, advbtn3Y: 27, advbtn4X: 66, advbtn4Y: 11, advbtn5X: 121, advbtn5Y: 4, advbtn6X: 305, advbtn6Y: 36, advbtn7X: 188, advbtn7Y: 0,
   mailsz: 26, questsz: 40, mailboxX: 0, mailboxY: 0, questX: 6, questY: -8,
   matchipX: 23, matchipY: -14, allymatX: -19, allymatY: 14, dtabX: 0, dtabY: 0, dtitleX: 0, dtitleY: 0, darrowX: 0, darrowY: 0, diconX: 0, diconY: 0, dstatX: 0, dstatY: 0, denhX: 0, denhY: 0, dequipX: 0, dequipY: 0, dfusebtnX: 0, dfusebtnY: 0, dstepX: 0, dstepY: 0,
