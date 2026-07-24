@@ -90,6 +90,12 @@ const advReward = st => ({ dia: 50 * st, mat: 10 * st })   // 단계별 보상 (
 const ADV_TIME = 60            // 모험 제한시간(초)
 const ADV_MOBS = 50            // 보스 등장 전 처치해야 할 일반몹 수
 const ADV_WARN = 2.0           // 보스 등장 경고 연출 시간(초)
+const ADV_ATK_DUR = 0.45       // 공격 모션 4프레임 총 재생 시간(초)
+const ADV_BOSS_H = 120         // 보스 '걷기 포즈' 기준 화면 높이
+const ADV_MOB_H = 62           // 일반몹 '걷기 포즈' 기준 화면 높이
+// 캔버스높이 / 걷기포즈높이 — 공격 모션이 위로 뻗는 만큼 캔버스가 커서, 이 비율로 보정해야 종별 몸집이 같아짐
+const DINO_RB = { trex: 1.052, spino: 1.346, trike: 1.183, stego: 1.288, raptor: 1.309, anky: 1.77, ptera: 1.402, brachio: 1.151 }
+const DINO_RM = { trex: 1.078, spino: 1.076, trike: 1.088, stego: 1.077, raptor: 1.09, anky: 1.094, ptera: 1.071, brachio: 1.049 }
 const advMult = st => 1 + 0.3 * (st - 1)   // 단계 배율 (1단계 1.0 → 10단계 3.7)
 const DINO_MOB = {}, DINO_BOSS = {}, ADV_BG = {}
 for (const c of CONTINENTS) {
@@ -680,7 +686,7 @@ export default function App() {
         meat: Math.floor(t.meat * (1 + 0.2 * (a.wave - 1))) * (isBoss ? 15 : 1),
         exp: Math.floor(t.exp * (1 + 0.2 * (a.wave - 1))) * (isBoss ? 15 : 1),
         acc: t.acc, eva: t.eva, air: 0, atkT: 0,
-        h: isBoss ? 120 : 64, color: t.color, cd: 0, flash: 0, animT: Math.random() * 10,
+        h: Math.round(isBoss ? ADV_BOSS_H * (DINO_RB[a.boss] || 1) : ADV_MOB_H * (DINO_RM[a.boss] || 1)), color: t.color, cd: 0, flash: 0, animT: Math.random() * 10,
         scaleV: isBoss ? 1 : 0.95 + Math.random() * 0.1, yOff: 0, spdV: isBoss ? 1 : 0.93 + Math.random() * 0.14,
       })
     }
@@ -842,6 +848,7 @@ export default function App() {
           if (e.x > stopX) {
             const near = Math.min(1, Math.max(0.3, (e.x - stopX) / 55))  // 정지 전 감속
             e.x -= (e.speed * (e.spdV || 1) * SPEED * 1.3 * e.vt * near + scroll) * dt
+            if (e.atkT > 0) e.atkT = 0
             e.animT += dt * SPEED * (0.4 + 0.6 * e.vt * near) * (1 + scroll / SCROLL * 0.4) * Math.min(1.5, Math.max(0.6, 0.55 + e.speed / 160))
           } else {
             e.cd -= dt * 1000
@@ -857,7 +864,7 @@ export default function App() {
               } else {
                 addDmg(w.heroX, w.groundY - 130, 'DODGE', false, true)
               }
-              e.cd = 1200; e.atkT = 0.5
+              e.cd = 1200; e.atkT = ADV_ATK_DUR
             }
           }
         }
@@ -1265,7 +1272,9 @@ export default function App() {
       const imgs = e.dino ? (e.boss ? (e.atkT > 0 ? DINO_BOSS[e.dino].a : DINO_BOSS[e.dino].w) : DINO_MOB[e.dino]) : (e.boss ? BIMG[e.bossIdx] : EIMG[e.type])
       const stunned = e.stun > 0
       const gall = e.animT * 9
-      const fi = stunned ? 0 : Math.floor(gall / Math.PI) % imgs.length  // 기절 시 프레임 고정
+      const fi = e.atkT > 0
+        ? Math.min(imgs.length - 1, Math.floor((ADV_ATK_DUR - e.atkT) / ADV_ATK_DUR * imgs.length))   // 공격: 정지 중에도 자체 시간으로 재생
+        : stunned ? 0 : Math.floor(gall / Math.PI) % imgs.length  // 기절 시 프레임 고정
       const wf = e.boss ? 0.55 : Math.min(1.15, Math.max(0.45, 62 / e.h))  // 무게 차등: 클수록 덜 들썩임
       const bounce = stunned ? 0 : e.air
         ? Math.sin(gall * 0.45 + (e.yOff || 0)) * 5                        // 공중: 부드러운 부유
@@ -1342,9 +1351,15 @@ export default function App() {
       if (BG.complete && BG.naturalWidth > 0) {
         const scale = Math.max(w.W / BG.naturalWidth, w.H / BG.naturalHeight)
         const bw = BG.naturalWidth * scale, bh = BG.naturalHeight * scale
-        let x = -(w.scrollX % bw)
-        if (x > 0) x -= bw
-        for (; x < w.W; x += bw) ctx.drawImage(BG, x, w.H - bh, bw, bh)
+        const i0 = Math.floor(w.scrollX / bw)
+        let x = -(w.scrollX - i0 * bw)
+        for (let i = 0; x < w.W; x += bw, i++) {
+          // 모험 배경은 이음매가 보여서 한 장씩 좌우 반전(거울 타일) → 맞닿는 면이 동일해 경계 사라짐
+          if (w.adv && ((i0 + i) % 2 + 2) % 2 === 1) {
+            ctx.save(); ctx.translate(x + bw, w.H - bh); ctx.scale(-1, 1)
+            ctx.drawImage(BG, 0, 0, bw, bh); ctx.restore()
+          } else ctx.drawImage(BG, x, w.H - bh, bw, bh)
+        }
       } else {
         ctx.fillStyle = '#3a2f1d'; ctx.fillRect(0, 0, w.W, w.H)
       }
