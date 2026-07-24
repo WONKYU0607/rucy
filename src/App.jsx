@@ -93,33 +93,46 @@ const ADV_WARN = 2.0           // 보스 등장 경고 연출 시간(초)
 // ── 공격 타이밍 ──────────────────────────────────────────────
 // 보스 공룡: 프레임별 재생 시간(초) 4개 [준비, 웅크림, 타격, 마무리] — 합이 그 종의 공격 모션 길이
 const DINO_ATK_T = {
-  trex:    [0.09, 0.12, 0.07, 0.12],
-  spino:   [0.09, 0.12, 0.07, 0.12],
-  trike:   [0.10, 0.13, 0.08, 0.13],
-  stego:   [0.10, 0.14, 0.08, 0.14],
-  raptor:  [0.07, 0.09, 0.06, 0.10],
-  anky:    [0.11, 0.15, 0.08, 0.14],
-  ptera:   [0.08, 0.10, 0.07, 0.11],
-  brachio: [0.12, 0.16, 0.09, 0.16],
+  trex:    [0.09, 0.12, 0.07],           // 4번 제외
+  spino:   [0.09, 0.12, 0.07],           // 4번 제외
+  trike:   [0.13, 0.08, 0.13],           // 1번 제외
+  stego:   [0.14, 0.08, 0.14],           // 1번 제외
+  raptor:  [0.07, 0.09, 0.06, 0.10],     // 전부 사용
+  anky:    [0.15, 0.08, 0.14],           // 1번 제외
+  ptera:   [0.10, 0.12],                 // 1·3번만 사용
+  brachio: [0.16, 0.09, 0.16],           // 1번 제외
 }
 const DINO_ATK_DEF = [0.10, 0.13, 0.08, 0.14]
-const DINO_ATK_HIT = { trex: 3, spino: 3, trike: 3, stego: 3, raptor: 3, anky: 3, ptera: 3, brachio: 3 }  // 데미지 들어가는 프레임(1~4)
-const dinoAtkDur = k => (DINO_ATK_T[k] || DINO_ATK_DEF).reduce((a, b) => a + b, 0)
-const dinoHitAt = k => {                       // 타격 프레임이 시작되는 시각(초)
-  const arr = DINO_ATK_T[k] || DINO_ATK_DEF
+// 종별로 실제 사용할 공격 프레임 번호 (지정 없으면 1~4 전부)
+const DINO_ATK_FRAMES = {
+  trex: [1, 2, 3], spino: [1, 2, 3],
+  trike: [2, 3, 4], stego: [2, 3, 4], anky: [2, 3, 4], brachio: [2, 3, 4],
+  ptera: [1, 3],
+}
+const DINO_NAME = { trex: '티라노', spino: '스피노', trike: '트리케라톱스', stego: '스테고', raptor: '랩터', anky: '안킬로', ptera: '익룡', brachio: '브라키오' }
+const DINO_KEYS = ['trex', 'spino', 'trike', 'stego', 'raptor', 'anky', 'ptera', 'brachio']
+
+// ── 모션 설정: 인게임 편집기에서 실시간 조절 (localStorage 'paleoMotion') ──
+const MOTION_DEFAULT = {
+  atk: DINO_ATK_T,                                            // 보스 종별 프레임 시간(초)
+  hit: { trex: 3, spino: 3, trike: 2, stego: 2, raptor: 3, anky: 2, ptera: 2, brachio: 2 },  // 데미지 프레임 번호
+  cd: { advBoss: 1400, advMob: 1100, wave: 1200 },             // 공격 간격(ms)
+  dur: { advMob: 0.35, wave: 0.30 },                           // 공격 프레임 없는 적의 모션 길이(초)
+  lunge: { boss: 26, mob: 15 },                                // 공격 시 파고드는 거리(px)
+}
+const dinoAtkDur = (k, T) => (T[k] || DINO_ATK_DEF).reduce((a, b) => a + b, 0)
+const dinoHitAt = (k, T, H) => {               // 타격 프레임이 시작되는 시각(초)
+  const arr = T[k] || DINO_ATK_DEF
   let t = 0
-  for (let i = 0; i < (DINO_ATK_HIT[k] || 3) - 1; i++) t += arr[i]
+  for (let i = 0; i < (H[k] || 3) - 1; i++) t += arr[i] || 0
   return t
 }
-const dinoAtkFrame = (k, el) => {              // 경과 시간 → 프레임 인덱스
-  const arr = DINO_ATK_T[k] || DINO_ATK_DEF
+const dinoAtkFrame = (k, el, T) => {           // 경과 시간 → 프레임 인덱스
+  const arr = T[k] || DINO_ATK_DEF
   let t = 0
   for (let i = 0; i < arr.length; i++) { t += arr[i]; if (el < t) return i }
   return arr.length - 1
 }
-const ADV_MOB_ATK_DUR = 0.35   // 모험 일반몹 (공격 프레임 없음 — 걷기 프레임 재생)
-const WAVE_ATK_DUR = 0.30      // 일반 웨이브 몬스터·웨이브 보스
-const ADV_BOSS_CD = 1400, ADV_MOB_CD = 1100, WAVE_ATK_CD = 1200   // 공격 간격(ms)
 const DINO_AIR = { ptera: 45 }  // 비행 공룡의 지면 위 고도(px)
 const ADV_BOSS_H = 120         // 보스 '걷기 포즈' 기준 화면 높이
 const ADV_MOB_H = 62           // 일반몹 '걷기 포즈' 기준 화면 높이
@@ -132,7 +145,11 @@ for (const c of CONTINENTS) {
   const k = c.boss
   const mk = (pre, n) => [1, 2, 3, 4].map(i => { const im = new Image(); im.src = `/dino/${pre}/${n}${i}.png`; return im })
   DINO_MOB[k] = mk(`mob_${k}`, 'w')
-  DINO_BOSS[k] = { w: mk(`boss_${k}`, 'w'), a: mk(`boss_${k}`, 'a') }
+  const af = DINO_ATK_FRAMES[k] || [1, 2, 3, 4]
+  DINO_BOSS[k] = {
+    w: mk(`boss_${k}`, 'w'),
+    a: af.map(i => { const im = new Image(); im.src = `/dino/boss_${k}/a${i}.png`; return im }),
+  }
   const bg = new Image(); bg.src = `/adventure/bg/${c.key}.jpg`; ADV_BG[c.key] = bg
 }
 const BASE_W = 420, BASE_H = 695
@@ -517,6 +534,23 @@ export default function App() {
   const advOffset = -(advMax * (mapSeg / 2))  // 0→0, 1→중앙, 2→끝           // 소환 결과 오버레이 { cat, items:[{k,t}] }
   const [uiCfg, setUiCfg] = useState(() => { try { const sv = JSON.parse(localStorage.getItem('paleoUiCfg') || '{}'); return { ...UI_DEFAULT, ...Object.fromEntries(Object.entries(sv).filter(([k]) => k in UI_DEFAULT)) } } catch { return { ...UI_DEFAULT } } })
   const [uiEdit, setUiEdit] = useState(false)
+  const [motEdit, setMotEdit] = useState(false)     // 모션 편집기
+  const [motSel, setMotSel] = useState('trex')
+  const [copiedMot, setCopiedMot] = useState(false)
+  const [motCfg, setMotCfg] = useState(() => {
+    try {
+      const sv = JSON.parse(localStorage.getItem('paleoMotion') || '{}')
+      return {
+        atk: { ...MOTION_DEFAULT.atk, ...(sv.atk || {}) }, hit: { ...MOTION_DEFAULT.hit, ...(sv.hit || {}) },
+        cd: { ...MOTION_DEFAULT.cd, ...(sv.cd || {}) }, dur: { ...MOTION_DEFAULT.dur, ...(sv.dur || {}) },
+        lunge: { ...MOTION_DEFAULT.lunge, ...(sv.lunge || {}) },
+      }
+    } catch { return JSON.parse(JSON.stringify(MOTION_DEFAULT)) }
+  })
+  const dockSide = view.sw - BASE_W * view.s > 300           // 게임판 옆 여백이 넉넉하면 편집기를 밖으로
+  const dockStyle = { right: 0, left: 'auto', top: 0, bottom: 0, width: 330, maxWidth: 'none', margin: 0, maxHeight: 'none', borderRadius: 0, borderTop: 'none', borderBottom: 'none', borderLeft: `2px solid ${GOLD_D}` }
+  const motRef = useRef(motCfg)
+  motRef.current = motCfg                            // 게임 루프가 매 프레임 최신값을 읽음
   const rootRef = useRef(null)
   const uiScaleRef = useRef(1)
   const [view, setView] = useState({ s: 1, h: BASE_H, sw: 0, sh: 0 })   // 화면 맞춤 배율/판 높이
@@ -535,6 +569,7 @@ export default function App() {
   const [copiedUi, setCopiedUi] = useState(false)
   const [editSel, setEditSel] = useState(null)   // 편집 모드에서 선택된 요소
   useEffect(() => { localStorage.setItem('paleoUiCfg', JSON.stringify(uiCfg)) }, [uiCfg])
+  useEffect(() => { localStorage.setItem('paleoMotion', JSON.stringify(motCfg)) }, [motCfg])
   const [offReward, setOffReward] = useState(null) // 오프라인 보상 대기(pending)
   const [offOpen, setOffOpen] = useState(false)    // 오프라인 보상 창 열림
   const offDone = useRef(false)
@@ -883,12 +918,12 @@ export default function App() {
           } else {
             if (e.atkT > 0) {
               e.atkT -= dt
-              const dur = e.atkDur || WAVE_ATK_DUR
+              const dur = e.atkDur || motRef.current.dur.wave
               const el = dur - Math.max(0, e.atkT)                          // 경과 시간
               const hitAt = e.atkHitAt != null ? e.atkHitAt : dur * 0.5
               // 파고듦: 타격 순간에 가장 깊이 들어가고 이후 복귀
               const lp = el < hitAt ? el / Math.max(0.001, hitAt) : Math.max(0, 1 - (el - hitAt) / Math.max(0.001, dur - hitAt))
-              e.lunge = -Math.sin(Math.min(1, lp) * Math.PI / 2) * (e.boss ? 26 : 15)
+              e.lunge = -Math.sin(Math.min(1, lp) * Math.PI / 2) * (e.boss ? motRef.current.lunge.boss : motRef.current.lunge.mob)
               if (!e.atkHit && el >= hitAt) {                               // 타격 프레임 진입 = 실제 타격 순간
                 e.atkHit = true
                 // 회피 판정: 적 명중률 − 내 회피 보너스
@@ -908,9 +943,10 @@ export default function App() {
             e.cd -= dt * 1000
             if (e.cd <= 0) {
               const isDinoBoss = !!e.dino && e.boss
-              e.atkDur = isDinoBoss ? dinoAtkDur(e.dino) : e.dino ? ADV_MOB_ATK_DUR : WAVE_ATK_DUR
-              e.atkHitAt = isDinoBoss ? dinoHitAt(e.dino) : e.atkDur * 0.5
-              e.cd = isDinoBoss ? ADV_BOSS_CD : e.dino ? ADV_MOB_CD : WAVE_ATK_CD
+              const M = motRef.current
+              e.atkDur = isDinoBoss ? dinoAtkDur(e.dino, M.atk) : e.dino ? M.dur.advMob : M.dur.wave
+              e.atkHitAt = isDinoBoss ? dinoHitAt(e.dino, M.atk, M.hit) : e.atkDur * 0.5
+              e.cd = isDinoBoss ? M.cd.advBoss : e.dino ? M.cd.advMob : M.cd.wave
               e.atkT = e.atkDur; e.atkHit = false
             }
           }
@@ -1322,8 +1358,8 @@ export default function App() {
       const gall = e.animT * 9
       const fi = e.atkT > 0
         ? (e.dino && e.boss
-            ? dinoAtkFrame(e.dino, (e.atkDur || dinoAtkDur(e.dino)) - e.atkT)                                   // 보스: 종별 프레임 시간표
-            : Math.min(imgs.length - 1, Math.floor(((e.atkDur || WAVE_ATK_DUR) - e.atkT) / (e.atkDur || WAVE_ATK_DUR) * imgs.length)))
+            ? dinoAtkFrame(e.dino, (e.atkDur || dinoAtkDur(e.dino, motRef.current.atk)) - e.atkT, motRef.current.atk)   // 보스: 종별 프레임 시간표
+            : Math.min(imgs.length - 1, Math.floor(((e.atkDur || motRef.current.dur.wave) - e.atkT) / (e.atkDur || motRef.current.dur.wave) * imgs.length)))
         : stunned ? 0 : Math.floor(gall / Math.PI) % imgs.length  // 기절 시 프레임 고정
       const wf = e.boss ? 0.55 : Math.min(1.15, Math.max(0.45, 62 / e.h))  // 무게 차등: 클수록 덜 들썩임
       const bounce = stunned ? 0 : e.air
@@ -1473,7 +1509,7 @@ export default function App() {
         }
         const lunge = hero.state === 'attack' ? Math.sin(Math.min(1, hero.t / 0.4) * Math.PI) * 12 : 0
         ctx.translate(w.heroX + lunge - (w.heroKb || 0), w.groundY)
-        if (hero.flash > 0) ctx.filter = 'brightness(1.45) sepia(1) saturate(7) hue-rotate(-24deg)'   // 빨갛게 번쩍
+        if (hero.flash > 0) ctx.filter = 'brightness(2.5)'
         if (a.flip) ctx.scale(-1, 1)
         ctx.drawImage(im, -hw / 2, -hh, hw, hh)
         ctx.restore()
@@ -1803,6 +1839,7 @@ export default function App() {
         <div style={{ position: 'fixed', inset: 0, zIndex: 80 }} onClick={() => setMenuOpen(false)}>
           <div data-edit="menu" style={st.menuPanel} onClick={e => e.stopPropagation()}>
             <button style={{ ...st.menuItem, opacity: 0.5, display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => {}}><img data-edit="mailbox" src="/ui/mailbox.png" alt="" style={st.mailImg} />우편함 <span style={{ fontSize: 11, opacity: 0.7 }}>준비 중</span></button>
+            <button style={st.menuItem} onClick={() => { setMotEdit(v => !v); setMenuOpen(false) }}>모션 편집 {motEdit ? '끄기' : '켜기'}</button>
             <div style={{ borderTop: '1px solid #3a2a14', margin: '4px 0' }} />
             {FB_ON && (fbUser ? (
               <>
@@ -1986,8 +2023,63 @@ export default function App() {
           </div>
         </div>
       )}
+
+      <div data-edit="nav" style={st.bottomNav}>
+        {[['영웅', 'nav_hero'], ['스킬', 'nav_skill'], ['장비', 'nav_equip'], ['동료', 'nav_ally'], ['모험', 'nav_adventure'], ['상점', 'nav_shop']].map(([n, ic]) => (
+          <button key={n} style={{ ...st.navBtn, ...(nav === n ? st.navActive : {}) }} onClick={() => setNav(n)}>
+            <img src={`/icon/${ic}.png`} alt="" style={st.navIconImg} />
+            <div style={{ fontSize: 'var(--pd-navfz)' }}>{n}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+
+      {motEdit && (() => {
+        const M = motCfg
+        const frames = DINO_ATK_FRAMES[motSel] || [1, 2, 3, 4]
+        const arr = M.atk[motSel] || DINO_ATK_DEF
+        const setArr = (i, v) => setMotCfg({ ...M, atk: { ...M.atk, [motSel]: arr.map((x, j) => (j === i ? v : x)) } })
+        const row = (label, val, min, max, step, on) => (
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <span style={{ width: 96, fontSize: 12, flexShrink: 0 }}>{label}</span>
+            <input type="range" min={min} max={max} step={step} value={val} onChange={e => on(parseFloat(e.target.value))} style={{ flex: 1, minWidth: 0 }} />
+            <span style={{ width: 44, textAlign: 'right', fontSize: 12, color: GOLD }}>{val}</span>
+          </div>
+        )
+        return (
+        <div style={{ ...st.motPanel, ...(dockSide ? dockStyle : null) }}>
+          <div style={{ fontSize: 13, color: GOLD, fontWeight: 800, marginBottom: 6 }}>모션 편집 — 전투 보면서 바로 조절</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+            {DINO_KEYS.map(k => (
+              <button key={k} onClick={() => setMotSel(k)}
+                style={{ padding: '4px 7px', fontSize: 11, borderRadius: 5, border: `1px solid ${k === motSel ? GOLD : '#4a3a22'}`,
+                  background: k === motSel ? 'linear-gradient(180deg,#d4872e,#a85f1f)' : '#2c2013', color: k === motSel ? '#fff' : '#cbb89a' }}
+              >{DINO_NAME[k]}</button>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>{DINO_NAME[motSel]} 공격 프레임 {frames.join('·')}번 · 총 {arr.reduce((a, b) => a + b, 0).toFixed(2)}초</div>
+          {arr.map((v, i) => row(`${i + 1}번(원본${frames[i]}) 시간`, v, 0.02, 0.6, 0.01, nv => setArr(i, nv)))}
+          {row('데미지 프레임', M.hit[motSel] || 3, 1, arr.length, 1, v => setMotCfg({ ...M, hit: { ...M.hit, [motSel]: v } }))}
+          <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
+          {row('보스 파고듦', M.lunge.boss, 0, 60, 1, v => setMotCfg({ ...M, lunge: { ...M.lunge, boss: v } }))}
+          {row('일반 파고듦', M.lunge.mob, 0, 60, 1, v => setMotCfg({ ...M, lunge: { ...M.lunge, mob: v } }))}
+          {row('보스 간격(ms)', M.cd.advBoss, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, advBoss: v } }))}
+          {row('모험몹 간격', M.cd.advMob, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, advMob: v } }))}
+          {row('웨이브몹 간격', M.cd.wave, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, wave: v } }))}
+          {row('모험몹 모션', M.dur.advMob, 0.1, 1, 0.01, v => setMotCfg({ ...M, dur: { ...M.dur, advMob: v } }))}
+          {row('웨이브몹 모션', M.dur.wave, 0.1, 1, 0.01, v => setMotCfg({ ...M, dur: { ...M.dur, wave: v } }))}
+          <div style={{ display: 'flex', gap: 6, marginTop: 8, borderTop: '1px solid #3a2a14', paddingTop: 8 }}>
+            <button onClick={() => { navigator.clipboard?.writeText(JSON.stringify(motCfg)); setCopiedMot(true); setTimeout(() => setCopiedMot(false), 1200) }}
+              style={{ flex: 1, padding: '9px', borderRadius: 6, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontSize: 13 }}>{copiedMot ? '복사됨! 개발자에게 전달' : '전체 값 복사'}</button>
+            <button onClick={() => setMotCfg(JSON.parse(JSON.stringify(MOTION_DEFAULT)))} style={{ padding: '9px 12px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontSize: 13 }}>초기화</button>
+            <button onClick={() => setMotEdit(false)} style={{ padding: '9px 12px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontSize: 13 }}>닫기</button>
+          </div>
+        </div>
+        )
+      })()}
+
       {uiEdit && (
-        <div style={{ position: 'fixed', left: 0, right: 0, ...(editSel ? { bottom: 0, borderBottom: 'none', borderRadius: '10px 10px 0 0' } : { top: 0, borderTop: 'none', borderRadius: '0 0 10px 10px' }), margin: '0 auto', maxWidth: 420, zIndex: 61, background: 'rgba(16,10,5,0.94)', border: `2px solid ${GOLD_D}`, textShadow: '0 1px 3px rgba(0,0,0,0.9)', padding: '8px 12px calc(8px + env(safe-area-inset-bottom))', maxHeight: '46%', overflowY: 'auto' }}>
+        <div style={{ position: 'fixed', left: 0, right: 0, ...(editSel ? { bottom: 0, borderBottom: 'none', borderRadius: '10px 10px 0 0' } : { top: 0, borderTop: 'none', borderRadius: '0 0 10px 10px' }), margin: '0 auto', maxWidth: 420, zIndex: 61, background: 'rgba(16,10,5,0.94)', border: `2px solid ${GOLD_D}`, textShadow: '0 1px 3px rgba(0,0,0,0.9)', padding: '8px 12px calc(8px + env(safe-area-inset-bottom))', maxHeight: '46%', overflowY: 'auto', ...(dockSide ? dockStyle : null) }}>
           {!editSel && <div style={{ fontSize: 13, color: '#c9b596', textAlign: 'center', padding: '4px 0 8px' }}>조정할 요소를 화면에서 탭하세요 (틀·아이콘·글자·숫자·버튼)</div>}
           <div style={{ fontSize: 13, color: '#ffd98a', textAlign: 'center', padding: '0 0 6px', fontWeight: 800 }}>기준 {BASE_W}×{BASE_H} · 화면 {view.sw}×{view.sh} · 배율 {view.s.toFixed(3)}</div>
           {editSel && (() => {
@@ -2102,6 +2194,14 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {DEBUG && nav !== '모험' && canvasBox.h > 0 && (
+        <button
+          style={{ position: 'absolute', right: 6, top: canvasBox.top + 52, zIndex: 41, padding: '4px 8px', fontSize: 11, fontWeight: 800,
+            color: '#ffd9d9', background: 'rgba(120,20,20,0.85)', border: '1px solid #ff6a6a', borderRadius: 6, cursor: 'pointer' }}
+          onClick={() => { const w = world.current; if (!w.adv || w.adv.done) return; w.killed = ADV_MOBS; w.enemies = [] }}
+        >보스 소환</button>
+      )}
 
       {offData && !offOpen && nav !== '모험' && canvasBox.h > 0 && (
         <button data-edit="treasure" style={{ ...st.treasureBtn, top: canvasBox.top + canvasBox.h - 47, bottom: 'auto' }} onClick={() => { if (!uiEdit) setOffOpen(true) }}>
@@ -2378,16 +2478,6 @@ export default function App() {
           </div>
         </div>
       )}
-
-      <div data-edit="nav" style={st.bottomNav}>
-        {[['영웅', 'nav_hero'], ['스킬', 'nav_skill'], ['장비', 'nav_equip'], ['동료', 'nav_ally'], ['모험', 'nav_adventure'], ['상점', 'nav_shop']].map(([n, ic]) => (
-          <button key={n} style={{ ...st.navBtn, ...(nav === n ? st.navActive : {}) }} onClick={() => setNav(n)}>
-            <img src={`/icon/${ic}.png`} alt="" style={st.navIconImg} />
-            <div style={{ fontSize: 'var(--pd-navfz)' }}>{n}</div>
-          </button>
-        ))}
-      </div>
-    </div>
     </div>
   )
 }
@@ -2723,6 +2813,11 @@ const st = {
     border: '1px solid #5a4028', borderRadius: 6, background: '#2c2013', color: GOLD,
     fontSize: 'calc(var(--pd-hambsz) - 12px)', lineHeight: 1,
     transform: 'translate(var(--pd-hamb-x), var(--pd-hamb-y))',
+  },
+  motPanel: {
+    position: 'fixed', left: 0, right: 0, bottom: 0, maxWidth: 420, margin: '0 auto', zIndex: 62,
+    maxHeight: '52%', overflowY: 'auto', background: 'rgba(14,9,4,0.97)', borderTop: '2px solid #6b4a22',
+    padding: '10px 12px 14px', color: '#e8d5b0',
   },
   menuPanel: {
     position: 'fixed', right: 8, top: 'calc(max(10px, env(safe-area-inset-top)) + 44px)', minWidth: 210,
