@@ -90,8 +90,37 @@ const advReward = st => ({ dia: 50 * st, mat: 10 * st })   // 단계별 보상 (
 const ADV_TIME = 60            // 모험 제한시간(초)
 const ADV_MOBS = 50            // 보스 등장 전 처치해야 할 일반몹 수
 const ADV_WARN = 2.0           // 보스 등장 경고 연출 시간(초)
-const ADV_ATK_DUR = 0.45       // 공격 모션 4프레임 총 재생 시간(초)
-const DINO_AIR = { ptera: 78 }  // 비행 공룡의 지면 위 고도(px)
+// ── 공격 타이밍 ──────────────────────────────────────────────
+// 보스 공룡: 프레임별 재생 시간(초) 4개 [준비, 웅크림, 타격, 마무리] — 합이 그 종의 공격 모션 길이
+const DINO_ATK_T = {
+  trex:    [0.09, 0.12, 0.07, 0.12],
+  spino:   [0.09, 0.12, 0.07, 0.12],
+  trike:   [0.10, 0.13, 0.08, 0.13],
+  stego:   [0.10, 0.14, 0.08, 0.14],
+  raptor:  [0.07, 0.09, 0.06, 0.10],
+  anky:    [0.11, 0.15, 0.08, 0.14],
+  ptera:   [0.08, 0.10, 0.07, 0.11],
+  brachio: [0.12, 0.16, 0.09, 0.16],
+}
+const DINO_ATK_DEF = [0.10, 0.13, 0.08, 0.14]
+const DINO_ATK_HIT = { trex: 3, spino: 3, trike: 3, stego: 3, raptor: 3, anky: 3, ptera: 3, brachio: 3 }  // 데미지 들어가는 프레임(1~4)
+const dinoAtkDur = k => (DINO_ATK_T[k] || DINO_ATK_DEF).reduce((a, b) => a + b, 0)
+const dinoHitAt = k => {                       // 타격 프레임이 시작되는 시각(초)
+  const arr = DINO_ATK_T[k] || DINO_ATK_DEF
+  let t = 0
+  for (let i = 0; i < (DINO_ATK_HIT[k] || 3) - 1; i++) t += arr[i]
+  return t
+}
+const dinoAtkFrame = (k, el) => {              // 경과 시간 → 프레임 인덱스
+  const arr = DINO_ATK_T[k] || DINO_ATK_DEF
+  let t = 0
+  for (let i = 0; i < arr.length; i++) { t += arr[i]; if (el < t) return i }
+  return arr.length - 1
+}
+const ADV_MOB_ATK_DUR = 0.35   // 모험 일반몹 (공격 프레임 없음 — 걷기 프레임 재생)
+const WAVE_ATK_DUR = 0.30      // 일반 웨이브 몬스터·웨이브 보스
+const ADV_BOSS_CD = 1400, ADV_MOB_CD = 1100, WAVE_ATK_CD = 1200   // 공격 간격(ms)
+const DINO_AIR = { ptera: 45 }  // 비행 공룡의 지면 위 고도(px)
 const ADV_BOSS_H = 120         // 보스 '걷기 포즈' 기준 화면 높이
 const ADV_MOB_H = 62           // 일반몹 '걷기 포즈' 기준 화면 높이
 // 캔버스높이 / 걷기포즈높이 — 공격 모션이 위로 뻗는 만큼 캔버스가 커서, 이 비율로 보정해야 종별 몸집이 같아짐
@@ -854,9 +883,13 @@ export default function App() {
           } else {
             if (e.atkT > 0) {
               e.atkT -= dt
-              const p = 1 - Math.max(0, e.atkT) / ADV_ATK_DUR              // 모션 진행도 0→1
-              e.lunge = -Math.sin(p * Math.PI) * (e.boss ? 26 : 15)        // 앞으로 파고들었다 제자리로
-              if (!e.atkHit && p >= 0.5) {                                 // 모션 중반 = 실제 타격 순간
+              const dur = e.atkDur || WAVE_ATK_DUR
+              const el = dur - Math.max(0, e.atkT)                          // 경과 시간
+              const hitAt = e.atkHitAt != null ? e.atkHitAt : dur * 0.5
+              // 파고듦: 타격 순간에 가장 깊이 들어가고 이후 복귀
+              const lp = el < hitAt ? el / Math.max(0.001, hitAt) : Math.max(0, 1 - (el - hitAt) / Math.max(0.001, dur - hitAt))
+              e.lunge = -Math.sin(Math.min(1, lp) * Math.PI / 2) * (e.boss ? 26 : 15)
+              if (!e.atkHit && el >= hitAt) {                               // 타격 프레임 진입 = 실제 타격 순간
                 e.atkHit = true
                 // 회피 판정: 적 명중률 − 내 회피 보너스
                 const hitChance = Math.max(0.05, e.acc + 0.5 - st.eva)
@@ -873,7 +906,13 @@ export default function App() {
               }
             } else e.lunge = 0
             e.cd -= dt * 1000
-            if (e.cd <= 0) { e.cd = 1200; e.atkT = ADV_ATK_DUR; e.atkHit = false }
+            if (e.cd <= 0) {
+              const isDinoBoss = !!e.dino && e.boss
+              e.atkDur = isDinoBoss ? dinoAtkDur(e.dino) : e.dino ? ADV_MOB_ATK_DUR : WAVE_ATK_DUR
+              e.atkHitAt = isDinoBoss ? dinoHitAt(e.dino) : e.atkDur * 0.5
+              e.cd = isDinoBoss ? ADV_BOSS_CD : e.dino ? ADV_MOB_CD : WAVE_ATK_CD
+              e.atkT = e.atkDur; e.atkHit = false
+            }
           }
         }
 
@@ -1282,7 +1321,9 @@ export default function App() {
       const stunned = e.stun > 0
       const gall = e.animT * 9
       const fi = e.atkT > 0
-        ? Math.min(imgs.length - 1, Math.floor((ADV_ATK_DUR - e.atkT) / ADV_ATK_DUR * imgs.length))   // 공격: 정지 중에도 자체 시간으로 재생
+        ? (e.dino && e.boss
+            ? dinoAtkFrame(e.dino, (e.atkDur || dinoAtkDur(e.dino)) - e.atkT)                                   // 보스: 종별 프레임 시간표
+            : Math.min(imgs.length - 1, Math.floor(((e.atkDur || WAVE_ATK_DUR) - e.atkT) / (e.atkDur || WAVE_ATK_DUR) * imgs.length)))
         : stunned ? 0 : Math.floor(gall / Math.PI) % imgs.length  // 기절 시 프레임 고정
       const wf = e.boss ? 0.55 : Math.min(1.15, Math.max(0.45, 62 / e.h))  // 무게 차등: 클수록 덜 들썩임
       const bounce = stunned ? 0 : e.air
