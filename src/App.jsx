@@ -1748,17 +1748,21 @@ export default function App() {
           <div data-edit="advwin" style={st.advWin} onClick={e => e.stopPropagation()}>
             <div style={st.advTop}>
               <div style={st.advInfoCol}>
-                <div data-edit="advmonk" style={st.advMonK}>몬스터 정보</div>
-                <div data-edit="advmonv" style={st.advMonV}>{advSel.mon}</div>
-                <div data-edit="advregk" style={st.advRegK}>지역 정보</div>
-                <div data-edit="advregv" style={st.advRegV}>{advSel.name}</div>
+                <div data-edit="advmonb" style={{ ...st.advBoxBase, ...st.advMonBox }}>
+                  <div data-edit="advmonk" style={st.advMonK}>몬스터 정보</div>
+                  <div data-edit="advmonv" style={st.advMonV}>{advSel.mon}</div>
+                </div>
+                <div data-edit="advregb" style={{ ...st.advBoxBase, ...st.advRegBox }}>
+                  <div data-edit="advregk" style={st.advRegK}>지역 정보</div>
+                  <div data-edit="advregv" style={st.advRegV}>{advSel.name}</div>
+                </div>
               </div>
               <div data-edit="adviconb" style={st.advIconBox}>
                 <img data-edit="advicon" src={`/dino/boss_${advSel.boss}/w1.png`} alt="" style={st.advIcon} />
               </div>
             </div>
 
-            <div style={st.advRewRow}>
+            <div data-edit="advrewb" style={st.advRewRow}>
               <span data-edit="advrewk" style={st.advRewK}>탐험 보상</span>
               <span data-edit="advrewd" style={st.advRewD}><img src="/ui/gem.png" alt="" style={st.advRewIc} />{fmt(rw.dia)}</span>
               <span data-edit="advrewm" style={st.advRewM}><img src="/ui/mat4.png" alt="" style={st.advRewIc} />{fmt(rw.mat)}</span>
@@ -2255,16 +2259,18 @@ const UI_DEFAULT = {
   dtabh: 40, dtabfz: 15, dgradefz: 14, dtitlefz: 17, darrowfz: 26, diconsz: 92, dtierfz: 12, dstatfz: 14, denhh: 48, denhfz: 14, denhic: 22, dequiph: 48, dequipfz: 15, dfuseh: 50, dfusefz: 17, dstepsz: 46, dstepfz: 20,
   skicon: 120, skiconX: 0, skiconY: 0, slicon: 100, sliconX: 0, sliconY: 0,
   advbw: 40, advbh: 20, advbfz: 10,
-  advww: 300, advwh: 400,
-  advmonkfz: 14, advmonvfz: 15, advregkfz: 14, advregvfz: 15, advrewkfz: 14, advrewvfz: 14, advrewic: 18,
-  advibw: 118, advibh: 104, adviw: 100, advih: 88,
-  advsw: 230, advsh: 92, advsfz: 17, advbarw: 180, advbarh: 15,
-  advew: 93, adveh: 34, advefz: 13, advcw: 93, advch: 34, advcfz: 13,
+  advww: 301, advwh: 400,
+  advmonkfz: 16, advmonvfz: 15, advregkfz: 16, advregvfz: 15, advrewkfz: 17, advrewvfz: 14, advrewic: 18,
+  advibw: 120, advibh: 106, adviw: 100, advih: 88,
+  advmbw: 150, advmbh: 54, advrbw: 150, advrbh: 54, advwbw: 250, advwbh: 44,
+  advsw: 249, advsh: 71, advsfz: 17, advbarw: 205, advbarh: 19,
+  advew: 93, adveh: 34, advefz: 11, advcw: 93, advch: 35, advcfz: 11,
   advwinX: 0, advwinY: 0, adviconX: 0, adviconY: 0, adviconbX: 0, adviconbY: 0,
-  advsignX: 0, advsignY: 0, advsigntX: 0, advsigntY: 0, advbarX: 0, advbarY: 0,
-  advmonkX: 0, advmonkY: 0, advmonvX: 0, advmonvY: 0, advregkX: 0, advregkY: 0, advregvX: 0, advregvY: 0,
-  advrewkX: 0, advrewkY: 0, advrewdX: 0, advrewdY: 0, advrewmX: 0, advrewmY: 0,
-  adventerX: 0, adventerY: -5, advcloseX: 0, advcloseY: -5, advtxt0X: 47, advtxt0Y: 1, advtxt1X: 39, advtxt1Y: 1, advtxt2X: 43, advtxt2Y: 2, advtxt3X: 39, advtxt3Y: 1, advtxt4X: 50, advtxt4Y: 1, advtxt5X: 51, advtxt5Y: 2, advtxt6X: 50, advtxt6Y: 2, advtxt7X: 47, advtxt7Y: 2, advbtn0X: 172, advbtn0Y: -13, advbtn1X: 251, advbtn1Y: 0, advbtn2X: 326, advbtn2Y: -5, advbtn3X: 200, advbtn3Y: 27, advbtn4X: 66, advbtn4Y: 11, advbtn5X: 121, advbtn5Y: 4, advbtn6X: 305, advbtn6Y: 36, advbtn7X: 188, advbtn7Y: 0,
+  advmonbX: 0, advmonbY: 0, advregbX: 0, advregbY: 0, advrewbX: 0, advrewbY: 0,
+  advsignX: 0, advsignY: 0, advsigntX: 0, advsigntY: -7, advbarX: 0, advbarY: -9,
+  advmonkX: -4, advmonkY: 2, advmonvX: -4, advmonvY: 2, advregkX: -4, advregkY: 4, advregvX: -4, advregvY: 4,
+  advrewkX: -28, advrewkY: 28, advrewdX: 0, advrewdY: 28, advrewmX: 0, advrewmY: 28,
+  adventerX: 0, adventerY: 4, advcloseX: 0, advcloseY: 4, advtxt0X: 47, advtxt0Y: 1, advtxt1X: 39, advtxt1Y: 1, advtxt2X: 43, advtxt2Y: 2, advtxt3X: 39, advtxt3Y: 1, advtxt4X: 50, advtxt4Y: 1, advtxt5X: 51, advtxt5Y: 2, advtxt6X: 50, advtxt6Y: 2, advtxt7X: 47, advtxt7Y: 2, advbtn0X: 172, advbtn0Y: -13, advbtn1X: 251, advbtn1Y: 0, advbtn2X: 326, advbtn2Y: -5, advbtn3X: 200, advbtn3Y: 27, advbtn4X: 66, advbtn4Y: 11, advbtn5X: 121, advbtn5Y: 4, advbtn6X: 305, advbtn6Y: 36, advbtn7X: 188, advbtn7Y: 0,
   mailsz: 26, questsz: 40, mailboxX: 0, mailboxY: 0, questX: 6, questY: -8,
   matchipX: 23, matchipY: -14, allymatX: -19, allymatY: 14, dtabX: 0, dtabY: 0, dtitleX: 0, dtitleY: 0, darrowX: 0, darrowY: 0, diconX: 0, diconY: 0, dstatX: 0, dstatY: 0, denhX: 0, denhY: 0, dequipX: 0, dequipY: 0, dfusebtnX: 0, dfusebtnY: 0, dstepX: 0, dstepY: 0,
 }
@@ -2335,6 +2341,9 @@ const EDIT_GROUPS = {
   advtxt6: { label: '오세아니아 글자', size: ['advbfz'], pos: 'advtxt6' },
   advtxt7: { label: '그린란드 글자', size: ['advbfz'], pos: 'advtxt7' },
   advwin: { label: '진입창 틀', size: ['advww', 'advwh'], pos: 'advwin' },
+  advmonb: { label: '몬스터정보 틀', size: ['advmbw', 'advmbh'], pos: 'advmonb' },
+  advregb: { label: '지역정보 틀', size: ['advrbw', 'advrbh'], pos: 'advregb' },
+  advrewb: { label: '탐험보상 틀', size: ['advwbw', 'advwbh'], pos: 'advrewb' },
   adviconb: { label: '보스 아이콘 틀', size: ['advibw', 'advibh'], pos: 'adviconb' },
   advicon: { label: '보스 그림', size: ['adviw', 'advih'], pos: 'advicon' },
   advsign: { label: '단계 표지판', size: ['advsw', 'advsh'], pos: 'advsign' },
@@ -2400,7 +2409,7 @@ const UI_LABELS = {
   shoprowmin: '박스 높이', shopic0: '무기 아이콘', shopic1: '방어구 아이콘', shopic2: '유물 아이콘', shoptfz: '제목 글자', shopsubfz: '부제 글자',
   shopbw: '버튼 너비', shopbh: '버튼 높이', shopbbv: '프레임 두께↕', shopbbh: '프레임 두께↔', shopbfz: '버튼 글자',
   gainic: '아이콘 크기', gainpv: '판 두께↕', gainph: '판 두께↔', shopgem: '다이아 크기', gbtnfz: '버튼 글자', gbtnpw: '판 가로', gbtnph: '판 세로',
-  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', skicon: '아이콘 크기%', slicon: '아이콘 크기%', advbw: '버튼 너비', advbh: '버튼 높이', advbfz: '버튼 글자', advww: '창 너비', advwh: '창 높이', adviw: '그림 너비', advih: '그림 높이', advibw: '틀 너비', advibh: '틀 높이', advsw: '표지판 너비', advsh: '표지판 높이', advsfz: '글자 크기', advbarw: '바 너비', advbarh: '바 높이', advmonkfz: '글자 크기', advmonvfz: '글자 크기', advregkfz: '글자 크기', advregvfz: '글자 크기', advrewkfz: '글자 크기', advrewvfz: '숫자 크기', advrewic: '아이콘 크기', advmfz: '글자 크기', advrfz: '글자 크기', advwfz: '글자 크기', advew: '버튼 너비', adveh: '버튼 높이', advefz: '버튼 글자', advcw: '버튼 너비', advch: '버튼 높이', advcfz: '버튼 글자', mailsz: '우편함 크기', questsz: '퀘스트 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
+  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', skicon: '아이콘 크기%', slicon: '아이콘 크기%', advbw: '버튼 너비', advbh: '버튼 높이', advbfz: '버튼 글자', advww: '창 너비', advwh: '창 높이', adviw: '그림 너비', advih: '그림 높이', advibw: '틀 너비', advibh: '틀 높이', advmbw: '틀 너비', advmbh: '틀 높이', advrbw: '틀 너비', advrbh: '틀 높이', advwbw: '틀 너비', advwbh: '틀 높이', advsw: '표지판 너비', advsh: '표지판 높이', advsfz: '글자 크기', advbarw: '바 너비', advbarh: '바 높이', advmonkfz: '글자 크기', advmonvfz: '글자 크기', advregkfz: '글자 크기', advregvfz: '글자 크기', advrewkfz: '글자 크기', advrewvfz: '숫자 크기', advrewic: '아이콘 크기', advmfz: '글자 크기', advrfz: '글자 크기', advwfz: '글자 크기', advew: '버튼 너비', adveh: '버튼 높이', advefz: '버튼 글자', advcw: '버튼 너비', advch: '버튼 높이', advcfz: '버튼 글자', mailsz: '우편함 크기', questsz: '퀘스트 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
   trsz: '상자 크기', offw: '창 너비', offtfz: '제목 글자', offnfz: '정보 글자', offiw: '항목 너비', offih: '항목 높이', offgap: '항목 간격', offic: '아이콘 크기', offifz: '획득 글자', offrfz: '분당 글자', offbtw: '버튼 너비', offbth: '버튼 높이', offbfz: '버튼 글자', offclw: '버튼 너비', offclh: '버튼 높이', offcfz: '버튼 글자', fuseallw: '융합버튼 너비', fuseallh: '융합버튼 높이', fuseallfz: '융합버튼 글자',
   matchipic: '아이콘 크기', matchipfz: '글자 크기', allychipic: '동료 아이콘', allychipfz: '동료 글자', dtabh: '탭 높이', dtabfz: '탭 글자', dgradefz: '등급 글자', dtitlefz: '이름 글자', darrowfz: '화살표 크기', diconsz: '아이콘틀 크기', dtierfz: '등급표시 글자', dstatfz: '능력치 글자', denhh: '강화버튼 높이', denhfz: '강화버튼 글자', denhic: '강화 재화아이콘', dequiph: '장착버튼 높이', dequipfz: '장착버튼 글자', dfuseh: '융합버튼 높이', dfusefz: '융합버튼 글자', dstepsz: '조절버튼 크기', dstepfz: '수량 글자',
 }
@@ -2440,8 +2449,8 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-gain-x:${c.gainX}px;--pd-gain-y:${c.gainY}px;
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
---pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+--pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -2638,11 +2647,14 @@ const st = {
     boxSizing: 'border-box', transform: 'translate(var(--pd-advwin-x), var(--pd-advwin-y))',
   },
   advTop: { flexShrink: 0, width: '100%', display: 'flex', alignItems: 'flex-start', gap: 8 },
-  advInfoCol: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, textAlign: 'center' },
+  advInfoCol: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, textAlign: 'center' },
+  advBoxBase: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1, boxSizing: 'border-box', border: '2px solid #d09340', borderRadius: 9, background: 'rgba(0,0,0,0.22)', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.45)' },
   advMonK: { fontSize: 'var(--pd-advmonkfz)', fontWeight: 800, color: '#f0dfae', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-advmonk-x), var(--pd-advmonk-y))' },
-  advMonV: { fontSize: 'var(--pd-advmonvfz)', fontWeight: 700, color: '#cbb489', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', marginBottom: 6, transform: 'translate(var(--pd-advmonv-x), var(--pd-advmonv-y))' },
+  advMonV: { fontSize: 'var(--pd-advmonvfz)', fontWeight: 700, color: '#cbb489', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-advmonv-x), var(--pd-advmonv-y))' },
   advRegK: { fontSize: 'var(--pd-advregkfz)', fontWeight: 800, color: '#f0dfae', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-advregk-x), var(--pd-advregk-y))' },
   advRegV: { fontSize: 'var(--pd-advregvfz)', fontWeight: 700, color: '#cbb489', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-advregv-x), var(--pd-advregv-y))' },
+  advMonBox: { width: 'var(--pd-advmbw)', height: 'var(--pd-advmbh)', flexShrink: 0, transform: 'translate(var(--pd-advmonb-x), var(--pd-advmonb-y))' },
+  advRegBox: { width: 'var(--pd-advrbw)', height: 'var(--pd-advrbh)', flexShrink: 0, transform: 'translate(var(--pd-advregb-x), var(--pd-advregb-y))' },
   advIconBox: {
     flexShrink: 0, width: 'var(--pd-advibw)', height: 'var(--pd-advibh)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -2650,7 +2662,7 @@ const st = {
     boxShadow: 'inset 0 0 8px rgba(0,0,0,0.55)', boxSizing: 'border-box', transform: 'translate(var(--pd-adviconb-x), var(--pd-adviconb-y))',
   },
   advIcon: { width: 'var(--pd-adviw)', height: 'var(--pd-advih)', objectFit: 'contain', imageRendering: 'pixelated', transform: 'translate(var(--pd-advicon-x), var(--pd-advicon-y))' },
-  advRewRow: { flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, whiteSpace: 'nowrap' },
+  advRewRow: { flexShrink: 0, width: 'var(--pd-advwbw)', height: 'var(--pd-advwbh)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, whiteSpace: 'nowrap', boxSizing: 'border-box', border: '2px solid #d09340', borderRadius: 9, background: 'rgba(0,0,0,0.22)', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.45)', transform: 'translate(var(--pd-advrewb-x), var(--pd-advrewb-y))' },
   advRewK: { fontSize: 'var(--pd-advrewkfz)', fontWeight: 800, color: '#f0dfae', textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-advrewk-x), var(--pd-advrewk-y))' },
   advRewD: { display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 'var(--pd-advrewvfz)', fontWeight: 800, color: '#cfe8ff', textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-advrewd-x), var(--pd-advrewd-y))' },
   advRewM: { display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 'var(--pd-advrewvfz)', fontWeight: 800, color: '#e6c7ff', textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-advrewm-x), var(--pd-advrewm-y))' },
