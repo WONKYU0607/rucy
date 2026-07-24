@@ -91,6 +91,7 @@ const ADV_TIME = 60            // 모험 제한시간(초)
 const ADV_MOBS = 50            // 보스 등장 전 처치해야 할 일반몹 수
 const ADV_WARN = 2.0           // 보스 등장 경고 연출 시간(초)
 const ADV_ATK_DUR = 0.45       // 공격 모션 4프레임 총 재생 시간(초)
+const DINO_AIR = { ptera: 78 }  // 비행 공룡의 지면 위 고도(px)
 const ADV_BOSS_H = 120         // 보스 '걷기 포즈' 기준 화면 높이
 const ADV_MOB_H = 62           // 일반몹 '걷기 포즈' 기준 화면 높이
 // 캔버스높이 / 걷기포즈높이 — 공격 모션이 위로 뻗는 만큼 캔버스가 커서, 이 비율로 보정해야 종별 몸집이 같아짐
@@ -685,7 +686,7 @@ export default function App() {
         dmg: t.dmg * (1 + 0.1 * (a.wave - 1)) * a.mult * (isBoss ? 3 : 1),
         meat: Math.floor(t.meat * (1 + 0.2 * (a.wave - 1))) * (isBoss ? 15 : 1),
         exp: Math.floor(t.exp * (1 + 0.2 * (a.wave - 1))) * (isBoss ? 15 : 1),
-        acc: t.acc, eva: t.eva, air: 0, atkT: 0,
+        acc: t.acc, eva: t.eva, air: DINO_AIR[a.boss] || 0, atkT: 0,
         h: Math.round(isBoss ? ADV_BOSS_H * (DINO_RB[a.boss] || 1) : ADV_MOB_H * (DINO_RM[a.boss] || 1)), color: t.color, cd: 0, flash: 0, animT: Math.random() * 10,
         scaleV: isBoss ? 1 : 0.95 + Math.random() * 0.1, yOff: 0, spdV: isBoss ? 1 : 0.93 + Math.random() * 0.14,
       })
@@ -848,24 +849,31 @@ export default function App() {
           if (e.x > stopX) {
             const near = Math.min(1, Math.max(0.3, (e.x - stopX) / 55))  // 정지 전 감속
             e.x -= (e.speed * (e.spdV || 1) * SPEED * 1.3 * e.vt * near + scroll) * dt
-            if (e.atkT > 0) e.atkT = 0
+            if (e.atkT > 0) { e.atkT = 0; e.lunge = 0 }
             e.animT += dt * SPEED * (0.4 + 0.6 * e.vt * near) * (1 + scroll / SCROLL * 0.4) * Math.min(1.5, Math.max(0.6, 0.55 + e.speed / 160))
           } else {
-            e.cd -= dt * 1000
-            if (e.atkT > 0) e.atkT -= dt
-            if (e.cd <= 0) {
-              // 회피 판정: 적 명중률 − 내 회피 보너스
-              const hitChance = Math.max(0.05, e.acc + 0.5 - st.eva)
-              if (Math.random() < hitChance) {
-                hero.hp -= e.dmg
-                hero.flash = 0.2
-                w.shake = 4
-                burst(w.heroX + 15, w.groundY - 70, '#c81818', 8, true)
-              } else {
-                addDmg(w.heroX, w.groundY - 130, 'DODGE', false, true)
+            if (e.atkT > 0) {
+              e.atkT -= dt
+              const p = 1 - Math.max(0, e.atkT) / ADV_ATK_DUR              // 모션 진행도 0→1
+              e.lunge = -Math.sin(p * Math.PI) * (e.boss ? 26 : 15)        // 앞으로 파고들었다 제자리로
+              if (!e.atkHit && p >= 0.5) {                                 // 모션 중반 = 실제 타격 순간
+                e.atkHit = true
+                // 회피 판정: 적 명중률 − 내 회피 보너스
+                const hitChance = Math.max(0.05, e.acc + 0.5 - st.eva)
+                if (Math.random() < hitChance) {
+                  hero.hp -= e.dmg
+                  hero.flash = 0.28
+                  w.shake = e.boss ? 9 : 4
+                  w.heroKb = Math.max(w.heroKb || 0, e.boss ? 18 : 8)      // 히어로 넉백
+                  w.hitstop = Math.max(w.hitstop || 0, e.boss ? 0.06 : 0.025)
+                  burst(w.heroX + 15, w.groundY - 70, '#c81818', 8, true)
+                } else {
+                  addDmg(w.heroX, w.groundY - 130, 'DODGE', false, true)
+                }
               }
-              e.cd = 1200; e.atkT = ADV_ATK_DUR
-            }
+            } else e.lunge = 0
+            e.cd -= dt * 1000
+            if (e.cd <= 0) { e.cd = 1200; e.atkT = ADV_ATK_DUR; e.atkHit = false }
           }
         }
 
@@ -1215,6 +1223,7 @@ export default function App() {
         w.pools = w.pools.filter(pl => pl.life > 0)
       }
       w.shake = Math.max(0, w.shake - dt * 25)
+      if (w.heroKb) w.heroKb = Math.max(0, w.heroKb - w.heroKb * Math.min(1, dt * 7) - dt * 6)   // 넉백 복귀
 
       draw(ctx, now)
       raf = requestAnimationFrame(loop)
@@ -1282,7 +1291,7 @@ export default function App() {
       const rock = stunned ? 0 : Math.sin(gall) * 0.06 * (e.air ? 0.35 : wf)
       const im = imgs[fi]
       ctx.save()
-      ctx.translate(e.x, y - bounce + (e.air ? 0 : (e.yOff || 0)))
+      ctx.translate(e.x + (e.lunge || 0), y - bounce + (e.air ? 0 : (e.yOff || 0)))
       ctx.rotate(rock)
       if (e.sq > 0) { const q = e.sq / 0.18; ctx.scale(1 + 0.10 * q, 1 - 0.14 * q) }
       if (e.dead) { const p = Math.max(0, e.dieT) / 0.5; ctx.globalAlpha = Math.min(1, p * 2) * 0.9 }
@@ -1347,7 +1356,9 @@ export default function App() {
       if (w.shake > 0.3) ctx.translate((Math.random() - 0.5) * w.shake, (Math.random() - 0.5) * w.shake)
 
       // 배경: 가로 무한 타일 스크롤 (10웨이브마다 테마 변경, 보스전투 시 보스 배경)
-      const BG = (w.adv && ADV_BG[w.adv.key]) || bgFor(w.waveNum || 1, w.bossBattle)
+      const advBG = w.adv ? ADV_BG[w.adv.key] : null
+      const advOK = !!(advBG && advBG.complete && advBG.naturalWidth > 0)
+      const BG = advOK ? advBG : bgFor(w.waveNum || 1, w.bossBattle)   // 모험 배경 로드 실패 시 일반 배경으로 대체
       if (BG.complete && BG.naturalWidth > 0) {
         const scale = Math.max(w.W / BG.naturalWidth, w.H / BG.naturalHeight)
         const bw = BG.naturalWidth * scale, bh = BG.naturalHeight * scale
@@ -1355,7 +1366,7 @@ export default function App() {
         let x = -(w.scrollX - i0 * bw)
         for (let i = 0; x < w.W; x += bw, i++) {
           // 모험 배경은 이음매가 보여서 한 장씩 좌우 반전(거울 타일) → 맞닿는 면이 동일해 경계 사라짐
-          if (w.adv && ((i0 + i) % 2 + 2) % 2 === 1) {
+          if (advOK && ((i0 + i) % 2 + 2) % 2 === 1) {
             ctx.save(); ctx.translate(x + bw, w.H - bh); ctx.scale(-1, 1)
             ctx.drawImage(BG, 0, 0, bw, bh); ctx.restore()
           } else ctx.drawImage(BG, x, w.H - bh, bw, bh)
@@ -1420,8 +1431,8 @@ export default function App() {
           }
         }
         const lunge = hero.state === 'attack' ? Math.sin(Math.min(1, hero.t / 0.4) * Math.PI) * 12 : 0
-        ctx.translate(w.heroX + lunge, w.groundY)
-        if (hero.flash > 0) ctx.filter = 'brightness(2.5)'
+        ctx.translate(w.heroX + lunge - (w.heroKb || 0), w.groundY)
+        if (hero.flash > 0) ctx.filter = 'brightness(1.45) sepia(1) saturate(7) hue-rotate(-24deg)'   // 빨갛게 번쩍
         if (a.flip) ctx.scale(-1, 1)
         ctx.drawImage(im, -hw / 2, -hh, hw, hh)
         ctx.restore()
