@@ -2071,7 +2071,7 @@ export default function App() {
         const isEq = eqSlot >= 0
         const auto = !!skillAuto[skillDetail]
         return (
-          <div style={st.dOverlay} onClick={e => { if (e.target === e.currentTarget) setSkillDetail(null) }}>
+          <div style={st.dOverlay} onClick={e => { if (!uiEdit && e.target === e.currentTarget) setSkillDetail(null) }}>
             <div style={st.skdBox}>
               <div style={st.skdHead}>
                 <div data-edit="skdicon" style={st.skdIconWrap}>
@@ -2083,7 +2083,7 @@ export default function App() {
                   <div data-edit="skdtitle" style={st.skdTitle}><span style={{ color: GRADE_COLOR['일반'] }}>[일반]</span> {s.name}</div>
                   <div data-edit="skddesc" style={st.skdDesc}>설명 준비 중</div>
                 </div>
-                <button style={{ ...st.skdAuto, ...(auto ? st.skdAutoOn : {}) }} onClick={() => setSkillAuto(a => ({ ...a, [skillDetail]: !a[skillDetail] }))}>
+                <button data-edit="skdauto" style={{ ...st.skdAuto, ...(auto ? st.skdAutoOn : {}) }} onClick={() => { if (!uiEdit) setSkillAuto(a => ({ ...a, [skillDetail]: !a[skillDetail] })) }}>
                   AUTO<span style={{ ...st.skdAutoDot, ...(auto ? st.skdAutoDotOn : {}) }} />
                 </button>
               </div>
@@ -2314,8 +2314,13 @@ export default function App() {
       )}
 
       {nav !== '모험' && canvasBox.h > 0 && (
-        <div data-edit="skqbar" style={{ ...st.skqBar, top: canvasBox.top + canvasBox.h - 66 }}>
-          <div className="pd-hscroll" style={st.skqSlots}>
+        <div style={{ ...st.skqWrap, top: canvasBox.top + canvasBox.h - 74 }}>
+          <div data-edit="skqset" style={st.skqSets}>
+            {Array.from({ length: SET_COUNT }, (_, n) => (
+              <button key={n} style={{ ...st.skqSetBtn, ...(activeSet === n ? st.skqSetOn : {}) }} onClick={() => { if (!uiEdit) switchSet(n) }}>{n + 1}</button>
+            ))}
+          </div>
+          <div data-edit="skqbar" className="pd-hscroll" style={st.skqSlots}>
             {equipped.map((si, slot) => {
               const valid = si != null && SKILLS[si] && SKILLS[si].stage === evo
               return (
@@ -2326,11 +2331,6 @@ export default function App() {
                 </div>
               )
             })}
-          </div>
-          <div style={st.skqSets}>
-            {Array.from({ length: SET_COUNT }, (_, n) => (
-              <button key={n} data-edit="skqset" style={{ ...st.skqSetBtn, ...(activeSet === n ? st.skqSetOn : {}) }} onClick={() => { if (!uiEdit) switchSet(n) }}>{n + 1}</button>
-            ))}
           </div>
         </div>
       )}
@@ -2424,7 +2424,7 @@ export default function App() {
             const ready = cd <= 0
             const isEq = equipped.indexOf(i) >= 0
             return (
-              <div key={s.key} style={st.skCell} onClick={() => { if (!uiEdit) setSkillDetail(i) }}>
+              <div key={s.key} style={st.skCell} onClick={() => setSkillDetail(i)}>
                 <div data-edit="skcell" style={st.skCellIconWrap}>
                   {skillIconSrc(s.id) ? <img src={skillIconSrc(s.id)} alt="" data-edit="skimg" style={st.skCellIconImg} /> : <span style={{ fontSize: 22 }}>{s.icon}</span>}
                   {isEq && <div style={st.skCellEq}>장착{!ready && ` ${cd.toFixed(1)}`}</div>}
@@ -2676,7 +2676,7 @@ export default function App() {
               ))}
               {g.pos && ['X', 'Y'].map(ax => {
                 const k = g.pos + ax
-                const pmax = g.pos.startsWith('advbtn') ? 400 : 80
+                const pmax = g.pos.startsWith('advbtn') ? 400 : (g.pos.startsWith('skq') || g.pos.startsWith('skd')) ? 240 : g.pos.startsWith('sk') ? 160 : 80
                 return <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <span style={{ width: 92, fontSize: 12, flexShrink: 0 }}>위치 {ax === 'X' ? '←→' : '↑↓'}</span>
                   <button style={nbtn} onClick={() => nudge(k, -1, -pmax, pmax)}>−</button>
@@ -2751,7 +2751,7 @@ const UI_DEFAULT = {
 // 진입창 보스 그림: 종별 개별 크기·위치 (사용자 확정값 2026-07-25)
 Object.assign(UI_DEFAULT, {
   // 스킬 탭 재편
-  skqbarw: 300, skqbarX: 0, skqbarY: 0, skqslotsz: 34, skqsetw: 26, skqseth: 22, skqsetfz: 12,
+  skqbarw: 194, skqbarX: 0, skqbarY: 0, skqslotsz: 34, skqsetw: 26, skqseth: 22, skqsetfz: 12, skqsetX: 0, skqsetY: 0,
   skhtfz: 14, skhtitleX: 23, skhtitleY: 7,
   skfusew: 54, skfuseh: 20, skfusefz: 12, skfuseX: -24, skfuseY: 10, sklearnw: 60, sklearnh: 20, sklearnfz: 11, sklearnX: -24, sklearnY: 10,
   skcellsz: 57, skcellgap: 7, skcellrgap: 8, skcellX: -1, skcellY: -7,
@@ -2763,6 +2763,7 @@ Object.assign(UI_DEFAULT, {
   skddescfz: 13, skddescX: 0, skddescY: 0,
   skdefffz: 15, skdeffectX: 0, skdeffectY: 0,
   skdstatfz: 14, skdstatX: 0, skdstatY: 0,
+  skdautofz: 12, skdautoX: 0, skdautoY: 0,
   skdbtnh: 48, skdbtnfz: 15, skdenhX: 0, skdenhY: 0, skdequipX: 0, skdequipY: 0,
   // 퀘스트창
   qww: 340, qwh: 540, qwinX: 0, qwinY: 0,
@@ -2908,7 +2909,7 @@ for (const k of DINO_KEYS) EDIT_GROUPS[`advico${k}`] = { label: `보스 그림($
 Object.assign(EDIT_GROUPS, {
   skqbar: { label: '스킬 퀵바', size: ['skqbarw'], pos: 'skqbar' },
   skqslot: { label: '퀵바 슬롯', size: ['skqslotsz'] },
-  skqset: { label: '퀵바 세트버튼', size: ['skqsetw', 'skqseth', 'skqsetfz'] },
+  skqset: { label: '퀵바 세트버튼', size: ['skqsetw', 'skqseth', 'skqsetfz'], pos: 'skqset' },
   skhtitle: { label: '스킬 제목', size: ['skhtfz'], pos: 'skhtitle' },
   skfuse: { label: '합성 버튼', size: ['skfusew', 'skfuseh', 'skfusefz'], pos: 'skfuse' },
   sklearn: { label: '스킬배우기 버튼', size: ['sklearnw', 'sklearnh', 'sklearnfz'], pos: 'sklearn' },
@@ -2921,6 +2922,7 @@ Object.assign(EDIT_GROUPS, {
   skddesc: { label: '상세 설명', size: ['skddescfz'], pos: 'skddesc' },
   skdeffect: { label: '상세 효과칸', size: ['skdefffz'], pos: 'skdeffect' },
   skdstat: { label: '상세 스탯칸', size: ['skdstatfz'], pos: 'skdstat' },
+  skdauto: { label: '상세 AUTO', size: ['skdautofz'], pos: 'skdauto' },
   skdenh: { label: '상세 강화버튼', size: ['skdbtnh', 'skdbtnfz'], pos: 'skdenh' },
   skdequip: { label: '상세 장착버튼', size: ['skdbtnh', 'skdbtnfz'], pos: 'skdequip' },
   qwin: { label: '퀘스트 창', size: ['qww', 'qwh'], pos: 'qwin' },
@@ -2961,7 +2963,7 @@ Object.assign(UI_LABELS, {
   skcellsz: '틀 크기', skcellgap: '가로 간격', skcellrgap: '세로 간격', skimgsz: '그림 크기',
   sknamefz: '이름 글자', skplusfz: '뱃지 글자',
   skdiconsz: '아이콘 크기', skdtitlefz: '제목 글자', skddescfz: '설명 글자',
-  skdefffz: '효과 글자', skdstatfz: '스탯 글자', skdbtnh: '버튼 높이', skdbtnfz: '버튼 글자',
+  skdefffz: '효과 글자', skdstatfz: '스탯 글자', skdautofz: 'AUTO 글자', skdbtnh: '버튼 높이', skdbtnfz: '버튼 글자',
   qww: '창 너비', qwh: '창 높이', qtitlefz: '제목 글자', qclsz: '버튼 크기',
   qtabw: '탭 너비', qtabh: '탭 높이', qtabfz: '탭 글자', qrowh: '행 높이',
   qiconsz: '아이콘 크기', qnamefz: '이름 글자', qbarw: '바 너비', qbarh: '바 높이', qbarfz: '바 글자',
@@ -2978,7 +2980,7 @@ const uiVars = c => `:root{
 --pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
 ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg${i}-x:${c['evoimg' + i + 'X']}px;--pd-evoimg${i}-y:${c['evoimg' + i + 'Y']}px;`).join('')}--pd-slotfz:${c.slotfz}px;
---pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;
+--pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;
 ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k}h:${c['advico' + k + 'h']}px;--pd-advico${k}-x:${c['advico' + k + 'X']}px;--pd-advico${k}-y:${c['advico' + k + 'Y']}px;`).join('')}
 --pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
 --pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
@@ -3005,7 +3007,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
 --pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdenh', 'skdequip'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -3257,9 +3259,10 @@ const st = {
     background: 'linear-gradient(180deg,#3a2c1b,#241a10)',
     transform: 'translate(var(--pd-advclose-x), var(--pd-advclose-y))', cursor: 'pointer',
   },
-  // ── 스킬 퀵바 (히어로 발밑, 8슬롯 가로 드래그 + 3세트) ──
-  skqBar: { position: 'absolute', left: 4, zIndex: 30, display: 'flex', flexDirection: 'column', gap: 3, width: 'var(--pd-skqbarw)', transform: 'translate(var(--pd-skqbar-x), var(--pd-skqbar-y))', pointerEvents: 'auto' },
-  skqSlots: { display: 'flex', gap: 4, overflowX: 'auto', overflowY: 'hidden', padding: '3px 4px', borderRadius: 8, background: 'rgba(16,10,5,0.72)', border: '1px solid #5a4630', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.6)', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' },
+  // ── 스킬 퀵바 (히어로 발밑, 8슬롯 가로 드래그 + 3세트, 세트는 슬롯 위) ──
+  skqWrap: { position: 'absolute', left: 4, zIndex: 30, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3, pointerEvents: 'auto' },
+  skqSets: { display: 'flex', gap: 4, transform: 'translate(var(--pd-skqset-x), var(--pd-skqset-y))' },
+  skqSlots: { display: 'flex', gap: 4, overflowX: 'auto', overflowY: 'hidden', padding: '3px 4px', width: 'var(--pd-skqbarw)', borderRadius: 8, background: 'rgba(16,10,5,0.72)', border: '1px solid #5a4630', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.6)', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', transform: 'translate(var(--pd-skqbar-x), var(--pd-skqbar-y))' },
   skqSlot: { flexShrink: 0, width: 'var(--pd-skqslotsz)', height: 'var(--pd-skqslotsz)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, border: '1.5px solid #6a533a', background: 'rgba(0,0,0,0.4)', overflow: 'hidden', cursor: 'pointer' },
   skqSlotImg: { width: '100%', height: '100%', objectFit: 'contain', imageRendering: 'pixelated' },
   skqSlotEmpty: { fontSize: 11, fontWeight: 800, color: 'rgba(200,180,140,0.4)' },
@@ -3297,7 +3300,7 @@ const st = {
   skdHeadMid: { flex: 1, minWidth: 0, paddingTop: 2 },
   skdTitle: { fontSize: 'var(--pd-skdtitlefz)', fontWeight: 800, color: '#fff5df', textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-skdtitle-x), var(--pd-skdtitle-y))' },
   skdDesc: { marginTop: 4, fontSize: 'var(--pd-skddescfz)', color: '#cbb894', lineHeight: 1.4, transform: 'translate(var(--pd-skddesc-x), var(--pd-skddesc-y))' },
-  skdAuto: { flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, padding: '5px 8px', fontSize: 12, fontWeight: 800, color: '#9fb0c0', border: 'none', background: 'transparent', cursor: 'pointer' },
+  skdAuto: { flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, padding: '5px 8px', fontSize: 'var(--pd-skdautofz)', fontWeight: 800, color: '#9fb0c0', border: 'none', background: 'transparent', cursor: 'pointer', transform: 'translate(var(--pd-skdauto-x), var(--pd-skdauto-y))' },
   skdAutoOn: { color: '#4aa8ff' },
   skdAutoDot: { width: 30, height: 16, borderRadius: 9, background: '#4a4a4a', position: 'relative', transition: 'background 0.15s' },
   skdAutoDotOn: { background: '#2a80f0' },
