@@ -2732,9 +2732,9 @@ const UI_DEFAULT = {
   shopbX: -2, shopbY: 0, shopbtX: 0, shopbtY: 0, shopgemX: 0, shopgemY: 0, gainicX: 0, gainicY: 0, gaintX: 0, gaintY: 0,
   gbtnX: 0, gbtnY: 0, gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0, hambX: 1, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: 0, bhpX: 0, bhpY: 0, pbX: 0, pbY: 0, wjX: 0, wjY: 0, caslotX: 3, caslotY: 16, caimgX: 0, caimgY: 0, canameX: 0, canameY: 0, catabX: 15, catabY: 14, cabtnX: 0, cabtnY: 0, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: 0, btextY: 7,
   // 오프라인 보상: 보물상자 + 창(헤더/항목/버튼)
-  trsz: 40, offw: 322, offtfz: 14, offnfz: 13, offiw: 56, offih: 50, offgap: 9, offic: 24, offifz: 11, offrfz: 11,
+  trsz: 34, offw: 322, offtfz: 14, offnfz: 13, offiw: 56, offih: 50, offgap: 9, offic: 24, offifz: 11, offrfz: 11,
   offbtw: 135, offbth: 51, offbfz: 14, offclw: 100, offclh: 50, offcfz: 15,
-  trX: -3, trY: 9, offtX: -1, offtY: 66, offnX: 1, offnY: 76, offitX: -29, offitY: 80, offitiX: 0, offitiY: 6, offvX: 0, offvY: 2, offrX: 0, offrY: -3, offbtX: 0, offbtY: -15, offclX: 2, offclY: -15,
+  trX: -2, trY: 14, offtX: -1, offtY: 66, offnX: 1, offnY: 76, offitX: -29, offitY: 80, offitiX: 0, offitiY: 6, offvX: 0, offvY: 2, offrX: 0, offrY: -3, offbtX: 0, offbtY: -15, offclX: 2, offclY: -15,
   fuseallw: 94, fuseallh: 26, fuseallfz: 15, fuseallX: -36, fuseallY: -10,
   matchipic: 17, matchipfz: 13, allychipic: 15, allychipfz: 10,
   dtabh: 40, dtabfz: 15, dgradefz: 14, dtitlefz: 17, darrowfz: 26, diconsz: 92, dtierfz: 12, dstatfz: 14, denhh: 48, denhfz: 14, denhic: 22, dequiph: 48, dequipfz: 15, dfuseh: 50, dfusefz: 17, dstepsz: 46, dstepfz: 20,
@@ -2758,10 +2758,10 @@ const UI_DEFAULT = {
 // 진입창 보스 그림: 종별 개별 크기·위치 (사용자 확정값 2026-07-25)
 Object.assign(UI_DEFAULT, {
   // 스킬 탭 재편
-  skqbarw: 194, skqbarX: 0, skqbarY: 0, skqslotsz: 34, skqsetw: 26, skqseth: 22, skqsetfz: 12, skqsetX: 0, skqsetY: 0,
-  skhtfz: 14, skhtitleX: 23, skhtitleY: 7,
-  skfusew: 54, skfuseh: 20, skfusefz: 12, skfuseX: -24, skfuseY: 10, sklearnw: 60, sklearnh: 20, sklearnfz: 11, sklearnX: -24, sklearnY: 10,
-  skcellsz: 57, skcellgap: 7, skcellrgap: 8, skcellX: -1, skcellY: -7,
+  skqbarw: 194, skqbarX: 153, skqbarY: 39, skqslotsz: 29, skqsetw: 16, skqseth: 19, skqsetfz: 8, skqsetX: 149, skqsetY: 46,
+  skhtfz: 14, skhtitleX: 25, skhtitleY: 9,
+  skfusew: 54, skfuseh: 20, skfusefz: 12, skfuseX: -24, skfuseY: 11, sklearnw: 59, sklearnh: 19, sklearnfz: 10, sklearnX: -24, sklearnY: 12,
+  skcellsz: 57, skcellgap: 31, skcellrgap: 13, skcellX: -1, skcellY: -4,
   skimgsz: 44, skimgX: 0, skimgY: 0,
   sknamefz: 12, sknameX: 0, sknameY: 0,
   skbarX: 1, skbarY: 0,
