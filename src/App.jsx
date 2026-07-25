@@ -2397,7 +2397,7 @@ export default function App() {
             return (
               <div key={s.key} data-edit="skcell" style={st.skCell} onClick={() => { if (!uiEdit) setSkillDetail(i) }}>
                 <div style={st.skCellIconWrap}>
-                  {skillIconSrc(s.id) ? <img src={skillIconSrc(s.id)} alt="" data-edit="skicon" style={st.skCellIconImg} /> : <span style={{ fontSize: 22 }}>{s.icon}</span>}
+                  {skillIconSrc(s.id) ? <img src={skillIconSrc(s.id)} alt="" style={st.skCellIconImg} /> : <span style={{ fontSize: 22 }}>{s.icon}</span>}
                   <div data-edit="skplus" style={st.skCellPlus}>+</div>
                   {isEq && <div style={st.skCellEq}>장착{!ready && ` ${cd.toFixed(1)}`}</div>}
                 </div>
@@ -2630,7 +2630,7 @@ export default function App() {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) }))
             const nbtn = { width: 26, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
-            const rng = k => k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
+            const rng = k => k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
             const rmin = k => k === 'equipcols' ? 3 : 0
             return <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -2724,7 +2724,7 @@ const UI_DEFAULT = {
 Object.assign(UI_DEFAULT, {
   // 스킬 탭 재편
   skhtfz: 16, skhtitleX: 0, skhtitleY: 0,
-  skhbw: 60, skhbh: 30, skhbfz: 12, skfuseX: 0, skfuseY: 0, sklearnX: 0, sklearnY: 0,
+  skfusew: 60, skfuseh: 30, skfusefz: 12, skfuseX: 0, skfuseY: 0, sklearnw: 88, sklearnh: 30, sklearnfz: 12, sklearnX: 0, sklearnY: 0,
   skmasth: 26, skmastfz: 12, skmastX: 0, skmastY: 0,
   skcellsz: 60, skcellgap: 8, skcellX: 0, skcellY: 0,
   sknamefz: 12, sknameX: 0, sknameY: 0,
@@ -2879,8 +2879,8 @@ for (let i = 0; i < 6; i++) EDIT_GROUPS[`evoimg${i}`] = { label: `진화캐릭 $
 for (const k of DINO_KEYS) EDIT_GROUPS[`advico${k}`] = { label: `보스 그림(${DINO_NAME[k]})`, size: [`advico${k}w`, `advico${k}h`], pos: `advico${k}` }
 Object.assign(EDIT_GROUPS, {
   skhtitle: { label: '스킬 제목', size: ['skhtfz'], pos: 'skhtitle' },
-  skfuse: { label: '합성 버튼', size: ['skhbw', 'skhbh', 'skhbfz'], pos: 'skfuse' },
-  sklearn: { label: '스킬배우기 버튼', size: ['skhbw', 'skhbh', 'skhbfz'], pos: 'sklearn' },
+  skfuse: { label: '합성 버튼', size: ['skfusew', 'skfuseh', 'skfusefz'], pos: 'skfuse' },
+  sklearn: { label: '스킬배우기 버튼', size: ['sklearnw', 'sklearnh', 'sklearnfz'], pos: 'sklearn' },
   skmast: { label: '숙련도 바', size: ['skmasth', 'skmastfz'], pos: 'skmast' },
   skcell: { label: '스킬 칸', size: ['skcellsz', 'skcellgap'], pos: 'skcell' },
   skname: { label: '스킬 이름', size: ['sknamefz'], pos: 'skname' },
@@ -2926,7 +2926,7 @@ const UI_LABELS = {
 for (let i = 0; i < 6; i++) UI_LABELS[`evoimg${i}`] = `${i + 1}단계 크기`
 for (const k of DINO_KEYS) { UI_LABELS[`advico${k}w`] = '그림 너비'; UI_LABELS[`advico${k}h`] = '그림 높이' }
 Object.assign(UI_LABELS, {
-  skhtfz: '제목 글자', skhbw: '버튼 너비', skhbh: '버튼 높이', skhbfz: '버튼 글자',
+  skhtfz: '제목 글자', skfusew: '버튼 너비', skfuseh: '버튼 높이', skfusefz: '버튼 글자', sklearnw: '버튼 너비', sklearnh: '버튼 높이', sklearnfz: '버튼 글자',
   skmasth: '바 높이', skmastfz: '바 글자', skcellsz: '칸 크기', skcellgap: '칸 간격',
   sknamefz: '이름 글자', skplusfz: '뱃지 글자',
   skdiconsz: '아이콘 크기', skdtitlefz: '제목 글자', skddescfz: '설명 글자',
@@ -2947,7 +2947,7 @@ const uiVars = c => `:root{
 --pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
 ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg${i}-x:${c['evoimg' + i + 'X']}px;--pd-evoimg${i}-y:${c['evoimg' + i + 'Y']}px;`).join('')}--pd-slotfz:${c.slotfz}px;
---pd-skhtfz:${c.skhtfz}px;--pd-skhbw:${c.skhbw}px;--pd-skhbh:${c.skhbh}px;--pd-skhbfz:${c.skhbfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;
+--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;
 ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k}h:${c['advico' + k + 'h']}px;--pd-advico${k}-x:${c['advico' + k + 'X']}px;--pd-advico${k}-y:${c['advico' + k + 'Y']}px;`).join('')}
 --pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
 --pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
@@ -3229,8 +3229,8 @@ const st = {
   // ── 스킬 탭 재편 ──
   skHeadRow: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 },
   skHeadTitle: { fontSize: 'var(--pd-skhtfz)', fontWeight: 800, color: '#f0dfae', textShadow: '0 1px 2px #000', marginRight: 'auto', transform: 'translate(var(--pd-skhtitle-x), var(--pd-skhtitle-y))' },
-  skHeadBtn: { width: 'var(--pd-skhbw)', height: 'var(--pd-skhbh)', fontSize: 'var(--pd-skhbfz)', fontWeight: 800, color: '#e8dcc0', border: '1px solid #5a4630', borderRadius: 7, background: 'linear-gradient(180deg,#4a3820,#2c1f10)', cursor: 'pointer', boxSizing: 'border-box', transform: 'translate(var(--pd-skfuse-x), var(--pd-skfuse-y))' },
-  skLearnBtn: { color: '#2a1c0a', border: '1px solid #f0b040', background: 'linear-gradient(180deg,#ffcf5a,#e8992a)', transform: 'translate(var(--pd-sklearn-x), var(--pd-sklearn-y))' },
+  skHeadBtn: { width: 'var(--pd-skfusew)', height: 'var(--pd-skfuseh)', fontSize: 'var(--pd-skfusefz)', fontWeight: 800, color: '#e8dcc0', border: '1px solid #5a4630', borderRadius: 7, background: 'linear-gradient(180deg,#4a3820,#2c1f10)', cursor: 'pointer', boxSizing: 'border-box', lineHeight: 1.1, transform: 'translate(var(--pd-skfuse-x), var(--pd-skfuse-y))' },
+  skLearnBtn: { width: 'var(--pd-sklearnw)', height: 'var(--pd-sklearnh)', fontSize: 'var(--pd-sklearnfz)', color: '#2a1c0a', border: '1px solid #f0b040', background: 'linear-gradient(180deg,#ffcf5a,#e8992a)', transform: 'translate(var(--pd-sklearn-x), var(--pd-sklearn-y))' },
   skMastBar: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, height: 'var(--pd-skmasth)', padding: '0 10px', boxSizing: 'border-box', borderRadius: 7, background: 'linear-gradient(180deg,#2f4a86,#20335f)', border: '1px solid #4a6aa8', transform: 'translate(var(--pd-skmast-x), var(--pd-skmast-y))' },
   skMastLabel: { fontSize: 'var(--pd-skmastfz)', fontWeight: 800, color: '#dce8ff', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap' },
   skMastCount: { fontSize: 'var(--pd-skmastfz)', fontWeight: 800, color: '#fff', margin: '0 auto' },
