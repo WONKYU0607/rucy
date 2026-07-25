@@ -1823,6 +1823,7 @@ export default function App() {
       const sv = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null')
       if (!sv) return
       sv.ui = JSON.parse(localStorage.getItem('paleoUiCfg') || 'null')
+      sv.uiTs = Number(localStorage.getItem('paleoUiTs') || 0)
       await setDoc(doc(fbDb, 'paleoSaves', fbAuth.currentUser.uid), sv)
       setCloudMsg('저장됨 ' + new Date().toLocaleTimeString())
     } catch (e) { setCloudMsg('저장 실패: ' + (e.code || e.message)) }
@@ -1836,9 +1837,11 @@ export default function App() {
         const snap = await getDoc(doc(fbDb, 'paleoSaves', u.uid))
         const cloud = snap.exists() ? snap.data() : null
         const local = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null')
-        // UI 편집값: 클라우드(PC에서 올린 값)를 항상 적용
-        if (cloud?.ui) {
+        // UI 편집값: 로컬 편집 시각과 비교해 더 최신인 쪽을 적용 (예전엔 클라우드가 무조건 이겨 로컬 편집이 사라졌음)
+        const localUiTs = Number(localStorage.getItem('paleoUiTs') || 0)
+        if (cloud?.ui && (cloud.uiTs || 0) > localUiTs) {
           localStorage.setItem('paleoUiCfg', JSON.stringify(cloud.ui))
+          localStorage.setItem('paleoUiTs', String(cloud.uiTs || 0))
           setUiCfg({ ...UI_DEFAULT, ...Object.fromEntries(Object.entries(cloud.ui).filter(([k]) => k in UI_DEFAULT)) })
         }
         if (cloud && (cloud.wave || 0) > (local?.wave || 0)) {
@@ -2663,7 +2666,7 @@ export default function App() {
           <div style={{ fontSize: 13, color: '#ffd98a', textAlign: 'center', padding: '0 0 6px', fontWeight: 800 }}>기준 {BASE_W}×{BASE_H} · 화면 {view.sw}×{view.sh} · 배율 {view.s.toFixed(3)}</div>
           {editSel && (() => {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
-            const nudge = (k, d, lo, hi) => setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) }))
+            const nudge = (k, d, lo, hi) => { setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) })); localStorage.setItem('paleoUiTs', String(Date.now())) }
             const nbtn = { width: 26, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
             const rng = k => k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
             const rmin = k => k === 'equipcols' ? 3 : 0
@@ -2676,7 +2679,7 @@ export default function App() {
                 <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <span style={{ width: 92, fontSize: 12, flexShrink: 0, color: '#f0dfae', fontWeight: 700 }}>{UI_LABELS[k]}</span>
                   <button style={nbtn} onClick={() => nudge(k, k === 'val' ? -0.5 : -1, rmin(k), rng(k))}>−</button>
-                  <input type="range" min={rmin(k)} max={rng(k)} step={k === 'val' ? 0.5 : 1} value={uiCfg[k]} onChange={e => setUiCfg({ ...uiCfg, [k]: parseFloat(e.target.value) })} style={{ flex: 1, minWidth: 0 }} />
+                  <input type="range" min={rmin(k)} max={rng(k)} step={k === 'val' ? 0.5 : 1} value={uiCfg[k]} onChange={e => { setUiCfg({ ...uiCfg, [k]: parseFloat(e.target.value) }); localStorage.setItem('paleoUiTs', String(Date.now())) }} style={{ flex: 1, minWidth: 0 }} />
                   <button style={nbtn} onClick={() => nudge(k, k === 'val' ? 0.5 : 1, rmin(k), rng(k))}>+</button>
                   <span style={{ width: 34, textAlign: 'right', fontSize: 12, color: GOLD }}>{uiCfg[k]}</span>
                 </div>
@@ -2687,7 +2690,7 @@ export default function App() {
                 return <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <span style={{ width: 92, fontSize: 12, flexShrink: 0, color: '#f0dfae', fontWeight: 700 }}>{ax === 'X' ? '← 좌우 →' : '↑ 상하 ↓'}</span>
                   <button style={nbtn} onClick={() => nudge(k, -1, -pmax, pmax)}>−</button>
-                  <input type="range" min={-pmax} max={pmax} step={1} value={uiCfg[k]} onChange={e => setUiCfg({ ...uiCfg, [k]: parseFloat(e.target.value) })} style={{ flex: 1, minWidth: 0 }} />
+                  <input type="range" min={-pmax} max={pmax} step={1} value={uiCfg[k]} onChange={e => { setUiCfg({ ...uiCfg, [k]: parseFloat(e.target.value) }); localStorage.setItem('paleoUiTs', String(Date.now())) }} style={{ flex: 1, minWidth: 0 }} />
                   <button style={nbtn} onClick={() => nudge(k, 1, -pmax, pmax)}>+</button>
                   <span style={{ width: 34, textAlign: 'right', fontSize: 12, color: GOLD }}>{uiCfg[k]}</span>
                 </div>
@@ -2696,7 +2699,7 @@ export default function App() {
           })()}
           <div style={{ display: 'flex', gap: 6, marginTop: 8, borderTop: '1px solid #3a2a14', paddingTop: 8 }}>
             <button onClick={() => { navigator.clipboard?.writeText(JSON.stringify(uiCfg)); setCopiedUi(true); setTimeout(() => setCopiedUi(false), 1200) }} style={{ flex: 1, padding: '9px', borderRadius: 6, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontSize: 13 }}>{copiedUi ? '복사됨! 개발자에게 전달' : '전체 값 복사'}</button>
-            <button onClick={() => setUiCfg({ ...UI_DEFAULT })} style={{ padding: '9px 12px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontSize: 13 }}>초기화</button>
+            <button onClick={() => { setUiCfg({ ...UI_DEFAULT }); localStorage.setItem('paleoUiTs', String(Date.now())) }} style={{ padding: '9px 12px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontSize: 13 }}>초기화</button>
           </div>
         </div>
       )}
