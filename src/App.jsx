@@ -547,13 +547,13 @@ export default function App() {
       }
     } catch { return JSON.parse(JSON.stringify(MOTION_DEFAULT)) }
   })
-  const dockSide = view.sw - BASE_W * view.s > 300           // 게임판 옆 여백이 넉넉하면 편집기를 밖으로
-  const dockStyle = { right: 0, left: 'auto', top: 0, bottom: 0, width: 330, maxWidth: 'none', margin: 0, maxHeight: 'none', borderRadius: 0, borderTop: 'none', borderBottom: 'none', borderLeft: `2px solid ${GOLD_D}` }
   const motRef = useRef(motCfg)
   motRef.current = motCfg                            // 게임 루프가 매 프레임 최신값을 읽음
   const rootRef = useRef(null)
   const uiScaleRef = useRef(1)
   const [view, setView] = useState({ s: 1, h: BASE_H, sw: 0, sh: 0 })   // 화면 맞춤 배율/판 높이
+  const dockSide = view.sw - BASE_W * view.s > 300           // 게임판 옆 여백이 넉넉하면 편집기를 밖으로
+  const dockStyle = { right: 0, left: 'auto', top: 0, bottom: 0, width: 330, maxWidth: 'none', margin: 0, maxHeight: 'none', borderRadius: 0, borderTop: 'none', borderBottom: 'none', borderLeft: `2px solid ${GOLD_D}` }
   const [canvasBox, setCanvasBox] = useState({ top: 0, h: 0 })          // 전투화면 영역 위치(판 기준) — 보물상자 배치용
   useEffect(() => {
     const upd = () => {
