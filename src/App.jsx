@@ -408,11 +408,35 @@ const WAVE_CYCLE = ['rabbit', 'antelope', 'deer', 'boar', 'wolf', 'hyena', 'bear
 
 // ── 퀘스트 (내용은 임시 플레이스홀더 — 목록·보상·진행 연동은 추후 확정) ──
 const QUEST_TABS = ['일일 퀘스트', '반복 퀘스트', '업적']
-const QUEST_PLACEHOLDER = [
-  [ { name: '일일 퀘스트 완료', cur: 2, goal: 5, rv: 3000 }, { name: '플레이타임', cur: 781, goal: 1800, rv: 100 }, { name: '광고 보기', cur: 0, goal: 3, rv: 100 }, { name: '스킬 소환', cur: 0, goal: 1, rv: 100 } ],
-  [ { name: '스테이지 클리어', cur: 0, goal: 1, rv: 100 }, { name: '몬스터 처치', cur: 160, goal: 500, rv: 10 }, { name: '장비 소환', cur: 6, goal: 30, rv: 100 }, { name: '장비 융합', cur: 97, goal: 100, rv: 100 } ],
-  [ { name: '업적 예시 1', cur: 0, goal: 1, rv: 100 }, { name: '업적 예시 2', cur: 0, goal: 10, rv: 100 } ],
+// ev: 이벤트 키(진행 카운트 소스), ric: 보상 재화 아이콘 (gem=다이아, ruby=루비 수정, pearl=진주)
+const QUEST_LIST = [
+  [ // 일일 퀘스트 (자정 리셋, 1회 수령)
+    { ev: 'daily_done', name: '일일 퀘스트 완료', goal: 5, ric: '/ui/gem.png', rv: 3000 },
+    { ev: 'playtime', name: '플레이타임', goal: 1500, ric: '/ui/ruby.png', rv: 1 },
+    { ev: 'ad', name: '광고 보기', goal: 3, ric: '/ui/ruby.png', rv: 1 },
+    { ev: 'summon', name: '장비 소환', goal: 10, ric: '/ui/ruby.png', rv: 1 },
+    { ev: 'fuse', name: '장비 융합', goal: 10, ric: '/ui/ruby.png', rv: 1 },
+  ],
+  [ // 반복 퀘스트 (수령 시 레벨↑ + 초과분 이월, 무한 반복)
+    { ev: 'stage', name: '스테이지 클리어', goal: 1, ric: '/ui/gem.png', rv: 100 },
+    { ev: 'kill', name: '몬스터 처치', goal: 500, ric: '/ui/gem.png', rv: 50 },
+    { ev: 'skill_get', name: '스킬 획득', goal: 1, ric: '/ui/gem.png', rv: 100 },
+    { ev: 'summon', name: '장비 소환', goal: 30, ric: '/ui/gem.png', rv: 100 },
+    { ev: 'fuse', name: '장비 융합', goal: 30, ric: '/ui/gem.png', rv: 100 },
+    { ev: 'enh_atk', name: '공격력 강화', goal: 100, ric: '/ui/gem.png', rv: 100 },
+    { ev: 'enh_hp', name: '체력 강화', goal: 100, ric: '/ui/gem.png', rv: 100 },
+    { ev: 'enh_crit', name: '치명타 공격력 강화', goal: 100, ric: '/ui/gem.png', rv: 100 },
+  ],
+  [ // 업적 (1회 수령, 목표치 미확정 — 임시 1)
+    { ev: 'levelup', name: '캐릭터 레벨업', goal: 1, ric: '/ui/pearl.png', rv: 10 },
+    { ev: 'evolve', name: '캐릭터 진화', goal: 1, ric: '/ui/pearl.png', rv: 100 },
+    { ev: 'skill_enh', name: '스킬 강화', goal: 1, ric: '/ui/pearl.png', rv: 10 },
+    { ev: 'equip_enh', name: '장비 강화', goal: 1, ric: '/ui/pearl.png', rv: 10 },
+    { ev: 'adv_clear', name: '모험 클리어', goal: 1, ric: '/ui/pearl.png', rv: 10 },
+  ],
 ]
+const questDayStr = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}` }
+const questInit = () => ({ day: questDayStr(), ev: {}, dEv: {}, dClaim: {}, rLv: {}, rBase: {}, aClaim: {} })
 
 // 9종 스탯 — 강화탭(고기)·스킬탭(스킬포인트) 양쪽에서 사용
 // eff(lv): 레벨당 효과 텍스트 / 강화는 고기비용, 스킬은 SP 1/레벨
@@ -472,9 +496,10 @@ function loadSave() {
       gearEq: s.gearEq && typeof s.gearEq === 'object' ? s.gearEq : { 무기: null, 방어구: null, 유물: null },
       mats: Array.isArray(s.mats) && s.mats.some(x => x > 0) ? s.mats : [99999, 99999, 99999, 99999, 99999], enh: s.enh && typeof s.enh === 'object' ? s.enh : {},
       ruby: typeof s.ruby === 'number' ? s.ruby : 50, advStage: s.advStage && typeof s.advStage === 'object' ? s.advStage : {},   // ruby 50 = 임시 지급(퀘스트 연동 전)
+      pearl: typeof s.pearl === 'number' ? s.pearl : 0, quest: s.quest && typeof s.quest === 'object' && s.quest.ev ? s.quest : questInit(),
     }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), equipped: [null, null, null, null], cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, mats: [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, advStage: {} }
+  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), equipped: [null, null, null, null], cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, mats: [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, advStage: {}, pearl: 0, quest: questInit() }
 }
 const fmt = n => n >= 1e8 ? (n/1e8).toFixed(1)+'억' : n >= 1e4 ? (n/1e4).toFixed(1)+'만' : Math.floor(n).toLocaleString()
 const fmtPct = v => v >= 10000 ? fmt(Math.round(v)) : (Math.round(v * 10) / 10).toString()
@@ -501,6 +526,8 @@ export default function App() {
   const [gearEq, setGearEq] = useState(init.gearEq || { 무기: null, 방어구: null, 유물: null })  // 장착 슬롯
   const [mats, setMats] = useState(init.mats || [0, 0, 0, 0, 0])   // 재화 5종 (0~3 동료용, 4 무기강화용)
   const [ruby, setRuby] = useState(init.ruby ?? 0)                 // 루비 수정 (모험 진입 재화)
+  const [pearl, setPearl] = useState(init.pearl ?? 0)              // 진주 (업적 보상 재화)
+  const [quest, setQuest] = useState(init.quest || questInit())    // 퀘스트 진행 상태
   const [advStage, setAdvStage] = useState(init.advStage || {})    // 대륙별 클리어 단계 { key: 0~10 }
   const [enh, setEnh] = useState(init.enh || {})                   // 강화레벨 { '무기:1': lv }
   const [tab, setTab] = useState('강화')      // 영웅 서브탭: 강화/성장/진화
@@ -651,8 +678,8 @@ export default function App() {
   }
 
   useEffect(() => {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, alliesOn, gearEq, mats, enh, ruby, advStage, ts: Date.now() }))
-  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, alliesOn, gearEq, mats, enh, ruby, advStage])
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, alliesOn, gearEq, mats, enh, ruby, advStage, pearl, quest, ts: Date.now() }))
+  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, alliesOn, gearEq, mats, enh, ruby, advStage, pearl, quest])
 
   // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제
   useEffect(() => {
@@ -670,7 +697,7 @@ export default function App() {
   useEffect(() => {
     let cl = hlv, ce = hexp, gained = 0
     while (ce >= heroExpReq(cl)) { ce -= heroExpReq(cl); cl++; gained++ }
-    if (gained > 0) { setHlv(cl); setHexp(ce); setSp(s => s + gained * 3) }
+    if (gained > 0) { setHlv(cl); setHexp(ce); setSp(s => s + gained * 3); qEv('levelup', gained) }
   }, [hexp])
 
   // 획득 팝업 자동 소멸 (1.2초)
@@ -863,6 +890,7 @@ export default function App() {
       const gm = Math.floor(t.meat * st.meatMult)
       const ge = Math.floor(t.exp * st.expMult)
       w.killMeat = (w.killMeat || 0) + gm
+      w.qKill = (w.qKill || 0) + 1
       w.killExp = (w.killExp || 0) + ge
       w.gainQueue = w.gainQueue || []
       w.gainQueue.push({ meat: gm, exp: ge })
@@ -1145,6 +1173,7 @@ export default function App() {
         w.stones = w.stones.filter(p => !p.dead)
 
         if (w.killMeat) { const g = w.killMeat; w.killMeat = 0; setMeat(m => m + g) }
+        if (w.qKill) { const n = w.qKill; w.qKill = 0; qEv('kill', n) }
         if (w.killExp) { const e = w.killExp; w.killExp = 0; setHexp(x => x + e) }
         if (w.gainQueue && w.gainQueue.length) {
           const q = w.gainQueue; w.gainQueue = []
@@ -1254,6 +1283,7 @@ export default function App() {
           w._btShown = -1; w._bhShown = -1; setBossUI(null)
           if (a.win) {
             setAdvStage(v => ({ ...v, [a.key]: Math.max(v[a.key] || 0, a.stage) }))
+            qEv('adv_clear')
             const rw = advReward(a.stage)
             setGem(g => g + rw.dia)
             setMats(m => { const n = [...m]; n[4] = (n[4] || 0) + rw.mat; return n })
@@ -1261,6 +1291,7 @@ export default function App() {
           } else {
             setClearMsg(hero.hp <= 0 ? '모험 실패 — 쓰러짐' : '모험 실패 — 시간 초과')
           }
+          setAdvSel(CONTINENTS.find(c => c.key === a.key) || null)   // 전투 종료 → 진입창 복귀
           w.needStart = true
           hero.hp = st.maxHp
         }
@@ -1276,6 +1307,7 @@ export default function App() {
             w.bossPrompted = false
             setBossReady(false)
             setWave(v => v + 1)
+            qEv('stage')
             w.needStart = true
           } else {
             setMeat(m => m + 15 + w.waveNum * 5)
@@ -1286,6 +1318,7 @@ export default function App() {
             } else {
               setClearMsg(w.waveNum)
               setWave(v => v + 1)
+              qEv('stage')
               w.needStart = true
             }
           }
@@ -1630,7 +1663,7 @@ export default function App() {
         ctx.font = `bold ${Math.round(w.H * 0.13)}px 'Do Hyeon', sans-serif`
         ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,0.85)'
         ctx.fillStyle = `rgba(255,${Math.round(70 * puls)},${Math.round(60 * puls)},${(0.65 + 0.35 * puls).toFixed(3)})`
-        ctx.strokeText('WARNING', cx, w.H * 0.42); ctx.fillText('WARNING', cx, w.H * 0.42)
+        ctx.strokeText('WARNING', cx, w.H * 0.42 - 5); ctx.fillText('WARNING', cx, w.H * 0.42 - 5)
         ctx.restore()
       }
 
@@ -1661,12 +1694,55 @@ export default function App() {
   const spLive = useRef(sp); spLive.current = sp
   useEffect(() => { world.current.paused = paused }, [paused])
   useEffect(() => { setBest(b => Math.max(b, wave)) }, [wave])
+  // ── 퀘스트: 이벤트 카운트 / 진행 계산 / 보상 수령 ──
+  function qEv(ev, n = 1) {
+    setQuest(q => {
+      const day = questDayStr()
+      const b = q.day === day ? q : { ...q, day, dEv: {}, dClaim: {} }   // 자정 넘으면 일일 리셋
+      return { ...b, ev: { ...b.ev, [ev]: (b.ev[ev] || 0) + n }, dEv: { ...b.dEv, [ev]: (b.dEv[ev] || 0) + n } }
+    })
+  }
+  useEffect(() => { const iv = setInterval(() => qEv('playtime', 1), 1000); return () => clearInterval(iv) }, [])
+  function qProg(tab, i) {
+    const item = QUEST_LIST[tab][i]
+    const today = quest.day === questDayStr()
+    if (tab === 0) {
+      const cur = today ? (quest.dEv[item.ev] || 0) : 0
+      const claimed = today ? !!quest.dClaim[i] : false
+      return { cur: Math.min(cur, item.goal), lv: 0, claimed, canClaim: !claimed && cur >= item.goal }
+    }
+    if (tab === 1) {
+      const cur = (quest.ev[item.ev] || 0) - (quest.rBase[i] || 0)
+      return { cur: Math.min(cur, item.goal), lv: quest.rLv[i] || 0, claimed: false, canClaim: cur >= item.goal }
+    }
+    const cur = quest.ev[item.ev] || 0
+    const claimed = !!quest.aClaim[i]
+    return { cur: Math.min(cur, item.goal), lv: 0, claimed, canClaim: !claimed && cur >= item.goal }
+  }
+  function qClaim(tab, i) {
+    if (uiEdit) return
+    const item = QUEST_LIST[tab][i]
+    const p = qProg(tab, i)
+    if (!p.canClaim) return
+    if (item.ric.includes('gem')) setGem(g => g + item.rv)
+    else if (item.ric.includes('ruby')) setRuby(r => r + item.rv)
+    else if (item.ric.includes('pearl')) setPearl(v => v + item.rv)
+    setQuest(q => {
+      if (tab === 0) return { ...q, dClaim: { ...q.dClaim, [i]: true } }
+      if (tab === 1) return { ...q, rBase: { ...q.rBase, [i]: (q.rBase[i] || 0) + item.goal }, rLv: { ...q.rLv, [i]: (q.rLv[i] || 0) + 1 } }
+      return { ...q, aClaim: { ...q.aClaim, [i]: true } }
+    })
+    if (tab === 0 && i !== 0) qEv('daily_done')   // 일일 수령 → '일일 퀘스트 완료' 카운트 (자기 자신 제외)
+  }
   function buyStat(k, delta = 1) {
     if (delta < 0) { setLv(v => ({ ...v, [k]: Math.max(0, v[k] + delta) })); return }
     const c = DEBUG ? 0 : buyCost(k, lvLive.current[k])
     if (meatLive.current < c) return
     setMeat(m => m - c)
     setLv(v => ({ ...v, [k]: v[k] + 1 }))
+    if (k === 'atk') qEv('enh_atk')
+    else if (k === 'hp') qEv('enh_hp')
+    else if (k === 'critDmg') qEv('enh_crit')
   }
   // 소환: n회 뽑기 → 인벤토리 반영 + 결과 오버레이
   function pullGacha(cat, n) {
@@ -1682,24 +1758,30 @@ export default function App() {
       return nv
     })
     setGacha({ cat, items, roll: Date.now() })
+    qEv('summon', n)
   }
   // 융합: 같은 장비 5개 → 다음 장비 1개
   function fuseOne(cat, i) {
     if (i >= EQUIP_MAX) return
+    if ((inv[invKey(cat, i)] || 0) < 5) return
     setInv(v => {
       const k = invKey(cat, i), nk = invKey(cat, i + 1)
       if ((v[k] || 0) < 5) return v
       return { ...v, [k]: v[k] - 5, [nk]: (v[nk] || 0) + 1 }
     })
+    qEv('fuse')
   }
   // 일괄 융합: 낮은 등급부터 가능한 만큼 연쇄 융합
   function fuseAll(cat) {
+    const nv = { ...inv }
+    let qc = 0
+    for (let i = 1; i < EQUIP_MAX; i++) {
+      const k = invKey(cat, i), nk = invKey(cat, i + 1)
+      while ((nv[k] || 0) >= 5) { nv[k] -= 5; nv[nk] = (nv[nk] || 0) + 1; qc++ }
+    }
+    if (!qc) return
+    qEv('fuse', qc)
     setInv(v => {
-      const nv = { ...v }
-      for (let i = 1; i < EQUIP_MAX; i++) {
-        const k = invKey(cat, i), nk = invKey(cat, i + 1)
-        while ((nv[k] || 0) >= 5) { nv[k] -= 5; nv[nk] = (nv[nk] || 0) + 1 }
-      }
       return nv
     })
   }
@@ -1781,6 +1863,8 @@ export default function App() {
     if (delta < 0) { setSkill(s => ({ ...s, [k]: Math.max(0, s[k] + delta) })); return }
     if (!DEBUG && spLive.current <= 0) return
     if (!DEBUG) setSp(s => s - 1)
+    if ((skill[k] || 0) === 0) qEv('skill_get')   // 스킬 획득 (0→1)
+    qEv('skill_enh')
     setSkill(s => ({ ...s, [k]: s[k] + 1 }))
   }
   function evolve() {
@@ -1789,6 +1873,7 @@ export default function App() {
     if (meat < c) return
     setMeat(m => m - c)
     setEvo(v => v + 1)
+    qEv('evolve')
   }
   function retry() { world.current.needStart = true; setPhase('fighting') }
   function jumpWave(n) {
@@ -1930,7 +2015,7 @@ export default function App() {
                         ))}
                       </div>
                       <div style={st.dBtns}>
-                        <button data-edit="denh" style={{ ...st.dEnhBtn, ...(canEnh ? st.dEnhBtnOn : {}) }} onClick={() => { if (canEnh) { setMats(m => { const n = [...m]; n[4] -= cost; return n }); setEnh(e => ({ ...e, [key]: lv + 1 })) } }}>
+                        <button data-edit="denh" style={{ ...st.dEnhBtn, ...(canEnh ? st.dEnhBtnOn : {}) }} onClick={() => { if (canEnh) { setMats(m => { const n = [...m]; n[4] -= cost; return n }); setEnh(e => ({ ...e, [key]: lv + 1 })); qEv('equip_enh') } }}>
                           <img src={MAT_IMG(4)} alt="" style={st.dEnhIc} /><span style={{ fontFamily: "'Do Hyeon',sans-serif" }}>{fmt(cost)}</span>
                         </button>
                         <button data-edit="dequip" style={{ ...st.dEquipBtn, ...(isEq ? st.dEquipOn : {}) }} onClick={() => { if (cnt > 0 || isEq) setGearEq(g => ({ ...g, [cat]: isEq ? null : i })) }}>{isEq ? '장착중' : '장착'}</button>
@@ -1953,7 +2038,7 @@ export default function App() {
                             <span style={st.dStepVal}>{fuseQty}</span>
                             <button data-edit="dstep" style={st.dStepBtn} onClick={() => setFuseQty(q => Math.min(maxFuse, q + 1))}>+</button>
                           </div>
-                          <button data-edit="dfusebtn" style={st.dFuseBtn} onClick={() => { if (fuseQty > 0) { setInv(v => { const k = invKey(cat, i), nk = invKey(cat, i + 1); const use = Math.min(fuseQty, Math.floor((v[k] || 0) / 5)); if (use <= 0) return v; return { ...v, [k]: v[k] - use * 5, [nk]: (v[nk] || 0) + use } }); setFuseQty(0) } }}>융합</button>
+                          <button data-edit="dfusebtn" style={st.dFuseBtn} onClick={() => { if (fuseQty > 0) { const use = Math.min(fuseQty, Math.floor((inv[invKey(cat, i)] || 0) / 5)); if (use > 0) qEv('fuse', use); setInv(v => { const k = invKey(cat, i), nk = invKey(cat, i + 1); const u = Math.min(fuseQty, Math.floor((v[k] || 0) / 5)); if (u <= 0) return v; return { ...v, [k]: v[k] - u * 5, [nk]: (v[nk] || 0) + u } }); setFuseQty(0) } }}>융합</button>
                         </>
                       ) : (<div style={st.dMaxNote}>최종 단계 장비입니다</div>)}
                     </div>
@@ -2026,22 +2111,28 @@ export default function App() {
               ))}
             </div>
             <div style={st.qList}>
-              {QUEST_PLACEHOLDER[questTab].map((q, i) => (
-                <div key={i} data-edit="qrow" style={st.qRow}>
-                  <img data-edit="qicon" src="/ui/quest.png" alt="" style={st.qIcon} />
+              {QUEST_LIST[questTab].map((q, i) => {
+                const p = qProg(questTab, i)
+                return (
+                <div key={i} data-edit="qrow" style={{ ...st.qRow, ...(p.claimed ? st.qRowDone : null) }}>
+                  <div style={st.qIconWrap}>
+                    <img data-edit="qicon" src="/ui/quest.png" alt="" style={st.qIcon} />
+                    {questTab === 1 && <div data-edit="qlv" style={st.qLv}>Lv.{p.lv}</div>}
+                  </div>
                   <div style={st.qMid}>
                     <div data-edit="qname" style={st.qName}>{q.name}</div>
                     <div data-edit="qbar" style={st.qBarOuter}>
-                      <div style={{ ...st.qBarFill, width: `${Math.min(100, q.cur / q.goal * 100)}%` }} />
-                      <div data-edit="qbart" style={st.qBarTxt}>{fmt(q.cur)}/{fmt(q.goal)}</div>
+                      <div style={{ ...st.qBarFill, width: `${Math.min(100, p.cur / q.goal * 100)}%` }} />
+                      <div data-edit="qbart" style={st.qBarTxt}>{p.claimed ? '수령 완료' : `${fmt(p.cur)}/${fmt(q.goal)}`}</div>
                     </div>
                   </div>
-                  <button data-edit="qrew" style={st.qRew}>
-                    <img data-edit="qrewi" src="/ui/gem.png" alt="" style={st.qRewIc} />
+                  <button data-edit="qrew" style={{ ...st.qRew, ...(p.canClaim ? st.qRewOn : st.qRewOff) }} onClick={() => qClaim(questTab, i)}>
+                    <img data-edit="qrewi" src={q.ric} alt="" style={st.qRewIc} />
                     <span data-edit="qrewv" style={st.qRewV}>{fmt(q.rv)}</span>
                   </button>
                 </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </div>
@@ -2598,7 +2689,7 @@ Object.assign(UI_DEFAULT, {
   qnamefz: 14, qnameX: 0, qnameY: 0,
   qbarw: 150, qbarh: 14, qbarX: 0, qbarY: 0, qbarfz: 10, qbartX: 0, qbartY: 0,
   qreww: 74, qrewh: 44, qrewX: 0, qrewY: 0,
-  qrewisz: 16, qrewiX: 0, qrewiY: 0, qrewvfz: 14, qrewvX: 0, qrewvY: 0,
+  qrewisz: 16, qrewiX: 0, qrewiY: 0, qrewvfz: 14, qrewvX: 0, qrewvY: 0, qlvfz: 9, qlvX: 0, qlvY: 0,
   advicotrexw: 141, advicotrexh: 254, advicotrexX: -3, advicotrexY: 0,
   advicospinow: 131, advicospinoh: 97, advicospinoX: 5, advicospinoY: -7,
   advicotrikew: 133, advicotrikeh: 93, advicotrikeX: 6, advicotrikeY: 0,
@@ -2744,6 +2835,7 @@ Object.assign(EDIT_GROUPS, {
   qrew: { label: '보상 버튼', size: ['qreww', 'qrewh'], pos: 'qrew' },
   qrewi: { label: '보상 아이콘', size: ['qrewisz'], pos: 'qrewi' },
   qrewv: { label: '보상 숫자', size: ['qrewvfz'], pos: 'qrewv' },
+  qlv: { label: '퀘스트 레벨', size: ['qlvfz'], pos: 'qlv' },
 })
 const UI_LABELS = {
   panelbwV: '패널 테두리(상하)', panelbwH: '패널 테두리(좌우)', rowbwV: '항목 테두리(상하)', rowbwH: '항목 테두리(좌우)',
@@ -2767,7 +2859,7 @@ Object.assign(UI_LABELS, {
   qww: '창 너비', qwh: '창 높이', qtitlefz: '제목 글자', qclsz: '버튼 크기',
   qtabw: '탭 너비', qtabh: '탭 높이', qtabfz: '탭 글자', qrowh: '행 높이',
   qiconsz: '아이콘 크기', qnamefz: '이름 글자', qbarw: '바 너비', qbarh: '바 높이', qbarfz: '바 글자',
-  qreww: '버튼 너비', qrewh: '버튼 높이', qrewisz: '아이콘 크기', qrewvfz: '숫자 크기',
+  qreww: '버튼 너비', qrewh: '버튼 높이', qrewisz: '아이콘 크기', qrewvfz: '숫자 크기', qlvfz: '레벨 글자',
 })
 const uiVars = c => `:root{
 --pd-panelbw-v:${c.panelbwV}px;--pd-panelbw-h:${c.panelbwH}px;--pd-rowbw-v:${c.rowbwV}px;--pd-rowbw-h:${c.rowbwH}px;
@@ -2780,7 +2872,7 @@ const uiVars = c => `:root{
 --pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
 ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg${i}-x:${c['evoimg' + i + 'X']}px;--pd-evoimg${i}-y:${c['evoimg' + i + 'Y']}px;`).join('')}--pd-slotfz:${c.slotfz}px;
---pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;
+--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;
 ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k}h:${c['advico' + k + 'h']}px;--pd-advico${k}-x:${c['advico' + k + 'X']}px;--pd-advico${k}-y:${c['advico' + k + 'Y']}px;`).join('')}
 --pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
 --pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
@@ -2807,7 +2899,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
 --pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -3088,7 +3180,12 @@ const st = {
     background: 'rgba(0,0,0,0.26)', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.5)',
     transform: 'translate(var(--pd-qrow-x), var(--pd-qrow-y))',
   },
+  qIconWrap: { flexShrink: 0, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   qIcon: { flexShrink: 0, width: 'var(--pd-qiconsz)', height: 'var(--pd-qiconsz)', objectFit: 'contain', imageRendering: 'pixelated', transform: 'translate(var(--pd-qicon-x), var(--pd-qicon-y))' },
+  qLv: { position: 'absolute', top: -4, left: -4, padding: '1px 4px', fontSize: 'var(--pd-qlvfz)', fontWeight: 800, color: '#ffd98a', background: 'rgba(20,12,4,0.9)', border: '1px solid #7a5a30', borderRadius: 5, textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-qlv-x), var(--pd-qlv-y))' },
+  qRowDone: { opacity: 0.55 },
+  qRewOn: { boxShadow: '0 0 8px rgba(240,168,48,0.65), inset 0 1px 0 rgba(255,255,255,0.18)', border: '1px solid #f0a830' },
+  qRewOff: { filter: 'grayscale(0.8)', opacity: 0.6, cursor: 'default' },
   qMid: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 },
   qName: { fontSize: 'var(--pd-qnamefz)', fontWeight: 800, color: '#f0dfae', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-qname-x), var(--pd-qname-y))' },
   qBarOuter: {
