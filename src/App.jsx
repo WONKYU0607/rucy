@@ -479,7 +479,15 @@ const EVOS = [
 ]
 
 const SAVE_KEY = 'paleoDefSave_v5'
-const SLOT_COUNT = 4
+const SLOT_COUNT = 8
+const SET_COUNT = 3
+const emptySet = () => Array(SLOT_COUNT).fill(null)
+const emptySets = () => Array.from({ length: SET_COUNT }, emptySet)
+const normSets = (sets, legacy) => {
+  const clamp = arr => { const a = emptySet(); if (Array.isArray(arr)) for (let i = 0; i < SLOT_COUNT; i++) { const v = arr[i]; if (v != null && v < 999) a[i] = v } return a }
+  if (Array.isArray(sets) && sets.length) { const out = emptySets(); for (let s = 0; s < SET_COUNT; s++) out[s] = clamp(sets[s]); return out }
+  const out = emptySets(); if (Array.isArray(legacy)) out[0] = clamp(legacy); return out   // 구 equipped 4슬롯 → 1세트
+}
 function loadSave() {
   try {
     const s = JSON.parse(localStorage.getItem(SAVE_KEY))
@@ -488,7 +496,7 @@ function loadSave() {
       lv: { ...statInit(), ...s.lv }, evo: s.evo ?? 0,
       hlv: s.hlv ?? 1, hexp: s.hexp ?? 0, sp: s.sp ?? 0, ts: s.ts ?? null,
       skill: { ...statInit(), ...s.skill },
-      equipped: (Array.isArray(s.equipped) ? s.equipped.slice(0, SLOT_COUNT) : [null, null, null, null]).map(si => (si != null && si < SKILLS.length ? si : null)),
+      skillSets: normSets(s.skillSets, s.equipped), activeSet: (typeof s.activeSet === 'number' && s.activeSet >= 0 && s.activeSet < SET_COUNT) ? s.activeSet : 0,
       cdConf: Array.isArray(s.cdConf) && s.cdConf.length === SKILLS.length ? s.cdConf : SKILLS.map(k => k.cd),
       // 장착·재화·기록: 저장된 값 그대로 복원 (누락 시 기본값)
       alliesOn: s.alliesOn && typeof s.alliesOn === 'object' ? s.alliesOn : {},
@@ -499,7 +507,7 @@ function loadSave() {
       pearl: typeof s.pearl === 'number' ? s.pearl : 0, quest: s.quest && typeof s.quest === 'object' && s.quest.ev ? s.quest : questInit(),
     }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), equipped: [null, null, null, null], cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, mats: [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, advStage: {}, pearl: 0, quest: questInit() }
+  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, mats: [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, advStage: {}, pearl: 0, quest: questInit() }
 }
 const fmt = n => n >= 1e8 ? (n/1e8).toFixed(1)+'억' : n >= 1e4 ? (n/1e4).toFixed(1)+'만' : Math.floor(n).toLocaleString()
 const fmtPct = v => v >= 10000 ? fmt(Math.round(v)) : (Math.round(v * 10) / 10).toString()
@@ -649,7 +657,9 @@ export default function App() {
   const [progress, setProgress] = useState(0)
   const [gains, setGains] = useState([])       // 획득 팝업 리스트
   const [skillCdUI, setSkillCdUI] = useState(SKILLS.map(() => 0))  // 스킬 남은 쿨타임(초)
-  const [equipped, setEquipped] = useState(init.equipped)          // 장착 슬롯 (스킬 index or null)
+  const [skillSets, setSkillSets] = useState(init.skillSets)       // 3세트 × 8슬롯
+  const [activeSet, setActiveSet] = useState(init.activeSet ?? 0)  // 현재 활성 세트 (0~2)
+  const equipped = skillSets[activeSet] || emptySet()              // 파생: 활성 세트 = 전투가 읽는 장착 슬롯
   const [cdConf, setCdConf] = useState(init.cdConf)                // 스킬별 쿨타임 설정(초, 직접입력)
 
   // 스탯 총 레벨 = 강화(고기) + 스킬(SP), 효과는 STAT_LIST.per 기준
@@ -680,12 +690,12 @@ export default function App() {
   }
 
   useEffect(() => {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, alliesOn, gearEq, mats, enh, ruby, advStage, pearl, quest, ts: Date.now() }))
-  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, equipped, cdConf, gem, inv, best, alliesOn, gearEq, mats, enh, ruby, advStage, pearl, quest])
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, gem, inv, best, alliesOn, gearEq, mats, enh, ruby, advStage, pearl, quest, ts: Date.now() }))
+  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, gem, inv, best, alliesOn, gearEq, mats, enh, ruby, advStage, pearl, quest])
 
   // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제
   useEffect(() => {
-    setEquipped(eq => eq.map(si => (si != null && SKILLS[si].stage === evo ? si : null)))
+    setSkillSets(sets => sets.map(set => set.map(si => (si != null && SKILLS[si].stage === evo ? si : null))))
   }, [evo])
 
   // 클리어 배너 1.3초 후 소멸
@@ -1895,13 +1905,15 @@ export default function App() {
   }
   function challengeBoss() { setBossReady(false); world.current.startBossFlag = true }
   function equipSkill(i) {
-    setEquipped(eq => {
-      if (eq.includes(i)) return eq
-      const slot = eq.indexOf(null)
-      if (slot < 0) return eq  // 슬롯 가득
-      const next = [...eq]; next[slot] = i; return next
+    setSkillSets(sets => {
+      const cur = sets[activeSet]
+      if (cur.includes(i)) return sets
+      const slot = cur.indexOf(null)
+      if (slot < 0) return sets  // 슬롯 가득
+      const next = sets.map(a => a.slice()); next[activeSet][slot] = i; return next
     })
   }
+  function switchSet(n) { if (n >= 0 && n < SET_COUNT) setActiveSet(n) }
   function enterAdventure() {
     if (uiEdit || !advSel || ruby < ADV_COST_RUBY) return
     const stage = Math.min(ADV_STAGES, (advStage[advSel.key] || 0) + 1)
@@ -1910,7 +1922,7 @@ export default function App() {
     setAdvSel(null); setNav('영웅'); setPaused(false)
   }
   function unequipSkill(slot) {
-    setEquipped(eq => { const next = [...eq]; next[slot] = null; return next })
+    setSkillSets(sets => { const next = sets.map(a => a.slice()); next[activeSet][slot] = null; return next })
   }
 
   const offData = offReward || (uiEdit ? { sec: 7200, kills: 1234, wave: 670, meat: 12345, exp: 6789, gem: 0, meatRate: 102, expRate: 56, gemRate: 0 } : null)
@@ -2301,6 +2313,28 @@ export default function App() {
         </button>
       )}
 
+      {nav !== '모험' && canvasBox.h > 0 && (
+        <div data-edit="skqbar" style={{ ...st.skqBar, top: canvasBox.top + canvasBox.h - 66 }}>
+          <div className="pd-hscroll" style={st.skqSlots}>
+            {equipped.map((si, slot) => {
+              const valid = si != null && SKILLS[si] && SKILLS[si].stage === evo
+              return (
+                <div key={slot} data-edit="skqslot" style={st.skqSlot} onClick={() => { if (!uiEdit && si != null) unequipSkill(slot) }}>
+                  {valid
+                    ? (skillIconSrc(SKILLS[si].id) ? <img src={skillIconSrc(SKILLS[si].id)} alt="" style={st.skqSlotImg} /> : <span style={{ fontSize: 16 }}>{SKILLS[si].icon}</span>)
+                    : <span style={st.skqSlotEmpty}>{slot + 1}</span>}
+                </div>
+              )
+            })}
+          </div>
+          <div style={st.skqSets}>
+            {Array.from({ length: SET_COUNT }, (_, n) => (
+              <button key={n} data-edit="skqset" style={{ ...st.skqSetBtn, ...(activeSet === n ? st.skqSetOn : {}) }} onClick={() => { if (!uiEdit) switchSet(n) }}>{n + 1}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {nav === '영웅' && (
       <div data-edit="panel" style={st.frameBox}>
       <div data-edit="tab" style={st.tabsInner}>
@@ -2624,7 +2658,7 @@ export default function App() {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) }))
             const nbtn = { width: 26, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
-            const rng = k => k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
+            const rng = k => k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
             const rmin = k => k === 'equipcols' ? 3 : 0
             return <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -2717,14 +2751,13 @@ const UI_DEFAULT = {
 // 진입창 보스 그림: 종별 개별 크기·위치 (사용자 확정값 2026-07-25)
 Object.assign(UI_DEFAULT, {
   // 스킬 탭 재편
-  skhtfz: 16, skhtitleX: 0, skhtitleY: 0,
-  skfusew: 60, skfuseh: 30, skfusefz: 12, skfuseX: 0, skfuseY: 0, sklearnw: 88, sklearnh: 30, sklearnfz: 12, sklearnX: 0, sklearnY: 0,
-  skmasth: 26, skmastfz: 12, skmastX: 0, skmastY: 0,
-  skcellsz: 60, skcellgap: 8, skcellX: 0, skcellY: 0,
-  skimgsz: 52, skimgX: 0, skimgY: 0,
+  skqbarw: 300, skqbarX: 0, skqbarY: 0, skqslotsz: 34, skqsetw: 26, skqseth: 22, skqsetfz: 12,
+  skhtfz: 14, skhtitleX: 23, skhtitleY: 7,
+  skfusew: 54, skfuseh: 20, skfusefz: 12, skfuseX: -24, skfuseY: 10, sklearnw: 60, sklearnh: 20, sklearnfz: 11, sklearnX: -24, sklearnY: 10,
+  skcellsz: 57, skcellgap: 7, skcellrgap: 8, skcellX: -1, skcellY: -7,
+  skimgsz: 44, skimgX: 0, skimgY: 0,
   sknamefz: 12, sknameX: 0, sknameY: 0,
-  skplusfz: 15, skplusX: 0, skplusY: 0,
-  skbarX: 0, skbarY: 0,
+  skbarX: 1, skbarY: 0,
   skdiconsz: 88, skdiconX: 0, skdiconY: 0,
   skdtitlefz: 18, skdtitleX: 0, skdtitleY: 0,
   skddescfz: 13, skddescX: 0, skddescY: 0,
@@ -2873,10 +2906,13 @@ const EDIT_GROUPS = {
 for (let i = 0; i < 6; i++) EDIT_GROUPS[`evoimg${i}`] = { label: `진화캐릭 ${i + 1}단계`, size: [`evoimg${i}`], pos: `evoimg${i}` }
 for (const k of DINO_KEYS) EDIT_GROUPS[`advico${k}`] = { label: `보스 그림(${DINO_NAME[k]})`, size: [`advico${k}w`, `advico${k}h`], pos: `advico${k}` }
 Object.assign(EDIT_GROUPS, {
+  skqbar: { label: '스킬 퀵바', size: ['skqbarw'], pos: 'skqbar' },
+  skqslot: { label: '퀵바 슬롯', size: ['skqslotsz'] },
+  skqset: { label: '퀵바 세트버튼', size: ['skqsetw', 'skqseth', 'skqsetfz'] },
   skhtitle: { label: '스킬 제목', size: ['skhtfz'], pos: 'skhtitle' },
   skfuse: { label: '합성 버튼', size: ['skfusew', 'skfuseh', 'skfusefz'], pos: 'skfuse' },
   sklearn: { label: '스킬배우기 버튼', size: ['sklearnw', 'sklearnh', 'sklearnfz'], pos: 'sklearn' },
-  skcell: { label: '스킬 칸(틀)', size: ['skcellsz', 'skcellgap'], pos: 'skcell' },
+  skcell: { label: '스킬 칸(틀)', size: ['skcellsz', 'skcellgap', 'skcellrgap'], pos: 'skcell' },
   skimg: { label: '스킬 그림', size: ['skimgsz'], pos: 'skimg' },
   skname: { label: '스킬 이름', size: ['sknamefz'], pos: 'skname' },
   skbar: { label: '스킬 강화바', size: [], pos: 'skbar' },
@@ -2920,8 +2956,9 @@ const UI_LABELS = {
 for (let i = 0; i < 6; i++) UI_LABELS[`evoimg${i}`] = `${i + 1}단계 크기`
 for (const k of DINO_KEYS) { UI_LABELS[`advico${k}w`] = '그림 너비'; UI_LABELS[`advico${k}h`] = '그림 높이' }
 Object.assign(UI_LABELS, {
+  skqbarw: '바 너비', skqslotsz: '슬롯 크기', skqsetw: '버튼 너비', skqseth: '버튼 높이', skqsetfz: '버튼 글자',
   skhtfz: '제목 글자', skfusew: '버튼 너비', skfuseh: '버튼 높이', skfusefz: '버튼 글자', sklearnw: '버튼 너비', sklearnh: '버튼 높이', sklearnfz: '버튼 글자',
-  skcellsz: '틀 크기', skcellgap: '칸 간격', skimgsz: '그림 크기',
+  skcellsz: '틀 크기', skcellgap: '가로 간격', skcellrgap: '세로 간격', skimgsz: '그림 크기',
   sknamefz: '이름 글자', skplusfz: '뱃지 글자',
   skdiconsz: '아이콘 크기', skdtitlefz: '제목 글자', skddescfz: '설명 글자',
   skdefffz: '효과 글자', skdstatfz: '스탯 글자', skdbtnh: '버튼 높이', skdbtnfz: '버튼 글자',
@@ -2941,7 +2978,7 @@ const uiVars = c => `:root{
 --pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
 ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg${i}-x:${c['evoimg' + i + 'X']}px;--pd-evoimg${i}-y:${c['evoimg' + i + 'Y']}px;`).join('')}--pd-slotfz:${c.slotfz}px;
---pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;
+--pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;
 ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k}h:${c['advico' + k + 'h']}px;--pd-advico${k}-x:${c['advico' + k + 'X']}px;--pd-advico${k}-y:${c['advico' + k + 'Y']}px;`).join('')}
 --pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
 --pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
@@ -2968,7 +3005,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
 --pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdenh', 'skdequip'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdenh', 'skdequip'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -3220,6 +3257,15 @@ const st = {
     background: 'linear-gradient(180deg,#3a2c1b,#241a10)',
     transform: 'translate(var(--pd-advclose-x), var(--pd-advclose-y))', cursor: 'pointer',
   },
+  // ── 스킬 퀵바 (히어로 발밑, 8슬롯 가로 드래그 + 3세트) ──
+  skqBar: { position: 'absolute', left: 4, zIndex: 30, display: 'flex', flexDirection: 'column', gap: 3, width: 'var(--pd-skqbarw)', transform: 'translate(var(--pd-skqbar-x), var(--pd-skqbar-y))', pointerEvents: 'auto' },
+  skqSlots: { display: 'flex', gap: 4, overflowX: 'auto', overflowY: 'hidden', padding: '3px 4px', borderRadius: 8, background: 'rgba(16,10,5,0.72)', border: '1px solid #5a4630', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.6)', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' },
+  skqSlot: { flexShrink: 0, width: 'var(--pd-skqslotsz)', height: 'var(--pd-skqslotsz)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, border: '1.5px solid #6a533a', background: 'rgba(0,0,0,0.4)', overflow: 'hidden', cursor: 'pointer' },
+  skqSlotImg: { width: '100%', height: '100%', objectFit: 'contain', imageRendering: 'pixelated' },
+  skqSlotEmpty: { fontSize: 11, fontWeight: 800, color: 'rgba(200,180,140,0.4)' },
+  skqSets: { display: 'flex', gap: 4 },
+  skqSetBtn: { width: 'var(--pd-skqsetw)', height: 'var(--pd-skqseth)', fontSize: 'var(--pd-skqsetfz)', fontWeight: 800, color: '#b7a480', border: '1px solid #4a3a22', borderRadius: 6, background: 'rgba(20,13,7,0.8)', cursor: 'pointer', boxSizing: 'border-box', padding: 0, lineHeight: 1 },
+  skqSetOn: { color: '#fff5df', border: '1px solid #d09340', background: 'linear-gradient(180deg,#4a3418,#2c1f0e)', boxShadow: 'inset 0 0 5px rgba(208,147,64,0.4)' },
   // ── 스킬 탭 재편 ──
   skHeadRow: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 },
   skHeadTitle: { fontSize: 'var(--pd-skhtfz)', fontWeight: 800, color: '#f0dfae', textShadow: '0 1px 2px #000', marginRight: 'auto', transform: 'translate(var(--pd-skhtitle-x), var(--pd-skhtitle-y))' },
@@ -3229,7 +3275,7 @@ const st = {
   skMastLabel: { fontSize: 'var(--pd-skmastfz)', fontWeight: 800, color: '#dce8ff', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap' },
   skMastCount: { fontSize: 'var(--pd-skmastfz)', fontWeight: 800, color: '#fff', margin: '0 auto' },
   skMastBonus: { fontSize: 'var(--pd-skmastfz)', fontWeight: 700, color: '#ffe08a', whiteSpace: 'nowrap' },
-  skGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--pd-skcellgap)', width: '100%', boxSizing: 'border-box', padding: '2px 0' },
+  skGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', columnGap: 'var(--pd-skcellgap)', rowGap: 'var(--pd-skcellrgap)', width: '100%', boxSizing: 'border-box', padding: '2px 0' },
   skCell: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 2px', cursor: 'pointer', transform: 'translate(var(--pd-skcell-x), var(--pd-skcell-y))' },
   skCellIconWrap: { position: 'relative', width: 'var(--pd-skcellsz)', height: 'var(--pd-skcellsz)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #6a533a', borderRadius: 10, background: 'rgba(0,0,0,0.35)', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.55)', overflow: 'hidden' },
   skCellIconImg: { width: 'var(--pd-skimgsz)', height: 'var(--pd-skimgsz)', objectFit: 'contain', imageRendering: 'pixelated', transform: 'translate(var(--pd-skimg-x), var(--pd-skimg-y))' },
