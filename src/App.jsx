@@ -93,14 +93,14 @@ const ADV_WARN = 2.0           // 보스 등장 경고 연출 시간(초)
 // ── 공격 타이밍 ──────────────────────────────────────────────
 // 보스 공룡: 프레임별 재생 시간(초) 4개 [준비, 웅크림, 타격, 마무리] — 합이 그 종의 공격 모션 길이
 const DINO_ATK_T = {
-  trex:    [0.09, 0.12, 0.07],           // 4번 제외
-  spino:   [0.09, 0.12, 0.07],           // 4번 제외
-  trike:   [0.13, 0.08, 0.13],           // 1번 제외
-  stego:   [0.14, 0.08, 0.14],           // 1번 제외
-  raptor:  [0.07, 0.09, 0.06, 0.10],     // 전부 사용
-  anky:    [0.15, 0.08, 0.14],           // 1번 제외
-  ptera:   [0.10, 0.12],                 // 1·3번만 사용
-  brachio: [0.16, 0.09, 0.16],           // 1번 제외
+  trex:    [0.09, 0.25, 0.13],           // 4번 제외
+  spino:   [0.08, 0.12, 0.15],           // 4번 제외
+  trike:   [0.09, 0.16, 0.16],           // 1번 제외
+  stego:   [0.15, 0.15, 0.08],           // 1번 제외
+  raptor:  [0.03, 0.09, 0.10, 0.05],     // 전부 사용
+  anky:    [0.15, 0.15, 0.10],           // 1번 제외
+  ptera:   [0.30, 0.20],                 // 1·3번만 사용
+  brachio: [0.12, 0.23, 0.16],           // 1번 제외
 }
 const DINO_ATK_DEF = [0.10, 0.13, 0.08, 0.14]
 // 종별로 실제 사용할 공격 프레임 번호 (지정 없으면 1~4 전부)
@@ -110,15 +110,19 @@ const DINO_ATK_FRAMES = {
   ptera: [1, 3],
 }
 const DINO_NAME = { trex: '티라노', spino: '스피노', trike: '트리케라톱스', stego: '스테고', raptor: '랩터', anky: '안킬로', ptera: '익룡', brachio: '브라키오' }
+// 종별 정지 위치 보정(px): +면 더 오른쪽(멀리)에서 멈춤, −면 더 가까이
+const DINO_STOP = { trex: 30, spino: 0, trike: 0, stego: 0, raptor: 0, anky: 0, ptera: 0, brachio: 0 }
 const DINO_KEYS = ['trex', 'spino', 'trike', 'stego', 'raptor', 'anky', 'ptera', 'brachio']
 
 // ── 모션 설정: 인게임 편집기에서 실시간 조절 (localStorage 'paleoMotion') ──
 const MOTION_DEFAULT = {
   atk: DINO_ATK_T,                                            // 보스 종별 프레임 시간(초)
   hit: { trex: 3, spino: 3, trike: 2, stego: 2, raptor: 3, anky: 2, ptera: 2, brachio: 2 },  // 데미지 프레임 번호
-  cd: { advBoss: 1400, advMob: 1100, wave: 1200 },             // 공격 간격(ms)
-  dur: { advMob: 0.35, wave: 0.30 },                           // 공격 프레임 없는 적의 모션 길이(초)
-  lunge: { boss: 26, mob: 15 },                                // 공격 시 파고드는 거리(px)
+  cd: { advBoss: 1000, advMob: 1000, wave: 1000 },             // 공격 간격(ms)
+  dur: { advMob: 0.30, wave: 0.30 },                           // 공격 프레임 없는 적의 모션 길이(초)
+  lunge: { boss: 27, mob: 15 },                                // 공격 시 파고드는 거리(px)
+  stop: { ...DINO_STOP },                                      // 종별 정지 위치 보정(px, +면 멀리)
+  size: { trex: 1, spino: 1, trike: 1, stego: 1, raptor: 1, anky: 1, ptera: 1, brachio: 1 },  // 종별 크기 배율
 }
 const dinoAtkDur = (k, T) => (T[k] || DINO_ATK_DEF).reduce((a, b) => a + b, 0)
 const dinoHitAt = (k, T, H) => {               // 타격 프레임이 시작되는 시각(초)
@@ -544,6 +548,7 @@ export default function App() {
         atk: { ...MOTION_DEFAULT.atk, ...(sv.atk || {}) }, hit: { ...MOTION_DEFAULT.hit, ...(sv.hit || {}) },
         cd: { ...MOTION_DEFAULT.cd, ...(sv.cd || {}) }, dur: { ...MOTION_DEFAULT.dur, ...(sv.dur || {}) },
         lunge: { ...MOTION_DEFAULT.lunge, ...(sv.lunge || {}) },
+        stop: { ...MOTION_DEFAULT.stop, ...(sv.stop || {}) }, size: { ...MOTION_DEFAULT.size, ...(sv.size || {}) },
       }
     } catch { return JSON.parse(JSON.stringify(MOTION_DEFAULT)) }
   })
@@ -904,13 +909,14 @@ export default function App() {
         for (const e of w.enemies) {
           if (e.dead) continue
           e.flash = Math.max(0, e.flash - dt * 5)
-          if (e.stun > 0) { e.stun -= dt; continue }  // 기절 중 정지
+          if (e.stun > 0) { e.stun -= dt; if (!(e.atkT > 0)) continue }  // 기절 중 정지 (진행 중인 공격은 계속)
           // 넉백: ease-out 감쇠하며 뒤로 밀림 / 스쿼시 타이머
-          if (e.kb > 0.5) { e.x += e.kb * dt; e.kb -= e.kb * Math.min(1, dt * 9) } else e.kb = 0
+          if (e.kb > 0.5) { if (!(e.atkT > 0)) e.x += e.kb * dt; e.kb -= e.kb * Math.min(1, dt * 9) } else e.kb = 0  // 공격 중엔 밀리지 않음
           if (e.sq > 0) e.sq = Math.max(0, e.sq - dt)
           e.vt = Math.min(1, (e.vt ?? 0) + dt * 2.2)   // 스폰 직후 가속 (0→1)
-          const stopX = w.heroX + Math.min(atkRange - 15, 60 + e.h * 0.4)
-          if (e.x > stopX) {
+          const szm = e.dino ? (motRef.current.size[e.dino] || 1) : 1
+          const stopX = w.heroX + Math.min(atkRange - 15, 60 + e.h * szm * 0.4) + (e.dino ? motRef.current.stop[e.dino] || 0 : 0)
+          if (e.x > stopX && !(e.atkT > 0)) {
             const near = Math.min(1, Math.max(0.3, (e.x - stopX) / 55))  // 정지 전 감속
             e.x -= (e.speed * (e.spdV || 1) * SPEED * 1.3 * e.vt * near + scroll) * dt
             if (e.atkT > 0) { e.atkT = 0; e.lunge = 0 }
@@ -1197,7 +1203,7 @@ export default function App() {
             const d = ALLY_DEFS[sp2.ally]
             sp2.t += dt
             sp2.x += (sp2.spd || d.projSpd) * dt
-            const hit = w.enemies.find(e => !e.dead && Math.abs(e.x - sp2.x) < 26 + e.h * 0.2)
+            const hit = w.enemies.find(e => !e.dead && Math.abs(e.x - sp2.x) < 26 + e.h * (e.dino ? (motRef.current.size[e.dino] || 1) : 1) * 0.2)
             if (hit) { sp2.dead = true; dealDamage(hit, { ...st, atk: st.atk * d.atkMult }) }
             else if (sp2.x > w.W + 80) sp2.dead = true
           }
@@ -1353,6 +1359,8 @@ export default function App() {
       const air = e.air ? e.air * (e.airT ?? 1) : 0   // 공중 높이 (스폰부터 고정 고도)
       const y = w.groundY - air
       const t = ENEMY_TYPES[e.type]
+      const szm = e.dino ? (motRef.current.size[e.dino] || 1) : 1   // 종별 크기 배율(모션 편집기)
+      const H = e.h * szm
       const imgs = e.dino ? (e.boss ? (e.atkT > 0 ? DINO_BOSS[e.dino].a : DINO_BOSS[e.dino].w) : DINO_MOB[e.dino]) : (e.boss ? BIMG[e.bossIdx] : EIMG[e.type])
       const stunned = e.stun > 0
       const gall = e.animT * 9
@@ -1361,10 +1369,10 @@ export default function App() {
             ? dinoAtkFrame(e.dino, (e.atkDur || dinoAtkDur(e.dino, motRef.current.atk)) - e.atkT, motRef.current.atk)   // 보스: 종별 프레임 시간표
             : Math.min(imgs.length - 1, Math.floor(((e.atkDur || motRef.current.dur.wave) - e.atkT) / (e.atkDur || motRef.current.dur.wave) * imgs.length)))
         : stunned ? 0 : Math.floor(gall / Math.PI) % imgs.length  // 기절 시 프레임 고정
-      const wf = e.boss ? 0.55 : Math.min(1.15, Math.max(0.45, 62 / e.h))  // 무게 차등: 클수록 덜 들썩임
+      const wf = e.boss ? 0.55 : Math.min(1.15, Math.max(0.45, 62 / H))  // 무게 차등: 클수록 덜 들썩임
       const bounce = stunned ? 0 : e.air
         ? Math.sin(gall * 0.45 + (e.yOff || 0)) * 5                        // 공중: 부드러운 부유
-        : Math.abs(Math.sin(gall)) * e.h * 0.08 * wf
+        : Math.abs(Math.sin(gall)) * H * 0.08 * wf
       const rock = stunned ? 0 : Math.sin(gall) * 0.06 * (e.air ? 0.35 : wf)
       const im = imgs[fi]
       ctx.save()
@@ -1374,7 +1382,7 @@ export default function App() {
       if (e.dead) { const p = Math.max(0, e.dieT) / 0.5; ctx.globalAlpha = Math.min(1, p * 2) * 0.9 }
       if (!e.dead && e.flash > 0.5) ctx.filter = 'brightness(3)'
       if (im.complete && im.naturalWidth > 0) {
-        const eh = e.h * (e.scaleV || 1)
+        const eh = H * (e.scaleV || 1)
         const ew = eh * (im.naturalWidth / im.naturalHeight)
         if (t.flip) ctx.scale(-1, 1)
         if (e.dead && _deadCtx) {
@@ -1393,17 +1401,17 @@ export default function App() {
         }
       } else {
         ctx.fillStyle = e.color
-        ctx.beginPath(); ctx.ellipse(0, -e.h * 0.5, e.h * 0.6, e.h * 0.4, 0, 0, Math.PI * 2); ctx.fill()
+        ctx.beginPath(); ctx.ellipse(0, -H * 0.5, H * 0.6, H * 0.4, 0, 0, Math.PI * 2); ctx.fill()
       }
       ctx.restore()
-      const bw = Math.min(52, e.h * 0.9)
+      const bw = Math.min(52, H * 0.9)
       ctx.fillStyle = 'rgba(0,0,0,0.55)'
-      ctx.fillRect(e.x - bw / 2, y - e.h - 12, bw, 4)
+      ctx.fillRect(e.x - bw / 2, y - H - 12, bw, 4)
       ctx.fillStyle = '#d51616'
-      ctx.fillRect(e.x - bw / 2, y - e.h - 12, bw * Math.max(0, e.hp / e.maxHp), 4)
+      ctx.fillRect(e.x - bw / 2, y - H - 12, bw * Math.max(0, e.hp / e.maxHp), 4)
       // 기절: 머리 위로 노란 별 3개 원 궤도 회전
       if (stunned) {
-        const cx = e.x, cy = y - e.h - 14, rad = 14
+        const cx = e.x, cy = y - H - 14, rad = 14
         for (let s = 0; s < 3; s++) {
           const ang = now * 0.005 + (s * Math.PI * 2 / 3)
           const sx = cx + Math.cos(ang) * rad, sy = cy + Math.sin(ang) * rad * 0.5
@@ -2417,6 +2425,8 @@ export default function App() {
           <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>{DINO_NAME[motSel]} 공격 프레임 {frames.join('·')}번 · 총 {arr.reduce((a, b) => a + b, 0).toFixed(2)}초</div>
           {arr.map((v, i) => row(`${i + 1}번(원본${frames[i]}) 시간`, v, 0.02, 0.6, 0.01, nv => setArr(i, nv)))}
           {row('데미지 프레임', M.hit[motSel] || 3, 1, arr.length, 1, v => setMotCfg({ ...M, hit: { ...M.hit, [motSel]: v } }))}
+          {row('정지 위치(px)', M.stop[motSel] ?? 0, -80, 200, 1, v => setMotCfg({ ...M, stop: { ...M.stop, [motSel]: v } }))}
+          {row('크기 배율', M.size[motSel] ?? 1, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, size: { ...M.size, [motSel]: v } }))}
           <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
           {row('보스 파고듦', M.lunge.boss, 0, 60, 1, v => setMotCfg({ ...M, lunge: { ...M.lunge, boss: v } }))}
           {row('일반 파고듦', M.lunge.mob, 0, 60, 1, v => setMotCfg({ ...M, lunge: { ...M.lunge, mob: v } }))}
