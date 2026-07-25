@@ -515,6 +515,7 @@ const fmtPct = v => v >= 10000 ? fmt(Math.round(v)) : (Math.round(v * 10) / 10).
 export default function App() {
   const canvasRef = useRef(null)
   const wrapRef = useRef(null)
+  const skqDrag = useRef({ down: false, x: 0, sl: 0, moved: false })   // 퀵바 마우스 드래그 스크롤
   const init = useRef(loadSave()).current
 
   const [meat, setMeat] = useState(init.meat)
@@ -2315,22 +2316,28 @@ export default function App() {
 
       {nav !== '모험' && canvasBox.h > 0 && (
         <div style={{ ...st.skqWrap, top: canvasBox.top + canvasBox.h - 74 }}>
-          <div data-edit="skqset" style={st.skqSets}>
-            {Array.from({ length: SET_COUNT }, (_, n) => (
-              <button key={n} style={{ ...st.skqSetBtn, ...(activeSet === n ? st.skqSetOn : {}) }} onClick={() => { if (!uiEdit) switchSet(n) }}>{n + 1}</button>
-            ))}
-          </div>
-          <div data-edit="skqbar" className="pd-hscroll" style={st.skqSlots}>
+          <div
+            data-edit="skqbar" className="pd-hscroll" style={st.skqSlots}
+            onPointerDown={e => { if (uiEdit) return; const el = e.currentTarget; skqDrag.current = { down: true, x: e.clientX, sl: el.scrollLeft, moved: false }; el.setPointerCapture?.(e.pointerId) }}
+            onPointerMove={e => { const d = skqDrag.current; if (!d.down) return; const dx = e.clientX - d.x; if (Math.abs(dx) > 4) d.moved = true; e.currentTarget.scrollLeft = d.sl - dx }}
+            onPointerUp={() => { skqDrag.current.down = false }}
+            onPointerCancel={() => { skqDrag.current.down = false }}
+          >
             {equipped.map((si, slot) => {
               const valid = si != null && SKILLS[si] && SKILLS[si].stage === evo
               return (
-                <div key={slot} data-edit="skqslot" style={st.skqSlot} onClick={() => { if (!uiEdit && si != null) unequipSkill(slot) }}>
+                <div key={slot} data-edit="skqslot" style={st.skqSlot} onClick={() => { if (!uiEdit && !skqDrag.current.moved && si != null) unequipSkill(slot) }}>
                   {valid
                     ? (skillIconSrc(SKILLS[si].id) ? <img src={skillIconSrc(SKILLS[si].id)} alt="" style={st.skqSlotImg} /> : <span style={{ fontSize: 16 }}>{SKILLS[si].icon}</span>)
                     : <span style={st.skqSlotEmpty}>{slot + 1}</span>}
                 </div>
               )
             })}
+          </div>
+          <div data-edit="skqset" style={st.skqSets}>
+            {Array.from({ length: SET_COUNT }, (_, n) => (
+              <button key={n} style={{ ...st.skqSetBtn, ...(activeSet === n ? st.skqSetOn : {}) }} onClick={() => { if (!uiEdit) switchSet(n) }}>{n + 1}</button>
+            ))}
           </div>
         </div>
       )}
@@ -2907,14 +2914,14 @@ const EDIT_GROUPS = {
 for (let i = 0; i < 6; i++) EDIT_GROUPS[`evoimg${i}`] = { label: `진화캐릭 ${i + 1}단계`, size: [`evoimg${i}`], pos: `evoimg${i}` }
 for (const k of DINO_KEYS) EDIT_GROUPS[`advico${k}`] = { label: `보스 그림(${DINO_NAME[k]})`, size: [`advico${k}w`, `advico${k}h`], pos: `advico${k}` }
 Object.assign(EDIT_GROUPS, {
-  skqbar: { label: '스킬 퀵바', size: ['skqbarw'], pos: 'skqbar' },
+  skqbar: { label: '스킬 퀵바(위치)', size: [], pos: 'skqbar' },
   skqslot: { label: '퀵바 슬롯', size: ['skqslotsz'] },
   skqset: { label: '퀵바 세트버튼', size: ['skqsetw', 'skqseth', 'skqsetfz'], pos: 'skqset' },
   skhtitle: { label: '스킬 제목', size: ['skhtfz'], pos: 'skhtitle' },
   skfuse: { label: '합성 버튼', size: ['skfusew', 'skfuseh', 'skfusefz'], pos: 'skfuse' },
   sklearn: { label: '스킬배우기 버튼', size: ['sklearnw', 'sklearnh', 'sklearnfz'], pos: 'sklearn' },
   skcell: { label: '스킬 칸(틀)', size: ['skcellsz', 'skcellgap', 'skcellrgap'], pos: 'skcell' },
-  skimg: { label: '스킬 그림', size: ['skimgsz'], pos: 'skimg' },
+  skimg: { label: '스킬 그림', size: ['skimgsz', 'skcellgap', 'skcellrgap'], pos: 'skimg' },
   skname: { label: '스킬 이름', size: ['sknamefz'], pos: 'skname' },
   skbar: { label: '스킬 강화바', size: [], pos: 'skbar' },
   skdicon: { label: '상세 아이콘', size: ['skdiconsz'], pos: 'skdicon' },
@@ -3260,9 +3267,9 @@ const st = {
     transform: 'translate(var(--pd-advclose-x), var(--pd-advclose-y))', cursor: 'pointer',
   },
   // ── 스킬 퀵바 (히어로 발밑, 8슬롯 가로 드래그 + 3세트, 세트는 슬롯 위) ──
-  skqWrap: { position: 'absolute', left: 4, zIndex: 30, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3, pointerEvents: 'auto' },
-  skqSets: { display: 'flex', gap: 4, transform: 'translate(var(--pd-skqset-x), var(--pd-skqset-y))' },
-  skqSlots: { display: 'flex', gap: 4, overflowX: 'auto', overflowY: 'hidden', padding: '3px 4px', width: 'var(--pd-skqbarw)', borderRadius: 8, background: 'rgba(16,10,5,0.72)', border: '1px solid #5a4630', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.6)', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', transform: 'translate(var(--pd-skqbar-x), var(--pd-skqbar-y))' },
+  skqWrap: { position: 'absolute', left: 4, zIndex: 30, display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 6, pointerEvents: 'auto' },
+  skqSets: { display: 'flex', gap: 4, flexShrink: 0, transform: 'translate(var(--pd-skqset-x), var(--pd-skqset-y))' },
+  skqSlots: { display: 'flex', gap: 4, overflowX: 'auto', overflowY: 'hidden', padding: '3px 4px', width: 'calc(var(--pd-skqslotsz) * 6 + 28px)', flexShrink: 0, borderRadius: 8, background: 'rgba(16,10,5,0.72)', border: '1px solid #5a4630', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.6)', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', cursor: 'grab', touchAction: 'pan-x', transform: 'translate(var(--pd-skqbar-x), var(--pd-skqbar-y))' },
   skqSlot: { flexShrink: 0, width: 'var(--pd-skqslotsz)', height: 'var(--pd-skqslotsz)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, border: '1.5px solid #6a533a', background: 'rgba(0,0,0,0.4)', overflow: 'hidden', cursor: 'pointer' },
   skqSlotImg: { width: '100%', height: '100%', objectFit: 'contain', imageRendering: 'pixelated' },
   skqSlotEmpty: { fontSize: 11, fontWeight: 800, color: 'rgba(200,180,140,0.4)' },
