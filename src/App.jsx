@@ -111,7 +111,7 @@ const DINO_ATK_FRAMES = {
 }
 const DINO_NAME = { trex: '티라노', spino: '스피노', trike: '트리케라톱스', stego: '스테고', raptor: '랩터', anky: '안킬로', ptera: '익룡', brachio: '브라키오' }
 // 종별 정지 위치 보정(px): +면 더 오른쪽(멀리)에서 멈춤, −면 더 가까이
-const DINO_STOP = { trex: 30, spino: 0, trike: 0, stego: 0, raptor: 0, anky: 0, ptera: 0, brachio: 0 }
+const DINO_STOP = { trex: 51, spino: 11, trike: 16, stego: 0, raptor: 2, anky: 0, ptera: 23, brachio: -21 }
 const DINO_KEYS = ['trex', 'spino', 'trike', 'stego', 'raptor', 'anky', 'ptera', 'brachio']
 
 // ── 모션 설정: 인게임 편집기에서 실시간 조절 (localStorage 'paleoMotion') ──
@@ -120,9 +120,9 @@ const MOTION_DEFAULT = {
   hit: { trex: 3, spino: 3, trike: 2, stego: 2, raptor: 3, anky: 2, ptera: 2, brachio: 2 },  // 데미지 프레임 번호
   cd: { advBoss: 1000, advMob: 1000, wave: 1000 },             // 공격 간격(ms)
   dur: { advMob: 0.30, wave: 0.30 },                           // 공격 프레임 없는 적의 모션 길이(초)
-  lunge: { boss: 27, mob: 15 },                                // 공격 시 파고드는 거리(px)
+  lunge: { boss: 25, mob: 15 },                                // 공격 시 파고드는 거리(px)
   stop: { ...DINO_STOP },                                      // 종별 정지 위치 보정(px, +면 멀리)
-  size: { trex: 1, spino: 1, trike: 1, stego: 1, raptor: 1, anky: 1, ptera: 1, brachio: 1 },  // 종별 크기 배율
+  size: { trex: 1.08, spino: 1.15, trike: 1.04, stego: 1.20, raptor: 0.90, anky: 1, ptera: 1.05, brachio: 1.73 },  // 종별 크기 배율
 }
 const dinoAtkDur = (k, T) => (T[k] || DINO_ATK_DEF).reduce((a, b) => a + b, 0)
 const dinoHitAt = (k, T, H) => {               // 타격 프레임이 시작되는 시각(초)
@@ -1972,7 +1972,7 @@ export default function App() {
                 </div>
               </div>
               <div data-edit="adviconb" style={st.advIconBox}>
-                <img data-edit="advicon" src={`/dino/boss_${advSel.boss}/w1.png`} alt="" style={st.advIcon} />
+                <img data-edit={`advico${advSel.boss}`} src={`/dino/boss_${advSel.boss}/w1.png`} alt="" style={{ ...st.advIcon, width: `var(--pd-advico${advSel.boss}w)`, height: `var(--pd-advico${advSel.boss}h)`, transform: `translate(var(--pd-advico${advSel.boss}-x), var(--pd-advico${advSel.boss}-y))` }} />
               </div>
             </div>
 
@@ -2543,6 +2543,8 @@ const UI_DEFAULT = {
   mailsz: 26, questsz: 40, mailboxX: 0, mailboxY: 0, questX: 6, questY: -8,
   matchipX: 23, matchipY: -14, allymatX: -19, allymatY: 14, dtabX: 0, dtabY: 0, dtitleX: 0, dtitleY: 0, darrowX: 0, darrowY: 0, diconX: 0, diconY: 0, dstatX: 0, dstatY: 0, denhX: 0, denhY: 0, dequipX: 0, dequipY: 0, dfusebtnX: 0, dfusebtnY: 0, dstepX: 0, dstepY: 0,
 }
+// 진입창 보스 그림: 종별 개별 크기·위치 (기본값 = 기존 공용 adviw/advih)
+for (const k of DINO_KEYS) { UI_DEFAULT[`advico${k}w`] = 100; UI_DEFAULT[`advico${k}h`] = 88; UI_DEFAULT[`advico${k}X`] = 0; UI_DEFAULT[`advico${k}Y`] = 0 }
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
   pill: { label: '자원 표시', size: ['pillfz', 'wavefz'], pos: 'pill' },
@@ -2614,7 +2616,6 @@ const EDIT_GROUPS = {
   advregb: { label: '지역정보 틀', size: ['advrbw', 'advrbh'], pos: 'advregb' },
   advrewb: { label: '탐험보상 틀', size: ['advwbw', 'advwbh'], pos: 'advrewb' },
   adviconb: { label: '보스 아이콘 틀', size: ['advibw', 'advibh'], pos: 'adviconb' },
-  advicon: { label: '보스 그림', size: ['adviw', 'advih'], pos: 'advicon' },
   advsign: { label: '단계 표지판', size: ['advsw', 'advsh'], pos: 'advsign' },
   advsignt: { label: '표지판 글자', size: ['advsfz'], pos: 'advsignt' },
   advbar: { label: '단계 진행바', size: ['advbarw', 'advbarh'], pos: 'advbar' },
@@ -2666,6 +2667,7 @@ const EDIT_GROUPS = {
   dstep: { label: '융합 수량조절', size: ['dstepsz', 'dstepfz'], pos: 'dstep' },
 }
 for (let i = 0; i < 6; i++) EDIT_GROUPS[`evoimg${i}`] = { label: `진화캐릭 ${i + 1}단계`, size: [`evoimg${i}`], pos: `evoimg${i}` }
+for (const k of DINO_KEYS) EDIT_GROUPS[`advico${k}`] = { label: `보스 그림(${DINO_NAME[k]})`, size: [`advico${k}w`, `advico${k}h`], pos: `advico${k}` }
 const UI_LABELS = {
   panelbwV: '패널 테두리(상하)', panelbwH: '패널 테두리(좌우)', rowbwV: '항목 테두리(상하)', rowbwH: '항목 테두리(좌우)',
   rowmin: '항목 최소높이', rowgap: '항목 간격', icon: '아이콘 크기', name: '이름 글자', lv: 'Lv 글자', val: '수치 글자',
@@ -2683,6 +2685,7 @@ const UI_LABELS = {
   matchipic: '아이콘 크기', matchipfz: '글자 크기', allychipic: '동료 아이콘', allychipfz: '동료 글자', dtabh: '탭 높이', dtabfz: '탭 글자', dgradefz: '등급 글자', dtitlefz: '이름 글자', darrowfz: '화살표 크기', diconsz: '아이콘틀 크기', dtierfz: '등급표시 글자', dstatfz: '능력치 글자', denhh: '강화버튼 높이', denhfz: '강화버튼 글자', denhic: '강화 재화아이콘', dequiph: '장착버튼 높이', dequipfz: '장착버튼 글자', dfuseh: '융합버튼 높이', dfusefz: '융합버튼 글자', dstepsz: '조절버튼 크기', dstepfz: '수량 글자',
 }
 for (let i = 0; i < 6; i++) UI_LABELS[`evoimg${i}`] = `${i + 1}단계 크기`
+for (const k of DINO_KEYS) { UI_LABELS[`advico${k}w`] = '그림 너비'; UI_LABELS[`advico${k}h`] = '그림 높이' }
 const uiVars = c => `:root{
 --pd-panelbw-v:${c.panelbwV}px;--pd-panelbw-h:${c.panelbwH}px;--pd-rowbw-v:${c.rowbwV}px;--pd-rowbw-h:${c.rowbwH}px;
 --pd-rowmin:${c.rowmin}px;--pd-rowgap:${c.rowgap}px;--pd-icon:${c.icon}px;--pd-name:${c.name}px;--pd-lv:${c.lv}px;--pd-val:${c.val}px;
@@ -2694,6 +2697,7 @@ const uiVars = c => `:root{
 --pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
 ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg${i}-x:${c['evoimg' + i + 'X']}px;--pd-evoimg${i}-y:${c['evoimg' + i + 'Y']}px;`).join('')}--pd-slotfz:${c.slotfz}px;
+${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k}h:${c['advico' + k + 'h']}px;--pd-advico${k}-x:${c['advico' + k + 'X']}px;--pd-advico${k}-y:${c['advico' + k + 'Y']}px;`).join('')}
 --pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
 --pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
 --pd-name-x:${c.nameX}px;--pd-name-y:${c.nameY}px;--pd-val-x:${c.valX}px;--pd-val-y:${c.valY}px;
