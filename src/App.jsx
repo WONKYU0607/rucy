@@ -2381,11 +2381,6 @@ export default function App() {
             <button data-edit="skfuse" style={st.skHeadBtn} onClick={() => { /* TODO: 스킬 합성 */ }}>합성</button>
             <button data-edit="sklearn" style={{ ...st.skHeadBtn, ...st.skLearnBtn }} onClick={() => { /* TODO: 스킬 배우기 */ }}>스킬 배우기</button>
           </div>
-          <div data-edit="skmast" style={st.skMastBar}>
-            <span style={st.skMastLabel}>스킬 숙련도 Lv.0</span>
-            <span style={st.skMastCount}>{SKILLS.filter(s => s.stage === evo).length}/20</span>
-            <span style={st.skMastBonus}>모든 속성 데미지 +0%</span>
-          </div>
           </div>
           <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.skillScroll}>
           <div style={st.skGrid}>
@@ -2395,10 +2390,9 @@ export default function App() {
             const ready = cd <= 0
             const isEq = equipped.indexOf(i) >= 0
             return (
-              <div key={s.key} data-edit="skcell" style={st.skCell} onClick={() => { if (!uiEdit) setSkillDetail(i) }}>
-                <div style={st.skCellIconWrap}>
-                  {skillIconSrc(s.id) ? <img src={skillIconSrc(s.id)} alt="" style={st.skCellIconImg} /> : <span style={{ fontSize: 22 }}>{s.icon}</span>}
-                  <div data-edit="skplus" style={st.skCellPlus}>+</div>
+              <div key={s.key} style={st.skCell} onClick={() => { if (!uiEdit) setSkillDetail(i) }}>
+                <div data-edit="skcell" style={st.skCellIconWrap}>
+                  {skillIconSrc(s.id) ? <img src={skillIconSrc(s.id)} alt="" data-edit="skimg" style={st.skCellIconImg} /> : <span style={{ fontSize: 22 }}>{s.icon}</span>}
                   {isEq && <div style={st.skCellEq}>장착{!ready && ` ${cd.toFixed(1)}`}</div>}
                 </div>
                 <div data-edit="skbar" style={st.skCellBarOuter}>
@@ -2727,6 +2721,7 @@ Object.assign(UI_DEFAULT, {
   skfusew: 60, skfuseh: 30, skfusefz: 12, skfuseX: 0, skfuseY: 0, sklearnw: 88, sklearnh: 30, sklearnfz: 12, sklearnX: 0, sklearnY: 0,
   skmasth: 26, skmastfz: 12, skmastX: 0, skmastY: 0,
   skcellsz: 60, skcellgap: 8, skcellX: 0, skcellY: 0,
+  skimgsz: 52, skimgX: 0, skimgY: 0,
   sknamefz: 12, sknameX: 0, sknameY: 0,
   skplusfz: 15, skplusX: 0, skplusY: 0,
   skbarX: 0, skbarY: 0,
@@ -2881,10 +2876,9 @@ Object.assign(EDIT_GROUPS, {
   skhtitle: { label: '스킬 제목', size: ['skhtfz'], pos: 'skhtitle' },
   skfuse: { label: '합성 버튼', size: ['skfusew', 'skfuseh', 'skfusefz'], pos: 'skfuse' },
   sklearn: { label: '스킬배우기 버튼', size: ['sklearnw', 'sklearnh', 'sklearnfz'], pos: 'sklearn' },
-  skmast: { label: '숙련도 바', size: ['skmasth', 'skmastfz'], pos: 'skmast' },
-  skcell: { label: '스킬 칸', size: ['skcellsz', 'skcellgap'], pos: 'skcell' },
+  skcell: { label: '스킬 칸(틀)', size: ['skcellsz', 'skcellgap'], pos: 'skcell' },
+  skimg: { label: '스킬 그림', size: ['skimgsz'], pos: 'skimg' },
   skname: { label: '스킬 이름', size: ['sknamefz'], pos: 'skname' },
-  skplus: { label: '스킬 + 뱃지', size: ['skplusfz'], pos: 'skplus' },
   skbar: { label: '스킬 강화바', size: [], pos: 'skbar' },
   skdicon: { label: '상세 아이콘', size: ['skdiconsz'], pos: 'skdicon' },
   skdtitle: { label: '상세 제목', size: ['skdtitlefz'], pos: 'skdtitle' },
@@ -2927,7 +2921,7 @@ for (let i = 0; i < 6; i++) UI_LABELS[`evoimg${i}`] = `${i + 1}단계 크기`
 for (const k of DINO_KEYS) { UI_LABELS[`advico${k}w`] = '그림 너비'; UI_LABELS[`advico${k}h`] = '그림 높이' }
 Object.assign(UI_LABELS, {
   skhtfz: '제목 글자', skfusew: '버튼 너비', skfuseh: '버튼 높이', skfusefz: '버튼 글자', sklearnw: '버튼 너비', sklearnh: '버튼 높이', sklearnfz: '버튼 글자',
-  skmasth: '바 높이', skmastfz: '바 글자', skcellsz: '칸 크기', skcellgap: '칸 간격',
+  skcellsz: '틀 크기', skcellgap: '칸 간격', skimgsz: '그림 크기',
   sknamefz: '이름 글자', skplusfz: '뱃지 글자',
   skdiconsz: '아이콘 크기', skdtitlefz: '제목 글자', skddescfz: '설명 글자',
   skdefffz: '효과 글자', skdstatfz: '스탯 글자', skdbtnh: '버튼 높이', skdbtnfz: '버튼 글자',
@@ -2947,7 +2941,7 @@ const uiVars = c => `:root{
 --pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
 ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg${i}-x:${c['evoimg' + i + 'X']}px;--pd-evoimg${i}-y:${c['evoimg' + i + 'Y']}px;`).join('')}--pd-slotfz:${c.slotfz}px;
---pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;
+--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;
 ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k}h:${c['advico' + k + 'h']}px;--pd-advico${k}-x:${c['advico' + k + 'X']}px;--pd-advico${k}-y:${c['advico' + k + 'Y']}px;`).join('')}
 --pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
 --pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
@@ -2974,7 +2968,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
 --pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skmast', 'skcell', 'skname', 'skplus', 'skbar', 'skdicon', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdenh', 'skdequip'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdenh', 'skdequip'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -3238,7 +3232,7 @@ const st = {
   skGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--pd-skcellgap)', width: '100%', boxSizing: 'border-box', padding: '2px 0' },
   skCell: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 2px', cursor: 'pointer', transform: 'translate(var(--pd-skcell-x), var(--pd-skcell-y))' },
   skCellIconWrap: { position: 'relative', width: 'var(--pd-skcellsz)', height: 'var(--pd-skcellsz)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #6a533a', borderRadius: 10, background: 'rgba(0,0,0,0.35)', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.55)', overflow: 'hidden' },
-  skCellIconImg: { width: '100%', height: '100%', objectFit: 'cover', imageRendering: 'pixelated' },
+  skCellIconImg: { width: 'var(--pd-skimgsz)', height: 'var(--pd-skimgsz)', objectFit: 'contain', imageRendering: 'pixelated', transform: 'translate(var(--pd-skimg-x), var(--pd-skimg-y))' },
   skCellPlus: { position: 'absolute', top: -6, right: -6, width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--pd-skplusfz)', fontWeight: 900, lineHeight: 1, color: '#fff', background: 'linear-gradient(180deg,#4bd06a,#2a9a48)', border: '1.5px solid #1a6a30', borderRadius: '50%', boxShadow: '0 1px 3px rgba(0,0,0,0.5)', transform: 'translate(var(--pd-skplus-x), var(--pd-skplus-y))' },
   skCellEq: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: '1px 0', fontSize: 9, fontWeight: 800, textAlign: 'center', color: '#7ce0ff', background: 'rgba(10,20,30,0.85)', whiteSpace: 'nowrap' },
   skCellBarOuter: { position: 'relative', width: 'var(--pd-skcellsz)', height: 12, borderRadius: 3, overflow: 'hidden', background: 'rgba(0,0,0,0.6)', border: '1px solid #3a2c18', boxSizing: 'border-box', transform: 'translate(var(--pd-skbar-x), var(--pd-skbar-y))' },
