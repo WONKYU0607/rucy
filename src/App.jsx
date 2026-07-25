@@ -2339,7 +2339,7 @@ export default function App() {
             <div style={{ flex: 1, marginLeft: 12 }}>
               <div data-edit="name" style={st.rowName}>{EVOS[evo].name}</div>
               <div data-edit="val" style={st.rowVal}>
-                {EVOS[evo].mode === 'quad' ? '4족 질주 · 주먹질' : EVOS[evo].mode === 'erectus' ? '몽둥이 · 내려치기/올려치기' : EVOS[evo].mode === 'neander' ? '돌도끼 · 내려찍기' : EVOS[evo].mode === 'sapiens' ? '단검 · 회전 베기' : EVOS[evo].mode === 'human' ? '장검 · 검격' : '직립 보행 · 돌 던지기'} · 공격력 ×{EVOS[evo].mult}
+                공격력 ×{EVOS[evo].mult}
                 {evo < EVOS.length - 1 && <span style={{ color: '#7cb35c' }}> → ×{EVOS[evo + 1].mult}</span>}
               </div>
             </div>
@@ -2351,7 +2351,7 @@ export default function App() {
         )}
         {tab === '성장' && (
           <>
-            <div data-edit="spbarC" style={{ ...st.spBar, transform: 'translate(var(--pd-spbarC-x), var(--pd-spbarC-y))' }}>스킬포인트 <b style={{ color: '#7ce0ff', fontSize: 'calc(var(--pd-spbarfz) + 2px)' }}>{sp}</b> <span style={{ opacity: 0.6, fontSize: 11 }}>· 레벨업 시 획득</span></div>
+            <div data-edit="spbarC" style={{ ...st.spBar, transform: 'translate(var(--pd-spbarC-x), var(--pd-spbarC-y))' }}>스킬포인트 <b style={{ color: '#7ce0ff', fontSize: 'calc(var(--pd-spbarfz) + 2px)' }}>{sp}</b></div>
             {STAT_KEYS.map(k => {
               const d = STAT_LIST[k]
               const ok = DEBUG || sp > 0
@@ -2376,15 +2376,6 @@ export default function App() {
       {nav === '스킬' && (
         <div data-edit="panel" style={st.panel}>
           <div style={st.skillFixed}>
-          <div data-edit="spbarA" style={{ ...st.spBar, transform: 'translate(var(--pd-spbarA-x), var(--pd-spbarA-y))' }}>장착 슬롯 · 올린 스킬만 자동 발동</div>
-          <div style={st.slotRow}>
-            {equipped.map((si, slot) => (
-              <button key={slot} data-edit="slot" style={st.slot} onClick={() => si != null && unequipSkill(slot)}>
-                {si != null ? (skillIconSrc(SKILLS[si].id) ? <img src={skillIconSrc(SKILLS[si].id)} alt="" data-edit="slicon" style={st.slotIconImg} /> : <span style={{ fontSize: 'var(--pd-slotfz)' }}>{SKILLS[si].icon}</span>) : <span style={st.slotEmpty}>+</span>}
-              </button>
-            ))}
-          </div>
-          <div data-edit="spbarB" style={{ ...st.spBar, marginTop: 4, transform: 'translate(var(--pd-spbarB-x), var(--pd-spbarB-y))' }}>보유 스킬 · 탭하여 상세 <span style={{ opacity: 0.6, fontSize: 11 }}>· {EVOS[evo].name} 전용</span></div>
           <div style={st.skHeadRow}>
             <div data-edit="skhtitle" style={st.skHeadTitle}>스킬</div>
             <button data-edit="skfuse" style={st.skHeadBtn} onClick={() => { /* TODO: 스킬 합성 */ }}>합성</button>
@@ -2467,7 +2458,7 @@ export default function App() {
                 <img src={equipImg(cat, EQUIP_MAX)} alt="" data-edit={`shopic${ci}`} style={{ height: `var(--pd-shopic${ci})`, objectFit: 'contain', transform: `translate(var(--pd-shopic${ci}-x), var(--pd-shopic${ci}-y))` }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div data-edit="shoptitle" style={{ fontWeight: 700, fontSize: 'var(--pd-shoptfz)', transform: 'translate(var(--pd-shopt-x), var(--pd-shopt-y))' }}>{cat} 소환</div>
-                  <div data-edit="shopsub" style={{ fontSize: 'var(--pd-shopsubfz)', opacity: 0.6, transform: 'translate(var(--pd-shopsub-x), var(--pd-shopsub-y))' }}>상위 등급일수록 희귀 · 5개 융합</div>
+
                 </div>
                 <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullGacha(cat, 1) }}><span data-edit="shopbtext" style={st.shopBtnText}>1회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />10</span></span></button>
                 <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullGacha(cat, 10) }}><span data-edit="shopbtext" style={st.shopBtnText}>10회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />100</span></span></button>
