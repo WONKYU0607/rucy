@@ -520,6 +520,8 @@ export default function App() {
   const [nav, setNav] = useState('영웅')     // 하단 네비: 영웅/스킬/장비/동료/퀴즈/상점
   const [equipTab, setEquipTab] = useState('무기')  // 장비 서브탭: 무기/방어구/유물
   const [detailItem, setDetailItem] = useState(null)  // 장비 상세창 { cat, i } | null
+  const [skillDetail, setSkillDetail] = useState(null) // 스킬 상세창 index | null (UI 골격)
+  const [skillAuto, setSkillAuto] = useState({})       // 스킬별 AUTO 토글 (세션, 표시용)
   const [lootFly, setLootFly] = useState([])          // 재화칸으로 비행 중인 전리품 조각
   const [detailTab, setDetailTab] = useState('강화')  // 상세창 탭: 강화/융합
   const [fuseQty, setFuseQty] = useState(0)           // 융합 수량
@@ -2051,6 +2053,45 @@ export default function App() {
               </div>
             )
           })()}
+      {nav === '스킬' && skillDetail != null && (() => {
+        const s = SKILLS[skillDetail]
+        const eqSlot = equipped.indexOf(skillDetail)
+        const isEq = eqSlot >= 0
+        const auto = !!skillAuto[skillDetail]
+        return (
+          <div style={st.dOverlay} onClick={e => { if (e.target === e.currentTarget) setSkillDetail(null) }}>
+            <div style={st.skdBox}>
+              <div style={st.skdHead}>
+                <div data-edit="skdicon" style={st.skdIconWrap}>
+                  {skillIconSrc(s.id) ? <img src={skillIconSrc(s.id)} alt="" style={st.skdIconImg} /> : <span style={{ fontSize: 34 }}>{s.icon}</span>}
+                  <span style={st.skdLv}>Lv.1</span>
+                  <div style={st.skdMiniBar}><div style={{ ...st.skdMiniFill, width: '0%' }} /><div style={st.skdMiniTxt}>0/2</div></div>
+                </div>
+                <div style={st.skdHeadMid}>
+                  <div data-edit="skdtitle" style={st.skdTitle}><span style={{ color: GRADE_COLOR['일반'] }}>[일반]</span> {s.name}</div>
+                  <div data-edit="skddesc" style={st.skdDesc}>설명 준비 중</div>
+                </div>
+                <button style={{ ...st.skdAuto, ...(auto ? st.skdAutoOn : {}) }} onClick={() => setSkillAuto(a => ({ ...a, [skillDetail]: !a[skillDetail] }))}>
+                  AUTO<span style={{ ...st.skdAutoDot, ...(auto ? st.skdAutoDotOn : {}) }} />
+                </button>
+              </div>
+              <div data-edit="skdeffect" style={st.skdEffect}>범위 <b>—</b> 이내의 적 모두에게<br />공격력의 <b style={{ color: '#f0a830' }}>{s.dmgMult * 100}%</b>로 1회 공격</div>
+              <div style={st.skdStatRow}>
+                <div data-edit="skdstat" style={st.skdStat}><span style={st.skdStatK}>필요공격수</span><span style={st.skdStatV}>—</span></div>
+                <div data-edit="skdstat" style={st.skdStat}><span style={st.skdStatK}>MP 소모</span><span style={st.skdStatV}>—</span></div>
+              </div>
+              <div style={st.skdBtns}>
+                <button data-edit="skdenh" style={st.skdEnhBtn} onClick={() => { /* TODO: 스킬 강화 */ }}>
+                  <span>강화</span>
+                  <span style={st.skdEnhCost}><img src="/ui/gem.png" alt="" style={st.skdEnhIc} />—</span>
+                </button>
+                <button data-edit="skdequip" style={{ ...st.skdEquipBtn, ...(isEq ? st.skdEquipOn : {}) }} onClick={() => { if (isEq) unequipSkill(eqSlot); else equipSkill(skillDetail) }}>{isEq ? '장착 해제' : '슬롯 장착'}</button>
+              </div>
+              <button style={st.dClose} onClick={() => setSkillDetail(null)}>✕</button>
+            </div>
+          </div>
+        )
+      })()}
       {lootFly.map(p => <LootPiece key={p.id} p={p} done={() => setLootFly(v => v.filter(q => q.id !== p.id))} />)}
       {advSel && (() => {
         const cleared = advStage[advSel.key] || 0
@@ -2343,35 +2384,41 @@ export default function App() {
               </button>
             ))}
           </div>
-          <div data-edit="spbarB" style={{ ...st.spBar, marginTop: 4, transform: 'translate(var(--pd-spbarB-x), var(--pd-spbarB-y))' }}>보유 스킬 · 탭하여 장착 <span style={{ opacity: 0.6, fontSize: 11 }}>· {EVOS[evo].name} 전용</span></div>
+          <div data-edit="spbarB" style={{ ...st.spBar, marginTop: 4, transform: 'translate(var(--pd-spbarB-x), var(--pd-spbarB-y))' }}>보유 스킬 · 탭하여 상세 <span style={{ opacity: 0.6, fontSize: 11 }}>· {EVOS[evo].name} 전용</span></div>
+          <div style={st.skHeadRow}>
+            <div data-edit="skhtitle" style={st.skHeadTitle}>스킬</div>
+            <button data-edit="skfuse" style={st.skHeadBtn} onClick={() => { /* TODO: 스킬 합성 */ }}>합성</button>
+            <button data-edit="sklearn" style={{ ...st.skHeadBtn, ...st.skLearnBtn }} onClick={() => { /* TODO: 스킬 배우기 */ }}>스킬 배우기</button>
+          </div>
+          <div data-edit="skmast" style={st.skMastBar}>
+            <span style={st.skMastLabel}>스킬 숙련도 Lv.0</span>
+            <span style={st.skMastCount}>{SKILLS.filter(s => s.stage === evo).length}/20</span>
+            <span style={st.skMastBonus}>모든 속성 데미지 +0%</span>
+          </div>
           </div>
           <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.skillScroll}>
+          <div style={st.skGrid}>
           {SKILLS.map((s, i) => {
             if (s.stage !== evo) return null
             const cd = skillCdUI[i] || 0
             const ready = cd <= 0
-            const eqSlot = equipped.indexOf(i)
-            const isEq = eqSlot >= 0
+            const isEq = equipped.indexOf(i) >= 0
             return (
-              <div key={s.key} style={{ ...st.row, opacity: isEq ? 0.55 : 1 }} onClick={() => isEq ? unequipSkill(eqSlot) : equipSkill(i)}>
-                <div style={{ ...st.skillIcon, position: 'relative', overflow: 'hidden' }}>
-                  {skillIconSrc(s.id) ? <img src={skillIconSrc(s.id)} alt="" data-edit="skicon" style={st.skillIconImg} /> : s.icon}
-                  {isEq && !ready && <div style={st.cdOverlay}>{cd.toFixed(1)}</div>}
+              <div key={s.key} data-edit="skcell" style={st.skCell} onClick={() => { if (!uiEdit) setSkillDetail(i) }}>
+                <div style={st.skCellIconWrap}>
+                  {skillIconSrc(s.id) ? <img src={skillIconSrc(s.id)} alt="" data-edit="skicon" style={st.skCellIconImg} /> : <span style={{ fontSize: 22 }}>{s.icon}</span>}
+                  <div data-edit="skplus" style={st.skCellPlus}>+</div>
+                  {isEq && <div style={st.skCellEq}>장착{!ready && ` ${cd.toFixed(1)}`}</div>}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div data-edit="name" style={st.rowName}>{s.name} {isEq && <span style={{ ...st.rowLv, color: '#7ce0ff' }}>장착됨</span>}</div>
-                  <div data-edit="val" style={st.rowVal}>{s.desc} · 데미지 ×{s.dmgMult}</div>
+                <div data-edit="skbar" style={st.skCellBarOuter}>
+                  <div style={{ ...st.skCellBarFill, width: '0%' }} />
+                  <div style={st.skCellBarTxt}>0/2</div>
                 </div>
-                <span style={{ fontSize: 11, opacity: 0.7 }}>쿨</span>
-                <input
-                  data-edit="input" style={st.dbgInput} type="number" inputMode="decimal" value={cdConf[i]}
-                  onClick={e => e.stopPropagation()}
-                  onChange={e => { const v = Math.max(0.1, Number(e.target.value) || 0.1); setCdConf(c => { const n = [...c]; n[i] = v; return n }) }}
-                />
-                <button data-edit="sp" style={{ ...st.spBtn, background: isEq ? '#6b4f35' : '#2f8fb0' }}>{isEq ? '해제' : '장착'}</button>
+                <div data-edit="skname" style={st.skCellName}>{s.name}</div>
               </div>
             )
           })}
+          </div>
           </div>
         </div>
       )}
@@ -2684,6 +2731,20 @@ const UI_DEFAULT = {
 }
 // 진입창 보스 그림: 종별 개별 크기·위치 (사용자 확정값 2026-07-25)
 Object.assign(UI_DEFAULT, {
+  // 스킬 탭 재편
+  skhtfz: 16, skhtitleX: 0, skhtitleY: 0,
+  skhbw: 60, skhbh: 30, skhbfz: 12, skfuseX: 0, skfuseY: 0, sklearnX: 0, sklearnY: 0,
+  skmasth: 26, skmastfz: 12, skmastX: 0, skmastY: 0,
+  skcellsz: 60, skcellgap: 8, skcellX: 0, skcellY: 0,
+  sknamefz: 12, sknameX: 0, sknameY: 0,
+  skplusfz: 15, skplusX: 0, skplusY: 0,
+  skbarX: 0, skbarY: 0,
+  skdiconsz: 88, skdiconX: 0, skdiconY: 0,
+  skdtitlefz: 18, skdtitleX: 0, skdtitleY: 0,
+  skddescfz: 13, skddescX: 0, skddescY: 0,
+  skdefffz: 15, skdeffectX: 0, skdeffectY: 0,
+  skdstatfz: 14, skdstatX: 0, skdstatY: 0,
+  skdbtnh: 48, skdbtnfz: 15, skdenhX: 0, skdenhY: 0, skdequipX: 0, skdequipY: 0,
   // 퀘스트창
   qww: 340, qwh: 540, qwinX: 0, qwinY: 0,
   qtitlefz: 20, qtitleX: 0, qtitleY: 0, qclsz: 30, qcloseX: 0, qcloseY: 0,
@@ -2826,6 +2887,21 @@ const EDIT_GROUPS = {
 for (let i = 0; i < 6; i++) EDIT_GROUPS[`evoimg${i}`] = { label: `진화캐릭 ${i + 1}단계`, size: [`evoimg${i}`], pos: `evoimg${i}` }
 for (const k of DINO_KEYS) EDIT_GROUPS[`advico${k}`] = { label: `보스 그림(${DINO_NAME[k]})`, size: [`advico${k}w`, `advico${k}h`], pos: `advico${k}` }
 Object.assign(EDIT_GROUPS, {
+  skhtitle: { label: '스킬 제목', size: ['skhtfz'], pos: 'skhtitle' },
+  skfuse: { label: '합성 버튼', size: ['skhbw', 'skhbh', 'skhbfz'], pos: 'skfuse' },
+  sklearn: { label: '스킬배우기 버튼', size: ['skhbw', 'skhbh', 'skhbfz'], pos: 'sklearn' },
+  skmast: { label: '숙련도 바', size: ['skmasth', 'skmastfz'], pos: 'skmast' },
+  skcell: { label: '스킬 칸', size: ['skcellsz', 'skcellgap'], pos: 'skcell' },
+  skname: { label: '스킬 이름', size: ['sknamefz'], pos: 'skname' },
+  skplus: { label: '스킬 + 뱃지', size: ['skplusfz'], pos: 'skplus' },
+  skbar: { label: '스킬 강화바', size: [], pos: 'skbar' },
+  skdicon: { label: '상세 아이콘', size: ['skdiconsz'], pos: 'skdicon' },
+  skdtitle: { label: '상세 제목', size: ['skdtitlefz'], pos: 'skdtitle' },
+  skddesc: { label: '상세 설명', size: ['skddescfz'], pos: 'skddesc' },
+  skdeffect: { label: '상세 효과칸', size: ['skdefffz'], pos: 'skdeffect' },
+  skdstat: { label: '상세 스탯칸', size: ['skdstatfz'], pos: 'skdstat' },
+  skdenh: { label: '상세 강화버튼', size: ['skdbtnh', 'skdbtnfz'], pos: 'skdenh' },
+  skdequip: { label: '상세 장착버튼', size: ['skdbtnh', 'skdbtnfz'], pos: 'skdequip' },
   qwin: { label: '퀘스트 창', size: ['qww', 'qwh'], pos: 'qwin' },
   qtitle: { label: '퀘스트 제목', size: ['qtitlefz'], pos: 'qtitle' },
   qclose: { label: '퀘스트 닫기', size: ['qclsz'], pos: 'qclose' },
@@ -2859,6 +2935,11 @@ const UI_LABELS = {
 for (let i = 0; i < 6; i++) UI_LABELS[`evoimg${i}`] = `${i + 1}단계 크기`
 for (const k of DINO_KEYS) { UI_LABELS[`advico${k}w`] = '그림 너비'; UI_LABELS[`advico${k}h`] = '그림 높이' }
 Object.assign(UI_LABELS, {
+  skhtfz: '제목 글자', skhbw: '버튼 너비', skhbh: '버튼 높이', skhbfz: '버튼 글자',
+  skmasth: '바 높이', skmastfz: '바 글자', skcellsz: '칸 크기', skcellgap: '칸 간격',
+  sknamefz: '이름 글자', skplusfz: '뱃지 글자',
+  skdiconsz: '아이콘 크기', skdtitlefz: '제목 글자', skddescfz: '설명 글자',
+  skdefffz: '효과 글자', skdstatfz: '스탯 글자', skdbtnh: '버튼 높이', skdbtnfz: '버튼 글자',
   qww: '창 너비', qwh: '창 높이', qtitlefz: '제목 글자', qclsz: '버튼 크기',
   qtabw: '탭 너비', qtabh: '탭 높이', qtabfz: '탭 글자', qrowh: '행 높이',
   qiconsz: '아이콘 크기', qnamefz: '이름 글자', qbarw: '바 너비', qbarh: '바 높이', qbarfz: '바 글자',
@@ -2875,7 +2956,7 @@ const uiVars = c => `:root{
 --pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
 ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg${i}-x:${c['evoimg' + i + 'X']}px;--pd-evoimg${i}-y:${c['evoimg' + i + 'Y']}px;`).join('')}--pd-slotfz:${c.slotfz}px;
---pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;
+--pd-skhtfz:${c.skhtfz}px;--pd-skhbw:${c.skhbw}px;--pd-skhbh:${c.skhbh}px;--pd-skhbfz:${c.skhbfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;
 ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k}h:${c['advico' + k + 'h']}px;--pd-advico${k}-x:${c['advico' + k + 'X']}px;--pd-advico${k}-y:${c['advico' + k + 'Y']}px;`).join('')}
 --pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
 --pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
@@ -2902,7 +2983,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
 --pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skmast', 'skcell', 'skname', 'skplus', 'skbar', 'skdicon', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdenh', 'skdequip'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -3154,6 +3235,52 @@ const st = {
     background: 'linear-gradient(180deg,#3a2c1b,#241a10)',
     transform: 'translate(var(--pd-advclose-x), var(--pd-advclose-y))', cursor: 'pointer',
   },
+  // ── 스킬 탭 재편 ──
+  skHeadRow: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 },
+  skHeadTitle: { fontSize: 'var(--pd-skhtfz)', fontWeight: 800, color: '#f0dfae', textShadow: '0 1px 2px #000', marginRight: 'auto', transform: 'translate(var(--pd-skhtitle-x), var(--pd-skhtitle-y))' },
+  skHeadBtn: { width: 'var(--pd-skhbw)', height: 'var(--pd-skhbh)', fontSize: 'var(--pd-skhbfz)', fontWeight: 800, color: '#e8dcc0', border: '1px solid #5a4630', borderRadius: 7, background: 'linear-gradient(180deg,#4a3820,#2c1f10)', cursor: 'pointer', boxSizing: 'border-box', transform: 'translate(var(--pd-skfuse-x), var(--pd-skfuse-y))' },
+  skLearnBtn: { color: '#2a1c0a', border: '1px solid #f0b040', background: 'linear-gradient(180deg,#ffcf5a,#e8992a)', transform: 'translate(var(--pd-sklearn-x), var(--pd-sklearn-y))' },
+  skMastBar: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, height: 'var(--pd-skmasth)', padding: '0 10px', boxSizing: 'border-box', borderRadius: 7, background: 'linear-gradient(180deg,#2f4a86,#20335f)', border: '1px solid #4a6aa8', transform: 'translate(var(--pd-skmast-x), var(--pd-skmast-y))' },
+  skMastLabel: { fontSize: 'var(--pd-skmastfz)', fontWeight: 800, color: '#dce8ff', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap' },
+  skMastCount: { fontSize: 'var(--pd-skmastfz)', fontWeight: 800, color: '#fff', margin: '0 auto' },
+  skMastBonus: { fontSize: 'var(--pd-skmastfz)', fontWeight: 700, color: '#ffe08a', whiteSpace: 'nowrap' },
+  skGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--pd-skcellgap)', width: '100%', boxSizing: 'border-box', padding: '2px 0' },
+  skCell: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 2px', cursor: 'pointer', transform: 'translate(var(--pd-skcell-x), var(--pd-skcell-y))' },
+  skCellIconWrap: { position: 'relative', width: 'var(--pd-skcellsz)', height: 'var(--pd-skcellsz)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #6a533a', borderRadius: 10, background: 'rgba(0,0,0,0.35)', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.55)', overflow: 'hidden' },
+  skCellIconImg: { width: '100%', height: '100%', objectFit: 'cover', imageRendering: 'pixelated' },
+  skCellPlus: { position: 'absolute', top: -6, right: -6, width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--pd-skplusfz)', fontWeight: 900, lineHeight: 1, color: '#fff', background: 'linear-gradient(180deg,#4bd06a,#2a9a48)', border: '1.5px solid #1a6a30', borderRadius: '50%', boxShadow: '0 1px 3px rgba(0,0,0,0.5)', transform: 'translate(var(--pd-skplus-x), var(--pd-skplus-y))' },
+  skCellEq: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: '1px 0', fontSize: 9, fontWeight: 800, textAlign: 'center', color: '#7ce0ff', background: 'rgba(10,20,30,0.85)', whiteSpace: 'nowrap' },
+  skCellBarOuter: { position: 'relative', width: 'var(--pd-skcellsz)', height: 12, borderRadius: 3, overflow: 'hidden', background: 'rgba(0,0,0,0.6)', border: '1px solid #3a2c18', boxSizing: 'border-box', transform: 'translate(var(--pd-skbar-x), var(--pd-skbar-y))' },
+  skCellBarFill: { position: 'absolute', left: 0, top: 0, bottom: 0, background: 'linear-gradient(180deg,#5ac0ff,#2a80c0)' },
+  skCellBarTxt: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: '#fff', textShadow: '0 1px 1px #000' },
+  skCellName: { fontSize: 'var(--pd-sknamefz)', fontWeight: 700, color: '#e6d8bc', textAlign: 'center', whiteSpace: 'nowrap', transform: 'translate(var(--pd-skname-x), var(--pd-skname-y))' },
+  // 스킬 상세창
+  skdBox: { position: 'relative', width: 'min(92vw, 440px)', padding: '18px 16px 16px', borderRadius: 14, background: 'linear-gradient(180deg,#5a4126,#3a2915)', border: '3px solid #7a5a30', boxShadow: '0 10px 40px rgba(0,0,0,0.6)', boxSizing: 'border-box' },
+  skdHead: { display: 'flex', alignItems: 'flex-start', gap: 12 },
+  skdIconWrap: { position: 'relative', flexShrink: 0, width: 'var(--pd-skdiconsz)', height: 'var(--pd-skdiconsz)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #d0902a', borderRadius: 12, background: 'rgba(0,0,0,0.4)', overflow: 'hidden', transform: 'translate(var(--pd-skdicon-x), var(--pd-skdicon-y))' },
+  skdIconImg: { width: '100%', height: '100%', objectFit: 'cover', imageRendering: 'pixelated' },
+  skdLv: { position: 'absolute', bottom: 14, left: 2, padding: '1px 5px', fontSize: 11, fontWeight: 800, color: '#ffe08a', background: 'rgba(20,12,4,0.9)', border: '1px solid #7a5a30', borderRadius: 5 },
+  skdMiniBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 13, background: 'rgba(0,0,0,0.7)', overflow: 'hidden' },
+  skdMiniFill: { position: 'absolute', left: 0, top: 0, bottom: 0, background: 'linear-gradient(180deg,#5ac0ff,#2a80c0)' },
+  skdMiniTxt: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: '#fff' },
+  skdHeadMid: { flex: 1, minWidth: 0, paddingTop: 2 },
+  skdTitle: { fontSize: 'var(--pd-skdtitlefz)', fontWeight: 800, color: '#fff5df', textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-skdtitle-x), var(--pd-skdtitle-y))' },
+  skdDesc: { marginTop: 4, fontSize: 'var(--pd-skddescfz)', color: '#cbb894', lineHeight: 1.4, transform: 'translate(var(--pd-skddesc-x), var(--pd-skddesc-y))' },
+  skdAuto: { flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, padding: '5px 8px', fontSize: 12, fontWeight: 800, color: '#9fb0c0', border: 'none', background: 'transparent', cursor: 'pointer' },
+  skdAutoOn: { color: '#4aa8ff' },
+  skdAutoDot: { width: 30, height: 16, borderRadius: 9, background: '#4a4a4a', position: 'relative', transition: 'background 0.15s' },
+  skdAutoDotOn: { background: '#2a80f0' },
+  skdEffect: { marginTop: 14, padding: '14px 14px', fontSize: 'var(--pd-skdefffz)', color: '#e8dcc4', lineHeight: 1.5, textAlign: 'center', borderRadius: 8, background: 'rgba(0,0,0,0.3)', border: '1px solid #4a3822', transform: 'translate(var(--pd-skdeffect-x), var(--pd-skdeffect-y))' },
+  skdStatRow: { display: 'flex', gap: 10, marginTop: 12 },
+  skdStat: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 8, background: 'rgba(0,0,0,0.28)', border: '1px solid #4a3822', transform: 'translate(var(--pd-skdstat-x), var(--pd-skdstat-y))' },
+  skdStatK: { fontSize: 'var(--pd-skdstatfz)', color: '#b8a684', fontWeight: 700 },
+  skdStatV: { fontSize: 'var(--pd-skdstatfz)', color: '#fff', fontWeight: 800 },
+  skdBtns: { display: 'flex', gap: 10, marginTop: 14 },
+  skdEnhBtn: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, height: 'var(--pd-skdbtnh)', justifyContent: 'center', fontSize: 'var(--pd-skdbtnfz)', fontWeight: 800, color: '#2a1c0a', border: '1px solid #f0b040', borderRadius: 9, background: 'linear-gradient(180deg,#ffcf5a,#e8992a)', cursor: 'pointer', transform: 'translate(var(--pd-skdenh-x), var(--pd-skdenh-y))' },
+  skdEnhCost: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 'calc(var(--pd-skdbtnfz) - 1px)' },
+  skdEnhIc: { width: 14, height: 14, objectFit: 'contain' },
+  skdEquipBtn: { flex: 1, height: 'var(--pd-skdbtnh)', fontSize: 'var(--pd-skdbtnfz)', fontWeight: 800, color: '#e8dcc0', border: '1px solid #5a4630', borderRadius: 9, background: 'linear-gradient(180deg,#4a3820,#2c1f10)', cursor: 'pointer', transform: 'translate(var(--pd-skdequip-x), var(--pd-skdequip-y))' },
+  skdEquipOn: { color: '#7ce0ff', border: '1px solid #2f8fb0', background: 'linear-gradient(180deg,#2a5568,#1a3542)' },
   // ── 퀘스트창 ──
   qWin: {
     position: 'relative', width: 'var(--pd-qww)', height: 'var(--pd-qwh)',
