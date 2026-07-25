@@ -1291,7 +1291,8 @@ export default function App() {
           } else {
             setClearMsg(hero.hp <= 0 ? '모험 실패 — 쓰러짐' : '모험 실패 — 시간 초과')
           }
-          setAdvSel(CONTINENTS.find(c => c.key === a.key) || null)   // 전투 종료 → 진입창 복귀
+          setNav('모험')                                              // 전투 종료 → 모험 탭 배경 위에서
+          setAdvSel(CONTINENTS.find(c => c.key === a.key) || null)   // 진입창 복귀
           w.needStart = true
           hero.hp = st.maxHp
         }
@@ -1663,7 +1664,7 @@ export default function App() {
         ctx.font = `bold ${Math.round(w.H * 0.13)}px 'Do Hyeon', sans-serif`
         ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,0.85)'
         ctx.fillStyle = `rgba(255,${Math.round(70 * puls)},${Math.round(60 * puls)},${(0.65 + 0.35 * puls).toFixed(3)})`
-        ctx.strokeText('WARNING', cx, w.H * 0.42 - 5); ctx.fillText('WARNING', cx, w.H * 0.42 - 5)
+        ctx.strokeText('WARNING', cx, w.H * 0.42 - 15); ctx.fillText('WARNING', cx, w.H * 0.42 - 15)
         ctx.restore()
       }
 
@@ -2089,7 +2090,7 @@ export default function App() {
 
             <div style={st.advWinBtns}>
               <button data-edit="adventer" style={{ ...st.advEnterBtn, ...(ruby < ADV_COST_RUBY ? st.advBtnOff : null) }} onClick={enterAdventure}>
-                진입 <img src="/ui/ruby.png" alt="" style={st.advRuby} />{fmt(ruby)}
+                진입 <img src="/ui/ruby.png" alt="" style={st.advRuby} />{fmt(ruby)}/{ADV_COST_RUBY}
               </button>
               <button data-edit="advclose" style={st.advCloseBtn} onClick={() => { if (!uiEdit) setAdvSel(null) }}>닫기</button>
             </div>
