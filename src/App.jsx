@@ -2618,7 +2618,7 @@ export default function App() {
         const setArr = (i, v) => setMotCfg({ ...M, atk: { ...M.atk, [motSel]: arr.map((x, j) => (j === i ? v : x)) } })
         const row = (label, val, min, max, step, on) => (
           <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <span style={{ width: 96, fontSize: 12, flexShrink: 0 }}>{label}</span>
+            <span style={{ width: 96, fontSize: 12, flexShrink: 0, color: '#f0dfae', fontWeight: 700 }}>{label}</span>
             <input type="range" min={min} max={max} step={step} value={val} onChange={e => on(parseFloat(e.target.value))} style={{ flex: 1, minWidth: 0 }} />
             <span style={{ width: 44, textAlign: 'right', fontSize: 12, color: GOLD }}>{val}</span>
           </div>
@@ -2674,7 +2674,7 @@ export default function App() {
               </div>
               {g.size.map(k => (
                 <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ width: 92, fontSize: 12, flexShrink: 0 }}>{UI_LABELS[k]}</span>
+                  <span style={{ width: 92, fontSize: 12, flexShrink: 0, color: '#f0dfae', fontWeight: 700 }}>{UI_LABELS[k]}</span>
                   <button style={nbtn} onClick={() => nudge(k, k === 'val' ? -0.5 : -1, rmin(k), rng(k))}>−</button>
                   <input type="range" min={rmin(k)} max={rng(k)} step={k === 'val' ? 0.5 : 1} value={uiCfg[k]} onChange={e => setUiCfg({ ...uiCfg, [k]: parseFloat(e.target.value) })} style={{ flex: 1, minWidth: 0 }} />
                   <button style={nbtn} onClick={() => nudge(k, k === 'val' ? 0.5 : 1, rmin(k), rng(k))}>+</button>
@@ -2685,7 +2685,7 @@ export default function App() {
                 const k = g.pos + ax
                 const pmax = g.pos.startsWith('advbtn') ? 400 : (g.pos.startsWith('skq') || g.pos.startsWith('skd')) ? 240 : g.pos.startsWith('sk') ? 160 : 80
                 return <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ width: 92, fontSize: 12, flexShrink: 0 }}>위치 {ax === 'X' ? '←→' : '↑↓'}</span>
+                  <span style={{ width: 92, fontSize: 12, flexShrink: 0, color: '#f0dfae', fontWeight: 700 }}>{ax === 'X' ? '← 좌우 →' : '↑ 상하 ↓'}</span>
                   <button style={nbtn} onClick={() => nudge(k, -1, -pmax, pmax)}>−</button>
                   <input type="range" min={-pmax} max={pmax} step={1} value={uiCfg[k]} onChange={e => setUiCfg({ ...uiCfg, [k]: parseFloat(e.target.value) })} style={{ flex: 1, minWidth: 0 }} />
                   <button style={nbtn} onClick={() => nudge(k, 1, -pmax, pmax)}>+</button>
@@ -3273,7 +3273,6 @@ const st = {
   skqSlot: { flexShrink: 0, width: 'var(--pd-skqslotsz)', height: 'var(--pd-skqslotsz)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, border: '1.5px solid #6a533a', background: 'rgba(0,0,0,0.4)', overflow: 'hidden', cursor: 'pointer' },
   skqSlotImg: { width: '100%', height: '100%', objectFit: 'contain', imageRendering: 'pixelated' },
   skqSlotEmpty: { fontSize: 11, fontWeight: 800, color: 'rgba(200,180,140,0.4)' },
-  skqSets: { display: 'flex', gap: 4 },
   skqSetBtn: { width: 'var(--pd-skqsetw)', height: 'var(--pd-skqseth)', fontSize: 'var(--pd-skqsetfz)', fontWeight: 800, color: '#b7a480', border: '1px solid #4a3a22', borderRadius: 6, background: 'rgba(20,13,7,0.8)', cursor: 'pointer', boxSizing: 'border-box', padding: 0, lineHeight: 1 },
   skqSetOn: { color: '#fff5df', border: '1px solid #d09340', background: 'linear-gradient(180deg,#4a3418,#2c1f0e)', boxShadow: 'inset 0 0 5px rgba(208,147,64,0.4)' },
   // ── 스킬 탭 재편 ──
@@ -3285,8 +3284,8 @@ const st = {
   skMastLabel: { fontSize: 'var(--pd-skmastfz)', fontWeight: 800, color: '#dce8ff', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap' },
   skMastCount: { fontSize: 'var(--pd-skmastfz)', fontWeight: 800, color: '#fff', margin: '0 auto' },
   skMastBonus: { fontSize: 'var(--pd-skmastfz)', fontWeight: 700, color: '#ffe08a', whiteSpace: 'nowrap' },
-  skGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', columnGap: 'var(--pd-skcellgap)', rowGap: 'var(--pd-skcellrgap)', width: '100%', boxSizing: 'border-box', padding: '2px 0' },
-  skCell: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 2px', cursor: 'pointer', transform: 'translate(var(--pd-skcell-x), var(--pd-skcell-y))' },
+  skGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, var(--pd-skcellsz))', justifyContent: 'center', columnGap: 'var(--pd-skcellgap)', rowGap: 'var(--pd-skcellrgap)', width: '100%', boxSizing: 'border-box', padding: '2px 0' },
+  skCell: { width: 'var(--pd-skcellsz)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 0', boxSizing: 'border-box', cursor: 'pointer', transform: 'translate(var(--pd-skcell-x), var(--pd-skcell-y))' },
   skCellIconWrap: { position: 'relative', width: 'var(--pd-skcellsz)', height: 'var(--pd-skcellsz)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #6a533a', borderRadius: 10, background: 'rgba(0,0,0,0.35)', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.55)', overflow: 'hidden' },
   skCellIconImg: { width: 'var(--pd-skimgsz)', height: 'var(--pd-skimgsz)', objectFit: 'contain', imageRendering: 'pixelated', transform: 'translate(var(--pd-skimg-x), var(--pd-skimg-y))' },
   skCellPlus: { position: 'absolute', top: -6, right: -6, width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--pd-skplusfz)', fontWeight: 900, lineHeight: 1, color: '#fff', background: 'linear-gradient(180deg,#4bd06a,#2a9a48)', border: '1.5px solid #1a6a30', borderRadius: '50%', boxShadow: '0 1px 3px rgba(0,0,0,0.5)', transform: 'translate(var(--pd-skplus-x), var(--pd-skplus-y))' },
@@ -3294,7 +3293,7 @@ const st = {
   skCellBarOuter: { position: 'relative', width: 'var(--pd-skcellsz)', height: 12, borderRadius: 3, overflow: 'hidden', background: 'rgba(0,0,0,0.6)', border: '1px solid #3a2c18', boxSizing: 'border-box', transform: 'translate(var(--pd-skbar-x), var(--pd-skbar-y))' },
   skCellBarFill: { position: 'absolute', left: 0, top: 0, bottom: 0, background: 'linear-gradient(180deg,#5ac0ff,#2a80c0)' },
   skCellBarTxt: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: '#fff', textShadow: '0 1px 1px #000' },
-  skCellName: { fontSize: 'var(--pd-sknamefz)', fontWeight: 700, color: '#e6d8bc', textAlign: 'center', whiteSpace: 'nowrap', transform: 'translate(var(--pd-skname-x), var(--pd-skname-y))' },
+  skCellName: { width: '100%', fontSize: 'var(--pd-sknamefz)', fontWeight: 700, color: '#e6d8bc', textAlign: 'center', whiteSpace: 'nowrap', overflow: 'visible', transform: 'translate(var(--pd-skname-x), var(--pd-skname-y))' },
   // 스킬 상세창
   skdBox: { position: 'relative', width: 'min(92vw, 440px)', padding: '18px 16px 16px', borderRadius: 14, background: 'linear-gradient(180deg,#5a4126,#3a2915)', border: '3px solid #7a5a30', boxShadow: '0 10px 40px rgba(0,0,0,0.6)', boxSizing: 'border-box' },
   skdHead: { display: 'flex', alignItems: 'flex-start', gap: 12 },
