@@ -2024,103 +2024,6 @@ export default function App() {
         </div>
       )}
 
-      <div data-edit="nav" style={st.bottomNav}>
-        {[['영웅', 'nav_hero'], ['스킬', 'nav_skill'], ['장비', 'nav_equip'], ['동료', 'nav_ally'], ['모험', 'nav_adventure'], ['상점', 'nav_shop']].map(([n, ic]) => (
-          <button key={n} style={{ ...st.navBtn, ...(nav === n ? st.navActive : {}) }} onClick={() => setNav(n)}>
-            <img src={`/icon/${ic}.png`} alt="" style={st.navIconImg} />
-            <div style={{ fontSize: 'var(--pd-navfz)' }}>{n}</div>
-          </button>
-        ))}
-      </div>
-    </div>
-
-      {motEdit && (() => {
-        const M = motCfg
-        const frames = DINO_ATK_FRAMES[motSel] || [1, 2, 3, 4]
-        const arr = M.atk[motSel] || DINO_ATK_DEF
-        const setArr = (i, v) => setMotCfg({ ...M, atk: { ...M.atk, [motSel]: arr.map((x, j) => (j === i ? v : x)) } })
-        const row = (label, val, min, max, step, on) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <span style={{ width: 96, fontSize: 12, flexShrink: 0 }}>{label}</span>
-            <input type="range" min={min} max={max} step={step} value={val} onChange={e => on(parseFloat(e.target.value))} style={{ flex: 1, minWidth: 0 }} />
-            <span style={{ width: 44, textAlign: 'right', fontSize: 12, color: GOLD }}>{val}</span>
-          </div>
-        )
-        return (
-        <div style={{ ...st.motPanel, ...(dockSide ? dockStyle : null) }}>
-          <div style={{ fontSize: 13, color: GOLD, fontWeight: 800, marginBottom: 6 }}>모션 편집 — 전투 보면서 바로 조절</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
-            {DINO_KEYS.map(k => (
-              <button key={k} onClick={() => setMotSel(k)}
-                style={{ padding: '4px 7px', fontSize: 11, borderRadius: 5, border: `1px solid ${k === motSel ? GOLD : '#4a3a22'}`,
-                  background: k === motSel ? 'linear-gradient(180deg,#d4872e,#a85f1f)' : '#2c2013', color: k === motSel ? '#fff' : '#cbb89a' }}
-              >{DINO_NAME[k]}</button>
-            ))}
-          </div>
-          <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>{DINO_NAME[motSel]} 공격 프레임 {frames.join('·')}번 · 총 {arr.reduce((a, b) => a + b, 0).toFixed(2)}초</div>
-          {arr.map((v, i) => row(`${i + 1}번(원본${frames[i]}) 시간`, v, 0.02, 0.6, 0.01, nv => setArr(i, nv)))}
-          {row('데미지 프레임', M.hit[motSel] || 3, 1, arr.length, 1, v => setMotCfg({ ...M, hit: { ...M.hit, [motSel]: v } }))}
-          <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
-          {row('보스 파고듦', M.lunge.boss, 0, 60, 1, v => setMotCfg({ ...M, lunge: { ...M.lunge, boss: v } }))}
-          {row('일반 파고듦', M.lunge.mob, 0, 60, 1, v => setMotCfg({ ...M, lunge: { ...M.lunge, mob: v } }))}
-          {row('보스 간격(ms)', M.cd.advBoss, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, advBoss: v } }))}
-          {row('모험몹 간격', M.cd.advMob, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, advMob: v } }))}
-          {row('웨이브몹 간격', M.cd.wave, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, wave: v } }))}
-          {row('모험몹 모션', M.dur.advMob, 0.1, 1, 0.01, v => setMotCfg({ ...M, dur: { ...M.dur, advMob: v } }))}
-          {row('웨이브몹 모션', M.dur.wave, 0.1, 1, 0.01, v => setMotCfg({ ...M, dur: { ...M.dur, wave: v } }))}
-          <div style={{ display: 'flex', gap: 6, marginTop: 8, borderTop: '1px solid #3a2a14', paddingTop: 8 }}>
-            <button onClick={() => { navigator.clipboard?.writeText(JSON.stringify(motCfg)); setCopiedMot(true); setTimeout(() => setCopiedMot(false), 1200) }}
-              style={{ flex: 1, padding: '9px', borderRadius: 6, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontSize: 13 }}>{copiedMot ? '복사됨! 개발자에게 전달' : '전체 값 복사'}</button>
-            <button onClick={() => setMotCfg(JSON.parse(JSON.stringify(MOTION_DEFAULT)))} style={{ padding: '9px 12px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontSize: 13 }}>초기화</button>
-            <button onClick={() => setMotEdit(false)} style={{ padding: '9px 12px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontSize: 13 }}>닫기</button>
-          </div>
-        </div>
-        )
-      })()}
-
-      {uiEdit && (
-        <div style={{ position: 'fixed', left: 0, right: 0, ...(editSel ? { bottom: 0, borderBottom: 'none', borderRadius: '10px 10px 0 0' } : { top: 0, borderTop: 'none', borderRadius: '0 0 10px 10px' }), margin: '0 auto', maxWidth: 420, zIndex: 61, background: 'rgba(16,10,5,0.94)', border: `2px solid ${GOLD_D}`, textShadow: '0 1px 3px rgba(0,0,0,0.9)', padding: '8px 12px calc(8px + env(safe-area-inset-bottom))', maxHeight: '46%', overflowY: 'auto', ...(dockSide ? dockStyle : null) }}>
-          {!editSel && <div style={{ fontSize: 13, color: '#c9b596', textAlign: 'center', padding: '4px 0 8px' }}>조정할 요소를 화면에서 탭하세요 (틀·아이콘·글자·숫자·버튼)</div>}
-          <div style={{ fontSize: 13, color: '#ffd98a', textAlign: 'center', padding: '0 0 6px', fontWeight: 800 }}>기준 {BASE_W}×{BASE_H} · 화면 {view.sw}×{view.sh} · 배율 {view.s.toFixed(3)}</div>
-          {editSel && (() => {
-            const g = EDIT_GROUPS[editSel]; if (!g) return null
-            const nudge = (k, d, lo, hi) => setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) }))
-            const nbtn = { width: 26, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
-            const rng = k => k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
-            const rmin = k => k === 'equipcols' ? 3 : 0
-            return <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                <b style={{ color: GOLD, fontSize: 14 }}>{g.label}</b>
-                <button onClick={() => setEditSel(null)} style={{ padding: '3px 10px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontSize: 12 }}>닫기</button>
-              </div>
-              {g.size.map(k => (
-                <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ width: 92, fontSize: 12, flexShrink: 0 }}>{UI_LABELS[k]}</span>
-                  <button style={nbtn} onClick={() => nudge(k, k === 'val' ? -0.5 : -1, rmin(k), rng(k))}>−</button>
-                  <input type="range" min={rmin(k)} max={rng(k)} step={k === 'val' ? 0.5 : 1} value={uiCfg[k]} onChange={e => setUiCfg({ ...uiCfg, [k]: parseFloat(e.target.value) })} style={{ flex: 1, minWidth: 0 }} />
-                  <button style={nbtn} onClick={() => nudge(k, k === 'val' ? 0.5 : 1, rmin(k), rng(k))}>+</button>
-                  <span style={{ width: 34, textAlign: 'right', fontSize: 12, color: GOLD }}>{uiCfg[k]}</span>
-                </div>
-              ))}
-              {g.pos && ['X', 'Y'].map(ax => {
-                const k = g.pos + ax
-                const pmax = g.pos.startsWith('advbtn') ? 400 : 80
-                return <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                  <span style={{ width: 92, fontSize: 12, flexShrink: 0 }}>위치 {ax === 'X' ? '←→' : '↑↓'}</span>
-                  <button style={nbtn} onClick={() => nudge(k, -1, -pmax, pmax)}>−</button>
-                  <input type="range" min={-pmax} max={pmax} step={1} value={uiCfg[k]} onChange={e => setUiCfg({ ...uiCfg, [k]: parseFloat(e.target.value) })} style={{ flex: 1, minWidth: 0 }} />
-                  <button style={nbtn} onClick={() => nudge(k, 1, -pmax, pmax)}>+</button>
-                  <span style={{ width: 34, textAlign: 'right', fontSize: 12, color: GOLD }}>{uiCfg[k]}</span>
-                </div>
-              })}
-            </div>
-          })()}
-          <div style={{ display: 'flex', gap: 6, marginTop: 8, borderTop: '1px solid #3a2a14', paddingTop: 8 }}>
-            <button onClick={() => { navigator.clipboard?.writeText(JSON.stringify(uiCfg)); setCopiedUi(true); setTimeout(() => setCopiedUi(false), 1200) }} style={{ flex: 1, padding: '9px', borderRadius: 6, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontSize: 13 }}>{copiedUi ? '복사됨! 개발자에게 전달' : '전체 값 복사'}</button>
-            <button onClick={() => setUiCfg({ ...UI_DEFAULT })} style={{ padding: '9px 12px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontSize: 13 }}>초기화</button>
-          </div>
-        </div>
-      )}
       <div style={st.topBar}>
         <div data-edit="avatar" style={st.avatarWrap}><img src="/hero/misc/face.png" alt="" style={st.avatarFace} /></div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -2475,6 +2378,103 @@ export default function App() {
                 <span style={st.offBtnAdText}>추가 보상<br />(광고)</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      <div data-edit="nav" style={st.bottomNav}>
+        {[['영웅', 'nav_hero'], ['스킬', 'nav_skill'], ['장비', 'nav_equip'], ['동료', 'nav_ally'], ['모험', 'nav_adventure'], ['상점', 'nav_shop']].map(([n, ic]) => (
+          <button key={n} style={{ ...st.navBtn, ...(nav === n ? st.navActive : {}) }} onClick={() => setNav(n)}>
+            <img src={`/icon/${ic}.png`} alt="" style={st.navIconImg} />
+            <div style={{ fontSize: 'var(--pd-navfz)' }}>{n}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+
+      {motEdit && (() => {
+        const M = motCfg
+        const frames = DINO_ATK_FRAMES[motSel] || [1, 2, 3, 4]
+        const arr = M.atk[motSel] || DINO_ATK_DEF
+        const setArr = (i, v) => setMotCfg({ ...M, atk: { ...M.atk, [motSel]: arr.map((x, j) => (j === i ? v : x)) } })
+        const row = (label, val, min, max, step, on) => (
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <span style={{ width: 96, fontSize: 12, flexShrink: 0 }}>{label}</span>
+            <input type="range" min={min} max={max} step={step} value={val} onChange={e => on(parseFloat(e.target.value))} style={{ flex: 1, minWidth: 0 }} />
+            <span style={{ width: 44, textAlign: 'right', fontSize: 12, color: GOLD }}>{val}</span>
+          </div>
+        )
+        return (
+        <div style={{ ...st.motPanel, ...(dockSide ? dockStyle : null) }}>
+          <div style={{ fontSize: 13, color: GOLD, fontWeight: 800, marginBottom: 6 }}>모션 편집 — 전투 보면서 바로 조절</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+            {DINO_KEYS.map(k => (
+              <button key={k} onClick={() => setMotSel(k)}
+                style={{ padding: '4px 7px', fontSize: 11, borderRadius: 5, border: `1px solid ${k === motSel ? GOLD : '#4a3a22'}`,
+                  background: k === motSel ? 'linear-gradient(180deg,#d4872e,#a85f1f)' : '#2c2013', color: k === motSel ? '#fff' : '#cbb89a' }}
+              >{DINO_NAME[k]}</button>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>{DINO_NAME[motSel]} 공격 프레임 {frames.join('·')}번 · 총 {arr.reduce((a, b) => a + b, 0).toFixed(2)}초</div>
+          {arr.map((v, i) => row(`${i + 1}번(원본${frames[i]}) 시간`, v, 0.02, 0.6, 0.01, nv => setArr(i, nv)))}
+          {row('데미지 프레임', M.hit[motSel] || 3, 1, arr.length, 1, v => setMotCfg({ ...M, hit: { ...M.hit, [motSel]: v } }))}
+          <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
+          {row('보스 파고듦', M.lunge.boss, 0, 60, 1, v => setMotCfg({ ...M, lunge: { ...M.lunge, boss: v } }))}
+          {row('일반 파고듦', M.lunge.mob, 0, 60, 1, v => setMotCfg({ ...M, lunge: { ...M.lunge, mob: v } }))}
+          {row('보스 간격(ms)', M.cd.advBoss, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, advBoss: v } }))}
+          {row('모험몹 간격', M.cd.advMob, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, advMob: v } }))}
+          {row('웨이브몹 간격', M.cd.wave, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, wave: v } }))}
+          {row('모험몹 모션', M.dur.advMob, 0.1, 1, 0.01, v => setMotCfg({ ...M, dur: { ...M.dur, advMob: v } }))}
+          {row('웨이브몹 모션', M.dur.wave, 0.1, 1, 0.01, v => setMotCfg({ ...M, dur: { ...M.dur, wave: v } }))}
+          <div style={{ display: 'flex', gap: 6, marginTop: 8, borderTop: '1px solid #3a2a14', paddingTop: 8 }}>
+            <button onClick={() => { navigator.clipboard?.writeText(JSON.stringify(motCfg)); setCopiedMot(true); setTimeout(() => setCopiedMot(false), 1200) }}
+              style={{ flex: 1, padding: '9px', borderRadius: 6, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontSize: 13 }}>{copiedMot ? '복사됨! 개발자에게 전달' : '전체 값 복사'}</button>
+            <button onClick={() => setMotCfg(JSON.parse(JSON.stringify(MOTION_DEFAULT)))} style={{ padding: '9px 12px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontSize: 13 }}>초기화</button>
+            <button onClick={() => setMotEdit(false)} style={{ padding: '9px 12px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontSize: 13 }}>닫기</button>
+          </div>
+        </div>
+        )
+      })()}
+
+      {uiEdit && (
+        <div style={{ position: 'fixed', left: 0, right: 0, ...(editSel ? { bottom: 0, borderBottom: 'none', borderRadius: '10px 10px 0 0' } : { top: 0, borderTop: 'none', borderRadius: '0 0 10px 10px' }), margin: '0 auto', maxWidth: 420, zIndex: 61, background: 'rgba(16,10,5,0.94)', border: `2px solid ${GOLD_D}`, textShadow: '0 1px 3px rgba(0,0,0,0.9)', padding: '8px 12px calc(8px + env(safe-area-inset-bottom))', maxHeight: '46%', overflowY: 'auto', ...(dockSide ? dockStyle : null) }}>
+          {!editSel && <div style={{ fontSize: 13, color: '#c9b596', textAlign: 'center', padding: '4px 0 8px' }}>조정할 요소를 화면에서 탭하세요 (틀·아이콘·글자·숫자·버튼)</div>}
+          <div style={{ fontSize: 13, color: '#ffd98a', textAlign: 'center', padding: '0 0 6px', fontWeight: 800 }}>기준 {BASE_W}×{BASE_H} · 화면 {view.sw}×{view.sh} · 배율 {view.s.toFixed(3)}</div>
+          {editSel && (() => {
+            const g = EDIT_GROUPS[editSel]; if (!g) return null
+            const nudge = (k, d, lo, hi) => setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) }))
+            const nbtn = { width: 26, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
+            const rng = k => k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
+            const rmin = k => k === 'equipcols' ? 3 : 0
+            return <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <b style={{ color: GOLD, fontSize: 14 }}>{g.label}</b>
+                <button onClick={() => setEditSel(null)} style={{ padding: '3px 10px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontSize: 12 }}>닫기</button>
+              </div>
+              {g.size.map(k => (
+                <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span style={{ width: 92, fontSize: 12, flexShrink: 0 }}>{UI_LABELS[k]}</span>
+                  <button style={nbtn} onClick={() => nudge(k, k === 'val' ? -0.5 : -1, rmin(k), rng(k))}>−</button>
+                  <input type="range" min={rmin(k)} max={rng(k)} step={k === 'val' ? 0.5 : 1} value={uiCfg[k]} onChange={e => setUiCfg({ ...uiCfg, [k]: parseFloat(e.target.value) })} style={{ flex: 1, minWidth: 0 }} />
+                  <button style={nbtn} onClick={() => nudge(k, k === 'val' ? 0.5 : 1, rmin(k), rng(k))}>+</button>
+                  <span style={{ width: 34, textAlign: 'right', fontSize: 12, color: GOLD }}>{uiCfg[k]}</span>
+                </div>
+              ))}
+              {g.pos && ['X', 'Y'].map(ax => {
+                const k = g.pos + ax
+                const pmax = g.pos.startsWith('advbtn') ? 400 : 80
+                return <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span style={{ width: 92, fontSize: 12, flexShrink: 0 }}>위치 {ax === 'X' ? '←→' : '↑↓'}</span>
+                  <button style={nbtn} onClick={() => nudge(k, -1, -pmax, pmax)}>−</button>
+                  <input type="range" min={-pmax} max={pmax} step={1} value={uiCfg[k]} onChange={e => setUiCfg({ ...uiCfg, [k]: parseFloat(e.target.value) })} style={{ flex: 1, minWidth: 0 }} />
+                  <button style={nbtn} onClick={() => nudge(k, 1, -pmax, pmax)}>+</button>
+                  <span style={{ width: 34, textAlign: 'right', fontSize: 12, color: GOLD }}>{uiCfg[k]}</span>
+                </div>
+              })}
+            </div>
+          })()}
+          <div style={{ display: 'flex', gap: 6, marginTop: 8, borderTop: '1px solid #3a2a14', paddingTop: 8 }}>
+            <button onClick={() => { navigator.clipboard?.writeText(JSON.stringify(uiCfg)); setCopiedUi(true); setTimeout(() => setCopiedUi(false), 1200) }} style={{ flex: 1, padding: '9px', borderRadius: 6, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontSize: 13 }}>{copiedUi ? '복사됨! 개발자에게 전달' : '전체 값 복사'}</button>
+            <button onClick={() => setUiCfg({ ...UI_DEFAULT })} style={{ padding: '9px 12px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontSize: 13 }}>초기화</button>
           </div>
         </div>
       )}
