@@ -427,16 +427,16 @@ const QUEST_LIST = [
     { ev: 'enh_hp', name: '체력 강화', goal: 100, ric: '/ui/gem.png', rv: 100 },
     { ev: 'enh_crit', name: '치명타 공격력 강화', goal: 100, ric: '/ui/gem.png', rv: 100 },
   ],
-  [ // 업적 (1회 수령, 목표치 미확정 — 임시 1)
-    { ev: 'levelup', name: '캐릭터 레벨업', goal: 1, ric: '/ui/pearl.png', rv: 10 },
-    { ev: 'evolve', name: '캐릭터 진화', goal: 1, ric: '/ui/pearl.png', rv: 100 },
-    { ev: 'skill_enh', name: '스킬 강화', goal: 1, ric: '/ui/pearl.png', rv: 10 },
-    { ev: 'equip_enh', name: '장비 강화', goal: 1, ric: '/ui/pearl.png', rv: 10 },
-    { ev: 'adv_clear', name: '모험 클리어', goal: 1, ric: '/ui/pearl.png', rv: 10 },
+  [ // 업적 (계단식 무한 반복: 수령할 때마다 목표 +1, 매 수령 시 진주 지급. base=표시 시작값)
+    { ev: 'levelup', name: '캐릭터 레벨업', base: 1, ric: '/ui/pearl.png', rv: 10 },
+    { ev: 'evolve', name: '캐릭터 진화', base: 1, ric: '/ui/pearl.png', rv: 100 },
+    { ev: 'skill_enh', name: '스킬 강화', base: 0, ric: '/ui/pearl.png', rv: 10 },
+    { ev: 'equip_enh', name: '장비 강화', base: 0, ric: '/ui/pearl.png', rv: 10 },
+    { ev: 'adv_clear', name: '모험 클리어', base: 0, ric: '/ui/pearl.png', rv: 10 },
   ],
 ]
 const questDayStr = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}` }
-const questInit = () => ({ day: questDayStr(), ev: {}, dEv: {}, dClaim: {}, rLv: {}, rBase: {}, aClaim: {} })
+const questInit = () => ({ day: questDayStr(), ev: {}, dEv: {}, dClaim: {}, rLv: {}, rBase: {}, aLv: {} })
 
 // 9종 스탯 — 강화탭(고기)·스킬탭(스킬포인트) 양쪽에서 사용
 // eff(lv): 레벨당 효과 텍스트 / 강화는 고기비용, 스킬은 SP 1/레벨
@@ -1710,15 +1710,17 @@ export default function App() {
     if (tab === 0) {
       const cur = today ? (quest.dEv[item.ev] || 0) : 0
       const claimed = today ? !!quest.dClaim[i] : false
-      return { cur: Math.min(cur, item.goal), lv: 0, claimed, canClaim: !claimed && cur >= item.goal }
+      return { cur: Math.min(cur, item.goal), goal: item.goal, lv: 0, claimed, canClaim: !claimed && cur >= item.goal }
     }
     if (tab === 1) {
       const cur = (quest.ev[item.ev] || 0) - (quest.rBase[i] || 0)
-      return { cur: Math.min(cur, item.goal), lv: quest.rLv[i] || 0, claimed: false, canClaim: cur >= item.goal }
+      return { cur: Math.min(cur, item.goal), goal: item.goal, lv: quest.rLv[i] || 0, claimed: false, canClaim: cur >= item.goal }
     }
-    const cur = quest.ev[item.ev] || 0
-    const claimed = !!quest.aClaim[i]
-    return { cur: Math.min(cur, item.goal), lv: 0, claimed, canClaim: !claimed && cur >= item.goal }
+    // 업적: 계단식 — cur = 누적치 + base, 목표 = 수령횟수 + 1 + base (수령마다 목표 +1)
+    const aLv = (quest.aLv && quest.aLv[i]) || 0
+    const cur = (quest.ev[item.ev] || 0) + (item.base || 0)
+    const goal = aLv + 1 + (item.base || 0)
+    return { cur: Math.min(cur, goal), goal, lv: aLv, claimed: false, canClaim: cur >= goal }
   }
   function qClaim(tab, i) {
     if (uiEdit) return
@@ -1731,7 +1733,7 @@ export default function App() {
     setQuest(q => {
       if (tab === 0) return { ...q, dClaim: { ...q.dClaim, [i]: true } }
       if (tab === 1) return { ...q, rBase: { ...q.rBase, [i]: (q.rBase[i] || 0) + item.goal }, rLv: { ...q.rLv, [i]: (q.rLv[i] || 0) + 1 } }
-      return { ...q, aClaim: { ...q.aClaim, [i]: true } }
+      return { ...q, aLv: { ...(q.aLv || {}), [i]: ((q.aLv && q.aLv[i]) || 0) + 1 } }
     })
     if (tab === 0 && i !== 0) qEv('daily_done')   // 일일 수령 → '일일 퀘스트 완료' 카운트 (자기 자신 제외)
   }
@@ -2123,8 +2125,8 @@ export default function App() {
                   <div style={st.qMid}>
                     <div data-edit="qname" style={st.qName}>{q.name}</div>
                     <div data-edit="qbar" style={st.qBarOuter}>
-                      <div style={{ ...st.qBarFill, width: `${Math.min(100, p.cur / q.goal * 100)}%` }} />
-                      <div data-edit="qbart" style={st.qBarTxt}>{p.claimed ? '수령 완료' : `${fmt(p.cur)}/${fmt(q.goal)}`}</div>
+                      <div style={{ ...st.qBarFill, width: `${Math.min(100, p.cur / p.goal * 100)}%` }} />
+                      <div data-edit="qbart" style={st.qBarTxt}>{p.claimed ? '수령 완료' : `${fmt(p.cur)}/${fmt(p.goal)}`}</div>
                     </div>
                   </div>
                   <button data-edit="qrew" style={{ ...st.qRew, ...(p.canClaim ? st.qRewOn : st.qRewOff) }} onClick={() => qClaim(questTab, i)}>
@@ -2689,8 +2691,8 @@ Object.assign(UI_DEFAULT, {
   qrowh: 64, qrowX: 0, qrowY: 0, qiconsz: 40, qiconX: 0, qiconY: 0,
   qnamefz: 14, qnameX: 0, qnameY: 0,
   qbarw: 150, qbarh: 14, qbarX: 0, qbarY: 0, qbarfz: 10, qbartX: 0, qbartY: 0,
-  qreww: 74, qrewh: 44, qrewX: 0, qrewY: 0,
-  qrewisz: 16, qrewiX: 0, qrewiY: 0, qrewvfz: 14, qrewvX: 0, qrewvY: 0, qlvfz: 9, qlvX: 0, qlvY: 0,
+  qreww: 46, qrewh: 37, qrewX: 3, qrewY: 0,
+  qrewisz: 18, qrewiX: 0, qrewiY: 2, qrewvfz: 12, qrewvX: 1, qrewvY: 1, qlvfz: 7, qlvX: -3, qlvY: -6,
   advicotrexw: 141, advicotrexh: 254, advicotrexX: -3, advicotrexY: 0,
   advicospinow: 131, advicospinoh: 97, advicospinoX: 5, advicospinoY: -7,
   advicotrikew: 133, advicotrikeh: 93, advicotrikeX: 6, advicotrikeY: 0,
