@@ -376,6 +376,7 @@ const ENEMY_TYPES = {
   penguin: { name: '펭귄', hp: 70, speed: 50, dmg: 10, reward: 11, h: 50, color: '#2a2a3a', flip: false, frames: ['/monster/penguin/penguin_1.png', '/monster/penguin/penguin_2.png', '/monster/penguin/penguin_3.png', '/monster/penguin/penguin_4.png'] },
   seal: { name: '물개', hp: 140, speed: 45, dmg: 18, reward: 20, h: 40, color: '#9a9aa8', flip: false, frames: ['/monster/seal/seal_1.png', '/monster/seal/seal_2.png', '/monster/seal/seal_3.png', '/monster/seal/seal_4.png'] },
   cow: { name: '소', hp: 300, speed: 50, dmg: 26, reward: 38, h: 70, color: '#e8e8e0', flip: false, frames: ['/monster/cow/cow_1.png', '/monster/cow/cow_2.png', '/monster/cow/cow_3.png', '/monster/cow/cow_4.png'] },
+  tiger2: { name: '호랑이', hp: 380, speed: 125, dmg: 40, reward: 55, h: 55, color: '#d08a3c', flip: false, frames: ['/monster/tiger2/tiger2_1.png', '/monster/tiger2/tiger2_2.png', '/monster/tiger2/tiger2_3.png', '/monster/tiger2/tiger2_4.png'] },
 }
 const EIMG = {}
 for (const k in ENEMY_TYPES) {
@@ -403,7 +404,15 @@ const BIMG = BOSS_TYPES.map(b => b.frames.map(src => { const im = new Image(); i
 const WAVE_CYCLE = ['rabbit', 'antelope', 'deer', 'boar', 'wolf', 'hyena', 'bear', 'rhino', 'tiger', 'mammoth', 'monkey', 'snake', 'ostrich', 'turtle', 'croc', 'komodo', 'eagle', 'giraffe', 'lion', 'elephant',
   'pig', 'chicken', 'duck', 'frog', 'bat', 'pelican', 'mantis', 'polarbear', 'alpaca', 'buffalo',
   'camel', 'horse', 'panda', 'scorpion', 'tarantula', 'cobra', 'zebra', 'cheetah', 'koala', 'kangaroo',
-  'cat', 'dog', 'hippo', 'gorilla', 'gator', 'squirrel', 'penguin', 'seal', 'cow']
+  'cat', 'dog', 'hippo', 'gorilla', 'gator', 'squirrel', 'penguin', 'seal', 'cow', 'tiger2']
+
+// ── 퀘스트 (내용은 임시 플레이스홀더 — 목록·보상·진행 연동은 추후 확정) ──
+const QUEST_TABS = ['일일 퀘스트', '반복 퀘스트', '업적']
+const QUEST_PLACEHOLDER = [
+  [ { name: '일일 퀘스트 완료', cur: 2, goal: 5, rv: 3000 }, { name: '플레이타임', cur: 781, goal: 1800, rv: 100 }, { name: '광고 보기', cur: 0, goal: 3, rv: 100 }, { name: '스킬 소환', cur: 0, goal: 1, rv: 100 } ],
+  [ { name: '스테이지 클리어', cur: 0, goal: 1, rv: 100 }, { name: '몬스터 처치', cur: 160, goal: 500, rv: 10 }, { name: '장비 소환', cur: 6, goal: 30, rv: 100 }, { name: '장비 융합', cur: 97, goal: 100, rv: 100 } ],
+  [ { name: '업적 예시 1', cur: 0, goal: 1, rv: 100 }, { name: '업적 예시 2', cur: 0, goal: 10, rv: 100 } ],
+]
 
 // 9종 스탯 — 강화탭(고기)·스킬탭(스킬포인트) 양쪽에서 사용
 // eff(lv): 레벨당 효과 텍스트 / 강화는 고기비용, 스킬은 SP 1/레벨
@@ -518,6 +527,8 @@ export default function App() {
     return () => { window.removeEventListener('resize', upd); window.removeEventListener('orientationchange', upd) }
   }, [])
   const [advSel, setAdvSel] = useState(null)  // 진입창에 띄울 대륙
+  const [questOpen, setQuestOpen] = useState(false)   // 퀘스트창
+  const [questTab, setQuestTab] = useState(0)         // 0 일일 / 1 반복 / 2 업적
   const [mapSeg, setMapSeg] = useState(1)  // 모험 지도 구간(0~2), 아프리카 중심=1 시작
   const [advLoaded, setAdvLoaded] = useState(false)  // 지도 이미지 로드 완료(초기 위치 점프 방지)
   const advTrackRef = useRef(null)
@@ -2002,6 +2013,40 @@ export default function App() {
         )
       })()}
 
+      {questOpen && (
+        <div style={st.advOverlay} onClick={() => { if (!uiEdit) setQuestOpen(false) }}>
+          <div data-edit="qwin" style={st.qWin} onClick={e => e.stopPropagation()}>
+            <div style={st.qTitleRow}>
+              <div data-edit="qtitle" style={st.qTitle}>퀘스트</div>
+              <button data-edit="qclose" style={st.qCloseBtn} onClick={() => { if (!uiEdit) setQuestOpen(false) }}>✕</button>
+            </div>
+            <div style={st.qTabs}>
+              {QUEST_TABS.map((t, i) => (
+                <button key={t} data-edit="qtab" style={{ ...st.qTabBtn, ...(questTab === i ? st.qTabOn : null) }} onClick={() => setQuestTab(i)}>{t}</button>
+              ))}
+            </div>
+            <div style={st.qList}>
+              {QUEST_PLACEHOLDER[questTab].map((q, i) => (
+                <div key={i} data-edit="qrow" style={st.qRow}>
+                  <img data-edit="qicon" src="/ui/quest.png" alt="" style={st.qIcon} />
+                  <div style={st.qMid}>
+                    <div data-edit="qname" style={st.qName}>{q.name}</div>
+                    <div data-edit="qbar" style={st.qBarOuter}>
+                      <div style={{ ...st.qBarFill, width: `${Math.min(100, q.cur / q.goal * 100)}%` }} />
+                      <div data-edit="qbart" style={st.qBarTxt}>{fmt(q.cur)}/{fmt(q.goal)}</div>
+                    </div>
+                  </div>
+                  <button data-edit="qrew" style={st.qRew}>
+                    <img data-edit="qrewi" src="/ui/gem.png" alt="" style={st.qRewIc} />
+                    <span data-edit="qrewv" style={st.qRewV}>{fmt(q.rv)}</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {gacha && (
         <div style={st.gachaOverlay}>
           <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.gachaScroll}>
@@ -2076,7 +2121,7 @@ export default function App() {
       <div ref={wrapRef} style={{ ...st.canvasWrap, height: Math.round(BASE_H * 0.42) + (view.h - BASE_H), ...(nav === '모험' ? { display: 'none' } : {}) }}>
         <canvas ref={canvasRef} />
         <button data-edit="pausebtn" style={{ ...st.pauseBtn, opacity: paused ? 1 : 0.65 }} onClick={() => { if (!uiEdit) setPaused(p => !p) }}>{paused ? '▶' : 'II'}</button>
-        <button data-edit="quest" style={st.questBtn} onClick={() => { if (!uiEdit) { /* TODO: 퀘스트 */ } }}><img src="/ui/quest.png" alt="" style={st.iconImg} /></button>
+        <button data-edit="quest" style={st.questBtn} onClick={() => { if (!uiEdit) setQuestOpen(true) }}><img src="/ui/quest.png" alt="" style={st.iconImg} /></button>
         {bossUI && (
           <div style={st.bossBars}>
             <div data-edit="btimer" style={st.btOuter}>
@@ -2453,7 +2498,7 @@ export default function App() {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) }))
             const nbtn = { width: 26, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
-            const rng = k => k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
+            const rng = k => k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
             const rmin = k => k === 'equipcols' ? 3 : 0
             return <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -2535,16 +2580,34 @@ const UI_DEFAULT = {
   advsw: 249, advsh: 71, advsfz: 17, advbarw: 205, advbarh: 19,
   advew: 93, adveh: 34, advefz: 11, advcw: 93, advch: 35, advcfz: 11,
   advwinX: 0, advwinY: 0, adviconX: 0, adviconY: 0, adviconbX: 12, adviconbY: 0,
-  advmonbX: 0, advmonbY: 0, advregbX: 0, advregbY: 0, advrewbX: 0, advrewbY: 29,
+  advmonbX: 0, advmonbY: 0, advregbX: 0, advregbY: 0, advrewbX: 1, advrewbY: 29,
   advsignX: 0, advsignY: 0, advsigntX: 0, advsigntY: -6, advbarX: 0, advbarY: -7,
   advmonkX: -1, advmonkY: 2, advmonvX: -1, advmonvY: 2, advregkX: -3, advregkY: 2, advregvX: -4, advregvY: 2,
   advrewkX: -28, advrewkY: 0, advrewdX: 0, advrewdY: -1, advrewmX: 0, advrewmY: -1,
   adventerX: 0, adventerY: 4, advcloseX: 0, advcloseY: 4, advtxt0X: 47, advtxt0Y: 1, advtxt1X: 39, advtxt1Y: 1, advtxt2X: 43, advtxt2Y: 2, advtxt3X: 39, advtxt3Y: 1, advtxt4X: 50, advtxt4Y: 1, advtxt5X: 51, advtxt5Y: 2, advtxt6X: 50, advtxt6Y: 2, advtxt7X: 47, advtxt7Y: 2, advbtn0X: 172, advbtn0Y: -13, advbtn1X: 251, advbtn1Y: 0, advbtn2X: 326, advbtn2Y: -5, advbtn3X: 200, advbtn3Y: 27, advbtn4X: 66, advbtn4Y: 11, advbtn5X: 121, advbtn5Y: 4, advbtn6X: 305, advbtn6Y: 36, advbtn7X: 188, advbtn7Y: 0,
-  mailsz: 26, questsz: 40, mailboxX: 0, mailboxY: 0, questX: 6, questY: -8,
+  mailsz: 26, questsz: 39, mailboxX: 0, mailboxY: 0, questX: 10, questY: -7,
   matchipX: 23, matchipY: -14, allymatX: -19, allymatY: 14, dtabX: 0, dtabY: 0, dtitleX: 0, dtitleY: 0, darrowX: 0, darrowY: 0, diconX: 0, diconY: 0, dstatX: 0, dstatY: 0, denhX: 0, denhY: 0, dequipX: 0, dequipY: 0, dfusebtnX: 0, dfusebtnY: 0, dstepX: 0, dstepY: 0,
 }
-// 진입창 보스 그림: 종별 개별 크기·위치 (기본값 = 기존 공용 adviw/advih)
-for (const k of DINO_KEYS) { UI_DEFAULT[`advico${k}w`] = 100; UI_DEFAULT[`advico${k}h`] = 88; UI_DEFAULT[`advico${k}X`] = 0; UI_DEFAULT[`advico${k}Y`] = 0 }
+// 진입창 보스 그림: 종별 개별 크기·위치 (사용자 확정값 2026-07-25)
+Object.assign(UI_DEFAULT, {
+  // 퀘스트창
+  qww: 340, qwh: 540, qwinX: 0, qwinY: 0,
+  qtitlefz: 20, qtitleX: 0, qtitleY: 0, qclsz: 30, qcloseX: 0, qcloseY: 0,
+  qtabw: 92, qtabh: 30, qtabfz: 12, qtabX: 0, qtabY: 0,
+  qrowh: 64, qrowX: 0, qrowY: 0, qiconsz: 40, qiconX: 0, qiconY: 0,
+  qnamefz: 14, qnameX: 0, qnameY: 0,
+  qbarw: 150, qbarh: 14, qbarX: 0, qbarY: 0, qbarfz: 10, qbartX: 0, qbartY: 0,
+  qreww: 74, qrewh: 44, qrewX: 0, qrewY: 0,
+  qrewisz: 16, qrewiX: 0, qrewiY: 0, qrewvfz: 14, qrewvX: 0, qrewvY: 0,
+  advicotrexw: 141, advicotrexh: 254, advicotrexX: -3, advicotrexY: 0,
+  advicospinow: 131, advicospinoh: 97, advicospinoX: 5, advicospinoY: -7,
+  advicotrikew: 133, advicotrikeh: 93, advicotrikeX: 6, advicotrikeY: 0,
+  advicostegow: 131, advicostegoh: 105, advicostegoX: 0, advicostegoY: -9,
+  advicoraptorw: 302, advicoraptorh: 92, advicoraptorX: -11, advicoraptorY: -5,
+  advicoankyw: 142, advicoankyh: 103, advicoankyX: 6, advicoankyY: -18,
+  advicopteraw: 195, advicopterah: 201, advicopteraX: 21, advicopteraY: -16,
+  advicobrachiow: 135, advicobrachioh: 115, advicobrachioX: 0, advicobrachioY: -5,
+})
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
   pill: { label: '자원 표시', size: ['pillfz', 'wavefz'], pos: 'pill' },
@@ -2668,6 +2731,20 @@ const EDIT_GROUPS = {
 }
 for (let i = 0; i < 6; i++) EDIT_GROUPS[`evoimg${i}`] = { label: `진화캐릭 ${i + 1}단계`, size: [`evoimg${i}`], pos: `evoimg${i}` }
 for (const k of DINO_KEYS) EDIT_GROUPS[`advico${k}`] = { label: `보스 그림(${DINO_NAME[k]})`, size: [`advico${k}w`, `advico${k}h`], pos: `advico${k}` }
+Object.assign(EDIT_GROUPS, {
+  qwin: { label: '퀘스트 창', size: ['qww', 'qwh'], pos: 'qwin' },
+  qtitle: { label: '퀘스트 제목', size: ['qtitlefz'], pos: 'qtitle' },
+  qclose: { label: '퀘스트 닫기', size: ['qclsz'], pos: 'qclose' },
+  qtab: { label: '퀘스트 탭', size: ['qtabw', 'qtabh', 'qtabfz'], pos: 'qtab' },
+  qrow: { label: '퀘스트 행', size: ['qrowh'], pos: 'qrow' },
+  qicon: { label: '퀘스트 행 아이콘', size: ['qiconsz'], pos: 'qicon' },
+  qname: { label: '퀘스트 이름', size: ['qnamefz'], pos: 'qname' },
+  qbar: { label: '퀘스트 진행바', size: ['qbarw', 'qbarh'], pos: 'qbar' },
+  qbart: { label: '진행바 글자', size: ['qbarfz'], pos: 'qbart' },
+  qrew: { label: '보상 버튼', size: ['qreww', 'qrewh'], pos: 'qrew' },
+  qrewi: { label: '보상 아이콘', size: ['qrewisz'], pos: 'qrewi' },
+  qrewv: { label: '보상 숫자', size: ['qrewvfz'], pos: 'qrewv' },
+})
 const UI_LABELS = {
   panelbwV: '패널 테두리(상하)', panelbwH: '패널 테두리(좌우)', rowbwV: '항목 테두리(상하)', rowbwH: '항목 테두리(좌우)',
   rowmin: '항목 최소높이', rowgap: '항목 간격', icon: '아이콘 크기', name: '이름 글자', lv: 'Lv 글자', val: '수치 글자',
@@ -2686,6 +2763,12 @@ const UI_LABELS = {
 }
 for (let i = 0; i < 6; i++) UI_LABELS[`evoimg${i}`] = `${i + 1}단계 크기`
 for (const k of DINO_KEYS) { UI_LABELS[`advico${k}w`] = '그림 너비'; UI_LABELS[`advico${k}h`] = '그림 높이' }
+Object.assign(UI_LABELS, {
+  qww: '창 너비', qwh: '창 높이', qtitlefz: '제목 글자', qclsz: '버튼 크기',
+  qtabw: '탭 너비', qtabh: '탭 높이', qtabfz: '탭 글자', qrowh: '행 높이',
+  qiconsz: '아이콘 크기', qnamefz: '이름 글자', qbarw: '바 너비', qbarh: '바 높이', qbarfz: '바 글자',
+  qreww: '버튼 너비', qrewh: '버튼 높이', qrewisz: '아이콘 크기', qrewvfz: '숫자 크기',
+})
 const uiVars = c => `:root{
 --pd-panelbw-v:${c.panelbwV}px;--pd-panelbw-h:${c.panelbwH}px;--pd-rowbw-v:${c.rowbwV}px;--pd-rowbw-h:${c.rowbwH}px;
 --pd-rowmin:${c.rowmin}px;--pd-rowgap:${c.rowgap}px;--pd-icon:${c.icon}px;--pd-name:${c.name}px;--pd-lv:${c.lv}px;--pd-val:${c.val}px;
@@ -2697,6 +2780,7 @@ const uiVars = c => `:root{
 --pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
 ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg${i}-x:${c['evoimg' + i + 'X']}px;--pd-evoimg${i}-y:${c['evoimg' + i + 'Y']}px;`).join('')}--pd-slotfz:${c.slotfz}px;
+--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;
 ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k}h:${c['advico' + k + 'h']}px;--pd-advico${k}-x:${c['advico' + k + 'X']}px;--pd-advico${k}-y:${c['advico' + k + 'Y']}px;`).join('')}
 --pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
 --pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
@@ -2723,7 +2807,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
 --pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -2975,6 +3059,53 @@ const st = {
     background: 'linear-gradient(180deg,#3a2c1b,#241a10)',
     transform: 'translate(var(--pd-advclose-x), var(--pd-advclose-y))', cursor: 'pointer',
   },
+  // ── 퀘스트창 ──
+  qWin: {
+    position: 'relative', width: 'var(--pd-qww)', height: 'var(--pd-qwh)',
+    background: 'url(/ui/adv_frame.png) center / 100% 100% no-repeat',
+    padding: '8% 8% 9%', display: 'flex', flexDirection: 'column', gap: 8,
+    boxSizing: 'border-box', transform: 'translate(var(--pd-qwin-x), var(--pd-qwin-y))',
+  },
+  qTitleRow: { flexShrink: 0, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+  qTitle: { fontSize: 'var(--pd-qtitlefz)', fontWeight: 800, color: '#f0dfae', textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-qtitle-x), var(--pd-qtitle-y))' },
+  qCloseBtn: {
+    width: 'var(--pd-qclsz)', height: 'var(--pd-qclsz)', padding: 0, border: 'none', background: 'transparent',
+    color: '#e8d8b8', fontSize: 'calc(var(--pd-qclsz) * 0.7)', fontWeight: 800, lineHeight: 1, cursor: 'pointer',
+    textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-qclose-x), var(--pd-qclose-y))',
+  },
+  qTabs: { flexShrink: 0, display: 'flex', gap: 5, justifyContent: 'center' },
+  qTabBtn: {
+    width: 'var(--pd-qtabw)', height: 'var(--pd-qtabh)', fontSize: 'var(--pd-qtabfz)', fontWeight: 700,
+    color: '#a8946e', border: '1px solid #4a3a22', borderRadius: 7,
+    background: 'rgba(0,0,0,0.28)', cursor: 'pointer', boxSizing: 'border-box',
+    transform: 'translate(var(--pd-qtab-x), var(--pd-qtab-y))',
+  },
+  qTabOn: { color: '#fff5df', border: '1px solid #d09340', background: 'linear-gradient(180deg,#4a3418,#2c1f0e)', boxShadow: 'inset 0 0 6px rgba(208,147,64,0.35)' },
+  qList: { flex: 1, minHeight: 0, width: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 7, boxSizing: 'border-box', paddingRight: 2 },
+  qRow: {
+    flexShrink: 0, width: '100%', height: 'var(--pd-qrowh)', display: 'flex', alignItems: 'center', gap: 8,
+    padding: '0 8px', boxSizing: 'border-box', border: '2px solid #7a5a30', borderRadius: 9,
+    background: 'rgba(0,0,0,0.26)', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.5)',
+    transform: 'translate(var(--pd-qrow-x), var(--pd-qrow-y))',
+  },
+  qIcon: { flexShrink: 0, width: 'var(--pd-qiconsz)', height: 'var(--pd-qiconsz)', objectFit: 'contain', imageRendering: 'pixelated', transform: 'translate(var(--pd-qicon-x), var(--pd-qicon-y))' },
+  qMid: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 },
+  qName: { fontSize: 'var(--pd-qnamefz)', fontWeight: 800, color: '#f0dfae', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-qname-x), var(--pd-qname-y))' },
+  qBarOuter: {
+    position: 'relative', width: 'var(--pd-qbarw)', height: 'var(--pd-qbarh)', borderRadius: 4, overflow: 'hidden',
+    background: 'rgba(0,0,0,0.55)', border: '1px solid #3a2c18', boxSizing: 'border-box',
+    transform: 'translate(var(--pd-qbar-x), var(--pd-qbar-y))',
+  },
+  qBarFill: { position: 'absolute', left: 0, top: 0, bottom: 0, background: 'linear-gradient(180deg,#f0a830,#c07818)' },
+  qBarTxt: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--pd-qbarfz)', fontWeight: 800, color: '#fff', textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-qbart-x), var(--pd-qbart-y))' },
+  qRew: {
+    flexShrink: 0, width: 'var(--pd-qreww)', height: 'var(--pd-qrewh)', display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'center', gap: 2, border: '1px solid #6b4a22', borderRadius: 8,
+    background: 'linear-gradient(180deg,#7a5426,#4a3014)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)',
+    cursor: 'pointer', boxSizing: 'border-box', transform: 'translate(var(--pd-qrew-x), var(--pd-qrew-y))',
+  },
+  qRewIc: { width: 'var(--pd-qrewisz)', height: 'var(--pd-qrewisz)', objectFit: 'contain', transform: 'translate(var(--pd-qrewi-x), var(--pd-qrewi-y))' },
+  qRewV: { fontSize: 'var(--pd-qrewvfz)', fontWeight: 800, color: '#fff5df', textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-qrewv-x), var(--pd-qrewv-y))' },
   advContName: { fontSize: 'var(--pd-advbfz)', fontWeight: 800, color: '#f3e6d0', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap' },
   advMap: { display: 'block', height: '100%', width: 'auto', maxWidth: 'none', imageRendering: 'auto', userSelect: 'none', WebkitUserSelect: 'none' },
   advArrow: {
