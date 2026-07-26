@@ -38,6 +38,25 @@ const ANIM = {
 //   fx proj  = 투사체: fly 프레임이 몬스터 쪽으로 날아가 명중 시 데미지(+impact 프레임)
 //   fx strike = 낙하/타격: 적 위치에 frames 재생, 중반에 데미지
 // stage — 0:4족보행 1:직립보행 2:에렉투스 3:네안데르탈인 4:사피엔스 5:인간
+const PASSIVE_KEYS = [
+  ['beast', '야수의 본능', '기본공격 피해 증가'],
+  ['rage', '광폭화', '공격속도 증가'],
+  ['crush', '분쇄', '치명타 피해 증가'],
+  ['battlerush', '전투의 열기', '적 처치 시 공격력 증가(중첩)'],
+  ['hunter', '사냥꾼의 본능', '고기 획득량 증가'],
+  ['expblessing', '경험의 축복', '경험치 획득량 증가'],
+  ['battlestart', '전투 시작', '전투 시작 후 일정 시간마다 공격력 증가'],
+  ['swift', '신속한 훈련', '일정 시간마다 공격속도 증가'],
+]
+// 진화 단계별 패시브 (아이콘: 단계별 폴더). 이름/능력치 추후 확정 — 지금은 표시·장착만
+const PASSIVE_TIERS = [
+  { base: 101, path: k => `/skill/passive/${k}.png`, stages: [0, 1] },          // 오스트랄로피테쿠스(4족+직립)
+  { base: 111, path: k => `/skill/passive/erectus_${k}.png`, stages: [2] },     // 호모 에렉투스
+  { base: 121, path: k => `/skill/passive/neander_${k}.png`, stages: [3] },     // 호모 네안데르탈인
+  { base: 131, path: k => `/skill/passive/sapiens_${k}.png`, stages: [4] },     // 호모 사피엔스
+  { base: 141, path: k => `/skill/passive/human_${k}.png`, stages: [5] },       // 인간
+]
+const PASSIVE_SHEET = PASSIVE_TIERS.flatMap(t => PASSIVE_KEYS.map(([k, nm, ds], i) => ({ id: t.base + i, n: 1, h: 0, stage: -1, stages: t.stages, passive: true, ic: t.path(k), title: nm, desc2: ds })))
 const SKILL_SHEET = [
   { id: 1, n: 6, h: 280, stage: 1, title: '번개 바위', charSeq: [1, 2, 3, 4], fx: { type: 'strike', frames: [5, 6], fxH: 240 } },
   { id: 2, n: 5, h: 250, stage: 1, title: '전기 작살', charSeq: [1, 2], fx: { type: 'proj', fly: [3, 4], impact: 5, fxH: 200 } },
@@ -50,15 +69,7 @@ const SKILL_SHEET = [
   { id: 17, n: 5, h: 133, stage: 0, title: '포효' },
   { id: 18, n: 5, h: 210, stage: 1, title: '바위치기 (강화)', charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5] } },
   { id: 20, n: 5, h: 195, stage: 1, title: '바위 회오리', charSeq: [1, 2, 3, 5], fx: { type: 'proj', fly: [4], flyScale: 0.9, yOff: 0 } },
-  // ── 패시브 (표시 전용 — 이름/능력치 추후 확정, 4족보행+직립보행 공통) ──
-  { id: 101, n: 1, h: 0, stage: -1, stages: [0, 1], passive: true, ic: '/skill/passive/beast.png', title: '야수의 본능', desc2: '기본공격 피해 증가' },
-  { id: 102, n: 1, h: 0, stage: -1, stages: [0, 1], passive: true, ic: '/skill/passive/rage.png', title: '광폭화', desc2: '공격속도 증가' },
-  { id: 103, n: 1, h: 0, stage: -1, stages: [0, 1], passive: true, ic: '/skill/passive/crush.png', title: '분쇄', desc2: '치명타 피해 증가' },
-  { id: 104, n: 1, h: 0, stage: -1, stages: [0, 1], passive: true, ic: '/skill/passive/battlerush.png', title: '전투의 열기', desc2: '적 처치 시 공격력 증가(중첩)' },
-  { id: 105, n: 1, h: 0, stage: -1, stages: [0, 1], passive: true, ic: '/skill/passive/hunter.png', title: '사냥꾼의 본능', desc2: '고기 획득량 증가' },
-  { id: 106, n: 1, h: 0, stage: -1, stages: [0, 1], passive: true, ic: '/skill/passive/expblessing.png', title: '경험의 축복', desc2: '경험치 획득량 증가' },
-  { id: 107, n: 1, h: 0, stage: -1, stages: [0, 1], passive: true, ic: '/skill/passive/battlestart.png', title: '전투 시작', desc2: '전투 시작 후 일정 시간 뒤 공격력 증가' },
-  { id: 108, n: 1, h: 0, stage: -1, stages: [0, 1], passive: true, ic: '/skill/passive/swift.png', title: '신속한 몸놀림', desc2: '일정 시간마다 공격속도 증가' },
+  ...PASSIVE_SHEET,   // 진화 단계별 패시브 (오스트랄로~인간)
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
 // 스킬 아이콘: 해당 스킬 시트의 지정 프레임 사용 (없으면 번호 텍스트)
@@ -133,8 +144,8 @@ const MOTION_DEFAULT = {
   lunge: { boss: 25, mob: 15 },                                // 공격 시 파고드는 거리(px)
   stop: { ...DINO_STOP },                                      // 종별 정지 위치 보정(px, +면 멀리)
   size: { trex: 1.08, spino: 1.15, trike: 1.04, stego: 1.20, raptor: 0.90, anky: 1, ptera: 1.05, brachio: 1.73 },  // 종별 크기 배율
-  hero: { sz: 1, x: 0, y: 0 },                                 // 히어로 크기·위치
-  ally: { hunter: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, shaman: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, healer: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 } },  // 동료 크기·위치·공격프레임 크기·속도
+  hero: { sz: 1, x: 0, y: 0, skillSz: 1, atkSz: 1 },           // 히어로 크기·위치 (skillSz=스킬 중, atkSz=기본공격 중)
+  ally: { hunter: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, shaman: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, healer: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, giant: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 } },  // 동료 크기·위치·공격프레임 크기·속도
   mob: {},                                                     // 일반몹 종별 크기·높이 { type: { sz, y } }
   boss: {},                                                    // 일반보스 종별 크기·높이 { bossIdx: { sz, y } }
   skFx: { 1: { sz: 1, spd: 1 }, 2: { sz: 1, spd: 1 }, 16: { sz: 1, spd: 1 }, 18: { sz: 1, spd: 1 }, 20: { sz: 1, spd: 1 } },  // 히어로 스킬 이펙트 크기·속도
@@ -621,7 +632,7 @@ export default function App() {
         lunge: { ...MOTION_DEFAULT.lunge, ...(sv.lunge || {}) },
         stop: { ...MOTION_DEFAULT.stop, ...(sv.stop || {}) }, size: { ...MOTION_DEFAULT.size, ...(sv.size || {}) },
         hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}) }, mob: { ...(sv.mob || {}) }, boss: { ...(sv.boss || {}) },
-        ally: { hunter: { ...MOTION_DEFAULT.ally.hunter, ...((sv.ally || {}).hunter || {}) }, shaman: { ...MOTION_DEFAULT.ally.shaman, ...((sv.ally || {}).shaman || {}) }, healer: { ...MOTION_DEFAULT.ally.healer, ...((sv.ally || {}).healer || {}) } },
+        ally: { hunter: { ...MOTION_DEFAULT.ally.hunter, ...((sv.ally || {}).hunter || {}) }, shaman: { ...MOTION_DEFAULT.ally.shaman, ...((sv.ally || {}).shaman || {}) }, healer: { ...MOTION_DEFAULT.ally.healer, ...((sv.ally || {}).healer || {}) }, giant: { ...MOTION_DEFAULT.ally.giant, ...((sv.ally || {}).giant || {}) } },
         skFx: Object.fromEntries(MOT_FX_IDS.map(id => [id, { ...MOTION_DEFAULT.skFx[id], ...((sv.skFx || {})[id] || {}) }])),
       }
     } catch { return JSON.parse(JSON.stringify(MOTION_DEFAULT)) }
@@ -994,11 +1005,14 @@ export default function App() {
           if (e.kb > 0.5) { if (!(e.atkT > 0)) e.x += e.kb * dt; e.kb -= e.kb * Math.min(1, dt * 9) } else e.kb = 0  // 공격 중엔 밀리지 않음
           if (e.sq > 0) e.sq = Math.max(0, e.sq - dt)
           e.vt = Math.min(1, (e.vt ?? 0) + dt * 2.2)   // 스폰 직후 가속 (0→1)
-          const szm = e.dino ? (motRef.current.size[e.dino] || 1) : 1
-          const stopX = w.heroX + Math.min(atkRange - 15, 60 + e.h * szm * 0.4) + (e.dino ? motRef.current.stop[e.dino] || 0 : 0)
+          const emb = e.dino ? null : (e.boss ? (motRef.current.boss[e.bossIdx] || {}) : (motRef.current.mob[e.type] || {}))
+          const szm = e.dino ? (motRef.current.size[e.dino] || 1) : (emb.sz || 1)
+          const estop = e.dino ? (motRef.current.stop[e.dino] || 0) : (emb.stop || 0)   // 좌우 정지 위치(+면 오른쪽/멀리)
+          const espd = e.dino ? 1 : (emb.spd || 1)                                       // 달려오는 속도 배율
+          const stopX = w.heroX + Math.min(atkRange - 15, 60 + e.h * szm * 0.4) + estop
           if (e.x > stopX && !(e.atkT > 0)) {
             const near = Math.min(1, Math.max(0.3, (e.x - stopX) / 55))  // 정지 전 감속
-            e.x -= (e.speed * (e.spdV || 1) * SPEED * 1.3 * e.vt * near + scroll) * dt
+            e.x -= (e.speed * (e.spdV || 1) * espd * SPEED * 1.3 * e.vt * near + scroll) * dt
             if (e.atkT > 0) { e.atkT = 0; e.lunge = 0 }
             e.animT += dt * SPEED * (0.4 + 0.6 * e.vt * near) * (1 + scroll / SCROLL * 0.4) * Math.min(1.5, Math.max(0.6, 0.55 + e.speed / 160))
           } else {
@@ -1564,7 +1578,8 @@ export default function App() {
       const im = safeImg(key, fi)
       if (im.complete && im.naturalWidth > 0) {
         const hcfg = motRef.current.hero
-        const hh = a.h * (hcfg.sz || 1)
+        const hStMul = w.skill != null ? (hcfg.skillSz || 1) : (hero.state === 'attack' ? (hcfg.atkSz || 1) : 1)
+        const hh = a.h * (hcfg.sz || 1) * hStMul
         const hw = hh * (im.naturalWidth / im.naturalHeight)
         ctx.save()
         // 장착 동료 (영웅 왼쪽 뒤, 겹침 허용)
@@ -2361,7 +2376,7 @@ export default function App() {
             onPointerCancel={() => { skqDrag.current.down = false }}
           >
             {equipped.map((si, slot) => {
-              const valid = si != null && SKILLS[si] && SKILLS[si].stage === evo
+              const valid = si != null && SKILLS[si] && (SKILLS[si].stage === evo || (SKILLS[si].stages || []).includes(evo))
               return (
                 <div key={slot} data-edit="skqslot" style={st.skqSlot} onClick={() => { if (!uiEdit && !skqDrag.current.moved && si != null) unequipSkill(slot) }}>
                   {valid
@@ -2701,11 +2716,14 @@ export default function App() {
             {row('크기 배율', M.hero.sz, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, sz: v } }))}
             {row('좌우 위치', M.hero.x, -150, 150, 1, v => setMotCfg({ ...M, hero: { ...M.hero, x: v } }))}
             {row('상하 위치', M.hero.y, -150, 150, 1, v => setMotCfg({ ...M, hero: { ...M.hero, y: v } }))}
+            <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
+            {row('스킬 중 크기', M.hero.skillSz, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, skillSz: v } }))}
+            {row('기본공격 중 크기', M.hero.atkSz, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, atkSz: v } }))}
           </>)}
 
           {motCat === 'ally' && (<>
             <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
-              {[['hunter', '헌터'], ['shaman', '주술사'], ['healer', '힐러']].map(([k, lbl]) => (
+              {[['hunter', '헌터'], ['shaman', '주술사'], ['healer', '힐러'], ['giant', '거인']].map(([k, lbl]) => (
                 <button key={k} onClick={() => setMotAlly(k)}
                   style={{ padding: '4px 9px', fontSize: 11, borderRadius: 5, border: `1px solid ${k === motAlly ? GOLD : '#4a3a22'}`,
                     background: k === motAlly ? 'linear-gradient(180deg,#d4872e,#a85f1f)' : '#2c2013', color: k === motAlly ? '#fff' : '#cbb89a' }}
@@ -2733,6 +2751,8 @@ export default function App() {
                   <div style={{ fontSize: 11, color: GOLD, fontWeight: 700, marginBottom: 3 }}>{nm}</div>
                   {row('크기 배율', c.sz ?? 1, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, mob: { ...M.mob, [tp]: { ...(M.mob[tp] || {}), sz: v } } }))}
                   {row('높이(+위)', c.y ?? 0, -100, 100, 1, v => setMotCfg({ ...M, mob: { ...M.mob, [tp]: { ...(M.mob[tp] || {}), y: v } } }))}
+                  {row('좌우 정지(+멀리)', c.stop ?? 0, -120, 250, 1, v => setMotCfg({ ...M, mob: { ...M.mob, [tp]: { ...(M.mob[tp] || {}), stop: v } } }))}
+                  {row('달려오는 속도', c.spd ?? 1, 0.2, 3, 0.05, v => setMotCfg({ ...M, mob: { ...M.mob, [tp]: { ...(M.mob[tp] || {}), spd: v } } }))}
                 </div>
               ) })}
             </>)
@@ -2750,6 +2770,8 @@ export default function App() {
                   <div style={{ fontSize: 11, color: GOLD, fontWeight: 700, marginBottom: 3 }}>{nm}</div>
                   {row('크기 배율', c.sz ?? 1, 0.4, 3, 0.01, v => setMotCfg({ ...M, boss: { ...M.boss, [bi]: { ...(M.boss[bi] || {}), sz: v } } }))}
                   {row('높이(+위)', c.y ?? 0, -100, 100, 1, v => setMotCfg({ ...M, boss: { ...M.boss, [bi]: { ...(M.boss[bi] || {}), y: v } } }))}
+                  {row('좌우 정지(+멀리)', c.stop ?? 0, -120, 250, 1, v => setMotCfg({ ...M, boss: { ...M.boss, [bi]: { ...(M.boss[bi] || {}), stop: v } } }))}
+                  {row('달려오는 속도', c.spd ?? 1, 0.2, 3, 0.05, v => setMotCfg({ ...M, boss: { ...M.boss, [bi]: { ...(M.boss[bi] || {}), spd: v } } }))}
                 </div>
               ) })}
             </>)
