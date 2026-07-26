@@ -50,11 +50,21 @@ const SKILL_SHEET = [
   { id: 17, n: 5, h: 133, stage: 0, title: '포효' },
   { id: 18, n: 5, h: 210, stage: 1, title: '바위치기 (강화)', charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5] } },
   { id: 20, n: 5, h: 195, stage: 1, title: '바위 회오리', charSeq: [1, 2, 3, 5], fx: { type: 'proj', fly: [4], flyScale: 0.9, yOff: 0 } },
+  // ── 패시브 (표시 전용 — 이름/능력치 추후 확정, 4족보행+직립보행 공통) ──
+  { id: 101, n: 1, h: 0, stage: -1, stages: [0, 1], passive: true, ic: '/skill/passive/beast.png', title: '야수의 본능', desc2: '기본공격 피해 증가' },
+  { id: 102, n: 1, h: 0, stage: -1, stages: [0, 1], passive: true, ic: '/skill/passive/rage.png', title: '광폭화', desc2: '공격속도 증가' },
+  { id: 103, n: 1, h: 0, stage: -1, stages: [0, 1], passive: true, ic: '/skill/passive/crush.png', title: '분쇄', desc2: '치명타 피해 증가' },
+  { id: 104, n: 1, h: 0, stage: -1, stages: [0, 1], passive: true, ic: '/skill/passive/battlerush.png', title: '전투의 열기', desc2: '적 처치 시 공격력 증가(중첩)' },
+  { id: 105, n: 1, h: 0, stage: -1, stages: [0, 1], passive: true, ic: '/skill/passive/hunter.png', title: '사냥꾼의 본능', desc2: '고기 획득량 증가' },
+  { id: 106, n: 1, h: 0, stage: -1, stages: [0, 1], passive: true, ic: '/skill/passive/expblessing.png', title: '경험의 축복', desc2: '경험치 획득량 증가' },
+  { id: 107, n: 1, h: 0, stage: -1, stages: [0, 1], passive: true, ic: '/skill/passive/battlestart.png', title: '전투 시작', desc2: '전투 시작 후 일정 시간 뒤 공격력 증가' },
+  { id: 108, n: 1, h: 0, stage: -1, stages: [0, 1], passive: true, ic: '/skill/passive/swift.png', title: '신속한 몸놀림', desc2: '일정 시간마다 공격속도 증가' },
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
 // 스킬 아이콘: 해당 스킬 시트의 지정 프레임 사용 (없으면 번호 텍스트)
 const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 12: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4 }
 const skillIconSrc = id => SKILL_ICON_FRAME[id] ? `/skill/s${id}/s${id}_${SKILL_ICON_FRAME[id]}.png` : null
+const skIcon = s => (s ? (skillIconSrc(s.id) || s.icon2 || null) : null)
 // ── 전리품 조각 (사망 드롭 → 상단 재화칸 흡수 연출) ──
 const LOOT_IMG = { meat: '/ui/ic_meat.png', exp: '/ui/ic_exp.png', dia: '/ui/gem.png', mat: '/ui/mat4.png' }
 const LOOT_CIMG = {}
@@ -123,7 +133,13 @@ const MOTION_DEFAULT = {
   lunge: { boss: 25, mob: 15 },                                // 공격 시 파고드는 거리(px)
   stop: { ...DINO_STOP },                                      // 종별 정지 위치 보정(px, +면 멀리)
   size: { trex: 1.08, spino: 1.15, trike: 1.04, stego: 1.20, raptor: 0.90, anky: 1, ptera: 1.05, brachio: 1.73 },  // 종별 크기 배율
+  hero: { sz: 1, x: 0, y: 0 },                                 // 히어로 크기·위치
+  ally: { hunter: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, shaman: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, healer: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 } },  // 동료 크기·위치·공격프레임 크기·속도
+  mob: {},                                                     // 일반몹 종별 크기·높이 { type: { sz, y } }
+  boss: {},                                                    // 일반보스 종별 크기·높이 { bossIdx: { sz, y } }
+  skFx: { 1: { sz: 1, spd: 1 }, 2: { sz: 1, spd: 1 }, 16: { sz: 1, spd: 1 }, 18: { sz: 1, spd: 1 }, 20: { sz: 1, spd: 1 } },  // 히어로 스킬 이펙트 크기·속도
 }
+const MOT_FX_IDS = [1, 2, 16, 18, 20]                          // 이펙트 있는 스킬 id
 const dinoAtkDur = (k, T) => (T[k] || DINO_ATK_DEF).reduce((a, b) => a + b, 0)
 const dinoHitAt = (k, T, H) => {               // 타격 프레임이 시작되는 시각(초)
   const arr = T[k] || DINO_ATK_DEF
@@ -258,6 +274,7 @@ const SKILLS = SKILL_SHEET.map(c => {
   for (const t of ft) { acc += t; ends.push(acc) }
   return {
     key: 's' + c.id, id: c.id, name: c.title || ('스킬 ' + c.id), anim: 's_' + c.id, icon: String(c.id), stage: c.stage,
+    stages: c.stages || null, passive: !!c.passive, icon2: c.ic || null, desc2: c.desc2 || null,
     h: c.h, fx: c.fx || null, frameEnds: ends,
     cd: 1, cast: acc, hitAt: 0.55, dmgMult: 2, aoe: false, maxTargets: 1,
     desc: c.n + '프레임 · 임시값',
@@ -589,6 +606,11 @@ export default function App() {
   const [uiEdit, setUiEdit] = useState(false)
   const [motEdit, setMotEdit] = useState(false)     // 모션 편집기
   const [motSel, setMotSel] = useState('trex')
+  const [motCat, setMotCat] = useState('dino')     // 편집 카테고리: dino/hero/ally/mob/boss/skfx
+  const [motAlly, setMotAlly] = useState('hunter') // 동료 선택
+  const [motFx, setMotFx] = useState(1)            // 스킬 이펙트 선택(id)
+  const [, setMotTick] = useState(0)               // 편집 중 화면 몹/보스 추적 리프레시
+  useEffect(() => { if (!motEdit) return; const iv = setInterval(() => setMotTick(t => t + 1), 500); return () => clearInterval(iv) }, [motEdit])
   const [copiedMot, setCopiedMot] = useState(false)
   const [motCfg, setMotCfg] = useState(() => {
     try {
@@ -598,6 +620,9 @@ export default function App() {
         cd: { ...MOTION_DEFAULT.cd, ...(sv.cd || {}) }, dur: { ...MOTION_DEFAULT.dur, ...(sv.dur || {}) },
         lunge: { ...MOTION_DEFAULT.lunge, ...(sv.lunge || {}) },
         stop: { ...MOTION_DEFAULT.stop, ...(sv.stop || {}) }, size: { ...MOTION_DEFAULT.size, ...(sv.size || {}) },
+        hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}) }, mob: { ...(sv.mob || {}) }, boss: { ...(sv.boss || {}) },
+        ally: { hunter: { ...MOTION_DEFAULT.ally.hunter, ...((sv.ally || {}).hunter || {}) }, shaman: { ...MOTION_DEFAULT.ally.shaman, ...((sv.ally || {}).shaman || {}) }, healer: { ...MOTION_DEFAULT.ally.healer, ...((sv.ally || {}).healer || {}) } },
+        skFx: Object.fromEntries(MOT_FX_IDS.map(id => [id, { ...MOTION_DEFAULT.skFx[id], ...((sv.skFx || {})[id] || {}) }])),
       }
     } catch { return JSON.parse(JSON.stringify(MOTION_DEFAULT)) }
   })
@@ -687,6 +712,9 @@ export default function App() {
     acc: tot('acc') * STAT_LIST.acc.per / 100,
     eva: tot('eva') * STAT_LIST.eva.per / 100,
     equipped,
+    // TODO(패시브 효과): 장착된 패시브(SKILLS[si].passive)의 수치가 확정되면 여기서 상시형은 위 스탯에 합산,
+    // 주기형은 전투 루프에서 슬롯 쿨(w.skillCd) 돌 때마다 버프 적용. 현재는 표시·장착만 되고 효과 0.
+    equippedPassives: (equipped || []).filter(si => si != null && SKILLS[si] && SKILLS[si].passive),
     cdConf,
   }
 
@@ -1035,14 +1063,15 @@ export default function App() {
             const dmg = st.atk * sk.dmgMult
             if (sk.fx && sk.fx.type === 'proj') {
               // 투사체: 히어로 앞에서 생성, 명중 시 데미지
-              const ft = FX_FRAME_T[sk.id] || sk.fx.fly.map(() => 1 / PROJ_FPS)
+              const _spd = (motRef.current.skFx[sk.id] || {}).spd || 1
+              const ft = (FX_FRAME_T[sk.id] || sk.fx.fly.map(() => 1 / PROJ_FPS)).map(t => t / _spd)
               const fe = []; let fa = 0; for (const t of ft) { fa += t; fe.push(fa) }
               w.projs.push({ id: sk.id, fly: sk.fx.fly, impact: sk.fx.impact || null, x: w.heroX + 70, t: 0, dmg, h: sk.fx.fxH ?? sk.h, scale: sk.fx.flyScale || 1, yOff: sk.fx.yOff ?? 40, fe, feTotal: fa })
             } else if (sk.fx && sk.fx.type === 'strike') {
               // 낙하/타격: 살아있는 적 위치마다 (최대 5), 없으면 전방
               const ts = w.enemies.filter(e => !e.dead).slice(0, 5)
               const xs = ts.length ? ts.map(e => e.x) : [w.heroX + 260]
-              for (const x of xs) w.strikes.push({ id: sk.id, frames: sk.fx.frames, x, t: 0, dur: STRIKE_DUR_BY[sk.id] ?? STRIKE_DUR, dmg, hitDone: false, h: sk.fx.fxH ?? sk.h })
+              for (const x of xs) w.strikes.push({ id: sk.id, frames: sk.fx.frames, x, t: 0, dur: (STRIKE_DUR_BY[sk.id] ?? STRIKE_DUR) / ((motRef.current.skFx[sk.id] || {}).spd || 1), dmg, hitDone: false, h: sk.fx.fxH ?? sk.h })
             } else if (sk.aoe) {
               for (const t of w.enemies) if (!t.dead) { applySkillDmg(t, dmg); if (sk.stun) t.stun = sk.stun }
             } else {
@@ -1415,9 +1444,11 @@ export default function App() {
 
     function drawEnemy(ctx, e, now) {
       const air = e.air ? e.air * (e.airT ?? 1) : 0   // 공중 높이 (스폰부터 고정 고도)
-      const y = w.groundY - air
+      const mb = e.dino ? null : (e.boss ? (motRef.current.boss[e.bossIdx] || {}) : (motRef.current.mob[e.type] || {}))   // 종별 크기·높이
+      const yoff = mb ? (mb.y || 0) : 0
+      const y = w.groundY - air - yoff
       const t = ENEMY_TYPES[e.type]
-      const szm = e.dino ? (motRef.current.size[e.dino] || 1) : 1   // 종별 크기 배율(모션 편집기)
+      const szm = e.dino ? (motRef.current.size[e.dino] || 1) : (mb.sz || 1)   // 크기 배율(공룡·일반몹·보스 모두 종별)
       const H = e.h * szm
       const imgs = e.dino ? (e.boss ? (e.atkT > 0 ? DINO_BOSS[e.dino].a : DINO_BOSS[e.dino].w) : DINO_MOB[e.dino]) : (e.boss ? BIMG[e.bossIdx] : EIMG[e.type])
       const stunned = e.stun > 0
@@ -1532,7 +1563,8 @@ export default function App() {
       const a = ANIM[key]
       const im = safeImg(key, fi)
       if (im.complete && im.naturalWidth > 0) {
-        const hh = a.h
+        const hcfg = motRef.current.hero
+        const hh = a.h * (hcfg.sz || 1)
         const hw = hh * (im.naturalWidth / im.naturalHeight)
         ctx.save()
         // 장착 동료 (영웅 왼쪽 뒤, 겹침 허용)
@@ -1543,15 +1575,17 @@ export default function App() {
           const d = ALLY_DEFS[ak]
           const au = w.allyU[ak]
           if (!au) continue
+          const acfg = motRef.current.ally[ak] || {}
           const atkArr = ALLY_IMG[ak].atk
-          const arr = au.state === 'atk' && atkArr.length ? atkArr : ALLY_IMG[ak].walk
-          const fi = (au.state === 'atk' && atkArr.length) ? Math.min(arr.length - 1, Math.floor(au.t / d.atkDur * arr.length)) : Math.floor(au.animT) % arr.length
+          const atking = au.state === 'atk' && atkArr.length
+          const arr = atking ? atkArr : ALLY_IMG[ak].walk
+          const fi = atking ? Math.min(arr.length - 1, Math.floor(au.t / d.atkDur * (acfg.atkSpd || 1) * arr.length)) : Math.floor(au.animT) % arr.length
           const im2 = arr[fi]
           const ok = im2 && im2.complete && im2.naturalWidth > 0
-          const hh = d.h
+          const hh = d.h * (acfg.sz || 1) * (atking ? (acfg.atkSz || 1) : 1)
           const ww2 = ok ? hh * (im2.naturalWidth / im2.naturalHeight) : hh * 0.7
           const bob = au.state === 'walk' ? Math.abs(Math.sin(au.animT * 3.1)) * 3 : 0
-          const dx = au.x - ww2 / 2, dy = w.groundY - hh - bob + (d.yOff || 0)
+          const dx = au.x - ww2 / 2 + (acfg.x || 0), dy = w.groundY - hh - bob + (d.yOff || 0) + (acfg.y || 0)
           if (ok) ctx.drawImage(im2, dx, dy, ww2, hh)
           // 자가진단: 이미지 실패=빨간 박스 / window.__allyDebug=true → 위치 확인용 자홍 테두리
           if (!ok || window.__allyDebug) {
@@ -1574,7 +1608,7 @@ export default function App() {
           }
         }
         const lunge = hero.state === 'attack' ? Math.sin(Math.min(1, hero.t / 0.4) * Math.PI) * 12 : 0
-        ctx.translate(w.heroX + lunge - (w.heroKb || 0), w.groundY)
+        ctx.translate(w.heroX + lunge - (w.heroKb || 0) + (motRef.current.hero.x || 0), w.groundY + (motRef.current.hero.y || 0))
         if (hero.flash > 0) ctx.filter = 'brightness(2.5)'
         if (a.flip) ctx.scale(-1, 1)
         ctx.drawImage(im, -hw / 2, -hh, hw, hh)
@@ -1612,7 +1646,7 @@ export default function App() {
         const fi = Math.min(stk.frames.length - 1, Math.floor(stk.t / stk.dur * stk.frames.length))
         const im = SIMG[stk.id][stk.frames[fi] - 1]
         if (im && im.complete && im.naturalWidth > 0) {
-          const hh = stk.h
+          const hh = stk.h * ((motRef.current.skFx[stk.id] || {}).sz || 1)
           const ww = hh * (im.naturalWidth / im.naturalHeight)
           ctx.drawImage(im, stk.x - ww / 2, w.groundY - hh, ww, hh)
         }
@@ -1623,7 +1657,7 @@ export default function App() {
         let pfi = prj.fe.findIndex(e => tm <= e); if (pfi < 0) pfi = prj.fly.length - 1
         const im = SIMG[prj.id][prj.fly[pfi] - 1]
         if (im && im.complete && im.naturalWidth > 0) {
-          const hh = prj.h * prj.scale
+          const hh = prj.h * prj.scale * ((motRef.current.skFx[prj.id] || {}).sz || 1)
           const ww = hh * (im.naturalWidth / im.naturalHeight)
           ctx.drawImage(im, prj.x - ww / 2, w.groundY - prj.yOff - hh, ww, hh)
         }
@@ -1951,7 +1985,7 @@ export default function App() {
     <div ref={rootRef} style={{ ...st.root, width: BASE_W, maxWidth: 'none', height: view.h, flexShrink: 0, transform: `scale(${view.s})`, transformOrigin: 'top center' }} onClickCapture={e => {
       if (splash || !uiEdit) return
       const t = e.target.closest('[data-edit]')
-      if (t) { e.stopPropagation(); e.preventDefault(); setEditSel(t.dataset.edit); if (t.dataset.edit === 'treasure') setOffOpen(true); const mAdv = /^adv(btn|txt)(\d)$/.exec(t.dataset.edit); if (mAdv) setAdvSel(CONTINENTS[+mAdv[2]]) }
+      if (t) { const de = t.dataset.edit; setEditSel(de); if (de === 'treasure') setOffOpen(true); const mAdv = /^adv(btn|txt)(\d)$/.exec(de); if (mAdv) setAdvSel(CONTINENTS[+mAdv[2]]); if (!['skimg', 'skname', 'skbar', 'skcell'].includes(de)) { e.stopPropagation(); e.preventDefault() } }
     }}>
       {splash && (
         <div style={st.splashWrap} onClick={() => setSplash(false)}>
@@ -2079,13 +2113,13 @@ export default function App() {
             <div style={st.skdBox}>
               <div style={st.skdHead}>
                 <div data-edit="skdicon" style={st.skdIconWrap}>
-                  {skillIconSrc(s.id) ? <img src={skillIconSrc(s.id)} alt="" style={st.skdIconImg} /> : <span style={{ fontSize: 34 }}>{s.icon}</span>}
+                  {skIcon(s) ? <img src={skIcon(s)} alt="" style={st.skdIconImg} /> : <span style={{ fontSize: 34 }}>{s.icon}</span>}
                   <span style={st.skdLv}>Lv.1</span>
                   <div style={st.skdMiniBar}><div style={{ ...st.skdMiniFill, width: '0%' }} /><div style={st.skdMiniTxt}>0/2</div></div>
                 </div>
                 <div style={st.skdHeadMid}>
                   <div data-edit="skdtitle" style={st.skdTitle}><span style={{ color: GRADE_COLOR['일반'] }}>[일반]</span> {s.name}</div>
-                  <div data-edit="skddesc" style={st.skdDesc}>설명 준비 중</div>
+                  <div data-edit="skddesc" style={st.skdDesc}>{s.desc2 || '설명 준비 중'}</div>
                 </div>
                 <button data-edit="skdauto" style={{ ...st.skdAuto, ...(auto ? st.skdAutoOn : {}) }} onClick={() => { if (!uiEdit) setSkillAuto(a => ({ ...a, [skillDetail]: !a[skillDetail] })) }}>
                   AUTO<span style={{ ...st.skdAutoDot, ...(auto ? st.skdAutoDotOn : {}) }} />
@@ -2099,9 +2133,9 @@ export default function App() {
               <div style={st.skdBtns}>
                 <button data-edit="skdenh" style={st.skdEnhBtn} onClick={() => { /* TODO: 스킬 강화 */ }}>
                   <span>강화</span>
-                  <span style={st.skdEnhCost}><img src="/ui/gem.png" alt="" style={st.skdEnhIc} />—</span>
+                  <span style={st.skdEnhCost}><img src="/ui/pearl.png" alt="" style={st.skdEnhIc} />—</span>
                 </button>
-                <button data-edit="skdequip" style={{ ...st.skdEquipBtn, ...(isEq ? st.skdEquipOn : {}) }} onClick={() => { if (isEq) unequipSkill(eqSlot); else equipSkill(skillDetail) }}>{isEq ? '장착 해제' : '슬롯 장착'}</button>
+                <button data-edit="skdequip" style={{ ...st.skdEquipBtn, ...(isEq ? st.skdEquipOn : {}) }} onClick={() => { if (isEq) unequipSkill(eqSlot); else equipSkill(skillDetail); setSkillDetail(null) }}>{isEq ? '해제' : '장착'}</button>
               </div>
               <button style={st.dClose} onClick={() => setSkillDetail(null)}>✕</button>
             </div>
@@ -2331,7 +2365,7 @@ export default function App() {
               return (
                 <div key={slot} data-edit="skqslot" style={st.skqSlot} onClick={() => { if (!uiEdit && !skqDrag.current.moved && si != null) unequipSkill(slot) }}>
                   {valid
-                    ? (skillIconSrc(SKILLS[si].id) ? <img src={skillIconSrc(SKILLS[si].id)} alt="" style={st.skqSlotImg} /> : <span style={{ fontSize: 16 }}>{SKILLS[si].icon}</span>)
+                    ? (skIcon(SKILLS[si]) ? <img src={skIcon(SKILLS[si])} alt="" style={st.skqSlotImg} /> : <span style={{ fontSize: 16 }}>{SKILLS[si].icon}</span>)
                     : <span style={st.skqSlotEmpty}>{slot + 1}</span>}
                 </div>
               )
@@ -2429,14 +2463,14 @@ export default function App() {
           <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.skillScroll}>
           <div style={st.skGrid}>
           {SKILLS.map((s, i) => {
-            if (s.stage !== evo) return null
+            if (!(s.stage === evo || (s.stages || []).includes(evo))) return null
             const cd = skillCdUI[i] || 0
             const ready = cd <= 0
             const isEq = equipped.indexOf(i) >= 0
             return (
               <div key={s.key} style={st.skCell} onClick={() => setSkillDetail(i)}>
                 <div data-edit="skcell" style={st.skCellIconWrap}>
-                  {skillIconSrc(s.id) ? <img src={skillIconSrc(s.id)} alt="" data-edit="skimg" style={st.skCellIconImg} /> : <span style={{ fontSize: 22 }}>{s.icon}</span>}
+                  {skIcon(s) ? <img src={skIcon(s)} alt="" data-edit="skimg" style={st.skCellIconImg} /> : <span style={{ fontSize: 22 }}>{s.icon}</span>}
                   {isEq && <div style={st.skCellEq}>장착{!ready && ` ${cd.toFixed(1)}`}</div>}
                 </div>
                 <div data-edit="skbar" style={st.skCellBarOuter}>
@@ -2630,26 +2664,111 @@ export default function App() {
         <div style={{ ...st.motPanel, ...(dockSide ? dockStyle : null) }}>
           <div style={{ fontSize: 13, color: GOLD, fontWeight: 800, marginBottom: 6 }}>모션 편집 — 전투 보면서 바로 조절</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
-            {DINO_KEYS.map(k => (
-              <button key={k} onClick={() => setMotSel(k)}
-                style={{ padding: '4px 7px', fontSize: 11, borderRadius: 5, border: `1px solid ${k === motSel ? GOLD : '#4a3a22'}`,
-                  background: k === motSel ? 'linear-gradient(180deg,#d4872e,#a85f1f)' : '#2c2013', color: k === motSel ? '#fff' : '#cbb89a' }}
-              >{DINO_NAME[k]}</button>
+            {[['dino', '공룡'], ['hero', '히어로'], ['ally', '동료'], ['mob', '일반몹'], ['boss', '보스'], ['skfx', '스킬이펙트']].map(([c, lbl]) => (
+              <button key={c} onClick={() => setMotCat(c)}
+                style={{ padding: '4px 8px', fontSize: 11, borderRadius: 5, border: `1px solid ${c === motCat ? GOLD : '#4a3a22'}`, fontWeight: 700,
+                  background: c === motCat ? 'linear-gradient(180deg,#3a8fd0,#1f5f9f)' : '#2c2013', color: c === motCat ? '#fff' : '#cbb89a' }}
+              >{lbl}</button>
             ))}
           </div>
-          <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>{DINO_NAME[motSel]} 공격 프레임 {frames.join('·')}번 · 총 {arr.reduce((a, b) => a + b, 0).toFixed(2)}초</div>
-          {arr.map((v, i) => row(`${i + 1}번(원본${frames[i]}) 시간`, v, 0.02, 0.6, 0.01, nv => setArr(i, nv)))}
-          {row('데미지 프레임', M.hit[motSel] || 3, 1, arr.length, 1, v => setMotCfg({ ...M, hit: { ...M.hit, [motSel]: v } }))}
-          {row('정지 위치(px)', M.stop[motSel] ?? 0, -80, 200, 1, v => setMotCfg({ ...M, stop: { ...M.stop, [motSel]: v } }))}
-          {row('크기 배율', M.size[motSel] ?? 1, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, size: { ...M.size, [motSel]: v } }))}
-          <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
-          {row('보스 파고듦', M.lunge.boss, 0, 60, 1, v => setMotCfg({ ...M, lunge: { ...M.lunge, boss: v } }))}
-          {row('일반 파고듦', M.lunge.mob, 0, 60, 1, v => setMotCfg({ ...M, lunge: { ...M.lunge, mob: v } }))}
-          {row('보스 간격(ms)', M.cd.advBoss, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, advBoss: v } }))}
-          {row('모험몹 간격', M.cd.advMob, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, advMob: v } }))}
-          {row('웨이브몹 간격', M.cd.wave, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, wave: v } }))}
-          {row('모험몹 모션', M.dur.advMob, 0.1, 1, 0.01, v => setMotCfg({ ...M, dur: { ...M.dur, advMob: v } }))}
-          {row('웨이브몹 모션', M.dur.wave, 0.1, 1, 0.01, v => setMotCfg({ ...M, dur: { ...M.dur, wave: v } }))}
+
+          {motCat === 'dino' && (<>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+              {DINO_KEYS.map(k => (
+                <button key={k} onClick={() => setMotSel(k)}
+                  style={{ padding: '4px 7px', fontSize: 11, borderRadius: 5, border: `1px solid ${k === motSel ? GOLD : '#4a3a22'}`,
+                    background: k === motSel ? 'linear-gradient(180deg,#d4872e,#a85f1f)' : '#2c2013', color: k === motSel ? '#fff' : '#cbb89a' }}
+                >{DINO_NAME[k]}</button>
+              ))}
+            </div>
+            <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>{DINO_NAME[motSel]} 공격 프레임 {frames.join('·')}번 · 총 {arr.reduce((a, b) => a + b, 0).toFixed(2)}초</div>
+            {arr.map((v, i) => row(`${i + 1}번(원본${frames[i]}) 시간`, v, 0.02, 0.6, 0.01, nv => setArr(i, nv)))}
+            {row('데미지 프레임', M.hit[motSel] || 3, 1, arr.length, 1, v => setMotCfg({ ...M, hit: { ...M.hit, [motSel]: v } }))}
+            {row('정지 위치(px)', M.stop[motSel] ?? 0, -80, 200, 1, v => setMotCfg({ ...M, stop: { ...M.stop, [motSel]: v } }))}
+            {row('크기 배율', M.size[motSel] ?? 1, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, size: { ...M.size, [motSel]: v } }))}
+            <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
+            {row('보스 파고듦', M.lunge.boss, 0, 60, 1, v => setMotCfg({ ...M, lunge: { ...M.lunge, boss: v } }))}
+            {row('일반 파고듦', M.lunge.mob, 0, 60, 1, v => setMotCfg({ ...M, lunge: { ...M.lunge, mob: v } }))}
+            {row('보스 간격(ms)', M.cd.advBoss, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, advBoss: v } }))}
+            {row('모험몹 간격', M.cd.advMob, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, advMob: v } }))}
+            {row('웨이브몹 간격', M.cd.wave, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, wave: v } }))}
+            {row('모험몹 모션', M.dur.advMob, 0.1, 1, 0.01, v => setMotCfg({ ...M, dur: { ...M.dur, advMob: v } }))}
+            {row('웨이브몹 모션', M.dur.wave, 0.1, 1, 0.01, v => setMotCfg({ ...M, dur: { ...M.dur, wave: v } }))}
+          </>)}
+
+          {motCat === 'hero' && (<>
+            <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>히어로 크기·위치</div>
+            {row('크기 배율', M.hero.sz, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, sz: v } }))}
+            {row('좌우 위치', M.hero.x, -150, 150, 1, v => setMotCfg({ ...M, hero: { ...M.hero, x: v } }))}
+            {row('상하 위치', M.hero.y, -150, 150, 1, v => setMotCfg({ ...M, hero: { ...M.hero, y: v } }))}
+          </>)}
+
+          {motCat === 'ally' && (<>
+            <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+              {[['hunter', '헌터'], ['shaman', '주술사'], ['healer', '힐러']].map(([k, lbl]) => (
+                <button key={k} onClick={() => setMotAlly(k)}
+                  style={{ padding: '4px 9px', fontSize: 11, borderRadius: 5, border: `1px solid ${k === motAlly ? GOLD : '#4a3a22'}`,
+                    background: k === motAlly ? 'linear-gradient(180deg,#d4872e,#a85f1f)' : '#2c2013', color: k === motAlly ? '#fff' : '#cbb89a' }}
+                >{lbl}</button>
+              ))}
+            </div>
+            {row('크기 배율', M.ally[motAlly].sz, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, ally: { ...M.ally, [motAlly]: { ...M.ally[motAlly], sz: v } } }))}
+            {row('좌우 위치', M.ally[motAlly].x, -150, 150, 1, v => setMotCfg({ ...M, ally: { ...M.ally, [motAlly]: { ...M.ally[motAlly], x: v } } }))}
+            {row('상하 위치', M.ally[motAlly].y, -150, 150, 1, v => setMotCfg({ ...M, ally: { ...M.ally, [motAlly]: { ...M.ally[motAlly], y: v } } }))}
+            <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
+            <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>기본공격 모션</div>
+            {row('공격프레임 크기', M.ally[motAlly].atkSz, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, ally: { ...M.ally, [motAlly]: { ...M.ally[motAlly], atkSz: v } } }))}
+            {row('공격 속도', M.ally[motAlly].atkSpd, 0.3, 3, 0.05, v => setMotCfg({ ...M, ally: { ...M.ally, [motAlly]: { ...M.ally[motAlly], atkSpd: v } } }))}
+          </>)}
+
+          {motCat === 'mob' && (() => {
+            const ens = (world.current && world.current.enemies) || []
+            const on = ens.filter(e => !e.dead && !e.dino && !e.boss)
+            const types = [...new Set(on.map(e => e.type))]
+            if (!types.length) return <div style={{ fontSize: 12, color: '#c9a06a', padding: '8px 0' }}>화면에 일반몹이 없어요. 웨이브가 시작되면 자동으로 잡혀요.</div>
+            return (<>
+              <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>화면의 일반몹 (종별)</div>
+              {types.map(tp => { const c = M.mob[tp] || {}; const nm = (ENEMY_TYPES[tp] || {}).name || tp; return (
+                <div key={tp} style={{ borderTop: '1px solid #2a1e10', paddingTop: 5, marginTop: 5 }}>
+                  <div style={{ fontSize: 11, color: GOLD, fontWeight: 700, marginBottom: 3 }}>{nm}</div>
+                  {row('크기 배율', c.sz ?? 1, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, mob: { ...M.mob, [tp]: { ...(M.mob[tp] || {}), sz: v } } }))}
+                  {row('높이(+위)', c.y ?? 0, -100, 100, 1, v => setMotCfg({ ...M, mob: { ...M.mob, [tp]: { ...(M.mob[tp] || {}), y: v } } }))}
+                </div>
+              ) })}
+            </>)
+          })()}
+
+          {motCat === 'boss' && (() => {
+            const ens = (world.current && world.current.enemies) || []
+            const on = ens.filter(e => !e.dead && !e.dino && e.boss)
+            const idxs = [...new Set(on.map(e => e.bossIdx))]
+            if (!idxs.length) return <div style={{ fontSize: 12, color: '#c9a06a', padding: '8px 0' }}>화면에 일반보스가 없어요. 보스전에 들어가면 자동으로 잡혀요.</div>
+            return (<>
+              <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>화면의 일반보스 (종별)</div>
+              {idxs.map(bi => { const c = M.boss[bi] || {}; const nm = (BOSS_TYPES[bi] || {}).name || ('보스 ' + bi); return (
+                <div key={bi} style={{ borderTop: '1px solid #2a1e10', paddingTop: 5, marginTop: 5 }}>
+                  <div style={{ fontSize: 11, color: GOLD, fontWeight: 700, marginBottom: 3 }}>{nm}</div>
+                  {row('크기 배율', c.sz ?? 1, 0.4, 3, 0.01, v => setMotCfg({ ...M, boss: { ...M.boss, [bi]: { ...(M.boss[bi] || {}), sz: v } } }))}
+                  {row('높이(+위)', c.y ?? 0, -100, 100, 1, v => setMotCfg({ ...M, boss: { ...M.boss, [bi]: { ...(M.boss[bi] || {}), y: v } } }))}
+                </div>
+              ) })}
+            </>)
+          })()}
+
+          {motCat === 'skfx' && (<>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
+              {MOT_FX_IDS.map(id => { const sk = SKILLS.find(s => s.id === id); return (
+                <button key={id} onClick={() => setMotFx(id)}
+                  style={{ padding: '4px 7px', fontSize: 11, borderRadius: 5, border: `1px solid ${id === motFx ? GOLD : '#4a3a22'}`,
+                    background: id === motFx ? 'linear-gradient(180deg,#d4872e,#a85f1f)' : '#2c2013', color: id === motFx ? '#fff' : '#cbb89a' }}
+                >{sk ? sk.name : id}</button>
+              ) })}
+            </div>
+            <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>이펙트 크기·속도 (스킬 발동 시 반영)</div>
+            {row('이펙트 크기', M.skFx[motFx].sz, 0.3, 3, 0.01, v => setMotCfg({ ...M, skFx: { ...M.skFx, [motFx]: { ...M.skFx[motFx], sz: v } } }))}
+            {row('이펙트 속도', M.skFx[motFx].spd, 0.3, 3, 0.05, v => setMotCfg({ ...M, skFx: { ...M.skFx, [motFx]: { ...M.skFx[motFx], spd: v } } }))}
+          </>)}
+
           <div style={{ display: 'flex', gap: 6, marginTop: 8, borderTop: '1px solid #3a2a14', paddingTop: 8 }}>
             <button onClick={() => { navigator.clipboard?.writeText(JSON.stringify(motCfg)); setCopiedMot(true); setTimeout(() => setCopiedMot(false), 1200) }}
               style={{ flex: 1, padding: '9px', borderRadius: 6, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontSize: 13 }}>{copiedMot ? '복사됨! 개발자에게 전달' : '전체 값 복사'}</button>
