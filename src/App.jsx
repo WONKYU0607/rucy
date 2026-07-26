@@ -144,7 +144,7 @@ const MOTION_DEFAULT = {
   lunge: { boss: 25, mob: 15 },                                // 공격 시 파고드는 거리(px)
   stop: { ...DINO_STOP },                                      // 종별 정지 위치 보정(px, +면 멀리)
   size: { trex: 1.08, spino: 1.15, trike: 1.04, stego: 1.20, raptor: 0.90, anky: 1, ptera: 1.05, brachio: 1.73 },  // 종별 크기 배율
-  hero: { sz: 1, x: 0, y: 0, skillSz: 1, atkSz: 1 },           // 히어로 크기·위치 (skillSz=스킬 중, atkSz=기본공격 중)
+  hero: { sz: 1, x: 0, y: 0, walkSz: 1, atkSz: 1, skillSz: {} },  // 히어로 크기·위치 (walkSz=걷기, atkSz=기본공격 중, skillSz=스킬별 {id:배율})
   ally: { hunter: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, shaman: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, healer: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, giant: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 } },  // 동료 크기·위치·공격프레임 크기·속도
   mob: {},                                                     // 일반몹 종별 크기·높이 { type: { sz, y } }
   boss: {},                                                    // 일반보스 종별 크기·높이 { bossIdx: { sz, y } }
@@ -620,6 +620,7 @@ export default function App() {
   const [motCat, setMotCat] = useState('dino')     // 편집 카테고리: dino/hero/ally/mob/boss/skfx
   const [motAlly, setMotAlly] = useState('hunter') // 동료 선택
   const [motFx, setMotFx] = useState(1)            // 스킬 이펙트 선택(id)
+  const [motHeroSk, setMotHeroSk] = useState(1)    // 히어로 모션 크기 편집용 스킬(id)
   const [, setMotTick] = useState(0)               // 편집 중 화면 몹/보스 추적 리프레시
   useEffect(() => { if (!motEdit) return; const iv = setInterval(() => setMotTick(t => t + 1), 500); return () => clearInterval(iv) }, [motEdit])
   const [copiedMot, setCopiedMot] = useState(false)
@@ -1578,7 +1579,7 @@ export default function App() {
       const im = safeImg(key, fi)
       if (im.complete && im.naturalWidth > 0) {
         const hcfg = motRef.current.hero
-        const hStMul = w.skill != null ? (hcfg.skillSz || 1) : (hero.state === 'attack' ? (hcfg.atkSz || 1) : 1)
+        const hStMul = w.skill != null ? ((hcfg.skillSz || {})[SKILLS[w.skill].id] || 1) : (hero.state === 'attack' ? (hcfg.atkSz || 1) : (hcfg.walkSz || 1))
         const hh = a.h * (hcfg.sz || 1) * hStMul
         const hw = hh * (im.naturalWidth / im.naturalHeight)
         ctx.save()
@@ -2712,13 +2713,25 @@ export default function App() {
           </>)}
 
           {motCat === 'hero' && (<>
-            <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>히어로 크기·위치</div>
-            {row('크기 배율', M.hero.sz, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, sz: v } }))}
+            <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>히어로 크기·위치 (전체)</div>
+            {row('전체 크기', M.hero.sz, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, sz: v } }))}
             {row('좌우 위치', M.hero.x, -150, 150, 1, v => setMotCfg({ ...M, hero: { ...M.hero, x: v } }))}
             {row('상하 위치', M.hero.y, -150, 150, 1, v => setMotCfg({ ...M, hero: { ...M.hero, y: v } }))}
             <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
-            {row('스킬 중 크기', M.hero.skillSz, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, skillSz: v } }))}
-            {row('기본공격 중 크기', M.hero.atkSz, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, atkSz: v } }))}
+            <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>모션별 크기 (전체 크기에 곱해짐)</div>
+            {row('걷기 크기', M.hero.walkSz, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, walkSz: v } }))}
+            {row('기본공격 크기', M.hero.atkSz, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, atkSz: v } }))}
+            <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
+            <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>스킬별 히어로 모션 크기</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
+              {SKILLS.filter(s => !s.passive).map(s => (
+                <button key={s.id} onClick={() => setMotHeroSk(s.id)}
+                  style={{ padding: '3px 6px', fontSize: 10, borderRadius: 5, border: `1px solid ${s.id === motHeroSk ? GOLD : '#4a3a22'}`,
+                    background: s.id === motHeroSk ? 'linear-gradient(180deg,#d4872e,#a85f1f)' : '#2c2013', color: s.id === motHeroSk ? '#fff' : '#cbb89a' }}
+                >{s.name}</button>
+              ))}
+            </div>
+            {row('선택 스킬 크기', (M.hero.skillSz || {})[motHeroSk] ?? 1, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, skillSz: { ...(M.hero.skillSz || {}), [motHeroSk]: v } } }))}
           </>)}
 
           {motCat === 'ally' && (<>
