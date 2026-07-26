@@ -148,7 +148,7 @@ const MOTION_DEFAULT = {
   ally: { hunter: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, shaman: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, healer: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, giant: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 } },  // 동료 크기·위치·공격프레임 크기·속도
   mob: {},                                                     // 일반몹 종별 크기·높이 { type: { sz, y } }
   boss: {},                                                    // 일반보스 종별 크기·높이 { bossIdx: { sz, y } }
-  skFx: { 1: { sz: 1, spd: 1 }, 2: { sz: 1, spd: 1 }, 16: { sz: 1, spd: 1 }, 18: { sz: 1, spd: 1 }, 20: { sz: 1, spd: 1 } },  // 히어로 스킬 이펙트 크기·속도
+  skFx: { 1: { sz: 1, spd: 1, fly: 1 }, 2: { sz: 1, spd: 1, fly: 1 }, 16: { sz: 1, spd: 1, fly: 1 }, 18: { sz: 1, spd: 1, fly: 1 }, 20: { sz: 1, spd: 1, fly: 1 } },  // 스킬 이펙트: sz 크기 / spd 프레임속도 / fly 비행속도(투사체)
 }
 const MOT_FX_IDS = [1, 2, 16, 18, 20]                          // 이펙트 있는 스킬 id
 const dinoAtkDur = (k, T) => (T[k] || DINO_ATK_DEF).reduce((a, b) => a + b, 0)
@@ -272,6 +272,8 @@ const gearStats = (cat, i, lv = 0) => {
 }
 const enhCost = lv => Math.floor(100 * Math.pow(1.5, lv))   // 강화 비용: 100, 150, 225 …
 const MAT_IMG = i => `/ui/mat${i}.png`
+const heroEvoSrc = m => m === 'quad' ? '/hero/quad/quad_1.png' : m === 'erectus' ? '/hero/erectus_walk/ewalk_1.png' : m === 'neander' ? '/hero/neander_walk/nwalk_1.png' : m === 'sapiens' ? '/hero/sapiens_walk/pwalk_1.png' : m === 'human' ? '/hero/human_walk/hmwalk_1.png' : '/hero/misc/hero_idle.png'
+const gearSrc = (cat, n) => `${CAT_DIR[cat]}${n}.png`
 
 // ── 오프라인 보상 설정 (직접 수정 가능) ─────────────────────────
 const OFFLINE_MIN_SEC = 0           // 부재 시간 조건 없음 (잠깐 나갔다 와도 지급)
@@ -530,12 +532,13 @@ function loadSave() {
       alliesOn: s.alliesOn && typeof s.alliesOn === 'object' ? s.alliesOn : {},
       gem: s.gem ?? 0, inv: s.inv && typeof s.inv === 'object' ? s.inv : {}, best: s.best ?? s.wave ?? 1,
       gearEq: s.gearEq && typeof s.gearEq === 'object' ? s.gearEq : { 무기: null, 방어구: null, 유물: null },
+      nick: typeof s.nick === 'string' && s.nick ? s.nick : ('Slayer_' + Math.floor(Math.random() * 9000000 + 1000000)),
       mats: Array.isArray(s.mats) && s.mats.some(x => x > 0) ? s.mats : [99999, 99999, 99999, 99999, 99999], enh: s.enh && typeof s.enh === 'object' ? s.enh : {},
       ruby: typeof s.ruby === 'number' ? s.ruby : 50, advStage: s.advStage && typeof s.advStage === 'object' ? s.advStage : {},   // ruby 50 = 임시 지급(퀘스트 연동 전)
       pearl: typeof s.pearl === 'number' ? s.pearl : 0, quest: s.quest && typeof s.quest === 'object' && s.quest.ev ? s.quest : questInit(),
     }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, mats: [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, advStage: {}, pearl: 0, quest: questInit() }
+  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, nick: 'Slayer_' + Math.floor(Math.random() * 9000000 + 1000000), mats: [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, advStage: {}, pearl: 0, quest: questInit() }
 }
 const fmt = n => n >= 1e8 ? (n/1e8).toFixed(1)+'억' : n >= 1e4 ? (n/1e4).toFixed(1)+'만' : Math.floor(n).toLocaleString()
 const fmtPct = v => v >= 10000 ? fmt(Math.round(v)) : (Math.round(v * 10) / 10).toString()
@@ -563,6 +566,10 @@ export default function App() {
   const [detailTab, setDetailTab] = useState('강화')  // 상세창 탭: 강화/융합
   const [fuseQty, setFuseQty] = useState(0)           // 융합 수량
   const [gearEq, setGearEq] = useState(init.gearEq || { 무기: null, 방어구: null, 유물: null })  // 장착 슬롯
+  const [nick, setNick] = useState(init.nick || 'Slayer')          // 닉네임
+  const [nickEdit, setNickEdit] = useState(false)                  // 닉네임 편집 중
+  const [profileOpen, setProfileOpen] = useState(false)            // 프로필 창
+  const [profTab, setProfTab] = useState('info')                   // 프로필 탭 info/look
   const [mats, setMats] = useState(init.mats || [0, 0, 0, 0, 0])   // 재화 5종 (0~3 동료용, 4 무기강화용)
   const [ruby, setRuby] = useState(init.ruby ?? 0)                 // 루비 수정 (모험 진입 재화)
   const [pearl, setPearl] = useState(init.pearl ?? 0)              // 진주 (업적 보상 재화)
@@ -731,8 +738,8 @@ export default function App() {
   }
 
   useEffect(() => {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, gem, inv, best, alliesOn, gearEq, mats, enh, ruby, advStage, pearl, quest, ts: Date.now() }))
-  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, gem, inv, best, alliesOn, gearEq, mats, enh, ruby, advStage, pearl, quest])
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, gem, inv, best, alliesOn, gearEq, nick, mats, enh, ruby, advStage, pearl, quest, ts: Date.now() }))
+  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, gem, inv, best, alliesOn, gearEq, nick, mats, enh, ruby, advStage, pearl, quest])
 
   // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제
   useEffect(() => {
@@ -1104,7 +1111,7 @@ export default function App() {
         // 스킬 투사체: 전진, 지나는 모든 적 관통 타격 (완전관통)
         for (const prj of w.projs) {
           prj.t += dt
-          prj.x += 520 * dt * SPEED
+          prj.x += 520 * dt * SPEED * ((motRef.current.skFx[prj.id] || {}).fly || 1)   // 스킬별 비행 속도
           prj.hitSet = prj.hitSet || new Set()
           for (const e of w.enemies) {
             if (!e.dead && !prj.hitSet.has(e) && Math.abs(e.x - prj.x) < 45) {
@@ -2158,6 +2165,80 @@ export default function App() {
           </div>
         )
       })()}
+      {profileOpen && (() => {
+        const sc = S.current
+        const statRows = [
+          ['공격력', fmt(Math.round(sc.atk))],
+          ['체력', fmt(Math.round(maxHp))],
+          ['체력 회복', fmt(Math.round(sc.regen)) + '/초'],
+          ['치명타 확률', (sc.critRate * 100).toFixed(1) + '%'],
+          ['치명타 공격력', Math.round(sc.critMult * 100) + '%'],
+          ['고기 획득량', '+' + Math.round(tot('meatUp') * STAT_LIST.meatUp.per) + '%'],
+          ['경험치 획득량', '+' + Math.round(tot('expUp') * STAT_LIST.expUp.per) + '%'],
+          ['명중률', Math.round(sc.acc * 100) + '%'],
+          ['회피율', Math.round(sc.eva * 100) + '%'],
+          ['공격 속도', '+' + Math.min(200, Math.round(tot('aspd') * STAT_LIST.aspd.per)) + '%'],
+          ['이동 속도', '+' + Math.min(200, Math.round(tot('mspd') * STAT_LIST.mspd.per)) + '%'],
+        ]
+        const curRows = [
+          ['/ui/ic_meat.png', '고기', fmt(meat)],
+          ['/ui/gem.png', '다이아', DEBUG ? '∞' : fmt(gem)],
+          ['/ui/ruby.png', '루비', fmt(ruby)],
+          ['/ui/pearl.png', '진주', fmt(pearl)],
+          ['/ui/mat4.png', '강화 큐브', fmt(mats[4])],
+          [MAT_IMG(0), '동료 재료 1', fmt(mats[0])],
+          [MAT_IMG(1), '동료 재료 2', fmt(mats[1])],
+          [MAT_IMG(2), '동료 재료 3', fmt(mats[2])],
+          [MAT_IMG(3), '동료 재료 4', fmt(mats[3])],
+        ]
+        return (
+          <div style={st.dOverlay} onClick={e => { if (e.target === e.currentTarget) { setProfileOpen(false); setNickEdit(false) } }}>
+            <div style={st.profBox}>
+              <div style={st.profTabs}>
+                <button style={{ ...st.profTab, ...(profTab === 'info' ? st.profTabOn : {}) }} onClick={() => setProfTab('info')}>기본 정보</button>
+                <button style={{ ...st.profTab, ...(profTab === 'look' ? st.profTabOn : {}) }} onClick={() => setProfTab('look')}>외형</button>
+              </div>
+              {profTab === 'info' ? (
+                <div style={st.profScroll}>
+                  <div style={st.profLv}>Lv.{hlv}</div>
+                  <div style={st.profNickRow}>
+                    {nickEdit
+                      ? <input autoFocus value={nick} onChange={e => setNick(e.target.value.slice(0, 16))} onBlur={() => setNickEdit(false)} onKeyDown={e => { if (e.key === 'Enter') setNickEdit(false) }} style={st.profNickInput} />
+                      : <><span style={st.profNickTxt}>{nick}</span><button style={st.profPencil} onClick={() => setNickEdit(true)}>✎</button></>}
+                  </div>
+                  <div style={st.profHeroWrap}><img src={heroEvoSrc(EVOS[evo].mode)} alt="" style={st.profHeroImg} /></div>
+                  <div style={st.profStage}>{EVOS[evo].name}</div>
+                  <div style={st.profGearRow}>
+                    {EQUIP_CATS.map(cat => {
+                      const n = gearEq[cat]
+                      return (
+                        <div key={cat} style={st.profGearCol}>
+                          <div style={st.profGearLbl}>{cat}</div>
+                          <div style={{ ...st.profGearCell, borderColor: n ? gradeColorOf(n) : '#4a3a22' }}>
+                            {n ? <img src={gearSrc(cat, n)} alt="" style={st.profGearImg} /> : <span style={{ opacity: 0.3, fontSize: 10 }}>미장착</span>}
+                          </div>
+                          <div style={{ ...st.profGearName, color: n ? gradeColorOf(n) : '#7a6a4c' }}>{n ? `${gradeNameOf(n)} ${n}` : '-'}</div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div style={st.profSecTitle}>능력치</div>
+                  <div style={st.profPanel}>
+                    {statRows.map(([k, v]) => <div key={k} style={st.profStatRow}><span style={st.profStatK}>{k}</span><span style={st.profStatV}>{v}</span></div>)}
+                  </div>
+                  <div style={st.profSecTitle}>보유 재화</div>
+                  <div style={st.profPanel}>
+                    {curRows.map(([ic, nm, v], i) => <div key={i} style={st.profStatRow}><span style={st.profCurK}><img src={ic} alt="" style={st.profCurIc} />{nm}</span><span style={st.profStatV}>{v}</span></div>)}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ ...st.profScroll, textAlign: 'center', color: '#9c8a6c', padding: '50px 20px' }}>외형 변경은 준비 중이에요.</div>
+              )}
+              <button style={st.dClose} onClick={() => { setProfileOpen(false); setNickEdit(false) }}>✕</button>
+            </div>
+          </div>
+        )
+      })()}
       {lootFly.map(p => <LootPiece key={p.id} p={p} done={() => setLootFly(v => v.filter(q => q.id !== p.id))} />)}
       {advSel && (() => {
         const cleared = advStage[advSel.key] || 0
@@ -2279,10 +2360,10 @@ export default function App() {
       )}
 
       <div style={st.topBar}>
-        <div data-edit="avatar" style={st.avatarWrap}><img src="/hero/misc/face.png" alt="" style={st.avatarFace} /></div>
+        <div data-edit="avatar" style={st.avatarWrap} onClick={() => { if (!uiEdit) setProfileOpen(true) }}><img src="/hero/misc/face.png" alt="" style={st.avatarFace} /></div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div data-edit="nick" style={st.nickRow}>
-            <span style={st.nick}>Australo_원규</span>
+            <span style={st.nick}>{nick}</span>
             <span style={st.lvBadge}>Lv.{hlv}</span>
           </div>
           <div data-edit="expbar" style={st.expOuter}>
@@ -2801,7 +2882,8 @@ export default function App() {
             </div>
             <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>이펙트 크기·속도 (스킬 발동 시 반영)</div>
             {row('이펙트 크기', M.skFx[motFx].sz, 0.3, 3, 0.01, v => setMotCfg({ ...M, skFx: { ...M.skFx, [motFx]: { ...M.skFx[motFx], sz: v } } }))}
-            {row('이펙트 속도', M.skFx[motFx].spd, 0.3, 3, 0.05, v => setMotCfg({ ...M, skFx: { ...M.skFx, [motFx]: { ...M.skFx[motFx], spd: v } } }))}
+            {row('프레임 속도', M.skFx[motFx].spd, 0.3, 3, 0.05, v => setMotCfg({ ...M, skFx: { ...M.skFx, [motFx]: { ...M.skFx[motFx], spd: v } } }))}
+            {row('비행 속도(투사체)', M.skFx[motFx].fly ?? 1, 0.2, 3, 0.05, v => setMotCfg({ ...M, skFx: { ...M.skFx, [motFx]: { ...M.skFx[motFx], fly: v } } }))}
           </>)}
 
           <div style={{ display: 'flex', gap: 6, marginTop: 8, borderTop: '1px solid #3a2a14', paddingTop: 8 }}>
@@ -3187,6 +3269,33 @@ const st = {
     background: 'linear-gradient(180deg,#2b1e11,#1f1509)', borderBottom: '2px solid #4a3418',
   },
   avatar: { width: 44, height: 44, borderRadius: 10, border: `2px solid ${GOLD_D}`, background: '#1a120b', imageRendering: 'pixelated', boxShadow: 'inset 0 0 0 1px #201408' },
+  // ── 프로필 팝업 ──
+  profBox: { position: 'relative', width: 'min(94vw, 400px)', maxHeight: '86%', display: 'flex', flexDirection: 'column', borderRadius: 12, background: 'linear-gradient(180deg,#4a3826,#2e2114)', border: '3px solid #7a5a30', boxShadow: '0 10px 40px rgba(0,0,0,0.6)', overflow: 'hidden', boxSizing: 'border-box' },
+  profTabs: { display: 'flex', gap: 4, padding: 8, flexShrink: 0 },
+  profTab: { flex: 1, height: 34, fontSize: 14, fontWeight: 800, color: '#a8946e', border: '1px solid #4a3a22', borderRadius: 7, background: 'rgba(0,0,0,0.28)', cursor: 'pointer' },
+  profTabOn: { color: '#2a1c0a', border: '1px solid #f0b040', background: 'linear-gradient(180deg,#ffcf5a,#e8992a)' },
+  profScroll: { flex: 1, minHeight: 0, overflowY: 'auto', padding: '4px 14px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  profLv: { fontSize: 20, fontWeight: 800, color: '#f0dfae', textShadow: '0 1px 2px #000', marginTop: 4 },
+  profNickRow: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, minHeight: 30 },
+  profNickTxt: { fontSize: 15, fontWeight: 700, color: '#fff5df' },
+  profPencil: { padding: '2px 6px', fontSize: 13, color: '#c9b596', border: '1px solid #5a4630', borderRadius: 6, background: 'rgba(0,0,0,0.3)', cursor: 'pointer' },
+  profNickInput: { width: 200, height: 28, fontSize: 15, fontWeight: 700, textAlign: 'center', color: '#fff', background: 'rgba(0,0,0,0.5)', border: '1px solid #d09340', borderRadius: 6, outline: 'none' },
+  profHeroWrap: { display: 'flex', alignItems: 'flex-end', justifyContent: 'center', height: 120, marginTop: 8 },
+  profHeroImg: { maxHeight: 120, maxWidth: 120, objectFit: 'contain', imageRendering: 'pixelated' },
+  profStage: { fontSize: 12, fontWeight: 700, color: '#c9b596', marginTop: 4 },
+  profGearRow: { display: 'flex', gap: 8, marginTop: 12, width: '100%', justifyContent: 'center' },
+  profGearCol: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, flex: 1, maxWidth: 96 },
+  profGearLbl: { fontSize: 11, fontWeight: 700, color: '#a8946e' },
+  profGearCell: { width: 56, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #4a3a22', borderRadius: 9, background: 'rgba(0,0,0,0.4)', overflow: 'hidden', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.5)' },
+  profGearImg: { width: '100%', height: '100%', objectFit: 'contain', imageRendering: 'pixelated' },
+  profGearName: { fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap' },
+  profSecTitle: { alignSelf: 'stretch', fontSize: 13, fontWeight: 800, color: '#f0dfae', margin: '14px 0 6px', paddingBottom: 4, borderBottom: '1px solid #5a4630' },
+  profPanel: { alignSelf: 'stretch', display: 'flex', flexDirection: 'column', borderRadius: 8, background: 'rgba(0,0,0,0.28)', border: '1px solid #4a3822', overflow: 'hidden' },
+  profStatRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 12px', borderBottom: '1px solid rgba(90,70,48,0.35)' },
+  profStatK: { fontSize: 13, color: '#c9b596' },
+  profStatV: { fontSize: 13, fontWeight: 800, color: '#fff5df' },
+  profCurK: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: '#c9b596' },
+  profCurIc: { width: 18, height: 18, objectFit: 'contain', imageRendering: 'pixelated' },
   avatarWrap: {
     width: 'var(--pd-avatar)', height: 'var(--pd-avatar)', flexShrink: 0, position: 'relative', transform: 'translate(var(--pd-avatar-x), var(--pd-avatar-y))',
     backgroundImage: 'url(/ui/avatar.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
