@@ -1013,10 +1013,11 @@ export default function App() {
           if (e.kb > 0.5) { if (!(e.atkT > 0)) e.x += e.kb * dt; e.kb -= e.kb * Math.min(1, dt * 9) } else e.kb = 0  // 공격 중엔 밀리지 않음
           if (e.sq > 0) e.sq = Math.max(0, e.sq - dt)
           e.vt = Math.min(1, (e.vt ?? 0) + dt * 2.2)   // 스폰 직후 가속 (0→1)
-          const emb = e.dino ? null : (e.boss ? (motRef.current.boss[e.bossIdx] || {}) : (motRef.current.mob[e.type] || {}))
-          const szm = e.dino ? (motRef.current.size[e.dino] || 1) : (emb.sz || 1)
-          const estop = e.dino ? (motRef.current.stop[e.dino] || 0) : (emb.stop || 0)   // 좌우 정지 위치(+면 오른쪽/멀리)
-          const espd = e.dino ? 1 : (emb.spd || 1)                                       // 달려오는 속도 배율
+          const embKey = e.dino ? ('d:' + e.dino) : (e.boss ? e.bossIdx : e.type)
+          const emb = (e.boss ? motRef.current.boss[embKey] : motRef.current.mob[embKey]) || {}
+          const szm = e.dino ? (emb.sz ?? (motRef.current.size[e.dino] || 1)) : (emb.sz || 1)
+          const estop = e.dino ? (emb.stop ?? (motRef.current.stop[e.dino] || 0)) : (emb.stop || 0)   // 좌우 정지 위치(+면 오른쪽/멀리)
+          const espd = emb.spd || 1                                                       // 달려오는 속도 배율(공룡·웨이브 공통)
           const stopX = w.heroX + Math.min(atkRange - 15, 60 + e.h * szm * 0.4) + estop
           if (e.x > stopX && !(e.atkT > 0)) {
             const near = Math.min(1, Math.max(0.3, (e.x - stopX) / 55))  // 정지 전 감속
@@ -1466,11 +1467,12 @@ export default function App() {
 
     function drawEnemy(ctx, e, now) {
       const air = e.air ? e.air * (e.airT ?? 1) : 0   // 공중 높이 (스폰부터 고정 고도)
-      const mb = e.dino ? null : (e.boss ? (motRef.current.boss[e.bossIdx] || {}) : (motRef.current.mob[e.type] || {}))   // 종별 크기·높이
-      const yoff = mb ? (mb.y || 0) : 0
+      const mbKey = e.dino ? ('d:' + e.dino) : (e.boss ? e.bossIdx : e.type)   // 공룡=d:종, 웨이브보스=bossIdx, 웨이브몹=type
+      const mb = (e.boss ? motRef.current.boss[mbKey] : motRef.current.mob[mbKey]) || {}
+      const yoff = mb.y || 0                                                    // 높이(공룡도 적용)
       const y = w.groundY - air - yoff
       const t = ENEMY_TYPES[e.type]
-      const szm = e.dino ? (motRef.current.size[e.dino] || 1) : (mb.sz || 1)   // 크기 배율(공룡·일반몹·보스 모두 종별)
+      const szm = e.dino ? (mb.sz ?? (motRef.current.size[e.dino] || 1)) : (mb.sz || 1)   // 공룡은 편집값 우선, 없으면 공룡탭 값
       const H = e.h * szm
       const imgs = e.dino ? (e.boss ? (e.atkT > 0 ? DINO_BOSS[e.dino].a : DINO_BOSS[e.dino].w) : DINO_MOB[e.dino]) : (e.boss ? BIMG[e.bossIdx] : EIMG[e.type])
       const stunned = e.stun > 0
@@ -1901,7 +1903,13 @@ export default function App() {
           localStorage.setItem('paleoUiTs', String(cloud.uiTs || 0))
           setUiCfg({ ...UI_DEFAULT, ...Object.fromEntries(Object.entries(cloud.ui).filter(([k]) => k in UI_DEFAULT)) })
         }
-        if (cloud && (cloud.wave || 0) > (local?.wave || 0)) {
+        // 진행도 동기화: 저장 시각(ts)이 최신인 쪽을 채택 (기기 로드 시점의 원래 ts=init.ts와 비교 — 마운트 자동저장이 로컬 ts를 덮어써도 안전)
+        // ts가 둘 다 없는 옛 세이브만 웨이브로 폴백
+        const bootTs = init.ts || 0
+        const cloudNewer = ((cloud?.ts || 0) !== 0 || bootTs !== 0)
+          ? (cloud?.ts || 0) > bootTs
+          : (cloud?.wave || 0) > (local?.wave || 0)
+        if (cloud && cloudNewer) {
           localStorage.setItem(SAVE_KEY, JSON.stringify(cloud))
           location.reload()  // 클라우드 세이브로 재시작
         } else {
@@ -2360,7 +2368,7 @@ export default function App() {
       )}
 
       <div style={st.topBar}>
-        <div data-edit="avatar" style={st.avatarWrap} onClick={() => { if (!uiEdit) setProfileOpen(true) }}><img src="/hero/misc/face.png" alt="" style={st.avatarFace} /></div>
+        <div data-edit="avatar" style={st.avatarWrap} onClick={() => { if (!uiEdit) setProfileOpen(true) }}><img src={heroEvoSrc(EVOS[evo].mode)} alt="" style={st.avatarFace} /></div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div data-edit="nick" style={st.nickRow}>
             <span style={st.nick}>{nick}</span>
@@ -2835,18 +2843,23 @@ export default function App() {
 
           {motCat === 'mob' && (() => {
             const ens = (world.current && world.current.enemies) || []
-            const on = ens.filter(e => !e.dead && !e.dino && !e.boss)
-            const types = [...new Set(on.map(e => e.type))]
-            if (!types.length) return <div style={{ fontSize: 12, color: '#c9a06a', padding: '8px 0' }}>화면에 일반몹이 없어요. 웨이브가 시작되면 자동으로 잡혀요.</div>
+            const on = ens.filter(e => !e.dead && !e.boss)
+            const seen = new Set(); const entries = []
+            for (const e of on) {
+              const key = e.dino ? ('d:' + e.dino) : e.type
+              if (seen.has(key)) continue; seen.add(key)
+              entries.push({ key, label: e.dino ? (DINO_NAME[e.dino] || e.dino) : ((ENEMY_TYPES[e.type] || {}).name || e.type), szDef: e.dino ? (M.size[e.dino] ?? 1) : 1, dino: !!e.dino })
+            }
+            if (!entries.length) return <div style={{ fontSize: 12, color: '#c9a06a', padding: '8px 0' }}>화면에 일반몹이 없어요. 웨이브/모험이 시작되면 자동으로 잡혀요.</div>
             return (<>
               <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>화면의 일반몹 (종별)</div>
-              {types.map(tp => { const c = M.mob[tp] || {}; const nm = (ENEMY_TYPES[tp] || {}).name || tp; return (
-                <div key={tp} style={{ borderTop: '1px solid #2a1e10', paddingTop: 5, marginTop: 5 }}>
-                  <div style={{ fontSize: 11, color: GOLD, fontWeight: 700, marginBottom: 3 }}>{nm}</div>
-                  {row('크기 배율', c.sz ?? 1, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, mob: { ...M.mob, [tp]: { ...(M.mob[tp] || {}), sz: v } } }))}
-                  {row('높이(+위)', c.y ?? 0, -100, 100, 1, v => setMotCfg({ ...M, mob: { ...M.mob, [tp]: { ...(M.mob[tp] || {}), y: v } } }))}
-                  {row('좌우 정지(+멀리)', c.stop ?? 0, -120, 250, 1, v => setMotCfg({ ...M, mob: { ...M.mob, [tp]: { ...(M.mob[tp] || {}), stop: v } } }))}
-                  {row('달려오는 속도', c.spd ?? 1, 0.2, 3, 0.05, v => setMotCfg({ ...M, mob: { ...M.mob, [tp]: { ...(M.mob[tp] || {}), spd: v } } }))}
+              {entries.map(({ key, label, szDef, dino }) => { const c = M.mob[key] || {}; return (
+                <div key={key} style={{ borderTop: '1px solid #2a1e10', paddingTop: 5, marginTop: 5 }}>
+                  <div style={{ fontSize: 11, color: GOLD, fontWeight: 700, marginBottom: 3 }}>{label}{dino ? ' (공룡)' : ''}</div>
+                  {row('크기 배율', c.sz ?? szDef, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, mob: { ...M.mob, [key]: { ...(M.mob[key] || {}), sz: v } } }))}
+                  {row('높이(+위)', c.y ?? 0, -100, 100, 1, v => setMotCfg({ ...M, mob: { ...M.mob, [key]: { ...(M.mob[key] || {}), y: v } } }))}
+                  {row('좌우 정지(+멀리)', c.stop ?? 0, -120, 250, 1, v => setMotCfg({ ...M, mob: { ...M.mob, [key]: { ...(M.mob[key] || {}), stop: v } } }))}
+                  {row('달려오는 속도', c.spd ?? 1, 0.2, 3, 0.05, v => setMotCfg({ ...M, mob: { ...M.mob, [key]: { ...(M.mob[key] || {}), spd: v } } }))}
                 </div>
               ) })}
             </>)
@@ -2854,18 +2867,23 @@ export default function App() {
 
           {motCat === 'boss' && (() => {
             const ens = (world.current && world.current.enemies) || []
-            const on = ens.filter(e => !e.dead && !e.dino && e.boss)
-            const idxs = [...new Set(on.map(e => e.bossIdx))]
-            if (!idxs.length) return <div style={{ fontSize: 12, color: '#c9a06a', padding: '8px 0' }}>화면에 일반보스가 없어요. 보스전에 들어가면 자동으로 잡혀요.</div>
+            const on = ens.filter(e => !e.dead && e.boss)
+            const seen = new Set(); const entries = []
+            for (const e of on) {
+              const key = e.dino ? ('d:' + e.dino) : e.bossIdx
+              if (seen.has(key)) continue; seen.add(key)
+              entries.push({ key, label: e.dino ? (DINO_NAME[e.dino] || e.dino) : ((BOSS_TYPES[e.bossIdx] || {}).name || ('보스 ' + e.bossIdx)), szDef: e.dino ? (M.size[e.dino] ?? 1) : 1, dino: !!e.dino })
+            }
+            if (!entries.length) return <div style={{ fontSize: 12, color: '#c9a06a', padding: '8px 0' }}>화면에 보스가 없어요. 보스전/모험 보스에 들어가면 자동으로 잡혀요.</div>
             return (<>
-              <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>화면의 일반보스 (종별)</div>
-              {idxs.map(bi => { const c = M.boss[bi] || {}; const nm = (BOSS_TYPES[bi] || {}).name || ('보스 ' + bi); return (
-                <div key={bi} style={{ borderTop: '1px solid #2a1e10', paddingTop: 5, marginTop: 5 }}>
-                  <div style={{ fontSize: 11, color: GOLD, fontWeight: 700, marginBottom: 3 }}>{nm}</div>
-                  {row('크기 배율', c.sz ?? 1, 0.4, 3, 0.01, v => setMotCfg({ ...M, boss: { ...M.boss, [bi]: { ...(M.boss[bi] || {}), sz: v } } }))}
-                  {row('높이(+위)', c.y ?? 0, -100, 100, 1, v => setMotCfg({ ...M, boss: { ...M.boss, [bi]: { ...(M.boss[bi] || {}), y: v } } }))}
-                  {row('좌우 정지(+멀리)', c.stop ?? 0, -120, 250, 1, v => setMotCfg({ ...M, boss: { ...M.boss, [bi]: { ...(M.boss[bi] || {}), stop: v } } }))}
-                  {row('달려오는 속도', c.spd ?? 1, 0.2, 3, 0.05, v => setMotCfg({ ...M, boss: { ...M.boss, [bi]: { ...(M.boss[bi] || {}), spd: v } } }))}
+              <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>화면의 보스 (종별)</div>
+              {entries.map(({ key, label, szDef, dino }) => { const c = M.boss[key] || {}; return (
+                <div key={key} style={{ borderTop: '1px solid #2a1e10', paddingTop: 5, marginTop: 5 }}>
+                  <div style={{ fontSize: 11, color: GOLD, fontWeight: 700, marginBottom: 3 }}>{label}{dino ? ' (공룡)' : ''}</div>
+                  {row('크기 배율', c.sz ?? szDef, 0.4, 3, 0.01, v => setMotCfg({ ...M, boss: { ...M.boss, [key]: { ...(M.boss[key] || {}), sz: v } } }))}
+                  {row('높이(+위)', c.y ?? 0, -100, 100, 1, v => setMotCfg({ ...M, boss: { ...M.boss, [key]: { ...(M.boss[key] || {}), y: v } } }))}
+                  {row('좌우 정지(+멀리)', c.stop ?? 0, -120, 250, 1, v => setMotCfg({ ...M, boss: { ...M.boss, [key]: { ...(M.boss[key] || {}), stop: v } } }))}
+                  {row('달려오는 속도', c.spd ?? 1, 0.2, 3, 0.05, v => setMotCfg({ ...M, boss: { ...M.boss, [key]: { ...(M.boss[key] || {}), spd: v } } }))}
                 </div>
               ) })}
             </>)
@@ -3301,7 +3319,7 @@ const st = {
     backgroundImage: 'url(/ui/avatar.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
-  avatarFace: { width: '66%', height: '66%', objectFit: 'cover', borderRadius: '50%', imageRendering: 'pixelated' },
+  avatarFace: { width: '66%', height: '66%', objectFit: 'cover', objectPosition: 'top', borderRadius: '50%', imageRendering: 'pixelated' },
   nickRow: { display: 'flex', alignItems: 'center', gap: 6, transform: 'translate(var(--pd-nick-x), var(--pd-nick-y))' },
   nick: { fontSize: 'var(--pd-nickfz)', fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   lvBadge: { fontSize: 'var(--pd-lvbadgefz)', color: GOLD, background: 'linear-gradient(180deg,#3a2a14,#2a1d0d)', border: `1px solid ${GOLD_D}`, padding: '1px 8px', borderRadius: 7, flexShrink: 0 },
