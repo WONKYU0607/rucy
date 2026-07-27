@@ -1017,6 +1017,7 @@ export default function App() {
           const estop = e.dino ? (emb.stop ?? (motRef.current.stop[e.dino] || 0)) : (emb.stop || 0)   // 좌우 정지 위치(+면 오른쪽/멀리)
           const espd = emb.spd || 1                                                       // 달려오는 속도 배율(공룡·웨이브 공통)
           const stopX = w.heroX + Math.min(atkRange - 15, 60 + e.h * szm * 0.4) + estop
+          if (DEBUG) e._dbgStop = stopX
           if (e.x > stopX && !(e.atkT > 0)) {
             const near = Math.min(1, Math.max(0.3, (e.x - stopX) / 55))  // 정지 전 감속
             e.x -= (e.speed * (e.spdV || 1) * espd * SPEED * 1.3 * e.vt * near + scroll) * dt
@@ -1529,6 +1530,12 @@ export default function App() {
           drawStar(ctx, sx, sy, 5, 3, '#ffd42a')
         }
       }
+      if (DEBUG) {   // 진단: 공격 상태 (atkT>0=공격중, gap>0=정지위치 미도달, stun=기절)
+        const gap = e._dbgStop != null ? Math.round(e.x - e._dbgStop) : '?'
+        ctx.fillStyle = e.atkT > 0 ? '#3f6' : (typeof gap === 'number' && gap > 0 ? '#fc3' : '#f66')
+        ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center'
+        ctx.fillText(`aT${(e.atkT || 0).toFixed(2)} cd${Math.round(e.cd || 0)} gap${gap}${stunned ? ' STUN' : ''}`, e.x, y - H - 20)
+      }
     }
     function drawStar(ctx, cx, cy, outer, inner, color) {
       ctx.save()
@@ -1918,10 +1925,13 @@ export default function App() {
   }, [])
   useEffect(() => {
     if (!FB_ON) return
-    const iv = setInterval(pushCloud, 60000)
+    const iv = setInterval(pushCloud, 15000)   // 60초→15초: 기기 전환 시 클라우드 최신화
     const onVis = () => { if (document.visibilityState === 'hidden') pushCloud() }
+    const onHide = () => pushCloud()            // 페이지 이탈/전환 즉시 저장 (모바일 Safari는 pagehide가 신뢰성 높음)
     document.addEventListener('visibilitychange', onVis)
-    return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVis) }
+    window.addEventListener('pagehide', onHide)
+    window.addEventListener('beforeunload', onHide)
+    return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVis); window.removeEventListener('pagehide', onHide); window.removeEventListener('beforeunload', onHide) }
   }, [])
   async function fbLogin() {
     try { await signInWithPopup(fbAuth, new GoogleAuthProvider()) }
