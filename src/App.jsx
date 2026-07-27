@@ -62,7 +62,6 @@ const SKILL_SHEET = [
   { id: 2, n: 5, h: 250, stage: 1, title: '전기 작살', charSeq: [1, 2], fx: { type: 'proj', fly: [3, 4], impact: 5, fxH: 200 } },
   { id: 7, n: 6, h: 110, stage: 0, title: '할퀴기' },
   { id: 8, n: 6, h: 140, stage: 0, title: '내려치기' },
-  { id: 12, n: 7, h: 110, stage: 0, title: '빙글빙글' },
   { id: 13, n: 7, h: 120, stage: 0, title: '데굴데굴' },
   { id: 15, n: 5, h: 120, stage: 0, title: '로우킥' },
   { id: 16, n: 6, h: 145, stage: 0, title: '바위치기', charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5, 6] } },
@@ -73,7 +72,7 @@ const SKILL_SHEET = [
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
 // 스킬 아이콘: 해당 스킬 시트의 지정 프레임 사용 (없으면 번호 텍스트)
-const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 12: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4 }
+const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4 }
 const skillIconSrc = id => SKILL_ICON_FRAME[id] ? `/skill/s${id}/s${id}_${SKILL_ICON_FRAME[id]}.png` : null
 const skIcon = s => (s ? (skillIconSrc(s.id) || s.icon2 || null) : null)
 // ── 전리품 조각 (사망 드롭 → 상단 재화칸 흡수 연출) ──
@@ -210,7 +209,6 @@ const SKILL_FRAME_T = {
   2:  [0.20, 0.20],                        // 창던지기 (2)
   7:  [0.15, 0.15, 0.15, 0.15, 0.15, 0.15],       // (6)
   8:  [0.15, 0.15, 0.15, 0.15, 0.15, 0.15],       // (6)
-  12: [0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15], // (7)
   13: [0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15], // (7)
   15: [0.15, 0.15, 0.15, 0.15, 0.15],      // (5)
   16: [0.25, 0.25],                        // 낙석 시전 (2)
@@ -2789,8 +2787,7 @@ export default function App() {
             <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>{DINO_NAME[motSel]} 공격 프레임 {frames.join('·')}번 · 총 {arr.reduce((a, b) => a + b, 0).toFixed(2)}초</div>
             {arr.map((v, i) => row(`${i + 1}번(원본${frames[i]}) 시간`, v, 0.02, 0.6, 0.01, nv => setArr(i, nv)))}
             {row('데미지 프레임', M.hit[motSel] || 3, 1, arr.length, 1, v => setMotCfg({ ...M, hit: { ...M.hit, [motSel]: v } }))}
-            {row('정지 위치(px)', M.stop[motSel] ?? 0, -80, 200, 1, v => setMotCfg({ ...M, stop: { ...M.stop, [motSel]: v } }))}
-            {row('크기 배율', M.size[motSel] ?? 1, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, size: { ...M.size, [motSel]: v } }))}
+            <div style={{ fontSize: 10, color: '#8a7758', margin: '4px 0 2px', lineHeight: 1.4 }}>크기·정지·높이·속도는 [일반몹]/[보스] 탭에서 몹·보스 따로 조절</div>
             <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
             {row('보스 파고듦', M.lunge.boss, 0, 60, 1, v => setMotCfg({ ...M, lunge: { ...M.lunge, boss: v } }))}
             {row('일반 파고듦', M.lunge.mob, 0, 60, 1, v => setMotCfg({ ...M, lunge: { ...M.lunge, mob: v } }))}
