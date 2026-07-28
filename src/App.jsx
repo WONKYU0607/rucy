@@ -150,6 +150,18 @@ const MOTION_DEFAULT = {
   skFx: { 1: { sz: 1, spd: 1, fly: 1 }, 2: { sz: 1, spd: 1, fly: 1 }, 16: { sz: 1, spd: 1, fly: 1 }, 18: { sz: 1, spd: 1, fly: 1 }, 20: { sz: 1, spd: 1, fly: 1 } },  // 스킬 이펙트: sz 크기 / spd 프레임속도 / fly 비행속도(투사체)
 }
 const MOT_FX_IDS = [1, 2, 16, 18, 20]                          // 이펙트 있는 스킬 id
+function mergeMotion(sv) {   // 저장된 모션값 + 기본값 병합 (초기 로드·클라우드 복원 공용)
+  sv = sv || {}
+  return {
+    atk: { ...MOTION_DEFAULT.atk, ...(sv.atk || {}) }, hit: { ...MOTION_DEFAULT.hit, ...(sv.hit || {}) },
+    cd: { ...MOTION_DEFAULT.cd, ...(sv.cd || {}) }, dur: { ...MOTION_DEFAULT.dur, ...(sv.dur || {}) },
+    lunge: { ...MOTION_DEFAULT.lunge, ...(sv.lunge || {}) },
+    stop: { ...MOTION_DEFAULT.stop, ...(sv.stop || {}) }, size: { ...MOTION_DEFAULT.size, ...(sv.size || {}) },
+    hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}) }, mob: { ...(sv.mob || {}) }, boss: { ...(sv.boss || {}) },
+    ally: { hunter: { ...MOTION_DEFAULT.ally.hunter, ...((sv.ally || {}).hunter || {}) }, shaman: { ...MOTION_DEFAULT.ally.shaman, ...((sv.ally || {}).shaman || {}) }, healer: { ...MOTION_DEFAULT.ally.healer, ...((sv.ally || {}).healer || {}) }, giant: { ...MOTION_DEFAULT.ally.giant, ...((sv.ally || {}).giant || {}) } },
+    skFx: Object.fromEntries(MOT_FX_IDS.map(id => [id, { ...MOTION_DEFAULT.skFx[id], ...((sv.skFx || {})[id] || {}) }])),
+  }
+}
 const dinoAtkDur = (k, T) => (T[k] || DINO_ATK_DEF).reduce((a, b) => a + b, 0)
 const dinoHitAt = (k, T, H) => {               // 타격 프레임이 시작되는 시각(초)
   const arr = T[k] || DINO_ATK_DEF
@@ -630,18 +642,8 @@ export default function App() {
   useEffect(() => { if (!motEdit) return; const iv = setInterval(() => setMotTick(t => t + 1), 500); return () => clearInterval(iv) }, [motEdit])
   const [copiedMot, setCopiedMot] = useState(false)
   const [motCfg, setMotCfg] = useState(() => {
-    try {
-      const sv = JSON.parse(localStorage.getItem('paleoMotion') || '{}')
-      return {
-        atk: { ...MOTION_DEFAULT.atk, ...(sv.atk || {}) }, hit: { ...MOTION_DEFAULT.hit, ...(sv.hit || {}) },
-        cd: { ...MOTION_DEFAULT.cd, ...(sv.cd || {}) }, dur: { ...MOTION_DEFAULT.dur, ...(sv.dur || {}) },
-        lunge: { ...MOTION_DEFAULT.lunge, ...(sv.lunge || {}) },
-        stop: { ...MOTION_DEFAULT.stop, ...(sv.stop || {}) }, size: { ...MOTION_DEFAULT.size, ...(sv.size || {}) },
-        hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}) }, mob: { ...(sv.mob || {}) }, boss: { ...(sv.boss || {}) },
-        ally: { hunter: { ...MOTION_DEFAULT.ally.hunter, ...((sv.ally || {}).hunter || {}) }, shaman: { ...MOTION_DEFAULT.ally.shaman, ...((sv.ally || {}).shaman || {}) }, healer: { ...MOTION_DEFAULT.ally.healer, ...((sv.ally || {}).healer || {}) }, giant: { ...MOTION_DEFAULT.ally.giant, ...((sv.ally || {}).giant || {}) } },
-        skFx: Object.fromEntries(MOT_FX_IDS.map(id => [id, { ...MOTION_DEFAULT.skFx[id], ...((sv.skFx || {})[id] || {}) }])),
-      }
-    } catch { return JSON.parse(JSON.stringify(MOTION_DEFAULT)) }
+    try { return mergeMotion(JSON.parse(localStorage.getItem('paleoMotion') || '{}')) }
+    catch { return JSON.parse(JSON.stringify(MOTION_DEFAULT)) }
   })
   const motRef = useRef(motCfg)
   motRef.current = motCfg                            // 게임 루프가 매 프레임 최신값을 읽음
@@ -665,7 +667,12 @@ export default function App() {
   const [copiedUi, setCopiedUi] = useState(false)
   const [editSel, setEditSel] = useState(null)   // 편집 모드에서 선택된 요소
   useEffect(() => { localStorage.setItem('paleoUiCfg', JSON.stringify(uiCfg)) }, [uiCfg])
-  useEffect(() => { localStorage.setItem('paleoMotion', JSON.stringify(motCfg)) }, [motCfg])
+  const motTsFirst = useRef(true)
+  useEffect(() => {
+    localStorage.setItem('paleoMotion', JSON.stringify(motCfg))
+    if (motTsFirst.current) { motTsFirst.current = false; return }   // 마운트 로드는 편집 아님 → ts 안 찍음(안 찍어야 클라우드 편집이 안 덮임)
+    localStorage.setItem('paleoMotionTs', String(Date.now()))
+  }, [motCfg])
   const [offReward, setOffReward] = useState(null) // 오프라인 보상 대기(pending)
   const [offOpen, setOffOpen] = useState(false)    // 오프라인 보상 창 열림
   const offDone = useRef(false)
@@ -1888,6 +1895,8 @@ export default function App() {
       if (!sv) return
       sv.ui = JSON.parse(localStorage.getItem('paleoUiCfg') || 'null')
       sv.uiTs = Number(localStorage.getItem('paleoUiTs') || 0)
+      sv.motion = JSON.parse(localStorage.getItem('paleoMotion') || 'null')      // 모션값도 업로드 (예전엔 빠져서 기기간 동기화 안 됐음)
+      sv.motionTs = Number(localStorage.getItem('paleoMotionTs') || 0)
       await setDoc(doc(fbDb, 'paleoSaves', fbAuth.currentUser.uid), sv)
       setCloudMsg('저장됨 ' + new Date().toLocaleTimeString())
     } catch (e) { setCloudMsg('저장 실패: ' + (e.code || e.message)) }
@@ -1907,6 +1916,13 @@ export default function App() {
           localStorage.setItem('paleoUiCfg', JSON.stringify(cloud.ui))
           localStorage.setItem('paleoUiTs', String(cloud.uiTs || 0))
           setUiCfg({ ...UI_DEFAULT, ...Object.fromEntries(Object.entries(cloud.ui).filter(([k]) => k in UI_DEFAULT)) })
+        }
+        // 모션 편집값: UI와 동일하게 편집 시각 비교해 최신쪽 적용
+        const localMotionTs = Number(localStorage.getItem('paleoMotionTs') || 0)
+        if (cloud?.motion && (cloud.motionTs || 0) > localMotionTs) {
+          localStorage.setItem('paleoMotion', JSON.stringify(cloud.motion))
+          localStorage.setItem('paleoMotionTs', String(cloud.motionTs || 0))
+          setMotCfg(mergeMotion(cloud.motion))
         }
         // 진행도 동기화: 저장 시각(ts)이 최신인 쪽을 채택 (기기 로드 시점의 원래 ts=init.ts와 비교 — 마운트 자동저장이 로컬 ts를 덮어써도 안전)
         // ts가 둘 다 없는 옛 세이브만 웨이브로 폴백
@@ -1938,6 +1954,18 @@ export default function App() {
     catch { try { await signInWithRedirect(fbAuth, new GoogleAuthProvider()) } catch (e) { setCloudMsg('로그인 실패: ' + (e.code || e.message)) } }
   }
   async function fbLogout() { await pushCloud(); await signOut(fbAuth) }
+  async function pullCloud() {   // 클라우드 세이브를 무조건 로컬로 덮어써서 불러옴 (기기간 확실한 동기화용)
+    if (!FB_ON || !fbAuth.currentUser) return
+    try {
+      const snap = await getDoc(doc(fbDb, 'paleoSaves', fbAuth.currentUser.uid))
+      if (!snap.exists()) { setCloudMsg('클라우드에 저장이 없어요'); return }
+      const cloud = snap.data()
+      localStorage.setItem(SAVE_KEY, JSON.stringify(cloud))                          // 웨이브 등 진행도
+      if (cloud.ui) { localStorage.setItem('paleoUiCfg', JSON.stringify(cloud.ui)); localStorage.setItem('paleoUiTs', String(cloud.uiTs || Date.now())) }        // UI 배치
+      if (cloud.motion) { localStorage.setItem('paleoMotion', JSON.stringify(cloud.motion)); localStorage.setItem('paleoMotionTs', String(cloud.motionTs || Date.now())) }  // 모션 편집값
+      location.reload()
+    } catch (e) { setCloudMsg('불러오기 실패: ' + (e.code || e.message)) }
+  }
 
   // 스크롤 엣지 페이드: 위/아래 끝에서는 해제, 넘침 없으면 페이드 없음
   function updFade(el) {
@@ -1992,9 +2020,9 @@ export default function App() {
   }
   function switchSet(n) { if (n >= 0 && n < SET_COUNT) setActiveSet(n) }
   function enterAdventure() {
-    if (uiEdit || !advSel || ruby < ADV_COST_RUBY) return
+    if (uiEdit || !advSel || (!DEBUG && ruby < ADV_COST_RUBY)) return
     const stage = Math.min(ADV_STAGES, (advStage[advSel.key] || 0) + 1)
-    setRuby(r => r - ADV_COST_RUBY)
+    if (!DEBUG) setRuby(r => r - ADV_COST_RUBY)
     world.current.advStart = { key: advSel.key, boss: advSel.boss, name: advSel.name, stage, wave }
     setAdvSel(null); setNav('영웅'); setPaused(false)
   }
@@ -2042,7 +2070,8 @@ export default function App() {
             {FB_ON && (fbUser ? (
               <>
                 <div style={{ ...st.menuItem, opacity: 0.8 }}><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fbUser.email}</span></div>
-                <button style={st.menuItem} onClick={pushCloud}>지금 저장 <span style={{ fontSize: 11, opacity: 0.6 }}>{cloudMsg}</span></button>
+                <button style={st.menuItem} onClick={pushCloud}>클라우드에 저장 <span style={{ fontSize: 11, opacity: 0.6 }}>{cloudMsg}</span></button>
+                <button style={st.menuItem} onClick={() => { if (confirm('클라우드 세이브를 불러와 현재 기기 데이터를 덮어씁니다. 계속할까요?')) pullCloud() }}>클라우드에서 불러오기</button>
                 <button style={st.menuItem} onClick={fbLogout}>로그아웃</button>
               </>
             ) : (
@@ -2073,7 +2102,7 @@ export default function App() {
             const stats = gearStats(cat, i, lv)
             const statsNext = gearStats(cat, i, lv + 1)
             const cost = enhCost(lv)
-            const canEnh = mats[4] >= cost
+            const canEnh = DEBUG || mats[4] >= cost
             const hasNext = i < EQUIP_MAX
             const nextCnt = hasNext ? (inv[invKey(cat, i + 1)] || 0) : 0
             const maxFuse = Math.floor(cnt / 5)
@@ -2109,7 +2138,7 @@ export default function App() {
                         ))}
                       </div>
                       <div style={st.dBtns}>
-                        <button data-edit="denh" style={{ ...st.dEnhBtn, ...(canEnh ? st.dEnhBtnOn : {}) }} onClick={() => { if (canEnh) { setMats(m => { const n = [...m]; n[4] -= cost; return n }); setEnh(e => ({ ...e, [key]: lv + 1 })); qEv('equip_enh') } }}>
+                        <button data-edit="denh" style={{ ...st.dEnhBtn, ...(canEnh ? st.dEnhBtnOn : {}) }} onClick={() => { if (canEnh) { if (!DEBUG) setMats(m => { const n = [...m]; n[4] -= cost; return n }); setEnh(e => ({ ...e, [key]: lv + 1 })); qEv('equip_enh') } }}>
                           <img src={MAT_IMG(4)} alt="" style={st.dEnhIc} /><span style={{ fontFamily: "'Do Hyeon',sans-serif" }}>{fmt(cost)}</span>
                         </button>
                         <button data-edit="dequip" style={{ ...st.dEquipBtn, ...(isEq ? st.dEquipOn : {}) }} onClick={() => { if (cnt > 0 || isEq) setGearEq(g => ({ ...g, [cat]: isEq ? null : i })) }}>{isEq ? '장착중' : '장착'}</button>
@@ -2199,13 +2228,13 @@ export default function App() {
         const curRows = [
           ['/ui/ic_meat.png', '고기', fmt(meat)],
           ['/ui/gem.png', '다이아', DEBUG ? '∞' : fmt(gem)],
-          ['/ui/ruby.png', '루비', fmt(ruby)],
-          ['/ui/pearl.png', '진주', fmt(pearl)],
-          ['/ui/mat4.png', '강화 큐브', fmt(mats[4])],
-          [MAT_IMG(0), '동료 재료 1', fmt(mats[0])],
-          [MAT_IMG(1), '동료 재료 2', fmt(mats[1])],
-          [MAT_IMG(2), '동료 재료 3', fmt(mats[2])],
-          [MAT_IMG(3), '동료 재료 4', fmt(mats[3])],
+          ['/ui/ruby.png', '루비', DEBUG ? '∞' : fmt(ruby)],
+          ['/ui/pearl.png', '진주', DEBUG ? '∞' : fmt(pearl)],
+          ['/ui/mat4.png', '강화 큐브', DEBUG ? '∞' : fmt(mats[4])],
+          [MAT_IMG(0), '동료 재료 1', DEBUG ? '∞' : fmt(mats[0])],
+          [MAT_IMG(1), '동료 재료 2', DEBUG ? '∞' : fmt(mats[1])],
+          [MAT_IMG(2), '동료 재료 3', DEBUG ? '∞' : fmt(mats[2])],
+          [MAT_IMG(3), '동료 재료 4', DEBUG ? '∞' : fmt(mats[3])],
         ]
         return (
           <div style={st.dOverlay} onClick={e => { if (e.target === e.currentTarget) { setProfileOpen(false); setNickEdit(false) } }}>
@@ -2295,8 +2324,8 @@ export default function App() {
             </div>
 
             <div style={st.advWinBtns}>
-              <button data-edit="adventer" style={{ ...st.advEnterBtn, ...(ruby < ADV_COST_RUBY ? st.advBtnOff : null) }} onClick={enterAdventure}>
-                진입 <img src="/ui/ruby.png" alt="" style={st.advRuby} />{fmt(ruby)}/{ADV_COST_RUBY}
+              <button data-edit="adventer" style={{ ...st.advEnterBtn, ...(!DEBUG && ruby < ADV_COST_RUBY ? st.advBtnOff : null) }} onClick={enterAdventure}>
+                진입 <img src="/ui/ruby.png" alt="" style={st.advRuby} />{DEBUG ? '∞' : fmt(ruby) + '/' + ADV_COST_RUBY}
               </button>
               <button data-edit="advclose" style={st.advCloseBtn} onClick={() => { if (!uiEdit) setAdvSel(null) }}>닫기</button>
             </div>
@@ -2628,7 +2657,7 @@ export default function App() {
           </div>
           {EQUIP_CATS.includes(equipTab) && (
             <div style={st.equipBottomBar}>
-              <div data-edit="matchip" style={st.matChip}><img src={MAT_IMG(4)} alt="" style={st.matChipIc} /><span style={{ fontFamily: "'Do Hyeon',sans-serif" }}>{fmt(mats[4])}</span></div>
+              <div data-edit="matchip" style={st.matChip}><img src={MAT_IMG(4)} alt="" style={st.matChipIc} /><span style={{ fontFamily: "'Do Hyeon',sans-serif" }}>{DEBUG ? '∞' : fmt(mats[4])}</span></div>
               <button data-edit="fuseall" style={st.fuseAllBtn} onClick={() => { if (!uiEdit) fuseAll(equipTab) }}>일괄 융합</button>
             </div>
           )}
@@ -2660,7 +2689,7 @@ export default function App() {
             ))}
             <div style={st.allyMats}>
               {[0, 1, 2, 3].map(mi => (
-                <div key={mi} data-edit="allymat" style={st.allyChip}><img src={MAT_IMG(mi)} alt="" style={st.allyChipIc} /><span style={{ fontFamily: "'Do Hyeon',sans-serif" }}>{fmt(mats[mi])}</span></div>
+                <div key={mi} data-edit="allymat" style={st.allyChip}><img src={MAT_IMG(mi)} alt="" style={st.allyChipIc} /><span style={{ fontFamily: "'Do Hyeon',sans-serif" }}>{DEBUG ? '∞' : fmt(mats[mi])}</span></div>
               ))}
             </div>
           </div>
