@@ -283,6 +283,8 @@ const gearStats = (cat, i, lv = 0) => {
 const enhCost = lv => Math.floor(100 * Math.pow(1.5, lv))   // 강화 비용: 100, 150, 225 …
 const MAT_IMG = i => `/ui/mat${i}.png`
 const heroEvoSrc = m => m === 'quad' ? '/hero/quad/quad_1.png' : m === 'erectus' ? '/hero/erectus_walk/ewalk_1.png' : m === 'neander' ? '/hero/neander_walk/nwalk_1.png' : m === 'sapiens' ? '/hero/sapiens_walk/pwalk_1.png' : m === 'human' ? '/hero/human_walk/hmwalk_1.png' : '/hero/misc/hero_idle.png'
+// 프로필/아바타용 진화단계 초상화 (4족·직립은 유인원 공통)
+const heroProfileSrc = m => m === 'erectus' ? '/hero/profile/erectus.png' : m === 'neander' ? '/hero/profile/neander.png' : m === 'sapiens' ? '/hero/profile/sapiens.png' : m === 'human' ? '/hero/profile/human.png' : '/hero/profile/ape.png'
 const gearSrc = (cat, n) => `${CAT_DIR[cat]}${n}.png`
 
 // ── 오프라인 보상 설정 (직접 수정 가능) ─────────────────────────
@@ -1891,13 +1893,20 @@ export default function App() {
   async function pushCloud() {
     if (!FB_ON || !fbAuth.currentUser) return
     try {
-      const sv = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null')
+      const raw = localStorage.getItem(SAVE_KEY)
+      const sv = JSON.parse(raw || 'null')
       if (!sv) return
-      sv.ui = JSON.parse(localStorage.getItem('paleoUiCfg') || 'null')
-      sv.uiTs = Number(localStorage.getItem('paleoUiTs') || 0)
-      sv.motion = JSON.parse(localStorage.getItem('paleoMotion') || 'null')      // 모션값도 업로드 (예전엔 빠져서 기기간 동기화 안 됐음)
-      sv.motionTs = Number(localStorage.getItem('paleoMotionTs') || 0)
-      await setDoc(doc(fbDb, 'paleoSaves', fbAuth.currentUser.uid), sv)
+      // 세이브 전체를 문자열 필드로 저장 (skillSets 같은 중첩 배열을 Firestore가 거부 → invalid-argument 방지)
+      const payload = {
+        data: raw,
+        ui: localStorage.getItem('paleoUiCfg') || null,
+        uiTs: Number(localStorage.getItem('paleoUiTs') || 0),
+        motion: localStorage.getItem('paleoMotion') || null,
+        motionTs: Number(localStorage.getItem('paleoMotionTs') || 0),
+        ts: sv.ts || 0,
+        wave: sv.wave || 0,
+      }
+      await setDoc(doc(fbDb, 'paleoSaves', fbAuth.currentUser.uid), payload)
       setCloudMsg('저장됨 ' + new Date().toLocaleTimeString())
     } catch (e) { setCloudMsg('저장 실패: ' + (e.code || e.message)) }
   }
@@ -1910,28 +1919,32 @@ export default function App() {
         const snap = await getDoc(doc(fbDb, 'paleoSaves', u.uid))
         const cloud = snap.exists() ? snap.data() : null
         const local = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null')
-        // UI 편집값: 로컬 편집 시각과 비교해 더 최신인 쪽을 적용 (예전엔 클라우드가 무조건 이겨 로컬 편집이 사라졌음)
+        // 신형: cloud.data(세이브 문자열). 구형 호환: cloud 자체가 세이브 객체
+        const cloudSaveStr = cloud ? (typeof cloud.data === 'string' ? cloud.data : JSON.stringify(cloud)) : null
+        let cloudSave = null; try { cloudSave = cloudSaveStr ? JSON.parse(cloudSaveStr) : null } catch {}
+        const cloudTs = cloud ? (cloud.ts || (cloudSave && cloudSave.ts) || 0) : 0
+        const cloudWave = cloud ? (cloud.wave || (cloudSave && cloudSave.wave) || 0) : 0
+        // UI 편집값: 신형은 문자열, 구형은 객체. 로컬 편집 시각과 비교해 최신쪽 적용
+        const cloudUiStr = cloud ? (typeof cloud.ui === 'string' ? cloud.ui : (cloud.ui ? JSON.stringify(cloud.ui) : null)) : null
         const localUiTs = Number(localStorage.getItem('paleoUiTs') || 0)
-        if (cloud?.ui && (cloud.uiTs || 0) > localUiTs) {
-          localStorage.setItem('paleoUiCfg', JSON.stringify(cloud.ui))
+        if (cloudUiStr && (cloud.uiTs || 0) > localUiTs) {
+          localStorage.setItem('paleoUiCfg', cloudUiStr)
           localStorage.setItem('paleoUiTs', String(cloud.uiTs || 0))
-          setUiCfg({ ...UI_DEFAULT, ...Object.fromEntries(Object.entries(cloud.ui).filter(([k]) => k in UI_DEFAULT)) })
+          try { const o = JSON.parse(cloudUiStr); setUiCfg({ ...UI_DEFAULT, ...Object.fromEntries(Object.entries(o).filter(([k]) => k in UI_DEFAULT)) }) } catch {}
         }
-        // 모션 편집값: UI와 동일하게 편집 시각 비교해 최신쪽 적용
+        // 모션 편집값: 동일 처리
+        const cloudMotionStr = cloud ? (typeof cloud.motion === 'string' ? cloud.motion : (cloud.motion ? JSON.stringify(cloud.motion) : null)) : null
         const localMotionTs = Number(localStorage.getItem('paleoMotionTs') || 0)
-        if (cloud?.motion && (cloud.motionTs || 0) > localMotionTs) {
-          localStorage.setItem('paleoMotion', JSON.stringify(cloud.motion))
+        if (cloudMotionStr && (cloud.motionTs || 0) > localMotionTs) {
+          localStorage.setItem('paleoMotion', cloudMotionStr)
           localStorage.setItem('paleoMotionTs', String(cloud.motionTs || 0))
-          setMotCfg(mergeMotion(cloud.motion))
+          try { setMotCfg(mergeMotion(JSON.parse(cloudMotionStr))) } catch {}
         }
-        // 진행도 동기화: 저장 시각(ts)이 최신인 쪽을 채택 (기기 로드 시점의 원래 ts=init.ts와 비교 — 마운트 자동저장이 로컬 ts를 덮어써도 안전)
-        // ts가 둘 다 없는 옛 세이브만 웨이브로 폴백
+        // 진행도 동기화: 저장 시각(ts) 최신쪽 채택 (init.ts=로드시점 원래값과 비교). ts 둘 다 없으면 웨이브 폴백
         const bootTs = init.ts || 0
-        const cloudNewer = ((cloud?.ts || 0) !== 0 || bootTs !== 0)
-          ? (cloud?.ts || 0) > bootTs
-          : (cloud?.wave || 0) > (local?.wave || 0)
-        if (cloud && cloudNewer) {
-          localStorage.setItem(SAVE_KEY, JSON.stringify(cloud))
+        const cloudNewer = (cloudTs !== 0 || bootTs !== 0) ? cloudTs > bootTs : cloudWave > (local?.wave || 0)
+        if (cloudSaveStr && cloudNewer) {
+          localStorage.setItem(SAVE_KEY, cloudSaveStr)
           location.reload()  // 클라우드 세이브로 재시작
         } else {
           pushCloud()
@@ -1960,9 +1973,12 @@ export default function App() {
       const snap = await getDoc(doc(fbDb, 'paleoSaves', fbAuth.currentUser.uid))
       if (!snap.exists()) { setCloudMsg('클라우드에 저장이 없어요'); return }
       const cloud = snap.data()
-      localStorage.setItem(SAVE_KEY, JSON.stringify(cloud))                          // 웨이브 등 진행도
-      if (cloud.ui) { localStorage.setItem('paleoUiCfg', JSON.stringify(cloud.ui)); localStorage.setItem('paleoUiTs', String(cloud.uiTs || Date.now())) }        // UI 배치
-      if (cloud.motion) { localStorage.setItem('paleoMotion', JSON.stringify(cloud.motion)); localStorage.setItem('paleoMotionTs', String(cloud.motionTs || Date.now())) }  // 모션 편집값
+      const saveStr = typeof cloud.data === 'string' ? cloud.data : JSON.stringify(cloud)   // 신형 문자열 or 구형 객체
+      localStorage.setItem(SAVE_KEY, saveStr)                                        // 웨이브 등 진행도
+      const uiStr = typeof cloud.ui === 'string' ? cloud.ui : (cloud.ui ? JSON.stringify(cloud.ui) : null)
+      if (uiStr) { localStorage.setItem('paleoUiCfg', uiStr); localStorage.setItem('paleoUiTs', String(cloud.uiTs || Date.now())) }         // UI 배치
+      const motStr = typeof cloud.motion === 'string' ? cloud.motion : (cloud.motion ? JSON.stringify(cloud.motion) : null)
+      if (motStr) { localStorage.setItem('paleoMotion', motStr); localStorage.setItem('paleoMotionTs', String(cloud.motionTs || Date.now())) }   // 모션 편집값
       location.reload()
     } catch (e) { setCloudMsg('불러오기 실패: ' + (e.code || e.message)) }
   }
@@ -2251,7 +2267,7 @@ export default function App() {
                       ? <input autoFocus value={nick} onChange={e => setNick(e.target.value.slice(0, 16))} onBlur={() => setNickEdit(false)} onKeyDown={e => { if (e.key === 'Enter') setNickEdit(false) }} style={st.profNickInput} />
                       : <><span style={st.profNickTxt}>{nick}</span><button style={st.profPencil} onClick={() => setNickEdit(true)}>✎</button></>}
                   </div>
-                  <div style={st.profHeroWrap}><img src={heroEvoSrc(EVOS[evo].mode)} alt="" style={st.profHeroImg} /></div>
+                  <div style={st.profHeroWrap}><img src={heroProfileSrc(EVOS[evo].mode)} alt="" style={st.profHeroImg} /></div>
                   <div style={st.profStage}>{EVOS[evo].name}</div>
                   <div style={st.profGearRow}>
                     {EQUIP_CATS.map(cat => {
@@ -2405,7 +2421,7 @@ export default function App() {
       )}
 
       <div style={st.topBar}>
-        <div data-edit="avatar" style={st.avatarWrap} onClick={() => { if (!uiEdit) setProfileOpen(true) }}><img src={heroEvoSrc(EVOS[evo].mode)} alt="" style={st.avatarFace} /></div>
+        <div data-edit="avatar" style={st.avatarWrap} onClick={() => { if (!uiEdit) setProfileOpen(true) }}><img src={heroProfileSrc(EVOS[evo].mode)} alt="" style={st.avatarFace} /></div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div data-edit="nick" style={st.nickRow}>
             <span style={st.nick}>{nick}</span>
@@ -3334,8 +3350,8 @@ const st = {
   profNickTxt: { fontSize: 15, fontWeight: 700, color: '#fff5df' },
   profPencil: { padding: '2px 6px', fontSize: 13, color: '#c9b596', border: '1px solid #5a4630', borderRadius: 6, background: 'rgba(0,0,0,0.3)', cursor: 'pointer' },
   profNickInput: { width: 200, height: 28, fontSize: 15, fontWeight: 700, textAlign: 'center', color: '#fff', background: 'rgba(0,0,0,0.5)', border: '1px solid #d09340', borderRadius: 6, outline: 'none' },
-  profHeroWrap: { display: 'flex', alignItems: 'flex-end', justifyContent: 'center', height: 120, marginTop: 8 },
-  profHeroImg: { maxHeight: 120, maxWidth: 120, objectFit: 'contain', imageRendering: 'pixelated' },
+  profHeroWrap: { display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 10 },
+  profHeroImg: { width: 116, height: 150, objectFit: 'cover', objectPosition: 'top', borderRadius: 10, border: '2px solid #6a5230', boxShadow: 'inset 0 0 12px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.4)', imageRendering: 'pixelated' },
   profStage: { fontSize: 12, fontWeight: 700, color: '#c9b596', marginTop: 4 },
   profGearRow: { display: 'flex', gap: 8, marginTop: 12, width: '100%', justifyContent: 'center' },
   profGearCol: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, flex: 1, maxWidth: 96 },
