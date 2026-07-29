@@ -744,7 +744,9 @@ export default function App() {
     cdConf,
   }
 
+  const cloudBusy = useRef(false)   // 어댑트/불러오기 중 로컬 저장 차단
   useEffect(() => {
+    if (cloudBusy.current) return
     localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, gem, inv, best, alliesOn, gearEq, nick, mats, enh, ruby, advStage, pearl, quest, ts: Date.now() }))
   }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, gem, inv, best, alliesOn, gearEq, nick, mats, enh, ruby, advStage, pearl, quest])
 
@@ -1944,6 +1946,7 @@ export default function App() {
         const bootTs = init.ts || 0
         const cloudNewer = (cloudTs !== 0 || bootTs !== 0) ? cloudTs > bootTs : cloudWave > (local?.wave || 0)
         if (cloudSaveStr && cloudNewer) {
+          cloudBusy.current = true                 // 리로드 전 로컬 자동저장 차단(덮어쓰기 방지)
           localStorage.setItem(SAVE_KEY, cloudSaveStr)
           location.reload()  // 클라우드 세이브로 재시작
         } else {
@@ -1973,6 +1976,7 @@ export default function App() {
       const snap = await getDoc(doc(fbDb, 'paleoSaves', fbAuth.currentUser.uid))
       if (!snap.exists()) { setCloudMsg('클라우드에 저장이 없어요'); return }
       const cloud = snap.data()
+      cloudBusy.current = true                                                       // 리로드 전 로컬 자동저장 차단
       const saveStr = typeof cloud.data === 'string' ? cloud.data : JSON.stringify(cloud)   // 신형 문자열 or 구형 객체
       localStorage.setItem(SAVE_KEY, saveStr)                                        // 웨이브 등 진행도
       const uiStr = typeof cloud.ui === 'string' ? cloud.ui : (cloud.ui ? JSON.stringify(cloud.ui) : null)
@@ -2253,7 +2257,7 @@ export default function App() {
           [MAT_IMG(3), '동료 재료 4', DEBUG ? '∞' : fmt(mats[3])],
         ]
         return (
-          <div style={st.dOverlay} onClick={e => { if (e.target === e.currentTarget) { setProfileOpen(false); setNickEdit(false) } }}>
+          <div style={st.dOverlay} onClick={e => { if (!uiEdit && e.target === e.currentTarget) { setProfileOpen(false); setNickEdit(false) } }}>
             <div style={st.profBox}>
               <div style={st.profTabs}>
                 <button style={{ ...st.profTab, ...(profTab === 'info' ? st.profTabOn : {}) }} onClick={() => setProfTab('info')}>기본 정보</button>
@@ -2267,7 +2271,7 @@ export default function App() {
                       ? <input autoFocus value={nick} onChange={e => setNick(e.target.value.slice(0, 16))} onBlur={() => setNickEdit(false)} onKeyDown={e => { if (e.key === 'Enter') setNickEdit(false) }} style={st.profNickInput} />
                       : <><span style={st.profNickTxt}>{nick}</span><button style={st.profPencil} onClick={() => setNickEdit(true)}>✎</button></>}
                   </div>
-                  <div style={st.profHeroWrap}><img src={heroProfileSrc(EVOS[evo].mode)} alt="" style={st.profHeroImg} /></div>
+                  <div style={st.profHeroWrap}><img data-edit="profhero" src={heroProfileSrc(EVOS[evo].mode)} alt="" style={st.profHeroImg} /></div>
                   <div style={st.profStage}>{EVOS[evo].name}</div>
                   <div style={st.profGearRow}>
                     {EQUIP_CATS.map(cat => {
@@ -2421,7 +2425,7 @@ export default function App() {
       )}
 
       <div style={st.topBar}>
-        <div data-edit="avatar" style={st.avatarWrap} onClick={() => { if (!uiEdit) setProfileOpen(true) }}><img src={heroProfileSrc(EVOS[evo].mode)} alt="" style={st.avatarFace} /></div>
+        <div data-edit="avatar" style={st.avatarWrap} onClick={() => setProfileOpen(true)}><img src={heroProfileSrc(EVOS[evo].mode)} alt="" style={st.avatarFace} /></div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div data-edit="nick" style={st.nickRow}>
             <span style={st.nick}>{nick}</span>
@@ -2974,7 +2978,7 @@ export default function App() {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => { setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) })); localStorage.setItem('paleoUiTs', String(Date.now())) }
             const nbtn = { width: 26, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
-            const rng = k => k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
+            const rng = k => k.startsWith('profhero') ? 300 : k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
             const rmin = k => k === 'equipcols' ? 3 : 0
             return <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -2992,7 +2996,7 @@ export default function App() {
               ))}
               {g.pos && ['X', 'Y'].map(ax => {
                 const k = g.pos + ax
-                const pmax = g.pos.startsWith('advbtn') ? 400 : (g.pos.startsWith('skq') || g.pos.startsWith('skd')) ? 240 : g.pos.startsWith('sk') ? 160 : 80
+                const pmax = g.pos === 'profhero' ? 200 : g.pos.startsWith('advbtn') ? 400 : (g.pos.startsWith('skq') || g.pos.startsWith('skd')) ? 240 : g.pos.startsWith('sk') ? 160 : 80
                 return <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <span style={{ width: 92, fontSize: 12, flexShrink: 0, color: '#f0dfae', fontWeight: 700 }}>{ax === 'X' ? '← 좌우 →' : '↑ 상하 ↓'}</span>
                   <button style={nbtn} onClick={() => nudge(k, -1, -pmax, pmax)}>−</button>
@@ -3075,6 +3079,7 @@ Object.assign(UI_DEFAULT, {
   sknamefz: 12, sknameX: 0, sknameY: 0,
   skbarX: 1, skbarY: 0,
   skdiconsz: 88, skdiconX: 0, skdiconY: 0,
+  profherow: 116, profheroh: 150, profheroX: 0, profheroY: 0,
   skdtitlefz: 18, skdtitleX: 0, skdtitleY: 0,
   skddescfz: 13, skddescX: 0, skddescY: 0,
   skdefffz: 15, skdeffectX: 0, skdeffectY: 0,
@@ -3234,6 +3239,7 @@ Object.assign(EDIT_GROUPS, {
   skname: { label: '스킬 이름', size: ['sknamefz'], pos: 'skname' },
   skbar: { label: '스킬 강화바', size: [], pos: 'skbar' },
   skdicon: { label: '상세 아이콘', size: ['skdiconsz'], pos: 'skdicon' },
+  profhero: { label: '프로필 사진', size: ['profherow', 'profheroh'], pos: 'profhero' },
   skdtitle: { label: '상세 제목', size: ['skdtitlefz'], pos: 'skdtitle' },
   skddesc: { label: '상세 설명', size: ['skddescfz'], pos: 'skddesc' },
   skdeffect: { label: '상세 효과칸', size: ['skdefffz'], pos: 'skdeffect' },
@@ -3279,6 +3285,7 @@ Object.assign(UI_LABELS, {
   skcellsz: '틀 크기', skcellgap: '가로 간격', skcellrgap: '세로 간격', skimgsz: '그림 크기',
   sknamefz: '이름 글자', skplusfz: '뱃지 글자',
   skdiconsz: '아이콘 크기', skdtitlefz: '제목 글자', skddescfz: '설명 글자',
+  profherow: '사진 너비', profheroh: '사진 높이',
   skdefffz: '효과 글자', skdstatfz: '스탯 글자', skdautofz: 'AUTO 글자', skdbtnh: '버튼 높이', skdbtnfz: '버튼 글자',
   qww: '창 너비', qwh: '창 높이', qtitlefz: '제목 글자', qclsz: '버튼 크기',
   qtabw: '탭 너비', qtabh: '탭 높이', qtabfz: '탭 글자', qrowh: '행 높이',
@@ -3296,7 +3303,7 @@ const uiVars = c => `:root{
 --pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
 ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg${i}-x:${c['evoimg' + i + 'X']}px;--pd-evoimg${i}-y:${c['evoimg' + i + 'Y']}px;`).join('')}--pd-slotfz:${c.slotfz}px;
---pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;
+--pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-profherow:${c.profherow}px;--pd-profheroh:${c.profheroh}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;
 ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k}h:${c['advico' + k + 'h']}px;--pd-advico${k}-x:${c['advico' + k + 'X']}px;--pd-advico${k}-y:${c['advico' + k + 'Y']}px;`).join('')}
 --pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
 --pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
@@ -3323,7 +3330,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
 --pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -3351,7 +3358,7 @@ const st = {
   profPencil: { padding: '2px 6px', fontSize: 13, color: '#c9b596', border: '1px solid #5a4630', borderRadius: 6, background: 'rgba(0,0,0,0.3)', cursor: 'pointer' },
   profNickInput: { width: 200, height: 28, fontSize: 15, fontWeight: 700, textAlign: 'center', color: '#fff', background: 'rgba(0,0,0,0.5)', border: '1px solid #d09340', borderRadius: 6, outline: 'none' },
   profHeroWrap: { display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 10 },
-  profHeroImg: { width: 116, height: 150, objectFit: 'cover', objectPosition: 'top', borderRadius: 10, border: '2px solid #6a5230', boxShadow: 'inset 0 0 12px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.4)', imageRendering: 'pixelated' },
+  profHeroImg: { width: 'var(--pd-profherow)', height: 'var(--pd-profheroh)', objectFit: 'cover', objectPosition: 'top', borderRadius: 10, border: `3px solid ${GOLD}`, boxShadow: '0 0 0 2px #6b4a24, inset 0 0 12px rgba(0,0,0,0.55), 0 3px 10px rgba(0,0,0,0.5)', transform: 'translate(var(--pd-profhero-x), var(--pd-profhero-y))', imageRendering: 'pixelated' },
   profStage: { fontSize: 12, fontWeight: 700, color: '#c9b596', marginTop: 4 },
   profGearRow: { display: 'flex', gap: 8, marginTop: 12, width: '100%', justifyContent: 'center' },
   profGearCol: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, flex: 1, maxWidth: 96 },
