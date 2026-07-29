@@ -143,11 +143,11 @@ const MOTION_DEFAULT = {
   lunge: { boss: 25, mob: 15 },                                // 공격 시 파고드는 거리(px)
   stop: { ...DINO_STOP },                                      // 종별 정지 위치 보정(px, +면 멀리)
   size: { trex: 1.08, spino: 1.15, trike: 1.04, stego: 1.20, raptor: 0.90, anky: 1, ptera: 1.05, brachio: 1.73 },  // 종별 크기 배율
-  hero: { sz: 1, x: 0, y: 0, walkSz: 1, atkSz: 1, skillSz: {} },  // 히어로 크기·위치 (walkSz=걷기, atkSz=기본공격 중, skillSz=스킬별 {id:배율})
-  ally: { hunter: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, shaman: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, healer: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, giant: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 } },  // 동료 크기·위치·공격프레임 크기·속도
+  hero: { sz: 0.9, x: 0, y: 0, walkSz: 1, atkSz: 1, skillSz: { 1: 0.87, 2: 0.88, 18: 1.07, 20: 1.09 }, evoSz: { 0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1 } },  // 히어로 크기·위치 (walkSz=걷기, atkSz=기본공격, skillSz=스킬별{id:배율}, evoSz=진화단계별{0~5:배율})
+  ally: { hunter: { sz: 1, x: 9, y: 0, atkSz: 1, atkSpd: 1 }, shaman: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, healer: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, giant: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 } },  // 동료 크기·위치·공격프레임 크기·속도
   mob: {},                                                     // 일반몹 종별 크기·높이 { type: { sz, y } }
   boss: {},                                                    // 일반보스 종별 크기·높이 { bossIdx: { sz, y } }
-  skFx: { 1: { sz: 1, spd: 1, fly: 1 }, 2: { sz: 1, spd: 1, fly: 1 }, 16: { sz: 1, spd: 1, fly: 1 }, 18: { sz: 1, spd: 1, fly: 1 }, 20: { sz: 1, spd: 1, fly: 1 } },  // 스킬 이펙트: sz 크기 / spd 프레임속도 / fly 비행속도(투사체)
+  skFx: { 1: { sz: 0.82, spd: 1.5, fly: 1.25 }, 2: { sz: 0.74, spd: 0.3, fly: 1.5 }, 16: { sz: 1, spd: 1, fly: 1 }, 18: { sz: 1, spd: 1, fly: 1 }, 20: { sz: 1, spd: 1, fly: 1 } },  // 스킬 이펙트 (18·20은 제공값 잘려서 기본값)
 }
 const MOT_FX_IDS = [1, 2, 16, 18, 20]                          // 이펙트 있는 스킬 id
 function mergeMotion(sv) {   // 저장된 모션값 + 기본값 병합 (초기 로드·클라우드 복원 공용)
@@ -157,7 +157,7 @@ function mergeMotion(sv) {   // 저장된 모션값 + 기본값 병합 (초기 �
     cd: { ...MOTION_DEFAULT.cd, ...(sv.cd || {}) }, dur: { ...MOTION_DEFAULT.dur, ...(sv.dur || {}) },
     lunge: { ...MOTION_DEFAULT.lunge, ...(sv.lunge || {}) },
     stop: { ...MOTION_DEFAULT.stop, ...(sv.stop || {}) }, size: { ...MOTION_DEFAULT.size, ...(sv.size || {}) },
-    hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}) }, mob: { ...(sv.mob || {}) }, boss: { ...(sv.boss || {}) },
+    hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}), evoSz: { ...MOTION_DEFAULT.hero.evoSz, ...((sv.hero || {}).evoSz || {}) } }, mob: { ...(sv.mob || {}) }, boss: { ...(sv.boss || {}) },
     ally: { hunter: { ...MOTION_DEFAULT.ally.hunter, ...((sv.ally || {}).hunter || {}) }, shaman: { ...MOTION_DEFAULT.ally.shaman, ...((sv.ally || {}).shaman || {}) }, healer: { ...MOTION_DEFAULT.ally.healer, ...((sv.ally || {}).healer || {}) }, giant: { ...MOTION_DEFAULT.ally.giant, ...((sv.ally || {}).giant || {}) } },
     skFx: Object.fromEntries(MOT_FX_IDS.map(id => [id, { ...MOTION_DEFAULT.skFx[id], ...((sv.skFx || {})[id] || {}) }])),
   }
@@ -640,6 +640,7 @@ export default function App() {
   const [motAlly, setMotAlly] = useState('hunter') // 동료 선택
   const [motFx, setMotFx] = useState(1)            // 스킬 이펙트 선택(id)
   const [motHeroSk, setMotHeroSk] = useState(1)    // 히어로 모션 크기 편집용 스킬(id)
+  const [motHeroEvo, setMotHeroEvo] = useState(0)  // 히어로 크기 편집용 진화단계(0~5)
   const [, setMotTick] = useState(0)               // 편집 중 화면 몹/보스 추적 리프레시
   useEffect(() => { if (!motEdit) return; const iv = setInterval(() => setMotTick(t => t + 1), 500); return () => clearInterval(iv) }, [motEdit])
   const [copiedMot, setCopiedMot] = useState(false)
@@ -667,6 +668,10 @@ export default function App() {
     return () => { ro.disconnect(); clearInterval(id) }
   }, [])
   const [copiedUi, setCopiedUi] = useState(false)
+  const copyText = (txt) => {   // 클립보드 API 실패해도 textarea+execCommand로 폴백
+    try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(txt); return true } } catch {}
+    try { const ta = document.createElement('textarea'); ta.value = txt; ta.style.position = 'fixed'; ta.style.top = '-9999px'; document.body.appendChild(ta); ta.focus(); ta.select(); const ok = document.execCommand('copy'); document.body.removeChild(ta); return ok } catch { return false }
+  }
   const [editSel, setEditSel] = useState(null)   // 편집 모드에서 선택된 요소
   useEffect(() => { localStorage.setItem('paleoUiCfg', JSON.stringify(uiCfg)) }, [uiCfg])
   const motTsFirst = useRef(true)
@@ -1609,7 +1614,7 @@ export default function App() {
       if (im.complete && im.naturalWidth > 0) {
         const hcfg = motRef.current.hero
         const hStMul = w.skill != null ? ((hcfg.skillSz || {})[SKILLS[w.skill].id] || 1) : (hero.state === 'attack' ? (hcfg.atkSz || 1) : (hcfg.walkSz || 1))
-        const hh = a.h * (hcfg.sz || 1) * hStMul
+        const hh = a.h * (hcfg.sz || 1) * hStMul * ((hcfg.evoSz || {})[evo] ?? 1)
         const hw = hh * (im.naturalWidth / im.naturalHeight)
         ctx.save()
         // 장착 동료 (영웅 왼쪽 뒤, 겹침 허용)
@@ -2289,7 +2294,7 @@ export default function App() {
                       ? <input autoFocus value={nick} onChange={e => setNick(e.target.value.slice(0, 16))} onBlur={() => setNickEdit(false)} onKeyDown={e => { if (e.key === 'Enter') setNickEdit(false) }} style={st.profNickInput} />
                       : <><span style={st.profNickTxt}>{nick}</span><button style={st.profPencil} onClick={() => setNickEdit(true)}>✎</button></>}
                   </div>
-                  <div style={st.profHeroWrap}><img data-edit="profhero" src={heroProfileSrc(EVOS[evo].mode)} alt="" style={st.profHeroImg} /></div>
+                  <div data-edit="profhero" style={st.profHeroWrap}><img src={heroProfileSrc(EVOS[evo].mode)} alt="" style={st.profHeroImg} /></div>
                   <div style={st.profStage}>{EVOS[evo].name}</div>
                   <div style={st.profGearRow}>
                     {EQUIP_CATS.map(cat => {
@@ -2877,6 +2882,17 @@ export default function App() {
 
           {motCat === 'hero' && (<>
             <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>히어로 크기·위치 (전체)</div>
+            <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>진화단계별 크기 (전체 크기에 곱해짐 — 단계마다 다르게)</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
+              {EVOS.map((ev, i) => (
+                <button key={i} onClick={() => setMotHeroEvo(i)}
+                  style={{ padding: '3px 7px', fontSize: 10, borderRadius: 5, border: `1px solid ${i === motHeroEvo ? GOLD : '#4a3a22'}`,
+                    background: i === motHeroEvo ? 'linear-gradient(180deg,#d4872e,#a85f1f)' : '#2c2013', color: i === motHeroEvo ? '#fff' : '#cbb89a' }}
+                >{i}단계{i === evo ? '●' : ''}</button>
+              ))}
+            </div>
+            {row(`${motHeroEvo}단계 크기`, (M.hero.evoSz || {})[motHeroEvo] ?? 1, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, evoSz: { ...(M.hero.evoSz || {}), [motHeroEvo]: v } } }))}
+            <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
             {row('전체 크기', M.hero.sz, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, sz: v } }))}
             {row('좌우 위치', M.hero.x, -150, 150, 1, v => setMotCfg({ ...M, hero: { ...M.hero, x: v } }))}
             {row('상하 위치', M.hero.y, -150, 150, 1, v => setMotCfg({ ...M, hero: { ...M.hero, y: v } }))}
@@ -2979,9 +2995,13 @@ export default function App() {
           </>)}
 
           <div style={{ display: 'flex', gap: 6, marginTop: 8, borderTop: '1px solid #3a2a14', paddingTop: 8 }}>
-            <button onClick={() => { navigator.clipboard?.writeText(JSON.stringify(motCfg)); setCopiedMot(true); setTimeout(() => setCopiedMot(false), 1200) }}
-              style={{ flex: 1, padding: '9px', borderRadius: 6, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontSize: 13 }}>{copiedMot ? '복사됨! 개발자에게 전달' : '전체 값 복사'}</button>
+            <button onClick={() => { setCopiedMot(copyText(JSON.stringify({ motion: motCfg, ui: uiCfg }))); setTimeout(() => setCopiedMot(false), 1500) }}
+              style={{ flex: 1, padding: '9px', borderRadius: 6, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontSize: 13 }}>{copiedMot ? '복사됨! (UI+모션)' : 'UI+모션 값 복사'}</button>
             <button onClick={() => setMotCfg(JSON.parse(JSON.stringify(MOTION_DEFAULT)))} style={{ padding: '9px 12px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontSize: 13 }}>초기화</button>
+          </div>
+          <div style={{ fontSize: 10, color: '#8a7758', marginTop: 6 }}>버튼이 안 되면 아래 칸 눌러 전체선택→복사:</div>
+          <textarea readOnly onClick={e => e.target.select()} value={JSON.stringify({ motion: motCfg, ui: uiCfg })} style={{ width: '100%', height: 44, marginTop: 3, fontSize: 9, background: '#1a1206', color: '#c9b596', border: '1px solid #4a3822', borderRadius: 5, resize: 'none', boxSizing: 'border-box' }} />
+          <div style={{ marginTop: 6 }}>
             <button onClick={() => setMotEdit(false)} style={{ padding: '9px 12px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontSize: 13 }}>닫기</button>
           </div>
         </div>
@@ -3026,8 +3046,12 @@ export default function App() {
             </div>
           })()}
           <div style={{ display: 'flex', gap: 6, marginTop: 8, borderTop: '1px solid #3a2a14', paddingTop: 8 }}>
-            <button onClick={() => { navigator.clipboard?.writeText(JSON.stringify(uiCfg)); setCopiedUi(true); setTimeout(() => setCopiedUi(false), 1200) }} style={{ flex: 1, padding: '9px', borderRadius: 6, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontSize: 13 }}>{copiedUi ? '복사됨! 개발자에게 전달' : '전체 값 복사'}</button>
+            <button onClick={() => { setCopiedUi(copyText(JSON.stringify({ motion: motCfg, ui: uiCfg }))); setTimeout(() => setCopiedUi(false), 1500) }} style={{ flex: 1, padding: '9px', borderRadius: 6, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontSize: 13 }}>{copiedUi ? '복사됨! (UI+모션)' : 'UI+모션 값 복사'}</button>
             <button onClick={() => { setUiCfg({ ...UI_DEFAULT }); localStorage.setItem('paleoUiTs', String(Date.now())) }} style={{ padding: '9px 12px', borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontSize: 13 }}>초기화</button>
+          </div>
+          <div style={{ fontSize: 10, color: '#8a7758', marginTop: 6 }}>버튼이 안 되면 아래 칸 눌러 전체선택→복사:</div>
+          <textarea readOnly onClick={e => e.target.select()} value={JSON.stringify({ motion: motCfg, ui: uiCfg })} style={{ width: '100%', height: 44, marginTop: 3, fontSize: 9, background: '#1a1206', color: '#c9b596', border: '1px solid #4a3822', borderRadius: 5, resize: 'none', boxSizing: 'border-box' }} />
+          <div style={{ marginTop: 6 }}>
           </div>
         </div>
       )}
@@ -3097,7 +3121,7 @@ Object.assign(UI_DEFAULT, {
   sknamefz: 12, sknameX: 0, sknameY: 0,
   skbarX: 1, skbarY: 0,
   skdiconsz: 88, skdiconX: 0, skdiconY: 0,
-  profherow: 116, profheroh: 150, profheroX: 0, profheroY: 0,
+  profherow: 116, profheroh: 150, profherozoom: 100, profheroX: 0, profheroY: 0,
   skdtitlefz: 18, skdtitleX: 0, skdtitleY: 0,
   skddescfz: 13, skddescX: 0, skddescY: 0,
   skdefffz: 15, skdeffectX: 0, skdeffectY: 0,
@@ -3121,6 +3145,57 @@ Object.assign(UI_DEFAULT, {
   advicoankyw: 142, advicoankyh: 103, advicoankyX: 6, advicoankyY: -18,
   advicopteraw: 195, advicopterah: 201, advicopteraX: 21, advicopteraY: -16,
   advicobrachiow: 135, advicobrachioh: 115, advicobrachioX: 0, advicobrachioY: -5,
+})
+// ── 사용자 확정 UI 값 (2026-07-29 반영) — 마지막에 덮어써서 우선 적용 ──
+Object.assign(UI_DEFAULT, {
+  panelbwV: 2, panelbwH: 4, rowbwV: 2, rowbwH: 19, rowmin: 38, rowgap: 7, icon: 27, name: 12, lv: 11, val: 12, costw: 35, costh: 28,
+  costfz: 14, inputw: 43, inputfz: 12, spw: 35, sph: 4, spfz: 13, tabpt: 7, tabpb: 10, tabfz: 13, navicon: 26, navpt: 10, navpb: 8,
+  avatar: 40, slotmax: 50, equipcols: 5, equipgap: 14, slotfz: 23, catfz: 13, spbarfz: 11, equipimg: 60, equiptier: 10, equipcell: 54, nickfz: 15, lvbadgefz: 12,
+  exph: 11, pillfz: 72, wavefz: 11, evoimg0: 56, evoimg1: 56, evoimg2: 56, evoimg3: 56, evoimg4: 56, evoimg5: 56, evoimg0X: 0, evoimg0Y: 1, evoimg1X: 0,
+  evoimg1Y: 1, evoimg2X: 0, evoimg2Y: 1, evoimg3X: 0, evoimg3Y: 1, evoimg4X: 0, evoimg4Y: 1, evoimg5X: 0, evoimg5Y: 1, gachacell: 62, gachafz: 10, gtierfz: 10,
+  gachaimg: 74, gainfz: 10, shoprowmin: 46, shopic: 43, shopic0: 43, shopic1: 57, shopic2: 43, shoptfz: 14, shopsubfz: 11, shopbw: 4, shopbh: 40, shopbbv: 0,
+  shopbbh: 21, shopbfz: 11, shopgem: 12, gainic: 14, gainpv: 0, gainph: 6, gbtnfz: 13, gbtnpw: 16, gbtnph: 10, pbsz: 30, wjfz: 13, caslot: 81,
+  caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 169, bth: 28, bhpw: 172, bhph: 30, pmw: 70, pmh: 23, pmfz: 11, pgw: 70,
+  pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 39, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
+  avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: -1, pillY: 2, iconX: -3, iconY: 1,
+  panelX: 0, panelY: 0, rowX: 0, rowY: -7, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0, spX: 0, spY: 0,
+  slotX: 23, slotY: 8, catX: 21, catY: -5, spbarX: 20, spbarY: 1, equipX: -4, equipY: -3, spbarAX: 18, spbarAY: 12, spbarBX: 18, spbarBY: 0,
+  spbarCX: 19, spbarCY: -8, nickX: 0, nickY: 0, expX: 0, expY: 0, gainX: 0, gainY: 0, hpX: -1, hpY: 1, bossX: 2, bossY: -6,
+  clearX: 0, clearY: 0, waveX: -1, waveY: 0, gachaX: 0, gachaY: 0, eqtierX: -1, eqtierY: 1, eqimgX: 0, eqimgY: 0, shoprowX: 0, shoprowY: 0,
+  shopicX: 0, shopicY: 0, shopic0X: 0, shopic0Y: 0, shopic1X: 0, shopic1Y: 0, shopic2X: 0, shopic2Y: 0, shoptX: 0, shoptY: 0, shopsubX: 0, shopsubY: 0,
+  shopbX: -2, shopbY: 0, shopbtX: 0, shopbtY: 0, shopgemX: 0, shopgemY: 0, gainicX: 0, gainicY: 0, gaintX: 0, gaintY: 0, gbtnX: 0, gbtnY: 0,
+  gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0,
+  hambX: 1, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: 0, bhpX: 0, bhpY: 0, pbX: 0, pbY: 0, wjX: 0, wjY: 0,
+  caslotX: 3, caslotY: 16, caimgX: 0, caimgY: 0, canameX: 0, canameY: 0, catabX: 15, catabY: 14, cabtnX: 0, cabtnY: 0, wtitleX: 0, wtitleY: 1,
+  diaX: 0, diaY: 0, btextX: 0, btextY: 7, trsz: 35, offw: 322, offtfz: 14, offnfz: 13, offiw: 56, offih: 50, offgap: 9, offic: 24,
+  offifz: 11, offrfz: 11, offbtw: 135, offbth: 51, offbfz: 14, offclw: 100, offclh: 50, offcfz: 15, trX: -3, trY: 14, offtX: -1, offtY: 66,
+  offnX: 1, offnY: 76, offitX: -29, offitY: 80, offitiX: 0, offitiY: 6, offvX: 0, offvY: 2, offrX: 0, offrY: -3, offbtX: 0, offbtY: -15,
+  offclX: 2, offclY: -15, fuseallw: 94, fuseallh: 26, fuseallfz: 15, fuseallX: -36, fuseallY: -10, matchipic: 17, matchipfz: 13, allychipic: 15, allychipfz: 10, dtabh: 40,
+  dtabfz: 15, dgradefz: 14, dtitlefz: 17, darrowfz: 26, diconsz: 92, dtierfz: 12, dstatfz: 14, denhh: 48, denhfz: 14, denhic: 22, dequiph: 48, dequipfz: 15,
+  dfuseh: 50, dfusefz: 17, dstepsz: 46, dstepfz: 20, skicon: 120, skiconX: 0, skiconY: 0, slicon: 100, sliconX: 0, sliconY: 0, advbw: 40, advbh: 20,
+  advbfz: 10, advww: 301, advwh: 400, advmonkfz: 15, advmonvfz: 13, advregkfz: 15, advregvfz: 13, advrewkfz: 15, advrewvfz: 14, advrewic: 17, advibw: 120, advibh: 106,
+  adviw: 100, advih: 88, advmbw: 116, advmbh: 48, advrbw: 115, advrbh: 51, advwbw: 247, advwbh: 38, advsw: 249, advsh: 71, advsfz: 17, advbarw: 205,
+  advbarh: 19, advew: 93, adveh: 34, advefz: 11, advcw: 93, advch: 35, advcfz: 11, advwinX: 0, advwinY: 0, adviconX: 0, adviconY: 0, adviconbX: 12,
+  adviconbY: 0, advmonbX: 0, advmonbY: 0, advregbX: 0, advregbY: 0, advrewbX: 1, advrewbY: 29, advsignX: 0, advsignY: 0, advsigntX: 0, advsigntY: -6, advbarX: 0,
+  advbarY: -7, advmonkX: -1, advmonkY: 2, advmonvX: -1, advmonvY: 2, advregkX: -3, advregkY: 2, advregvX: -4, advregvY: 2, advrewkX: -28, advrewkY: 0, advrewdX: 0,
+  advrewdY: -1, advrewmX: 0, advrewmY: -1, adventerX: 0, adventerY: 4, advcloseX: 0, advcloseY: 4, advtxt0X: 47, advtxt0Y: 1, advtxt1X: 39, advtxt1Y: 1, advtxt2X: 43,
+  advtxt2Y: 2, advtxt3X: 39, advtxt3Y: 1, advtxt4X: 50, advtxt4Y: 1, advtxt5X: 51, advtxt5Y: 2, advtxt6X: 50, advtxt6Y: 2, advtxt7X: 47, advtxt7Y: 2, advbtn0X: 172,
+  advbtn0Y: -13, advbtn1X: 251, advbtn1Y: 0, advbtn2X: 326, advbtn2Y: -5, advbtn3X: 200, advbtn3Y: 27, advbtn4X: 66, advbtn4Y: 11, advbtn5X: 121, advbtn5Y: 4, advbtn6X: 305,
+  advbtn6Y: 36, advbtn7X: 188, advbtn7Y: 0, mailsz: 26, questsz: 39, mailboxX: 0, mailboxY: 0, questX: 9, questY: -7, matchipX: 23, matchipY: -14, allymatX: -19,
+  allymatY: 14, dtabX: 0, dtabY: 0, dtitleX: 0, dtitleY: 0, darrowX: 0, darrowY: 0, diconX: 0, diconY: 0, dstatX: 0, dstatY: 0, denhX: 0,
+  denhY: 0, dequipX: 0, dequipY: 0, dfusebtnX: 0, dfusebtnY: 0, dstepX: 0, dstepY: 0, skqbarw: 194, skqbarX: 153, skqbarY: 39, skqslotsz: 29, skqsetw: 16,
+  skqseth: 19, skqsetfz: 8, skqsetX: 149, skqsetY: 46, skhtfz: 14, skhtitleX: 25, skhtitleY: 9, skfusew: 54, skfuseh: 20, skfusefz: 12, skfuseX: -24, skfuseY: 11,
+  sklearnw: 60, sklearnh: 20, sklearnfz: 11, sklearnX: -24, sklearnY: 11, skcellsz: 49, skcellgap: 38, skcellrgap: 0, skcellX: -1, skcellY: -5, skimgsz: 46, skimgX: 0,
+  skimgY: 0, sknamefz: 12, sknameX: 0, sknameY: 0, skbarX: 1, skbarY: 0, skdiconsz: 88, skdiconX: 0, skdiconY: 0, profherow: 116, profheroh: 150, profheroX: 0,
+  profheroY: 0, skdtitlefz: 18, skdtitleX: 0, skdtitleY: 0, skddescfz: 13, skddescX: 0, skddescY: 0, skdefffz: 15, skdeffectX: 0, skdeffectY: 0, skdstatfz: 14, skdstatX: 0,
+  skdstatY: 0, skdautofz: 12, skdautoX: 0, skdautoY: 0, skdbtnh: 48, skdbtnfz: 15, skdenhX: 0, skdenhY: 0, skdequipX: 0, skdequipY: 0, qww: 340, qwh: 540,
+  qwinX: 0, qwinY: 0, qtitlefz: 20, qtitleX: 0, qtitleY: 0, qclsz: 30, qcloseX: 0, qcloseY: 0, qtabw: 92, qtabh: 30, qtabfz: 12, qtabX: 0,
+  qtabY: 0, qrowh: 64, qrowX: 0, qrowY: 0, qiconsz: 40, qiconX: 0, qiconY: 0, qnamefz: 14, qnameX: 0, qnameY: 0, qbarw: 150, qbarh: 14,
+  qbarX: 0, qbarY: 0, qbarfz: 10, qbartX: 0, qbartY: 0, qreww: 46, qrewh: 37, qrewX: 3, qrewY: 0, qrewisz: 18, qrewiX: 0, qrewiY: 2,
+  qrewvfz: 12, qrewvX: 1, qrewvY: 1, qlvfz: 7, qlvX: -3, qlvY: -6, advicotrexw: 141, advicotrexh: 254, advicotrexX: -3, advicotrexY: 0, advicospinow: 131, advicospinoh: 97,
+  advicospinoX: 5, advicospinoY: -7, advicotrikew: 133, advicotrikeh: 93, advicotrikeX: 6, advicotrikeY: 0, advicostegow: 131, advicostegoh: 105, advicostegoX: 0, advicostegoY: -9, advicoraptorw: 302, advicoraptorh: 92,
+  advicoraptorX: -11, advicoraptorY: -5, advicoankyw: 142, advicoankyh: 103, advicoankyX: 6, advicoankyY: -18, advicopteraw: 195, advicopterah: 201, advicopteraX: 21, advicopteraY: -16, advicobrachiow: 135, advicobrachioh: 115,
+  advicobrachioX: 0, advicobrachioY: -5,
 })
 const EDIT_GROUPS = {
   avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
@@ -3257,7 +3332,7 @@ Object.assign(EDIT_GROUPS, {
   skname: { label: '스킬 이름', size: ['sknamefz'], pos: 'skname' },
   skbar: { label: '스킬 강화바', size: [], pos: 'skbar' },
   skdicon: { label: '상세 아이콘', size: ['skdiconsz'], pos: 'skdicon' },
-  profhero: { label: '프로필 사진', size: ['profherow', 'profheroh'], pos: 'profhero' },
+  profhero: { label: '프로필 사진(틀+확대)', size: ['profherow', 'profheroh', 'profherozoom'], pos: 'profhero' },
   skdtitle: { label: '상세 제목', size: ['skdtitlefz'], pos: 'skdtitle' },
   skddesc: { label: '상세 설명', size: ['skddescfz'], pos: 'skddesc' },
   skdeffect: { label: '상세 효과칸', size: ['skdefffz'], pos: 'skdeffect' },
@@ -3303,7 +3378,7 @@ Object.assign(UI_LABELS, {
   skcellsz: '틀 크기', skcellgap: '가로 간격', skcellrgap: '세로 간격', skimgsz: '그림 크기',
   sknamefz: '이름 글자', skplusfz: '뱃지 글자',
   skdiconsz: '아이콘 크기', skdtitlefz: '제목 글자', skddescfz: '설명 글자',
-  profherow: '사진 너비', profheroh: '사진 높이',
+  profherow: '틀 너비', profheroh: '틀 높이', profherozoom: '사진 확대%',
   skdefffz: '효과 글자', skdstatfz: '스탯 글자', skdautofz: 'AUTO 글자', skdbtnh: '버튼 높이', skdbtnfz: '버튼 글자',
   qww: '창 너비', qwh: '창 높이', qtitlefz: '제목 글자', qclsz: '버튼 크기',
   qtabw: '탭 너비', qtabh: '탭 높이', qtabfz: '탭 글자', qrowh: '행 높이',
@@ -3321,7 +3396,7 @@ const uiVars = c => `:root{
 --pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
 ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg${i}-x:${c['evoimg' + i + 'X']}px;--pd-evoimg${i}-y:${c['evoimg' + i + 'Y']}px;`).join('')}--pd-slotfz:${c.slotfz}px;
---pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-profherow:${c.profherow}px;--pd-profheroh:${c.profheroh}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;
+--pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-profherow:${c.profherow}px;--pd-profheroh:${c.profheroh}px;--pd-profherozoom:${c.profherozoom};--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;
 ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k}h:${c['advico' + k + 'h']}px;--pd-advico${k}-x:${c['advico' + k + 'X']}px;--pd-advico${k}-y:${c['advico' + k + 'Y']}px;`).join('')}
 --pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
 --pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
@@ -3375,8 +3450,8 @@ const st = {
   profNickTxt: { fontSize: 15, fontWeight: 700, color: '#fff5df' },
   profPencil: { padding: '2px 6px', fontSize: 13, color: '#c9b596', border: '1px solid #5a4630', borderRadius: 6, background: 'rgba(0,0,0,0.3)', cursor: 'pointer' },
   profNickInput: { width: 200, height: 28, fontSize: 15, fontWeight: 700, textAlign: 'center', color: '#fff', background: 'rgba(0,0,0,0.5)', border: '1px solid #d09340', borderRadius: 6, outline: 'none' },
-  profHeroWrap: { display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 10 },
-  profHeroImg: { width: 'var(--pd-profherow)', height: 'var(--pd-profheroh)', objectFit: 'cover', objectPosition: 'top', borderRadius: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.4)', transform: 'translate(var(--pd-profhero-x), var(--pd-profhero-y))', imageRendering: 'pixelated' },
+  profHeroWrap: { width: 'var(--pd-profherow)', height: 'var(--pd-profheroh)', margin: '10px auto 0', borderRadius: 10, overflow: 'hidden', border: `3px solid ${GOLD}`, boxShadow: '0 0 0 2px #6b4a24, 0 3px 10px rgba(0,0,0,0.5)', background: '#1a0f06', position: 'relative' },
+  profHeroImg: { width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', transform: 'translate(var(--pd-profhero-x), var(--pd-profhero-y)) scale(calc(var(--pd-profherozoom) / 100))', transformOrigin: 'top center', imageRendering: 'pixelated' },
   profStage: { fontSize: 12, fontWeight: 700, color: '#c9b596', marginTop: 4 },
   profGearRow: { display: 'flex', gap: 8, marginTop: 12, width: '100%', justifyContent: 'center' },
   profGearCol: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, flex: 1, maxWidth: 96 },
