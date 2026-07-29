@@ -670,10 +670,14 @@ export default function App() {
   const [editSel, setEditSel] = useState(null)   // 편집 모드에서 선택된 요소
   useEffect(() => { localStorage.setItem('paleoUiCfg', JSON.stringify(uiCfg)) }, [uiCfg])
   const motTsFirst = useRef(true)
+  const motPushT = useRef(null)
   useEffect(() => {
     localStorage.setItem('paleoMotion', JSON.stringify(motCfg))
     if (motTsFirst.current) { motTsFirst.current = false; return }   // 마운트 로드는 편집 아님 → ts 안 찍음(안 찍어야 클라우드 편집이 안 덮임)
     localStorage.setItem('paleoMotionTs', String(Date.now()))
+    // 편집할 때마다 모션 전용 클라우드에 독립 백업 (세이브와 무관 — 세이브 저장 실패해도 모션은 보존)
+    if (motPushT.current) clearTimeout(motPushT.current)
+    motPushT.current = setTimeout(() => { if (typeof pushMotionCloud === 'function') pushMotionCloud() }, 2500)
   }, [motCfg])
   const [offReward, setOffReward] = useState(null) // 오프라인 보상 대기(pending)
   const [offOpen, setOffOpen] = useState(false)    // 오프라인 보상 창 열림
@@ -1903,14 +1907,22 @@ export default function App() {
         data: raw,
         ui: localStorage.getItem('paleoUiCfg') || null,
         uiTs: Number(localStorage.getItem('paleoUiTs') || 0),
-        motion: localStorage.getItem('paleoMotion') || null,
-        motionTs: Number(localStorage.getItem('paleoMotionTs') || 0),
         ts: sv.ts || 0,
         wave: sv.wave || 0,
       }
       await setDoc(doc(fbDb, 'paleoSaves', fbAuth.currentUser.uid), payload)
+      await pushMotionCloud()   // 모션도 함께(전용 doc)
       setCloudMsg('저장됨 ' + new Date().toLocaleTimeString())
     } catch (e) { setCloudMsg('저장 실패: ' + (e.code || e.message)) }
+  }
+  async function pushMotionCloud() {   // 모션 전용 클라우드 백업 (세이브와 독립)
+    if (!FB_ON || !fbAuth.currentUser) return
+    try {
+      await setDoc(doc(fbDb, 'paleoMotion', fbAuth.currentUser.uid), {
+        motion: localStorage.getItem('paleoMotion') || null,
+        motionTs: Number(localStorage.getItem('paleoMotionTs') || 0),
+      })
+    } catch {}
   }
   useEffect(() => {
     if (!FB_ON) return
@@ -1934,14 +1946,21 @@ export default function App() {
           localStorage.setItem('paleoUiTs', String(cloud.uiTs || 0))
           try { const o = JSON.parse(cloudUiStr); setUiCfg({ ...UI_DEFAULT, ...Object.fromEntries(Object.entries(o).filter(([k]) => k in UI_DEFAULT)) }) } catch {}
         }
-        // 모션 편집값: 동일 처리
-        const cloudMotionStr = cloud ? (typeof cloud.motion === 'string' ? cloud.motion : (cloud.motion ? JSON.stringify(cloud.motion) : null)) : null
-        const localMotionTs = Number(localStorage.getItem('paleoMotionTs') || 0)
-        if (cloudMotionStr && (cloud.motionTs || 0) > localMotionTs) {
-          localStorage.setItem('paleoMotion', cloudMotionStr)
-          localStorage.setItem('paleoMotionTs', String(cloud.motionTs || 0))
-          try { setMotCfg(mergeMotion(JSON.parse(cloudMotionStr))) } catch {}
-        }
+        // 모션 편집값: 전용 doc에서 복원 (편집시각이 로컬보다 최신일 때만 적용 → 옛 값이 최신 로컬을 덮지 않음)
+        try {
+          const msnap = await getDoc(doc(fbDb, 'paleoMotion', u.uid))
+          if (msnap.exists()) {
+            const md = msnap.data()
+            const localMotionTs = Number(localStorage.getItem('paleoMotionTs') || 0)
+            if (md.motion && (md.motionTs || 0) > localMotionTs) {
+              localStorage.setItem('paleoMotion', md.motion)
+              localStorage.setItem('paleoMotionTs', String(md.motionTs || 0))
+              setMotCfg(mergeMotion(JSON.parse(md.motion)))
+            } else if (!md.motion || (md.motionTs || 0) < localMotionTs) {
+              pushMotionCloud()   // 로컬이 더 최신이면 클라우드 갱신
+            }
+          } else { pushMotionCloud() }
+        } catch {}
         // 진행도 동기화: 저장 시각(ts) 최신쪽 채택 (init.ts=로드시점 원래값과 비교). ts 둘 다 없으면 웨이브 폴백
         const bootTs = init.ts || 0
         const cloudNewer = (cloudTs !== 0 || bootTs !== 0) ? cloudTs > bootTs : cloudWave > (local?.wave || 0)
@@ -1957,9 +1976,9 @@ export default function App() {
   }, [])
   useEffect(() => {
     if (!FB_ON) return
-    const iv = setInterval(pushCloud, 15000)   // 60초→15초: 기기 전환 시 클라우드 최신화
-    const onVis = () => { if (document.visibilityState === 'hidden') pushCloud() }
-    const onHide = () => pushCloud()            // 페이지 이탈/전환 즉시 저장 (모바일 Safari는 pagehide가 신뢰성 높음)
+    const iv = setInterval(() => { pushCloud(); pushMotionCloud() }, 15000)   // 60초→15초: 기기 전환 시 클라우드 최신화
+    const onVis = () => { if (document.visibilityState === 'hidden') { pushCloud(); pushMotionCloud() } }
+    const onHide = () => { pushCloud(); pushMotionCloud() }            // 페이지 이탈/전환 즉시 저장 (모바일 Safari는 pagehide가 신뢰성 높음)
     document.addEventListener('visibilitychange', onVis)
     window.addEventListener('pagehide', onHide)
     window.addEventListener('beforeunload', onHide)
@@ -1981,8 +2000,7 @@ export default function App() {
       localStorage.setItem(SAVE_KEY, saveStr)                                        // 웨이브 등 진행도
       const uiStr = typeof cloud.ui === 'string' ? cloud.ui : (cloud.ui ? JSON.stringify(cloud.ui) : null)
       if (uiStr) { localStorage.setItem('paleoUiCfg', uiStr); localStorage.setItem('paleoUiTs', String(cloud.uiTs || Date.now())) }         // UI 배치
-      const motStr = typeof cloud.motion === 'string' ? cloud.motion : (cloud.motion ? JSON.stringify(cloud.motion) : null)
-      if (motStr) { localStorage.setItem('paleoMotion', motStr); localStorage.setItem('paleoMotionTs', String(cloud.motionTs || Date.now())) }   // 모션 편집값
+      // 모션은 전용 doc에서 시각 비교로만 동기화 → "불러오기"는 모션을 덮지 않음(최신 모션 보호)
       location.reload()
     } catch (e) { setCloudMsg('불러오기 실패: ' + (e.code || e.message)) }
   }
@@ -3358,7 +3376,7 @@ const st = {
   profPencil: { padding: '2px 6px', fontSize: 13, color: '#c9b596', border: '1px solid #5a4630', borderRadius: 6, background: 'rgba(0,0,0,0.3)', cursor: 'pointer' },
   profNickInput: { width: 200, height: 28, fontSize: 15, fontWeight: 700, textAlign: 'center', color: '#fff', background: 'rgba(0,0,0,0.5)', border: '1px solid #d09340', borderRadius: 6, outline: 'none' },
   profHeroWrap: { display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 10 },
-  profHeroImg: { width: 'var(--pd-profherow)', height: 'var(--pd-profheroh)', objectFit: 'cover', objectPosition: 'top', borderRadius: 10, border: `3px solid ${GOLD}`, boxShadow: '0 0 0 2px #6b4a24, inset 0 0 12px rgba(0,0,0,0.55), 0 3px 10px rgba(0,0,0,0.5)', transform: 'translate(var(--pd-profhero-x), var(--pd-profhero-y))', imageRendering: 'pixelated' },
+  profHeroImg: { width: 'var(--pd-profherow)', height: 'var(--pd-profheroh)', objectFit: 'cover', objectPosition: 'top', borderRadius: 10, boxShadow: '0 2px 8px rgba(0,0,0,0.4)', transform: 'translate(var(--pd-profhero-x), var(--pd-profhero-y))', imageRendering: 'pixelated' },
   profStage: { fontSize: 12, fontWeight: 700, color: '#c9b596', marginTop: 4 },
   profGearRow: { display: 'flex', gap: 8, marginTop: 12, width: '100%', justifyContent: 'center' },
   profGearCol: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, flex: 1, maxWidth: 96 },
