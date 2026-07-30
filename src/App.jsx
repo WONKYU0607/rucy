@@ -146,13 +146,14 @@ const MOTION_DEFAULT = {
   lunge: { boss: 25, mob: 15 },                                // 공격 시 파고드는 거리(px)
   stop: { ...DINO_STOP },                                      // 종별 정지 위치 보정(px, +면 멀리)
   size: { trex: 1.08, spino: 1.15, trike: 1.04, stego: 1.20, raptor: 0.90, anky: 1, ptera: 1.05, brachio: 1.73 },  // 종별 크기 배율
-  hero: { sz: 0.9, x: 0, y: 0, walkSz: 1, atkSz: 1, skillSz: { 1: 0.87, 2: 0.88, 18: 1.07, 20: 1.09 }, evoSz: { 0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1 } },  // 히어로 크기·위치 (walkSz=걷기, atkSz=기본공격, skillSz=스킬별{id:배율}, evoSz=진화단계별{0~5:배율})
+  hero: { sz: 0.9, x: 0, y: 0, walkSz: { 0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1 }, atkSz: { 0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1 }, skillSz: { 1: 0.87, 2: 0.88, 18: 1.07, 20: 1.09 }, evoSz: { 0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1 } },  // walkSz(걷기)/atkSz(기본공격)/evoSz(전체) 모두 진화단계별{0~5}, skillSz=스킬별{id:배율}
   ally: { hunter: { sz: 1, x: 9, y: 0, atkSz: 1, atkSpd: 1 }, shaman: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, healer: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, giant: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 } },  // 동료 크기·위치·공격프레임 크기·속도
   mob: {},                                                     // 일반몹 종별 크기·높이 { type: { sz, y } }
   boss: {},                                                    // 일반보스 종별 크기·높이 { bossIdx: { sz, y } }
   skFx: { 1: { sz: 0.82, spd: 1.5, fly: 1.25 }, 2: { sz: 0.74, spd: 0.3, fly: 1.5 }, 16: { sz: 1, spd: 1, fly: 1 }, 18: { sz: 1, spd: 1, fly: 1 }, 20: { sz: 1, spd: 1, fly: 1 } },  // 스킬 이펙트 (18·20은 제공값 잘려서 기본값)
 }
 const MOT_FX_IDS = [1, 2, 16, 18, 20]                          // 이펙트 있는 스킬 id
+const perStage = (v, def) => typeof v === 'number' ? { 0: v, 1: v, 2: v, 3: v, 4: v, 5: v } : { ...def, ...(v || {}) }   // 옛 전역 숫자값 → 전 단계 동일값으로 마이그레이션
 function mergeMotion(sv) {   // 저장된 모션값 + 기본값 병합 (초기 로드·클라우드 복원 공용)
   sv = sv || {}
   return {
@@ -160,7 +161,7 @@ function mergeMotion(sv) {   // 저장된 모션값 + 기본값 병합 (초기 �
     cd: { ...MOTION_DEFAULT.cd, ...(sv.cd || {}) }, dur: { ...MOTION_DEFAULT.dur, ...(sv.dur || {}) },
     lunge: { ...MOTION_DEFAULT.lunge, ...(sv.lunge || {}) },
     stop: { ...MOTION_DEFAULT.stop, ...(sv.stop || {}) }, size: { ...MOTION_DEFAULT.size, ...(sv.size || {}) },
-    hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}), evoSz: { ...MOTION_DEFAULT.hero.evoSz, ...((sv.hero || {}).evoSz || {}) } }, mob: { ...(sv.mob || {}) }, boss: { ...(sv.boss || {}) },
+    hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}), evoSz: { ...MOTION_DEFAULT.hero.evoSz, ...((sv.hero || {}).evoSz || {}) }, walkSz: perStage((sv.hero || {}).walkSz, MOTION_DEFAULT.hero.walkSz), atkSz: perStage((sv.hero || {}).atkSz, MOTION_DEFAULT.hero.atkSz) }, mob: { ...(sv.mob || {}) }, boss: { ...(sv.boss || {}) },
     ally: { hunter: { ...MOTION_DEFAULT.ally.hunter, ...((sv.ally || {}).hunter || {}) }, shaman: { ...MOTION_DEFAULT.ally.shaman, ...((sv.ally || {}).shaman || {}) }, healer: { ...MOTION_DEFAULT.ally.healer, ...((sv.ally || {}).healer || {}) }, giant: { ...MOTION_DEFAULT.ally.giant, ...((sv.ally || {}).giant || {}) } },
     skFx: Object.fromEntries(MOT_FX_IDS.map(id => [id, { ...MOTION_DEFAULT.skFx[id], ...((sv.skFx || {})[id] || {}) }])),
   }
@@ -364,7 +365,7 @@ const SCROLL = 140 * SPEED                            // 전진 속도 (px/s)
 const PUNCH = { hitAt: 0.12, total: 0.3, range: 95 } // 4족 주먹질
 const THROW = { windupEnd: 0.14, releaseEnd: 0.30, total: 0.42, range: 340 }
 // 에렉투스 몽둥이: 1타 내려치기(위→아래), 2타 올려치기(아래→위) 번갈아
-const ECLUB = { total: 0.65, range: 150, hitAt: 0.55 }  // 몽둥이 내려치기 (단일 모션)
+const ECLUB = { total: 0.65, range: 150, hitAt: 0.72 }  // 몽둥이 내려치기 (erectus 3프레임/neander 2프레임 모두 마지막=내리치는 프레임에 데미지)
 const SPIN = { total: 0.6, range: 160, hitAt: 0.7 }    // 사피엔스 회전 베기 (5프레임)
 const HSLASH = { total: 0.55, range: 175, hitAt: 0.6 } // 인간 검격 (4프레임)
 const MC = m => (m === 'sapiens' ? SPIN : m === 'human' ? HSLASH : ECLUB)   // 근접 모드별 타이밍
@@ -1631,7 +1632,7 @@ export default function App() {
       const im = safeImg(key, fi)
       if (im.complete && im.naturalWidth > 0) {
         const hcfg = motRef.current.hero
-        const hStMul = w.skill != null ? ((hcfg.skillSz || {})[SKILLS[w.skill].id] || 1) : (hero.state === 'attack' ? (hcfg.atkSz || 1) : (hcfg.walkSz || 1))
+        const hStMul = w.skill != null ? ((hcfg.skillSz || {})[SKILLS[w.skill].id] || 1) : (hero.state === 'attack' ? ((hcfg.atkSz || {})[__pvEvo] ?? 1) : ((hcfg.walkSz || {})[__pvEvo] ?? 1))
         const hh = a.h * (hcfg.sz || 1) * hStMul * ((hcfg.evoSz || {})[__pvEvo] ?? 1)
         const hw = hh * (im.naturalWidth / im.naturalHeight)
         ctx.save()
@@ -2922,8 +2923,8 @@ export default function App() {
             {row('상하 위치', M.hero.y, -150, 150, 1, v => setMotCfg({ ...M, hero: { ...M.hero, y: v } }))}
             <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
             <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>모션별 크기 (전체 크기에 곱해짐)</div>
-            {row('걷기 크기', M.hero.walkSz, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, walkSz: v } }))}
-            {row('기본공격 크기', M.hero.atkSz, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, atkSz: v } }))}
+            {row(`${motHeroEvo}단계 걷기 크기`, (M.hero.walkSz || {})[motHeroEvo] ?? 1, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, walkSz: { ...(M.hero.walkSz || {}), [motHeroEvo]: v } } }))}
+            {row(`${motHeroEvo}단계 기본공격 크기`, (M.hero.atkSz || {})[motHeroEvo] ?? 1, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, atkSz: { ...(M.hero.atkSz || {}), [motHeroEvo]: v } } }))}
             <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
             <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>스킬별 히어로 모션 크기</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
