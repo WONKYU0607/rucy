@@ -68,11 +68,14 @@ const SKILL_SHEET = [
   { id: 17, n: 5, h: 133, stage: 0, title: '포효' },
   { id: 18, n: 5, h: 210, stage: 1, title: '바위치기 (강화)', charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5] } },
   { id: 20, n: 5, h: 195, stage: 1, title: '바위 회오리', charSeq: [1, 2, 3, 5], fx: { type: 'proj', fly: [4], flyScale: 0.9, yOff: 0 } },
+  { id: 21, n: 7, h: 220, stage: 1, title: '메테오', charSeq: [1, 2, 3, 4, 5, 6, 7], cd: 2, dmgMult: 3, aoe: true },   // 광역: 화면 전체(엄청 큰 사거리)
+  { id: 22, n: 4, h: 180, stage: 1, title: '전광석화', charSeq: [1, 2, 3, 4], cd: 2, dmgMult: 3 },   // 나중에 손볼 예정(킵)
+  { id: 23, n: 6, h: 180, stage: 1, title: '사신과 함께', charSeq: [1, 2, 3, 4, 2, 3, 4, 5, 6], cd: 2, dmgMult: 3, aoe: true, rangeMul: 1.5 },   // 원투-원투-어퍼컷, 기본사거리 1.5배 내 모두
   ...PASSIVE_SHEET,   // 진화 단계별 패시브 (오스트랄로~인간)
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
 // 스킬 아이콘: 해당 스킬 시트의 지정 프레임 사용 (없으면 번호 텍스트)
-const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4 }
+const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4, 21: 3, 22: 4, 23: 6 }
 const skillIconSrc = id => SKILL_ICON_FRAME[id] ? `/skill/s${id}/s${id}_${SKILL_ICON_FRAME[id]}.png` : null
 const skIcon = s => (s ? (skillIconSrc(s.id) || s.icon2 || null) : null)
 // ── 전리품 조각 (사망 드롭 → 상단 재화칸 흡수 연출) ──
@@ -227,6 +230,9 @@ const SKILL_FRAME_T = {
   17: [0.15, 0.15, 0.15, 0.15, 0.15],      // (5)
   18: [0.25, 0.25],                        // 점프낙석 시전 (2)
   20: [0.15, 0.15, 0.15, 0.15],            // 토네이도 (4: 휘두르기3+복귀1)
+  21: [0.12, 0.12, 0.10, 0.10, 0.12, 0.16, 0.22],              // 메테오 (7: 충전→투척→낙하→폭발)
+  22: [0.10, 0.12, 0.12, 0.16],                                // 전광석화 (4)
+  23: [0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.15, 0.22],  // 사신과 함께 (9: 원투 원투 어퍼컷)
 }
 // 이펙트 타이밍
 const STRIKE_DUR = 0.55   // 낙뢰/낙석 이펙트 재생 시간(초) 기본값
@@ -301,7 +307,7 @@ const SKILLS = SKILL_SHEET.map(c => {
     key: 's' + c.id, id: c.id, name: c.title || ('스킬 ' + c.id), anim: 's_' + c.id, icon: String(c.id), stage: c.stage,
     stages: c.stages || null, passive: !!c.passive, icon2: c.ic || null, desc2: c.desc2 || null,
     h: c.h, fx: c.fx || null, frameEnds: ends,
-    cd: 1, cast: acc, hitAt: 0.55, dmgMult: 2, aoe: false, maxTargets: 1,
+    cd: c.cd ?? 2, cast: acc, hitAt: c.hitAt ?? 0.55, dmgMult: c.dmgMult ?? 2, aoe: c.aoe || false, rangeMul: c.rangeMul || null, maxTargets: c.maxTargets || 1,
     desc: c.n + '프레임 · 임시값',
   }
 })
@@ -646,6 +652,9 @@ export default function App() {
   const [motFx, setMotFx] = useState(1)            // 스킬 이펙트 선택(id)
   const [motHeroSk, setMotHeroSk] = useState(1)    // 히어로 모션 크기 편집용 스킬(id)
   const [motHeroEvo, setMotHeroEvo] = useState(0)  // 히어로 크기 편집용 진화단계(0~5)
+  const motHeroEvoRef = useRef(0); motHeroEvoRef.current = motHeroEvo   // 아래 3개: 게임루프가 편집중 선택단계 미리보기
+  const motEditRef = useRef(false); motEditRef.current = motEdit
+  const motCatRef = useRef('dino'); motCatRef.current = motCat
   const [, setMotTick] = useState(0)               // 편집 중 화면 몹/보스 추적 리프레시
   useEffect(() => { if (!motEdit) return; const iv = setInterval(() => setMotTick(t => t + 1), 500); return () => clearInterval(iv) }, [motEdit])
   const [copiedMot, setCopiedMot] = useState(false)
@@ -1010,7 +1019,7 @@ export default function App() {
       const heroTargetX = w.bossBattle ? Math.max(HERO_X, Math.round(w.W * 0.34)) : HERO_X
       w.heroX += (heroTargetX - w.heroX) * Math.min(1, dt * 4)
       const atkRange0 = st.mode === 'quad' ? PUNCH.range : MELEE_MODES.includes(st.mode) ? MC(st.mode).range : THROW.range
-      const blocked = w.enemies.some(e => !e.dead && e.x - w.heroX < atkRange0)
+      const blocked = w.enemies.some(e => !e.dead && (e.x - w.heroX < atkRange0 || (e.stopX != null && e.x <= e.stopX + 6)))
       w._blocked = blocked
       const moving = (st.phase === 'fighting' || st.phase === 'cleared') && hero.state === 'move' && !blocked
       const scroll = moving ? SCROLL * st.mspdMult : 0
@@ -1041,6 +1050,7 @@ export default function App() {
           const estop = e.dino ? (emb.stop ?? (motRef.current.stop[e.dino] || 0)) : (emb.stop || 0)   // 좌우 정지 위치(+면 오른쪽/멀리)
           const espd = emb.spd || 1                                                       // 달려오는 속도 배율(공룡·웨이브 공통)
           const stopX = w.heroX + Math.min(atkRange - 15, 60 + e.h * szm * 0.4) + estop
+          e.stopX = stopX   // 정지위치 저장 → 멈춘 몬스터는 사거리 밖이어도 기본공격 판정(그림상 코앞인데 안닿는 문제 해결)
           if (DEBUG) e._dbgStop = stopX
           if (e.x > stopX && !(e.atkT > 0)) {
             const near = Math.min(1, Math.max(0.3, (e.x - stopX) / 55))  // 정지 전 감속
@@ -1119,7 +1129,8 @@ export default function App() {
               const xs = ts.length ? ts.map(e => e.x) : [w.heroX + 260]
               for (const x of xs) w.strikes.push({ id: sk.id, frames: sk.fx.frames, x, t: 0, dur: (STRIKE_DUR_BY[sk.id] ?? STRIKE_DUR) / ((motRef.current.skFx[sk.id] || {}).spd || 1), dmg, hitDone: false, h: sk.fx.fxH ?? sk.h })
             } else if (sk.aoe) {
-              for (const t of w.enemies) if (!t.dead) { applySkillDmg(t, dmg); if (sk.stun) t.stun = sk.stun }
+              const rng = sk.rangeMul ? atkRange * sk.rangeMul : Infinity   // rangeMul 있으면 기본사거리×배수 이내만, 없으면 화면 전체(메테오)
+              for (const t of w.enemies) if (!t.dead && t.x - w.heroX < rng) { applySkillDmg(t, dmg); if (sk.stun) t.stun = sk.stun }
             } else {
               const targets = w.enemies.filter(e => !e.dead).sort((a, b) => a.x - b.x).slice(0, sk.maxTargets || 1)
               for (const t of targets) applySkillDmg(t, dmg)
@@ -1183,7 +1194,7 @@ export default function App() {
           // 스킬 시전 중: 상태 유지, 이동/공격 정지
         } else if (hero.state === 'move') {
           if (!blocked) hero.animT += dt * SPEED * st.mspdMult   // 앞이 막히면 걷기 애니 정지
-          const target = w.enemies.find(e => !e.dead && e.x - w.heroX < atkRange)
+          const target = w.enemies.find(e => !e.dead && (e.x - w.heroX < atkRange || (e.stopX != null && e.x <= e.stopX + 6)))
           if (hero.cd <= 0 && target) {
             hero.state = 'attack'; hero.t = 0; hero.did = false
             hero.cd = st.cd
@@ -1203,14 +1214,14 @@ export default function App() {
           if (st.mode === 'quad') {
             if (!hero.did && hero.t >= PUNCH.hitAt) {
               hero.did = true
-              const t = w.enemies.find(e => !e.dead && e.x - w.heroX < PUNCH.range + 40)
+              const t = w.enemies.find(e => !e.dead && (e.x - w.heroX < PUNCH.range + 40 || (e.stopX != null && e.x <= e.stopX + 6)))
               if (t) dealDamage(t, st)
             }
             if (hero.t >= PUNCH.total) { hero.state = 'move'; hero.t = 0 }
           } else if (MELEE_MODES.includes(st.mode)) {
             const mc = MC(st.mode)
             const prog = hero.t / mc.total
-            const inRange = w.enemies.find(e => !e.dead && e.x - w.heroX < mc.range + 40)
+            const inRange = w.enemies.find(e => !e.dead && (e.x - w.heroX < mc.range + 40 || (e.stopX != null && e.x <= e.stopX + 6)))
             if (!hero.did && !inRange && prog < 0.35) {
               // 스윙 초반에 대상 소멸 → 취소 + 쿨다운 환불 (헛스윙/헛대기 방지)
               hero.state = 'move'; hero.t = 0; hero.cd = Math.min(hero.cd, 100)
@@ -1612,13 +1623,16 @@ export default function App() {
 
       // 주인공
       const hero = w.hero
-      const [key, fi] = heroAnim(hero, S.current)
+      const __heroPv = motEditRef.current && motCatRef.current === 'hero'   // 편집기 히어로탭: 선택단계 미리보기
+      const __pvEvo = __heroPv ? motHeroEvoRef.current : S.current.evo
+      const __Sp = __heroPv ? { ...S.current, mode: EVOS[__pvEvo].mode, evo: __pvEvo } : S.current
+      const [key, fi] = heroAnim(hero, __Sp)
       const a = ANIM[key]
       const im = safeImg(key, fi)
       if (im.complete && im.naturalWidth > 0) {
         const hcfg = motRef.current.hero
         const hStMul = w.skill != null ? ((hcfg.skillSz || {})[SKILLS[w.skill].id] || 1) : (hero.state === 'attack' ? (hcfg.atkSz || 1) : (hcfg.walkSz || 1))
-        const hh = a.h * (hcfg.sz || 1) * hStMul * ((hcfg.evoSz || {})[S.current.evo] ?? 1)
+        const hh = a.h * (hcfg.sz || 1) * hStMul * ((hcfg.evoSz || {})[__pvEvo] ?? 1)
         const hw = hh * (im.naturalWidth / im.naturalHeight)
         ctx.save()
         // 장착 동료 (영웅 왼쪽 뒤, 겹침 허용)
@@ -2240,10 +2254,16 @@ export default function App() {
                   AUTO<span style={{ ...st.skdAutoDot, ...(auto ? st.skdAutoDotOn : {}) }} />
                 </button>
               </div>
-              <div data-edit="skdeffect" style={st.skdEffect}>범위 <b>—</b> 이내의 적 모두에게<br />공격력의 <b style={{ color: '#f0a830' }}>{s.dmgMult * 100}%</b>로 1회 공격</div>
+              <div data-edit="skdeffect" style={st.skdEffect}>{s.aoe ? (s.rangeMul ? `기본 사거리 ${s.rangeMul}배 이내` : '화면 전체') + '의 적 모두에게' : '적 1명에게'}<br />공격력의 <b style={{ color: '#f0a830' }}>{s.dmgMult * 100}%</b>로 1회 공격</div>
               <div style={st.skdStatRow}>
                 <div data-edit="skdstat" style={st.skdStat}><span style={st.skdStatK}>필요공격수</span><span style={st.skdStatV}>—</span></div>
                 <div data-edit="skdstat" style={st.skdStat}><span style={st.skdStatK}>MP 소모</span><span style={st.skdStatV}>—</span></div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, margin: '4px 0 8px' }}>
+                <span style={{ fontSize: 12, color: '#c9b596' }}>쿨타임</span>
+                <button onClick={() => setCdConf(c => c.map((v, i) => i === skillDetail ? Math.max(0.2, +((v ?? s.cd) - 0.5).toFixed(1)) : v))} style={{ width: 30, height: 30, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#f0dfae', fontSize: 18, lineHeight: 1 }}>−</button>
+                <span style={{ fontSize: 15, fontWeight: 800, color: '#fff5df', minWidth: 52, textAlign: 'center' }}>{(cdConf[skillDetail] ?? s.cd).toFixed(1)}초</span>
+                <button onClick={() => setCdConf(c => c.map((v, i) => i === skillDetail ? +(((v ?? s.cd) + 0.5)).toFixed(1) : v))} style={{ width: 30, height: 30, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#f0dfae', fontSize: 18, lineHeight: 1 }}>+</button>
               </div>
               <div style={st.skdBtns}>
                 <button data-edit="skdenh" style={st.skdEnhBtn} onClick={() => { /* TODO: 스킬 강화 */ }}>
