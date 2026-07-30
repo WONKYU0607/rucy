@@ -137,6 +137,9 @@ const DINO_NAME = { trex: '티라노', spino: '스피노', trike: '트리케라�
 const DINO_STOP = { trex: 51, spino: 11, trike: 16, stego: 0, raptor: 2, anky: 0, ptera: 23, brachio: -21 }
 const DINO_KEYS = ['trex', 'spino', 'trike', 'stego', 'raptor', 'anky', 'ptera', 'brachio']
 
+const HERO_STAGE_ATK = ['punch', 'throw', 'eatk1', 'natk1', 'patk1', 'hmatk1']   // 진화단계(0~5) → 기본공격 스프라이트 키
+const atkFrAll = v => Object.fromEntries(HERO_STAGE_ATK.map(ak => [ak, Object.fromEntries((ANIM[ak].srcs || []).map((_, i) => [i + 1, v]))]))   // 모든 공격 프레임을 같은 배율로
+
 // ── 모션 설정: 인게임 편집기에서 실시간 조절 (localStorage 'paleoMotion') ──
 const MOTION_DEFAULT = {
   atk: DINO_ATK_T,                                            // 보스 종별 프레임 시간(초)
@@ -146,14 +149,43 @@ const MOTION_DEFAULT = {
   lunge: { boss: 25, mob: 15 },                                // 공격 시 파고드는 거리(px)
   stop: { ...DINO_STOP },                                      // 종별 정지 위치 보정(px, +면 멀리)
   size: { trex: 1.08, spino: 1.15, trike: 1.04, stego: 1.20, raptor: 0.90, anky: 1, ptera: 1.05, brachio: 1.73 },  // 종별 크기 배율
-  hero: { sz: 0.9, x: 0, y: 0, walkSz: { 0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1 }, atkSz: { 0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1 }, skillSz: { 1: 0.87, 2: 0.88, 18: 1.07, 20: 1.09 }, evoSz: { 0: 1, 1: 1, 2: 1, 3: 1, 4: 1, 5: 1 } },  // walkSz(걷기)/atkSz(기본공격)/evoSz(전체) 모두 진화단계별{0~5}, skillSz=스킬별{id:배율}
+  hero: {
+    sz: 0.94, x: 0, y: 0,
+    walkSz: { 0: 0.94, 1: 0.94, 2: 0.94, 3: 0.94, 4: 0.94, 5: 0.94 },
+    skillSz: { 1: 0.87, 2: 0.88, 13: 0.92, 15: 0.83, 17: 0.88, 18: 1.07, 20: 1.09 },
+    evoSz: { 0: 0.98, 1: 0.94, 2: 0.94, 3: 0.94, 4: 1, 5: 1 },
+    hit: { erectus: 3, neander: 2, sapiens: 5, human: 4 },     // 기본공격 데미지가 들어가는 프레임 번호(1부터). 기본=마지막(임팩트) 프레임
+    atkFrSz: atkFrAll(1.03),                                   // 기본공격 크기 = 프레임별 배율 하나로만 관리 { 스프라이트키: { 프레임번호(1부터): 배율 } }
+  },  // walkSz(걷기)·evoSz(전체)는 진화단계별{0~5}, skillSz=스킬별{id:배율}, hit=모드별 타격 프레임, atkFrSz=공격 프레임별 크기
   ally: { hunter: { sz: 1, x: 9, y: 0, atkSz: 1, atkSpd: 1 }, shaman: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, healer: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, giant: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 } },  // 동료 크기·위치·공격프레임 크기·속도
-  mob: {},                                                     // 일반몹 종별 크기·높이 { type: { sz, y } }
-  boss: {},                                                    // 일반보스 종별 크기·높이 { bossIdx: { sz, y } }
-  skFx: { 1: { sz: 0.82, spd: 1.5, fly: 1.25 }, 2: { sz: 0.74, spd: 0.3, fly: 1.5 }, 16: { sz: 1, spd: 1, fly: 1 }, 18: { sz: 1, spd: 1, fly: 1 }, 20: { sz: 1, spd: 1, fly: 1 } },  // 스킬 이펙트 (18·20은 제공값 잘려서 기본값)
+  mob: {                                                       // 일반몹 종별 크기·높이·정지·속도
+    'd:trex': { sz: 1.46, stop: -5, spd: 1.25 }, 'd:spino': { sz: 1.36 }, 'd:trike': { sz: 1.38, stop: -5 }, 'd:stego': { sz: 1.47 },
+    'd:raptor': { sz: 1.17, spd: 1.4 }, 'd:anky': { sz: 1.24, stop: 25 }, 'd:ptera': { sz: 1.3, stop: -14 }, 'd:brachio': { sz: 2 },
+    hyena: { stop: 9, spd: 1.3 }, bear: { sz: 1.16, stop: 46, spd: 1.25, y: -7 }, rhino: { stop: 34, spd: 1.2 },
+  },
+  boss: {                                                      // 보스 종별 크기·높이·정지·속도
+    'd:trex': { stop: 53 }, 'd:spino': { sz: 1.26, spd: 1.5 }, 'd:trike': { sz: 1.08 }, 'd:stego': { y: -12, stop: -2 },
+    'd:raptor': { sz: 1.08, spd: 1.8 }, 'd:anky': { sz: 0.79 }, 'd:ptera': { spd: 1.95, stop: 18, y: -25 }, 'd:brachio': { sz: 1.6, y: -12 },
+    'c:rabbit': { sz: 1.34, y: -10, stop: 7 }, 'c:antelope': { y: -8, stop: 30 }, 'c:deer': { sz: 0.79, y: -4, stop: 34, spd: 1.35 },
+    'c:boar': { sz: 0.69, y: -5, stop: 14 }, 'c:wolf': { y: -20, stop: 23, spd: 1.4 }, 'c:hyena': { sz: 0.92, y: -13, stop: 58, spd: 1.3 },
+    'c:bear': { sz: 0.87, y: -14, stop: 67, spd: 1.35 },
+  },
+  skFx: { 1: { sz: 0.82, spd: 1.5, fly: 1.25 }, 2: { sz: 0.74, spd: 0.3, fly: 1.5 }, 16: { sz: 1, spd: 1, fly: 1 }, 18: { sz: 1.04, spd: 1.6, fly: 1 }, 20: { sz: 0.74, spd: 1.25, fly: 1 } },  // 스킬 이펙트
 }
 const MOT_FX_IDS = [1, 2, 16, 18, 20]                          // 이펙트 있는 스킬 id
 const perStage = (v, def) => typeof v === 'number' ? { 0: v, 1: v, 2: v, 3: v, 4: v, 5: v } : { ...def, ...(v || {}) }   // 옛 전역 숫자값 → 전 단계 동일값으로 마이그레이션
+// 옛 저장값의 atkSz(단계별 공격 크기)를 프레임별 값으로 이관 — 프레임 값이 이미 있으면 그대로 둠
+function mergeAtkFrSz(h) {
+  const out = { ...MOTION_DEFAULT.hero.atkFrSz, ...(h.atkFrSz || {}) }
+  const old = h.atkSz
+  if (old != null) HERO_STAGE_ATK.forEach((ak, i) => {
+    if ((h.atkFrSz || {})[ak]) return                       // 이미 프레임별로 조정한 단계는 건드리지 않음
+    const m = typeof old === 'number' ? old : (old || {})[i]
+    if (m == null) return
+    out[ak] = Object.fromEntries((ANIM[ak].srcs || []).map((_, f) => [f + 1, m]))
+  })
+  return out
+}
 function mergeMotion(sv) {   // 저장된 모션값 + 기본값 병합 (초기 로드·클라우드 복원 공용)
   sv = sv || {}
   return {
@@ -161,7 +193,8 @@ function mergeMotion(sv) {   // 저장된 모션값 + 기본값 병합 (초기 �
     cd: { ...MOTION_DEFAULT.cd, ...(sv.cd || {}) }, dur: { ...MOTION_DEFAULT.dur, ...(sv.dur || {}) },
     lunge: { ...MOTION_DEFAULT.lunge, ...(sv.lunge || {}) },
     stop: { ...MOTION_DEFAULT.stop, ...(sv.stop || {}) }, size: { ...MOTION_DEFAULT.size, ...(sv.size || {}) },
-    hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}), evoSz: { ...MOTION_DEFAULT.hero.evoSz, ...((sv.hero || {}).evoSz || {}) }, walkSz: perStage((sv.hero || {}).walkSz, MOTION_DEFAULT.hero.walkSz), atkSz: perStage((sv.hero || {}).atkSz, MOTION_DEFAULT.hero.atkSz) }, mob: { ...(sv.mob || {}) }, boss: { ...(sv.boss || {}) },
+    hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}), evoSz: { ...MOTION_DEFAULT.hero.evoSz, ...((sv.hero || {}).evoSz || {}) }, walkSz: perStage((sv.hero || {}).walkSz, MOTION_DEFAULT.hero.walkSz), skillSz: { ...MOTION_DEFAULT.hero.skillSz, ...((sv.hero || {}).skillSz || {}) }, hit: { ...MOTION_DEFAULT.hero.hit, ...((sv.hero || {}).hit || {}) }, atkFrSz: mergeAtkFrSz(sv.hero || {}) },
+    mob: { ...MOTION_DEFAULT.mob, ...(sv.mob || {}) }, boss: { ...MOTION_DEFAULT.boss, ...(sv.boss || {}) },   // 기본값(사용자 확정값) 위에 저장값 덮어쓰기
     ally: { hunter: { ...MOTION_DEFAULT.ally.hunter, ...((sv.ally || {}).hunter || {}) }, shaman: { ...MOTION_DEFAULT.ally.shaman, ...((sv.ally || {}).shaman || {}) }, healer: { ...MOTION_DEFAULT.ally.healer, ...((sv.ally || {}).healer || {}) }, giant: { ...MOTION_DEFAULT.ally.giant, ...((sv.ally || {}).giant || {}) } },
     skFx: Object.fromEntries(MOT_FX_IDS.map(id => [id, { ...MOTION_DEFAULT.skFx[id], ...((sv.skFx || {})[id] || {}) }])),
   }
@@ -370,6 +403,19 @@ const SPIN = { total: 0.6, range: 160, hitAt: 0.7 }    // 사피엔스 회전 �
 const HSLASH = { total: 0.55, range: 175, hitAt: 0.6 } // 인간 검격 (4프레임)
 const MC = m => (m === 'sapiens' ? SPIN : m === 'human' ? HSLASH : ECLUB)   // 근접 모드별 타이밍
 const MELEE_MODES = ['erectus', 'neander', 'sapiens', 'human']
+const HERO_ATK_ANIM = m => m === 'neander' ? 'natk1' : m === 'sapiens' ? 'patk1' : m === 'human' ? 'hmatk1' : 'eatk1'
+const HERO_ATK_KEY = m => m === 'quad' ? 'punch' : m === 'biped' ? 'throw' : HERO_ATK_ANIM(m)   // 편집·렌더 공용: 모드별 기본공격 스프라이트 키
+const heroAtkKeyFrames = k => ((ANIM[k] || {}).srcs || [0]).length
+const heroAtkFrames = m => ((ANIM[HERO_ATK_ANIM(m)] || {}).srcs || [0]).length
+// 근접 기본공격 타격 시점(진행률 0~1).
+// 화면 프레임은 floor(진행률 × 프레임수)로 정해지는데, 예전에는 데미지를 별개의 시간비율(hitAt)로 줘서
+// 프레임 수가 다른 모드(사피엔스 5·인간 4)에서 임팩트 프레임보다 한 프레임 먼저 데미지가 들어갔음.
+// → 이제는 타격 프레임 번호(mot.hero.hit)에서 역산해 "그 프레임이 화면에 뜨는 순간"에 정확히 들어감.
+const heroHitProg = (m, mot) => {
+  const n = heroAtkFrames(m)
+  const hf = Math.min(n, Math.max(1, (((mot || {}).hero || {}).hit || {})[m] || n))
+  return (hf - 1) / n + 0.001   // 부동소수 오차로 이전 프레임에 걸리는 것 방지
+}
 
 // ── 적 정의 ──
 const ENEMY_TYPES = {
@@ -1202,7 +1248,7 @@ export default function App() {
             // 동료 동기화: 히어로 타격까지 걸리는 실제 시간(초) → 동료 투사체가 같은 순간 명중하도록 역산에 사용
             const rate = SPEED * st.aspdMult
             if (st.mode === 'quad') w.heroHitIn = PUNCH.hitAt / rate
-            else if (MELEE_MODES.includes(st.mode)) w.heroHitIn = (MC(st.mode).total * MC(st.mode).hitAt) / rate
+            else if (MELEE_MODES.includes(st.mode)) w.heroHitIn = (MC(st.mode).total * heroHitProg(st.mode, motRef.current)) / rate
             else {
               const sx0 = w.heroX + 32, sy0 = w.groundY - 130 * 0.78
               const dd = Math.hypot(target.x - sx0, (w.groundY - target.h * 0.55) - sy0)
@@ -1227,7 +1273,7 @@ export default function App() {
               // 스윙 초반에 대상 소멸 → 취소 + 쿨다운 환불 (헛스윙/헛대기 방지)
               hero.state = 'move'; hero.t = 0; hero.cd = Math.min(hero.cd, 100)
             } else {
-              if (!hero.did && prog >= mc.hitAt) {
+              if (!hero.did && prog >= heroHitProg(st.mode, motRef.current)) {
                 hero.did = true
                 if (inRange) dealDamage(inRange, st)
               }
@@ -1469,7 +1515,7 @@ export default function App() {
           return ['punch', k]
         }
         if (MELEE_MODES.includes(st.mode)) {
-          const ak = st.mode === 'neander' ? 'natk1' : st.mode === 'sapiens' ? 'patk1' : st.mode === 'human' ? 'hmatk1' : 'eatk1'
+          const ak = HERO_ATK_ANIM(st.mode)
           const arr = ANIM[ak].srcs
           const k = Math.min(arr.length - 1, Math.floor(hero.t / MC(st.mode).total * arr.length))
           return [ak, k]
@@ -1632,7 +1678,8 @@ export default function App() {
       const im = safeImg(key, fi)
       if (im.complete && im.naturalWidth > 0) {
         const hcfg = motRef.current.hero
-        const hStMul = w.skill != null ? ((hcfg.skillSz || {})[SKILLS[w.skill].id] || 1) : (hero.state === 'attack' ? ((hcfg.atkSz || {})[__pvEvo] ?? 1) : ((hcfg.walkSz || {})[__pvEvo] ?? 1))
+        const __frMul = (((hcfg.atkFrSz || {})[key] || {})[fi + 1] ?? 1)   // 기본공격 크기 = 프레임별 배율
+        const hStMul = w.skill != null ? ((hcfg.skillSz || {})[SKILLS[w.skill].id] || 1) : (hero.state === 'attack' ? __frMul : ((hcfg.walkSz || {})[__pvEvo] ?? 1))
         const hh = a.h * (hcfg.sz || 1) * hStMul * ((hcfg.evoSz || {})[__pvEvo] ?? 1)
         const hw = hh * (im.naturalWidth / im.naturalHeight)
         ctx.save()
@@ -2114,7 +2161,7 @@ export default function App() {
     <div ref={rootRef} style={{ ...st.root, width: BASE_W, maxWidth: 'none', height: view.h, flexShrink: 0, transform: `scale(${view.s})`, transformOrigin: 'top center' }} onClickCapture={e => {
       if (splash || !uiEdit) return
       const t = e.target.closest('[data-edit]')
-      if (t) { const de = t.dataset.edit; setEditSel(de); if (de === 'treasure') setOffOpen(true); const mAdv = /^adv(btn|txt)(\d)$/.exec(de); if (mAdv) setAdvSel(CONTINENTS[+mAdv[2]]); if (!['skimg', 'skname', 'skbar', 'skcell'].includes(de)) { e.stopPropagation(); e.preventDefault() } }
+      if (t) { const de = t.dataset.edit; setEditSel(de); if (de === 'treasure') setOffOpen(true); const mAdv = /^adv(btn|txt)(\d)$/.exec(de); if (mAdv) setAdvSel(CONTINENTS[+mAdv[2]]); if (!['skimg', 'skname', 'skbar', 'skcell', 'avatar', 'avaface'].includes(de)) { e.stopPropagation(); e.preventDefault() } }
     }}>
       {splash && (
         <div style={st.splashWrap} onClick={() => setSplash(false)}>
@@ -2243,7 +2290,7 @@ export default function App() {
             <div style={st.skdBox}>
               <div style={st.skdHead}>
                 <div data-edit="skdicon" style={st.skdIconWrap}>
-                  {skIcon(s) ? <img src={skIcon(s)} alt="" style={st.skdIconImg} /> : <span style={{ fontSize: 34 }}>{s.icon}</span>}
+                  {skIcon(s) ? <img src={skIcon(s)} alt="" data-edit="skdimg" style={st.skdIconImg} /> : <span style={{ fontSize: 34 }}>{s.icon}</span>}
                   <span style={st.skdLv}>Lv.1</span>
                   <div style={st.skdMiniBar}><div style={{ ...st.skdMiniFill, width: '0%' }} /><div style={st.skdMiniTxt}>0/2</div></div>
                 </div>
@@ -2319,7 +2366,7 @@ export default function App() {
                       ? <input autoFocus value={nick} onChange={e => setNick(e.target.value.slice(0, 16))} onBlur={() => setNickEdit(false)} onKeyDown={e => { if (e.key === 'Enter') setNickEdit(false) }} style={st.profNickInput} />
                       : <><span style={st.profNickTxt}>{nick}</span><button style={st.profPencil} onClick={() => setNickEdit(true)}>✎</button></>}
                   </div>
-                  <div data-edit="profhero" style={st.profHeroWrap}><img src={heroProfileSrc(EVOS[evo].mode)} alt="" style={st.profHeroImg} /></div>
+                  <div data-edit="profhero" style={st.profHeroWrap}><img src={heroProfileSrc(EVOS[evo].mode)} alt="" data-edit="profheroimg" style={st.profHeroImg} /></div>
                   <div style={st.profStage}>{EVOS[evo].name}</div>
                   <div data-edit="profgear" style={st.profGearRow}>
                     {EQUIP_CATS.map(cat => {
@@ -2473,7 +2520,7 @@ export default function App() {
       )}
 
       <div style={st.topBar}>
-        <div data-edit="avatar" style={st.avatarWrap} onClick={() => setProfileOpen(true)}><img src={heroProfileSrc(EVOS[evo].mode)} alt="" style={st.avatarFace} /></div>
+        <div data-edit="avatar" style={st.avatarWrap} onClick={() => setProfileOpen(true)}><img src={heroProfileSrc(EVOS[evo].mode)} alt="" data-edit="avaface" style={st.avatarFace} /></div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div data-edit="nick" style={st.nickRow}>
             <span style={st.nick}>{nick}</span>
@@ -2924,7 +2971,22 @@ export default function App() {
             <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
             <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>모션별 크기 (전체 크기에 곱해짐)</div>
             {row(`${motHeroEvo}단계 걷기 크기`, (M.hero.walkSz || {})[motHeroEvo] ?? 1, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, walkSz: { ...(M.hero.walkSz || {}), [motHeroEvo]: v } } }))}
-            {row(`${motHeroEvo}단계 기본공격 크기`, (M.hero.atkSz || {})[motHeroEvo] ?? 1, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, atkSz: { ...(M.hero.atkSz || {}), [motHeroEvo]: v } } }))}
+            {MELEE_MODES.includes(EVOS[motHeroEvo].mode) && (<>
+              <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
+              <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>데미지가 들어가는 프레임 (총 {heroAtkFrames(EVOS[motHeroEvo].mode)}장, 마지막=임팩트)</div>
+              {row(`${motHeroEvo}단계 타격 프레임`, (M.hero.hit || {})[EVOS[motHeroEvo].mode] ?? heroAtkFrames(EVOS[motHeroEvo].mode), 1, heroAtkFrames(EVOS[motHeroEvo].mode), 1,
+                v => setMotCfg({ ...M, hero: { ...M.hero, hit: { ...(M.hero.hit || {}), [EVOS[motHeroEvo].mode]: v } } }))}
+            </>)}
+            {(() => {
+              const ak = HERO_ATK_KEY(EVOS[motHeroEvo].mode)
+              const n = heroAtkKeyFrames(ak)
+              return (<>
+                <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
+                <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>{motHeroEvo}단계 기본공격 크기 (프레임별)</div>
+                {Array.from({ length: n }, (_, i) => i + 1).map(f => row(`${f}번 프레임 크기`, ((M.hero.atkFrSz || {})[ak] || {})[f] ?? 1, 0.4, 2.5, 0.01,
+                  v => setMotCfg({ ...M, hero: { ...M.hero, atkFrSz: { ...(M.hero.atkFrSz || {}), [ak]: { ...((M.hero.atkFrSz || {})[ak] || {}), [f]: v } } } })))}
+              </>)
+            })()}
             <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
             <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>스킬별 히어로 모션 크기</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
@@ -3059,7 +3121,7 @@ export default function App() {
               ))}
               {g.pos && ['X', 'Y'].map(ax => {
                 const k = g.pos + ax
-                const pmax = g.pos === 'profhero' ? 200 : g.pos.startsWith('advbtn') ? 400 : (g.pos.startsWith('skq') || g.pos.startsWith('skd')) ? 240 : g.pos.startsWith('sk') ? 160 : 80
+                const pmax = g.pos.startsWith('profhero') ? 200 : g.pos.startsWith('advbtn') ? 400 : (g.pos.startsWith('skq') || g.pos.startsWith('skd')) ? 240 : g.pos.startsWith('sk') ? 160 : 80
                 return <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <span style={{ width: 92, fontSize: 12, flexShrink: 0, color: '#f0dfae', fontWeight: 700 }}>{ax === 'X' ? '← 좌우 →' : '↑ 상하 ↓'}</span>
                   <button style={nbtn} onClick={() => nudge(k, -1, -pmax, pmax)}>−</button>
@@ -3172,7 +3234,7 @@ Object.assign(UI_DEFAULT, {
   advicopteraw: 195, advicopterah: 201, advicopteraX: 21, advicopteraY: -16,
   advicobrachiow: 135, advicobrachioh: 115, advicobrachioX: 0, advicobrachioY: -5,
 })
-// ── 사용자 확정 UI 값 (2026-07-29 반영) — 마지막에 덮어써서 우선 적용 ──
+// 사용자 확정 UI 값 (2026-07-30 반영) — 마지막에 덮어써서 우선 적용
 Object.assign(UI_DEFAULT, {
   panelbwV: 2, panelbwH: 4, rowbwV: 2, rowbwH: 19, rowmin: 38, rowgap: 7, icon: 27, name: 12, lv: 11, val: 12, costw: 35, costh: 28,
   costfz: 14, inputw: 43, inputfz: 12, spw: 35, sph: 4, spfz: 13, tabpt: 7, tabpb: 10, tabfz: 13, navicon: 26, navpt: 10, navpb: 8,
@@ -3181,7 +3243,7 @@ Object.assign(UI_DEFAULT, {
   evoimg1Y: 1, evoimg2X: 0, evoimg2Y: 1, evoimg3X: 0, evoimg3Y: 1, evoimg4X: 0, evoimg4Y: 1, evoimg5X: 0, evoimg5Y: 1, gachacell: 62, gachafz: 10, gtierfz: 10,
   gachaimg: 74, gainfz: 10, shoprowmin: 46, shopic: 43, shopic0: 43, shopic1: 57, shopic2: 43, shoptfz: 14, shopsubfz: 11, shopbw: 4, shopbh: 40, shopbbv: 0,
   shopbbh: 21, shopbfz: 11, shopgem: 12, gainic: 14, gainpv: 0, gainph: 6, gbtnfz: 13, gbtnpw: 16, gbtnph: 10, pbsz: 30, wjfz: 13, caslot: 81,
-  caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 169, bth: 28, bhpw: 172, bhph: 30, pmw: 70, pmh: 23, pmfz: 11, pgw: 70,
+  caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 163, bth: 27, bhpw: 163, bhph: 27, pmw: 70, pmh: 23, pmfz: 11, pgw: 70,
   pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 39, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
   avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: -1, pillY: 2, iconX: -3, iconY: 1,
   panelX: 0, panelY: 0, rowX: 0, rowY: -7, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0, spX: 0, spY: 0,
@@ -3191,7 +3253,7 @@ Object.assign(UI_DEFAULT, {
   shopicX: 0, shopicY: 0, shopic0X: 0, shopic0Y: 0, shopic1X: 0, shopic1Y: 0, shopic2X: 0, shopic2Y: 0, shoptX: 0, shoptY: 0, shopsubX: 0, shopsubY: 0,
   shopbX: -2, shopbY: 0, shopbtX: 0, shopbtY: 0, shopgemX: 0, shopgemY: 0, gainicX: 0, gainicY: 0, gaintX: 0, gaintY: 0, gbtnX: 0, gbtnY: 0,
   gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0,
-  hambX: 1, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: 0, bhpX: 0, bhpY: 0, pbX: 0, pbY: 0, wjX: 0, wjY: 0,
+  hambX: 1, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: -9, bhpX: 0, bhpY: -14, pbX: 0, pbY: 0, wjX: 0, wjY: 0,
   caslotX: 3, caslotY: 16, caimgX: 0, caimgY: 0, canameX: 0, canameY: 0, catabX: 15, catabY: 14, cabtnX: 0, cabtnY: 0, wtitleX: 0, wtitleY: 1,
   diaX: 0, diaY: 0, btextX: 0, btextY: 7, trsz: 35, offw: 322, offtfz: 14, offnfz: 13, offiw: 56, offih: 50, offgap: 9, offic: 24,
   offifz: 11, offrfz: 11, offbtw: 135, offbth: 51, offbfz: 14, offclw: 100, offclh: 50, offcfz: 15, trX: -3, trY: 14, offtX: -1, offtY: 66,
@@ -3212,19 +3274,26 @@ Object.assign(UI_DEFAULT, {
   denhY: 0, dequipX: 0, dequipY: 0, dfusebtnX: 0, dfusebtnY: 0, dstepX: 0, dstepY: 0, skqbarw: 194, skqbarX: 153, skqbarY: 39, skqslotsz: 29, skqsetw: 16,
   skqseth: 19, skqsetfz: 8, skqsetX: 149, skqsetY: 46, skhtfz: 14, skhtitleX: 25, skhtitleY: 9, skfusew: 54, skfuseh: 20, skfusefz: 12, skfuseX: -24, skfuseY: 11,
   sklearnw: 60, sklearnh: 20, sklearnfz: 11, sklearnX: -24, sklearnY: 11, skcellsz: 49, skcellgap: 38, skcellrgap: 0, skcellX: -1, skcellY: -5, skimgsz: 46, skimgX: 0,
-  skimgY: 0, sknamefz: 12, sknameX: 0, sknameY: 0, skbarX: 1, skbarY: 0, skdiconsz: 88, skdiconX: 0, skdiconY: 0, profherow: 116, profheroh: 150, profheroX: 0,
-  profheroY: 0, skdtitlefz: 18, skdtitleX: 0, skdtitleY: 0, skddescfz: 13, skddescX: 0, skddescY: 0, skdefffz: 15, skdeffectX: 0, skdeffectY: 0, skdstatfz: 14, skdstatX: 0,
-  skdstatY: 0, skdautofz: 12, skdautoX: 0, skdautoY: 0, skdbtnh: 48, skdbtnfz: 15, skdenhX: 0, skdenhY: 0, skdequipX: 0, skdequipY: 0, qww: 340, qwh: 540,
-  qwinX: 0, qwinY: 0, qtitlefz: 20, qtitleX: 0, qtitleY: 0, qclsz: 30, qcloseX: 0, qcloseY: 0, qtabw: 92, qtabh: 30, qtabfz: 12, qtabX: 0,
-  qtabY: 0, qrowh: 64, qrowX: 0, qrowY: 0, qiconsz: 40, qiconX: 0, qiconY: 0, qnamefz: 14, qnameX: 0, qnameY: 0, qbarw: 150, qbarh: 14,
-  qbarX: 0, qbarY: 0, qbarfz: 10, qbartX: 0, qbartY: 0, qreww: 46, qrewh: 37, qrewX: 3, qrewY: 0, qrewisz: 18, qrewiX: 0, qrewiY: 2,
-  qrewvfz: 12, qrewvX: 1, qrewvY: 1, qlvfz: 7, qlvX: -3, qlvY: -6, advicotrexw: 141, advicotrexh: 254, advicotrexX: -3, advicotrexY: 0, advicospinow: 131, advicospinoh: 97,
-  advicospinoX: 5, advicospinoY: -7, advicotrikew: 133, advicotrikeh: 93, advicotrikeX: 6, advicotrikeY: 0, advicostegow: 131, advicostegoh: 105, advicostegoX: 0, advicostegoY: -9, advicoraptorw: 302, advicoraptorh: 92,
-  advicoraptorX: -11, advicoraptorY: -5, advicoankyw: 142, advicoankyh: 103, advicoankyX: 6, advicoankyY: -18, advicopteraw: 195, advicopterah: 201, advicopteraX: 21, advicopteraY: -16, advicobrachiow: 135, advicobrachioh: 115,
-  advicobrachioX: 0, advicobrachioY: -5,
+  skimgY: 0, sknamefz: 12, sknameX: 0, sknameY: 0, skbarX: 1, skbarY: 0, skdiconsz: 88, skdiconX: 0, skdiconY: 0, profherow: 116, profheroh: 150, profherozoom: 100,
+  profheroX: 0, profheroY: 0, profstatfz: 13, profcurfz: 13, profcuric: 18, profgearsz: 56, profsecfz: 13, skdtitlefz: 18, skdtitleX: 0, skdtitleY: 0, skddescfz: 13, skddescX: 0,
+  skddescY: 0, skdefffz: 15, skdeffectX: 0, skdeffectY: 0, skdstatfz: 14, skdstatX: 0, skdstatY: 0, skdautofz: 12, skdautoX: 0, skdautoY: 0, skdbtnh: 48, skdbtnfz: 15,
+  skdenhX: 0, skdenhY: 0, skdequipX: 0, skdequipY: 0, qww: 340, qwh: 540, qwinX: 0, qwinY: 0, qtitlefz: 20, qtitleX: 0, qtitleY: 0, qclsz: 30,
+  qcloseX: 0, qcloseY: 0, qtabw: 92, qtabh: 30, qtabfz: 12, qtabX: 0, qtabY: 0, qrowh: 64, qrowX: 0, qrowY: 0, qiconsz: 40, qiconX: 0,
+  qiconY: 0, qnamefz: 14, qnameX: 0, qnameY: 0, qbarw: 150, qbarh: 14, qbarX: 0, qbarY: 0, qbarfz: 10, qbartX: 0, qbartY: 0, qreww: 46,
+  qrewh: 37, qrewX: 3, qrewY: 0, qrewisz: 18, qrewiX: 0, qrewiY: 2, qrewvfz: 12, qrewvX: 1, qrewvY: 1, qlvfz: 7, qlvX: -3, qlvY: -6,
+  advicotrexw: 141, advicotrexh: 254, advicotrexX: -3, advicotrexY: 0, advicospinow: 131, advicospinoh: 97, advicospinoX: 5, advicospinoY: -7, advicotrikew: 133, advicotrikeh: 93, advicotrikeX: 6, advicotrikeY: 0,
+  advicostegow: 131, advicostegoh: 105, advicostegoX: 0, advicostegoY: -9, advicoraptorw: 302, advicoraptorh: 92, advicoraptorX: -11, advicoraptorY: -5, advicoankyw: 142, advicoankyh: 103, advicoankyX: 6, advicoankyY: -18,
+  advicopteraw: 195, advicopterah: 201, advicopteraX: 21, advicopteraY: -16, advicobrachiow: 135, advicobrachioh: 115, advicobrachioX: 0, advicobrachioY: -5,
+})
+// 틀 안쪽 그림 전용 크기·위치 키 (틀 크기와 독립)
+Object.assign(UI_DEFAULT, {
+  skdimgsz: 88, skdimgX: 0, skdimgY: 0,          // 스킬 상세창 아이콘 틀 안쪽 그림
+  avafacesz: 26, avafaceX: 0, avafaceY: 0,       // 상단 아바타 버튼 안쪽 히어로 그림
+  profheroimgX: 0, profheroimgY: 0,              // 프로필 상세창 사진 (크기는 profherozoom)
 })
 const EDIT_GROUPS = {
-  avatar: { label: '아바타', size: ['avatar'], pos: 'avatar' },
+  avatar: { label: '아바타 틀', size: ['avatar'], pos: 'avatar' },
+  avaface: { label: '아바타 안 그림', size: ['avafacesz'], pos: 'avaface' },
   pill: { label: '자원 표시', size: ['pillfz', 'wavefz'], pos: 'pill' },
   panel: { label: '패널 틀', size: ['panelbwV', 'panelbwH'], pos: 'panel' },
   tab: { label: '탭', size: ['tabpt', 'tabpb', 'tabfz'], pos: 'tab' },
@@ -3357,8 +3426,10 @@ Object.assign(EDIT_GROUPS, {
   skimg: { label: '스킬 그림', size: ['skimgsz', 'skcellgap', 'skcellrgap'], pos: 'skimg' },
   skname: { label: '스킬 이름', size: ['sknamefz'], pos: 'skname' },
   skbar: { label: '스킬 강화바', size: [], pos: 'skbar' },
-  skdicon: { label: '상세 아이콘', size: ['skdiconsz'], pos: 'skdicon' },
-  profhero: { label: '프로필 사진(틀+확대)', size: ['profherow', 'profheroh', 'profherozoom'], pos: 'profhero' },
+  skdicon: { label: '상세 아이콘 틀', size: ['skdiconsz'], pos: 'skdicon' },
+  skdimg: { label: '상세 아이콘 그림', size: ['skdimgsz'], pos: 'skdimg' },
+  profhero: { label: '프로필 사진 틀', size: ['profherow', 'profheroh'], pos: 'profhero' },
+  profheroimg: { label: '프로필 사진 그림', size: ['profherozoom'], pos: 'profheroimg' },
   profstat: { label: '상세-능력치 글자', size: ['profstatfz', 'profsecfz'] },
   profcur: { label: '상세-재화', size: ['profcurfz', 'profcuric'] },
   profgear: { label: '상세-장비칸', size: ['profgearsz'] },
@@ -3407,7 +3478,7 @@ Object.assign(UI_LABELS, {
   skcellsz: '틀 크기', skcellgap: '가로 간격', skcellrgap: '세로 간격', skimgsz: '그림 크기',
   sknamefz: '이름 글자', skplusfz: '뱃지 글자',
   skdiconsz: '아이콘 크기', skdtitlefz: '제목 글자', skddescfz: '설명 글자',
-  profherow: '틀 너비', profheroh: '틀 높이', profherozoom: '사진 확대%', profstatfz: '능력치 글자', profcurfz: '재화 글자', profcuric: '재화 아이콘', profgearsz: '장비칸 크기', profsecfz: '제목 글자',
+  profherow: '틀 너비', profheroh: '틀 높이', profherozoom: '그림 크기%', skdimgsz: '그림 크기', avafacesz: '그림 크기', profstatfz: '능력치 글자', profcurfz: '재화 글자', profcuric: '재화 아이콘', profgearsz: '장비칸 크기', profsecfz: '제목 글자',
   skdefffz: '효과 글자', skdstatfz: '스탯 글자', skdautofz: 'AUTO 글자', skdbtnh: '버튼 높이', skdbtnfz: '버튼 글자',
   qww: '창 너비', qwh: '창 높이', qtitlefz: '제목 글자', qclsz: '버튼 크기',
   qtabw: '탭 너비', qtabh: '탭 높이', qtabfz: '탭 글자', qrowh: '행 높이',
@@ -3425,7 +3496,7 @@ const uiVars = c => `:root{
 --pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
 ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg${i}-x:${c['evoimg' + i + 'X']}px;--pd-evoimg${i}-y:${c['evoimg' + i + 'Y']}px;`).join('')}--pd-slotfz:${c.slotfz}px;
---pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-profherow:${c.profherow}px;--pd-profheroh:${c.profheroh}px;--pd-profherozoom:${c.profherozoom};--pd-profstatfz:${c.profstatfz}px;--pd-profcurfz:${c.profcurfz}px;--pd-profcuric:${c.profcuric}px;--pd-profgearsz:${c.profgearsz}px;--pd-profsecfz:${c.profsecfz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;
+--pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdimgsz:${c.skdimgsz}px;--pd-avafacesz:${c.avafacesz}px;--pd-profherow:${c.profherow}px;--pd-profheroh:${c.profheroh}px;--pd-profherozoom:${c.profherozoom};--pd-profstatfz:${c.profstatfz}px;--pd-profcurfz:${c.profcurfz}px;--pd-profcuric:${c.profcuric}px;--pd-profgearsz:${c.profgearsz}px;--pd-profsecfz:${c.profsecfz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;
 ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k}h:${c['advico' + k + 'h']}px;--pd-advico${k}-x:${c['advico' + k + 'X']}px;--pd-advico${k}-y:${c['advico' + k + 'Y']}px;`).join('')}
 --pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
 --pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
@@ -3452,7 +3523,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
 --pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -3474,22 +3545,22 @@ const st = {
   profTab: { flex: 1, height: 34, fontSize: 14, fontWeight: 800, color: '#a8946e', border: '1px solid #4a3a22', borderRadius: 7, background: 'rgba(0,0,0,0.28)', cursor: 'pointer' },
   profTabOn: { color: '#2a1c0a', border: '1px solid #f0b040', background: 'linear-gradient(180deg,#ffcf5a,#e8992a)' },
   profScroll: { flex: 1, minHeight: 0, overflowY: 'auto', padding: '4px 14px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center' },
-  profLv: { fontSize: 20, fontWeight: 800, color: '#f0dfae', textShadow: '0 1px 2px #000', marginTop: 4 },
-  profNickRow: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, minHeight: 30 },
+  profLv: { flexShrink: 0, fontSize: 20, fontWeight: 800, color: '#f0dfae', textShadow: '0 1px 2px #000', marginTop: 4 },
+  profNickRow: { flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, minHeight: 30 },
   profNickTxt: { fontSize: 15, fontWeight: 700, color: '#fff5df' },
   profPencil: { padding: '2px 6px', fontSize: 13, color: '#c9b596', border: '1px solid #5a4630', borderRadius: 6, background: 'rgba(0,0,0,0.3)', cursor: 'pointer' },
   profNickInput: { width: 200, height: 28, fontSize: 15, fontWeight: 700, textAlign: 'center', color: '#fff', background: 'rgba(0,0,0,0.5)', border: '1px solid #d09340', borderRadius: 6, outline: 'none' },
-  profHeroWrap: { width: 'var(--pd-profherow)', height: 'var(--pd-profheroh)', margin: '10px auto 0', borderRadius: 10, overflow: 'hidden', border: `3px solid ${GOLD}`, boxShadow: '0 0 0 2px #6b4a24, 0 3px 10px rgba(0,0,0,0.5)', background: '#1a0f06', position: 'relative' },
-  profHeroImg: { width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', transform: 'translate(var(--pd-profhero-x), var(--pd-profhero-y)) scale(calc(var(--pd-profherozoom) / 100))', transformOrigin: 'top center', imageRendering: 'pixelated' },
-  profStage: { fontSize: 12, fontWeight: 700, color: '#c9b596', marginTop: 4 },
-  profGearRow: { display: 'flex', gap: 8, marginTop: 12, width: '100%', justifyContent: 'center' },
+  profHeroWrap: { flexShrink: 0, width: 'var(--pd-profherow)', height: 'var(--pd-profheroh)', margin: '10px auto 0', borderRadius: 10, overflow: 'hidden', transform: 'translate(var(--pd-profhero-x), var(--pd-profhero-y))', border: `3px solid ${GOLD}`, boxShadow: '0 0 0 2px #6b4a24, 0 3px 10px rgba(0,0,0,0.5)', background: '#1a0f06', position: 'relative' },
+  profHeroImg: { width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', transform: 'translate(var(--pd-profheroimg-x), var(--pd-profheroimg-y)) scale(calc(var(--pd-profherozoom) / 100))', transformOrigin: 'top center', imageRendering: 'pixelated' },
+  profStage: { flexShrink: 0, fontSize: 12, fontWeight: 700, color: '#c9b596', marginTop: 4 },
+  profGearRow: { flexShrink: 0, display: 'flex', gap: 8, marginTop: 12, width: '100%', justifyContent: 'center' },
   profGearCol: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, flex: 1, maxWidth: 96 },
   profGearLbl: { fontSize: 11, fontWeight: 700, color: '#a8946e' },
-  profGearCell: { width: 'var(--pd-profgearsz)', height: 'var(--pd-profgearsz)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #4a3a22', borderRadius: 9, background: 'rgba(0,0,0,0.4)', overflow: 'hidden', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.5)' },
+  profGearCell: { flexShrink: 0, width: 'var(--pd-profgearsz)', height: 'var(--pd-profgearsz)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #4a3a22', borderRadius: 9, background: 'rgba(0,0,0,0.4)', overflow: 'hidden', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.5)' },
   profGearImg: { width: '100%', height: '100%', objectFit: 'contain', imageRendering: 'pixelated' },
   profGearName: { fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap' },
-  profSecTitle: { alignSelf: 'stretch', fontSize: 'var(--pd-profsecfz)', fontWeight: 800, color: '#f0dfae', margin: '9px 0 5px', paddingBottom: 4, borderBottom: '1px solid #5a4630' },
-  profPanel: { alignSelf: 'stretch', display: 'flex', flexDirection: 'column', borderRadius: 8, background: 'rgba(0,0,0,0.28)', border: '1px solid #4a3822', overflow: 'hidden' },
+  profSecTitle: { flexShrink: 0, alignSelf: 'stretch', fontSize: 'var(--pd-profsecfz)', fontWeight: 800, color: '#f0dfae', margin: '9px 0 5px', paddingBottom: 4, borderBottom: '1px solid #5a4630' },
+  profPanel: { flexShrink: 0, alignSelf: 'stretch', display: 'flex', flexDirection: 'column', borderRadius: 8, background: 'rgba(0,0,0,0.28)', border: '1px solid #4a3822', overflow: 'hidden' },
   profStatRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 12px', borderBottom: '1px solid rgba(90,70,48,0.35)' },
   profStatK: { fontSize: 'var(--pd-profstatfz)', color: '#c9b596' },
   profStatV: { fontSize: 'var(--pd-profstatfz)', fontWeight: 800, color: '#fff5df' },
@@ -3501,7 +3572,7 @@ const st = {
     backgroundImage: 'url(/ui/avatar.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
-  avatarFace: { width: '66%', height: '66%', objectFit: 'cover', objectPosition: 'top', borderRadius: '50%', imageRendering: 'pixelated' },
+  avatarFace: { width: 'var(--pd-avafacesz)', height: 'var(--pd-avafacesz)', objectFit: 'cover', objectPosition: 'top', borderRadius: '50%', imageRendering: 'pixelated', transform: 'translate(var(--pd-avaface-x), var(--pd-avaface-y))' },
   nickRow: { display: 'flex', alignItems: 'center', gap: 6, transform: 'translate(var(--pd-nick-x), var(--pd-nick-y))' },
   nick: { fontSize: 'var(--pd-nickfz)', fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   lvBadge: { fontSize: 'var(--pd-lvbadgefz)', color: GOLD, background: 'linear-gradient(180deg,#3a2a14,#2a1d0d)', border: `1px solid ${GOLD_D}`, padding: '1px 8px', borderRadius: 7, flexShrink: 0 },
@@ -3764,7 +3835,7 @@ const st = {
   skdBox: { position: 'relative', width: 'min(92vw, 440px)', padding: '18px 16px 16px', borderRadius: 14, background: 'linear-gradient(180deg,#5a4126,#3a2915)', border: '3px solid #7a5a30', boxShadow: '0 10px 40px rgba(0,0,0,0.6)', boxSizing: 'border-box' },
   skdHead: { display: 'flex', alignItems: 'flex-start', gap: 12 },
   skdIconWrap: { position: 'relative', flexShrink: 0, width: 'var(--pd-skdiconsz)', height: 'var(--pd-skdiconsz)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #d0902a', borderRadius: 12, background: 'rgba(0,0,0,0.4)', overflow: 'hidden', transform: 'translate(var(--pd-skdicon-x), var(--pd-skdicon-y))' },
-  skdIconImg: { width: '100%', height: '100%', objectFit: 'cover', imageRendering: 'pixelated' },
+  skdIconImg: { width: 'var(--pd-skdimgsz)', height: 'var(--pd-skdimgsz)', objectFit: 'contain', imageRendering: 'pixelated', transform: 'translate(var(--pd-skdimg-x), var(--pd-skdimg-y))' },
   skdLv: { position: 'absolute', bottom: 14, left: 2, padding: '1px 5px', fontSize: 11, fontWeight: 800, color: '#ffe08a', background: 'rgba(20,12,4,0.9)', border: '1px solid #7a5a30', borderRadius: 5 },
   skdMiniBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 13, background: 'rgba(0,0,0,0.7)', overflow: 'hidden' },
   skdMiniFill: { position: 'absolute', left: 0, top: 0, bottom: 0, background: 'linear-gradient(180deg,#5ac0ff,#2a80c0)' },
