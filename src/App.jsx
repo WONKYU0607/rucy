@@ -432,6 +432,11 @@ for (const k in ENEMY_TYPES) {
   e.acc = Math.min(0.35, e.dmg / 200)         // 명중률 (강한 적일수록 잘 맞춤)
 }
 // 보스 20종: 10웨이브마다 순서대로 순환 (웨이브10=boss1, 20=boss2, ... 200=boss20, 210=boss1)
+// 저주받은 동물 보스 스프라이트 (일반몹과 같은 종, /mob/{key}/{key}_1~4.png, 4프레임)
+const CIMG = {}
+for (const k in ENEMY_TYPES) {
+  CIMG[k] = [1, 2, 3, 4].map(nn => { const im = new Image(); im.src = `/mob/${k}/${k}_${nn}.png`; return im })
+}
 const BOSS_TYPES = [
   { name: '저주받은 검치호', h: 125 }, { name: '뇌전 매머드', h: 145 }, { name: '암흑 고릴라', h: 135 },
   { name: '용암 곰', h: 130 }, { name: '독왕 코브라', h: 125 },
@@ -879,19 +884,18 @@ export default function App() {
 
     function spawnEnemy() {
       if (w.adv) return spawnAdvEnemy()
-      const key = WAVE_CYCLE[(w.waveNum - 1) % WAVE_CYCLE.length]
+      const key = WAVE_CYCLE[Math.floor((w.waveNum - 1) / 10) % WAVE_CYCLE.length]   // 10웨이브당 1종 (블록)
       const boss = w.bossPending && w.spawnLeft === 1
       const t = ENEMY_TYPES[key]
-      const bi = Math.floor((w.waveNum - 1) / 10) % BOSS_TYPES.length
       const sc = (1 + 0.4 * (w.waveNum - 1)) * (boss ? 12 : 1)
       w.enemies.push({
-        type: key, boss, bossIdx: bi, x: w.W + 40, hp: t.hp * sc, maxHp: t.hp * sc,
+        type: key, boss, x: w.W + 40, hp: t.hp * sc, maxHp: t.hp * sc,
         speed: t.speed * (boss ? 0.6 : 0.9 + Math.random() * 0.2),
         dmg: t.dmg * (1 + 0.1 * (w.waveNum - 1)) * (boss ? 3 : 1),
         meat: Math.floor(t.meat * (1 + 0.2 * (w.waveNum - 1))) * (boss ? 15 : 1),
         exp: Math.floor(t.exp * (1 + 0.2 * (w.waveNum - 1))) * (boss ? 15 : 1),
         acc: t.acc, eva: t.eva, air: boss ? 0 : (t.air || 0),
-        h: boss ? BOSS_TYPES[bi].h : t.h, color: t.color, cd: 0, flash: 0, animT: Math.random() * 10,
+        h: boss ? t.h * 2 : t.h, color: t.color, cd: 0, flash: 0, animT: Math.random() * 10,   // 저주보스: 일반몹 2배(모션편집기 개별조절)
         scaleV: boss ? 1 : 0.95 + Math.random() * 0.1, yOff: boss ? 0 : Math.random() * 8 - 4, spdV: boss ? 1 : 0.93 + Math.random() * 0.14,
       })
     }
@@ -1031,7 +1035,7 @@ export default function App() {
           if (e.kb > 0.5) { if (!(e.atkT > 0)) e.x += e.kb * dt; e.kb -= e.kb * Math.min(1, dt * 9) } else e.kb = 0  // 공격 중엔 밀리지 않음
           if (e.sq > 0) e.sq = Math.max(0, e.sq - dt)
           e.vt = Math.min(1, (e.vt ?? 0) + dt * 2.2)   // 스폰 직후 가속 (0→1)
-          const embKey = e.dino ? ('d:' + e.dino) : (e.boss ? e.bossIdx : e.type)
+          const embKey = e.dino ? ('d:' + e.dino) : (e.boss ? ('c:' + e.type) : e.type)   // 저주보스=c:종(일반몹과 분리)
           const emb = (e.boss ? motRef.current.boss[embKey] : motRef.current.mob[embKey]) || {}
           const szm = e.dino ? (emb.sz ?? (motRef.current.size[e.dino] || 1)) : (emb.sz || 1)
           const estop = e.dino ? (emb.stop ?? (motRef.current.stop[e.dino] || 0)) : (emb.stop || 0)   // 좌우 정지 위치(+면 오른쪽/멀리)
@@ -1486,14 +1490,14 @@ export default function App() {
 
     function drawEnemy(ctx, e, now) {
       const air = e.air ? e.air * (e.airT ?? 1) : 0   // 공중 높이 (스폰부터 고정 고도)
-      const mbKey = e.dino ? ('d:' + e.dino) : (e.boss ? e.bossIdx : e.type)   // 공룡=d:종, 웨이브보스=bossIdx, 웨이브몹=type
+      const mbKey = e.dino ? ('d:' + e.dino) : (e.boss ? ('c:' + e.type) : e.type)   // 공룡=d:종, 저주보스=c:종, 웨이브몹=type
       const mb = (e.boss ? motRef.current.boss[mbKey] : motRef.current.mob[mbKey]) || {}
       const yoff = mb.y || 0                                                    // 높이(공룡도 적용)
       const y = w.groundY - air - yoff
       const t = ENEMY_TYPES[e.type]
       const szm = e.dino ? (mb.sz ?? (motRef.current.size[e.dino] || 1)) : (mb.sz || 1)   // 공룡은 편집값 우선, 없으면 공룡탭 값
       const H = e.h * szm
-      const imgs = e.dino ? (e.boss ? (e.atkT > 0 ? DINO_BOSS[e.dino].a : DINO_BOSS[e.dino].w) : DINO_MOB[e.dino]) : (e.boss ? BIMG[e.bossIdx] : EIMG[e.type])
+      const imgs = e.dino ? (e.boss ? (e.atkT > 0 ? DINO_BOSS[e.dino].a : DINO_BOSS[e.dino].w) : DINO_MOB[e.dino]) : (e.boss ? CIMG[e.type] : EIMG[e.type])   // 저주보스=CIMG(저주동물)
       const stunned = e.stun > 0
       const gall = e.animT * 9
       const fi = e.atkT > 0
@@ -1614,7 +1618,7 @@ export default function App() {
       if (im.complete && im.naturalWidth > 0) {
         const hcfg = motRef.current.hero
         const hStMul = w.skill != null ? ((hcfg.skillSz || {})[SKILLS[w.skill].id] || 1) : (hero.state === 'attack' ? (hcfg.atkSz || 1) : (hcfg.walkSz || 1))
-        const hh = a.h * (hcfg.sz || 1) * hStMul * ((hcfg.evoSz || {})[evo] ?? 1)
+        const hh = a.h * (hcfg.sz || 1) * hStMul * ((hcfg.evoSz || {})[S.current.evo] ?? 1)
         const hw = hh * (im.naturalWidth / im.naturalHeight)
         ctx.save()
         // 장착 동료 (영웅 왼쪽 뒤, 겹침 허용)
@@ -2296,7 +2300,7 @@ export default function App() {
                   </div>
                   <div data-edit="profhero" style={st.profHeroWrap}><img src={heroProfileSrc(EVOS[evo].mode)} alt="" style={st.profHeroImg} /></div>
                   <div style={st.profStage}>{EVOS[evo].name}</div>
-                  <div style={st.profGearRow}>
+                  <div data-edit="profgear" style={st.profGearRow}>
                     {EQUIP_CATS.map(cat => {
                       const n = gearEq[cat]
                       return (
@@ -2310,13 +2314,13 @@ export default function App() {
                       )
                     })}
                   </div>
-                  <div style={st.profSecTitle}>능력치</div>
-                  <div style={st.profPanel}>
+                  <div data-edit="profstat" style={st.profSecTitle}>능력치</div>
+                  <div data-edit="profstat" style={st.profPanel}>
                     {statRows.map(([k, v]) => <div key={k} style={st.profStatRow}><span style={st.profStatK}>{k}</span><span style={st.profStatV}>{v}</span></div>)}
                   </div>
-                  <div style={st.profSecTitle}>보유 재화</div>
-                  <div style={st.profPanel}>
-                    {curRows.map(([ic, nm, v], i) => <div key={i} style={st.profStatRow}><span style={st.profCurK}><img src={ic} alt="" style={st.profCurIc} />{nm}</span><span style={st.profStatV}>{v}</span></div>)}
+                  <div data-edit="profcur" style={st.profSecTitle}>보유 재화</div>
+                  <div data-edit="profcur" style={st.profPanel}>
+                    {curRows.map(([ic, nm, v], i) => <div key={i} style={st.profStatRow}><span style={st.profCurK}><img src={ic} alt="" style={st.profCurIc} />{nm}</span><span style={st.profCurV}>{v}</span></div>)}
                   </div>
                 </div>
               ) : (
@@ -2960,9 +2964,9 @@ export default function App() {
             const on = ens.filter(e => !e.dead && e.boss)
             const seen = new Set(); const entries = []
             for (const e of on) {
-              const key = e.dino ? ('d:' + e.dino) : e.bossIdx
+              const key = e.dino ? ('d:' + e.dino) : ('c:' + e.type)
               if (seen.has(key)) continue; seen.add(key)
-              entries.push({ key, label: e.dino ? (DINO_NAME[e.dino] || e.dino) : ((BOSS_TYPES[e.bossIdx] || {}).name || ('보스 ' + e.bossIdx)), szDef: e.dino ? (M.size[e.dino] ?? 1) : 1, dino: !!e.dino })
+              entries.push({ key, label: e.dino ? (DINO_NAME[e.dino] || e.dino) : ('저주받은 ' + ((ENEMY_TYPES[e.type] || {}).name || e.type)), szDef: e.dino ? (M.size[e.dino] ?? 1) : 1, dino: !!e.dino })
             }
             if (!entries.length) return <div style={{ fontSize: 12, color: '#c9a06a', padding: '8px 0' }}>화면에 보스가 없어요. 보스전/모험 보스에 들어가면 자동으로 잡혀요.</div>
             return (<>
@@ -3016,7 +3020,7 @@ export default function App() {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => { setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) })); localStorage.setItem('paleoUiTs', String(Date.now())) }
             const nbtn = { width: 26, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
-            const rng = k => k.startsWith('profhero') ? 300 : k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
+            const rng = k => k.startsWith('profhero') ? 300 : k.startsWith('prof') ? (k.endsWith('fz') ? 40 : 160) : k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
             const rmin = k => k === 'equipcols' ? 3 : 0
             return <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -3122,6 +3126,7 @@ Object.assign(UI_DEFAULT, {
   skbarX: 1, skbarY: 0,
   skdiconsz: 88, skdiconX: 0, skdiconY: 0,
   profherow: 116, profheroh: 150, profherozoom: 100, profheroX: 0, profheroY: 0,
+  profstatfz: 13, profcurfz: 13, profcuric: 18, profgearsz: 56, profsecfz: 13,
   skdtitlefz: 18, skdtitleX: 0, skdtitleY: 0,
   skddescfz: 13, skddescX: 0, skddescY: 0,
   skdefffz: 15, skdeffectX: 0, skdeffectY: 0,
@@ -3333,6 +3338,9 @@ Object.assign(EDIT_GROUPS, {
   skbar: { label: '스킬 강화바', size: [], pos: 'skbar' },
   skdicon: { label: '상세 아이콘', size: ['skdiconsz'], pos: 'skdicon' },
   profhero: { label: '프로필 사진(틀+확대)', size: ['profherow', 'profheroh', 'profherozoom'], pos: 'profhero' },
+  profstat: { label: '상세-능력치 글자', size: ['profstatfz', 'profsecfz'] },
+  profcur: { label: '상세-재화', size: ['profcurfz', 'profcuric'] },
+  profgear: { label: '상세-장비칸', size: ['profgearsz'] },
   skdtitle: { label: '상세 제목', size: ['skdtitlefz'], pos: 'skdtitle' },
   skddesc: { label: '상세 설명', size: ['skddescfz'], pos: 'skddesc' },
   skdeffect: { label: '상세 효과칸', size: ['skdefffz'], pos: 'skdeffect' },
@@ -3378,7 +3386,7 @@ Object.assign(UI_LABELS, {
   skcellsz: '틀 크기', skcellgap: '가로 간격', skcellrgap: '세로 간격', skimgsz: '그림 크기',
   sknamefz: '이름 글자', skplusfz: '뱃지 글자',
   skdiconsz: '아이콘 크기', skdtitlefz: '제목 글자', skddescfz: '설명 글자',
-  profherow: '틀 너비', profheroh: '틀 높이', profherozoom: '사진 확대%',
+  profherow: '틀 너비', profheroh: '틀 높이', profherozoom: '사진 확대%', profstatfz: '능력치 글자', profcurfz: '재화 글자', profcuric: '재화 아이콘', profgearsz: '장비칸 크기', profsecfz: '제목 글자',
   skdefffz: '효과 글자', skdstatfz: '스탯 글자', skdautofz: 'AUTO 글자', skdbtnh: '버튼 높이', skdbtnfz: '버튼 글자',
   qww: '창 너비', qwh: '창 높이', qtitlefz: '제목 글자', qclsz: '버튼 크기',
   qtabw: '탭 너비', qtabh: '탭 높이', qtabfz: '탭 글자', qrowh: '행 높이',
@@ -3396,7 +3404,7 @@ const uiVars = c => `:root{
 --pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
 ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg${i}-x:${c['evoimg' + i + 'X']}px;--pd-evoimg${i}-y:${c['evoimg' + i + 'Y']}px;`).join('')}--pd-slotfz:${c.slotfz}px;
---pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-profherow:${c.profherow}px;--pd-profheroh:${c.profheroh}px;--pd-profherozoom:${c.profherozoom};--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;
+--pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-profherow:${c.profherow}px;--pd-profheroh:${c.profheroh}px;--pd-profherozoom:${c.profherozoom};--pd-profstatfz:${c.profstatfz}px;--pd-profcurfz:${c.profcurfz}px;--pd-profcuric:${c.profcuric}px;--pd-profgearsz:${c.profgearsz}px;--pd-profsecfz:${c.profsecfz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;
 ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k}h:${c['advico' + k + 'h']}px;--pd-advico${k}-x:${c['advico' + k + 'X']}px;--pd-advico${k}-y:${c['advico' + k + 'Y']}px;`).join('')}
 --pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
 --pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
@@ -3440,11 +3448,11 @@ const st = {
   },
   avatar: { width: 44, height: 44, borderRadius: 10, border: `2px solid ${GOLD_D}`, background: '#1a120b', imageRendering: 'pixelated', boxShadow: 'inset 0 0 0 1px #201408' },
   // ── 프로필 팝업 ──
-  profBox: { position: 'relative', width: 'min(94vw, 400px)', maxHeight: '86%', display: 'flex', flexDirection: 'column', borderRadius: 12, background: 'linear-gradient(180deg,#4a3826,#2e2114)', border: '3px solid #7a5a30', boxShadow: '0 10px 40px rgba(0,0,0,0.6)', overflow: 'hidden', boxSizing: 'border-box' },
+  profBox: { position: 'relative', width: 'min(94vw, 400px)', maxHeight: '92%', display: 'flex', flexDirection: 'column', borderRadius: 12, background: 'linear-gradient(180deg,#4a3826,#2e2114)', border: '3px solid #7a5a30', boxShadow: '0 10px 40px rgba(0,0,0,0.6)', overflow: 'hidden', boxSizing: 'border-box' },
   profTabs: { display: 'flex', gap: 4, padding: 8, flexShrink: 0 },
   profTab: { flex: 1, height: 34, fontSize: 14, fontWeight: 800, color: '#a8946e', border: '1px solid #4a3a22', borderRadius: 7, background: 'rgba(0,0,0,0.28)', cursor: 'pointer' },
   profTabOn: { color: '#2a1c0a', border: '1px solid #f0b040', background: 'linear-gradient(180deg,#ffcf5a,#e8992a)' },
-  profScroll: { flex: 1, minHeight: 0, overflowY: 'auto', padding: '4px 14px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  profScroll: { flex: 1, minHeight: 0, overflowY: 'auto', padding: '4px 14px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center' },
   profLv: { fontSize: 20, fontWeight: 800, color: '#f0dfae', textShadow: '0 1px 2px #000', marginTop: 4 },
   profNickRow: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, minHeight: 30 },
   profNickTxt: { fontSize: 15, fontWeight: 700, color: '#fff5df' },
@@ -3456,16 +3464,17 @@ const st = {
   profGearRow: { display: 'flex', gap: 8, marginTop: 12, width: '100%', justifyContent: 'center' },
   profGearCol: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, flex: 1, maxWidth: 96 },
   profGearLbl: { fontSize: 11, fontWeight: 700, color: '#a8946e' },
-  profGearCell: { width: 56, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #4a3a22', borderRadius: 9, background: 'rgba(0,0,0,0.4)', overflow: 'hidden', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.5)' },
+  profGearCell: { width: 'var(--pd-profgearsz)', height: 'var(--pd-profgearsz)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #4a3a22', borderRadius: 9, background: 'rgba(0,0,0,0.4)', overflow: 'hidden', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.5)' },
   profGearImg: { width: '100%', height: '100%', objectFit: 'contain', imageRendering: 'pixelated' },
   profGearName: { fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap' },
-  profSecTitle: { alignSelf: 'stretch', fontSize: 13, fontWeight: 800, color: '#f0dfae', margin: '14px 0 6px', paddingBottom: 4, borderBottom: '1px solid #5a4630' },
+  profSecTitle: { alignSelf: 'stretch', fontSize: 'var(--pd-profsecfz)', fontWeight: 800, color: '#f0dfae', margin: '9px 0 5px', paddingBottom: 4, borderBottom: '1px solid #5a4630' },
   profPanel: { alignSelf: 'stretch', display: 'flex', flexDirection: 'column', borderRadius: 8, background: 'rgba(0,0,0,0.28)', border: '1px solid #4a3822', overflow: 'hidden' },
   profStatRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 12px', borderBottom: '1px solid rgba(90,70,48,0.35)' },
-  profStatK: { fontSize: 13, color: '#c9b596' },
-  profStatV: { fontSize: 13, fontWeight: 800, color: '#fff5df' },
-  profCurK: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, color: '#c9b596' },
-  profCurIc: { width: 18, height: 18, objectFit: 'contain', imageRendering: 'pixelated' },
+  profStatK: { fontSize: 'var(--pd-profstatfz)', color: '#c9b596' },
+  profStatV: { fontSize: 'var(--pd-profstatfz)', fontWeight: 800, color: '#fff5df' },
+  profCurV: { fontSize: 'var(--pd-profcurfz)', fontWeight: 800, color: '#fff5df' },
+  profCurK: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 'var(--pd-profcurfz)', color: '#c9b596' },
+  profCurIc: { width: 'var(--pd-profcuric)', height: 'var(--pd-profcuric)', objectFit: 'contain', imageRendering: 'pixelated' },
   avatarWrap: {
     width: 'var(--pd-avatar)', height: 'var(--pd-avatar)', flexShrink: 0, position: 'relative', transform: 'translate(var(--pd-avatar-x), var(--pd-avatar-y))',
     backgroundImage: 'url(/ui/avatar.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
