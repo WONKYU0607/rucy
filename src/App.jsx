@@ -32,7 +32,7 @@ const ANIM = {
   pwalk: { srcs: [1, 2, 3, 4, 5, 6, 7, 8].map(i => `/hero/sapiens_walk/pwalk_${i}.png`), h: 140, flip: false },
   patk1: { srcs: [2, 3, 4, 5].map(i => `/hero/sapiens_atk1/patk1_${i}.png`), h: 157, flip: false },   // 1번 삭제됨
   hmwalk: { srcs: [1, 2, 3, 4, 5, 6, 7, 8].map(i => `/hero/human_walk/hmwalk_${i}.png`), h: 140, flip: false },
-  hmatk1: { srcs: [2, 3, 4].map(i => `/hero/human_atk1/hmatk1_${i}.png`), h: 157, flip: false },   // 1번 삭제됨
+  hmatk1: { srcs: [1, 2, 3, 4].map(i => `/hero/human_atk1/hmatk1_${i}.png`), h: 157, flip: false },
 }
 // 스킬 정의 — charSeq: 히어로가 재생할 프레임(1-based, 없으면 전체), fx: 분리 이펙트
 //   fx proj  = 투사체: fly 프레임이 몬스터 쪽으로 날아가 명중 시 데미지(+impact 프레임)
@@ -152,26 +152,32 @@ const MOTION_DEFAULT = {
     sz: 0.95, x: -20, y: 0,
     walkSz: { 0: 0.94, 1: 0.96, 2: 0.94, 3: 0.94, 4: 0.86, 5: 0.94 },
     skillSz: { 1: 0.87, 2: 0.88, 13: 0.92, 15: 0.83, 17: 0.88, 18: 1.07, 20: 1.09, 22: 1.03, 23: 0.9 },
-    skillPos: {},                                              // 스킬별 그림 위치 오프셋 { id: { x, y } } — 없으면 0
-    skillFrSz: {},                                             // 스킬 프레임별 크기 배율 { id: { 프레임(1부터): 배율 } }
-    skillFrPos: {},                                            // 스킬 프레임별 위치 { id: { 프레임: { x, y } } }
-    skillFrT: { 22: [0.03, 0.04, 0.05, 0.06], 23: [1, 1, 1, 1, 1] },   // 프레임별 재생시간(초). 23은 프레임 5개라 앞 5개만 사용
+    skillPos: {},                                              // 스킬별 그림 위치 오프셋 { id: { x, y } }
+    skillFrSz: { '23': { 1: 0.97, 2: 0.97, 3: 0.97, 4: 0.97, 5: 0.97 } },   // 스킬 프레임별 크기
+    skillFrPos: { '22': { 3: { x: 73 }, 4: { x: 133 } }, '23': { 3: { x: 22 }, 4: { x: 39 }, 5: { x: 100 } } },   // 스킬 프레임별 위치
+    skillFrT: { 22: [0.03, 0.04, 0.05, 0.06], 23: [0.3, 0.3, 0.3, 0.3, 0.5] },   // 스킬 프레임별 재생시간(초)
     evoSz: { 0: 0.98, 1: 0.91, 2: 1, 3: 0.94, 4: 1, 5: 1.05 },
-    hit: { erectus: 3, neander: 2, sapiens: 4, human: 3 },     // 데미지 프레임(1부터, 기본=마지막). 사피엔스·인간은 1번 삭제로 5→4, 4→3
-    atkFrSz: { 'punch': { 1: 1.03, 2: 1.03, 3: 1.03 }, 'throw': { 1: 1.03, 2: 1.03 }, 'eatk1': { 1: 0.95, 2: 1, 3: 1 }, 'natk1': { 1: 0.95, 2: 1 }, 'patk1': { 1: 1.08, 2: 1.08, 3: 1.08, 4: 1.08 }, 'hmatk1': { 1: 1.05, 2: 1.05, 3: 1.05 } },   // 기본공격 크기 = 프레임별 배율 { 스프라이트키: { 프레임(1부터): 배율 } }
+    hit: { erectus: 3, neander: 2, sapiens: 4, human: 4 },     // 데미지 프레임(1부터, 기본=마지막). 사피엔스는 1번 삭제로 4장이라 4
+    atkFrSz: { 'punch': { 1: 1.03, 2: 1.03, 3: 1.03 }, 'throw': { 1: 1.03, 2: 1.03 }, 'eatk1': { 1: 0.95, 2: 1, 3: 1 }, 'natk1': { 1: 0.95, 2: 1 }, 'patk1': { 1: 1.08, 2: 1.08, 3: 1.08, 4: 1.08 }, 'hmatk1': { 1: 1.08, 2: 1.05, 3: 1.05, 4: 1.05 } },   // 기본공격 프레임별 크기
   },  // walkSz(걷기)·evoSz(전체)는 진화단계별{0~5}, skillSz=스킬별{id:배율}, hit=모드별 타격 프레임, atkFrSz=공격 프레임별 크기
   ally: { hunter: { sz: 1, x: -21, y: -31, atkSz: 1, atkSpd: 1 }, shaman: { sz: 1, x: 8, y: 0, atkSz: 1, atkSpd: 1 }, healer: { sz: 1, x: 13, y: 35, atkSz: 1, atkSpd: 1 }, giant: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 } },  // 동료 크기·위치·공격프레임 크기·속도
-  mob: {                                                       // 일반몹 종별 크기·높이·정지·속도
+  mob: {   // 일반몹 종별 크기·높이·정지·속도
     'd:trex': { sz: 1.46, stop: -5, spd: 1.25 }, 'd:spino': { sz: 1.36 }, 'd:trike': { sz: 1.38, stop: -5 }, 'd:stego': { sz: 1.47 },
     'd:raptor': { sz: 1.17, spd: 1.4 }, 'd:anky': { stop: 25, sz: 1.24 }, 'd:ptera': { sz: 1.3, stop: -14 }, 'd:brachio': { sz: 2 },
     'hyena': { stop: 30, spd: 1.5, sz: 1.16 }, 'bear': { sz: 1.16, stop: 46, spd: 1.25, y: -7 }, 'rhino': { stop: 43, spd: 1.2, sz: 1.19 }, 'rabbit': { sz: 1.69, stop: 15 },
     'antelope': { sz: 1.44, stop: 43 }, 'deer': { stop: 35, sz: 1.06 }, 'boar': { stop: 45, sz: 1.12, spd: 1.4 }, 'wolf': { sz: 1.14, stop: 40, spd: 1.5 },
+    'tiger': { sz: 1.09, stop: 15, spd: 1.3 }, 'monkey': { sz: 1.12, stop: -12, spd: 1.5, y: -1 }, 'snake': { sz: 1.08, stop: 6, spd: 1.45 }, 'ostrich': { sz: 1.02, stop: 4 },
+    'turtle': { sz: 1.01 }, 'croc': { stop: 5 }, 'komodo': { stop: 4 }, 'eagle': { y: -16, spd: 1.7 },
+    'giraffe': { sz: 1.1 }, 'lion': { sz: 1.08, spd: 1.5, stop: 30 }, 'elephant': { stop: 33 },
   },
-  boss: {                                                      // 보스 종별 크기·높이·정지·속도
+  boss: {  // 보스 종별 크기·높이·정지·속도
     'd:trex': { stop: 53 }, 'd:spino': { sz: 1.26, spd: 1.5 }, 'd:trike': { sz: 1.08 }, 'd:stego': { y: -12, stop: -2 },
     'd:raptor': { spd: 1.8, sz: 1.08 }, 'd:anky': { sz: 0.79 }, 'd:ptera': { spd: 1.95, stop: 18, y: -25 }, 'd:brachio': { y: -12, sz: 1.6 },
     'c:rabbit': { sz: 1.34, y: -7, stop: 22, spd: 1.4 }, 'c:antelope': { y: -6, stop: 30, sz: 1.29 }, 'c:deer': { stop: 37, y: -7, sz: 0.85, spd: 1.4 }, 'c:boar': { sz: 1.07, y: -12, stop: 70, spd: 1.3 },
-    'c:wolf': { stop: 85, y: -11, spd: 1.5, sz: 1.24 }, 'c:hyena': { stop: 56, y: -12, sz: 0.88, spd: 1.3 }, 'c:bear': { y: -14, stop: 27, sz: 0.85, spd: 1.35 }, 'c:rhino': { stop: 68, sz: 0.9, spd: 1.25 },
+    'c:wolf': { stop: 85, y: -11, spd: 1.5, sz: 1.24 }, 'c:hyena': { stop: 56, y: -12, sz: 0.88, spd: 1.3 }, 'c:bear': { y: -14, stop: 27, sz: 0.85, spd: 1.35 }, 'c:rhino': { stop: 27, sz: 0.9, spd: 1.35 },
+    'c:tiger': { spd: 1.3, sz: 0.93, y: -4, stop: 3 }, 'c:mammoth': { spd: 1.3, sz: 0.7, y: -7, stop: 15 }, 'c:monkey': { spd: 1.5, y: -3, stop: 5 }, 'c:snake': { sz: 1.66, spd: 1.6 },
+    'c:ostrich': { sz: 0.76, y: -5, stop: -4 }, 'c:turtle': { stop: 4 }, 'c:croc': { sz: 1.05, y: -3, stop: 46 }, 'c:komodo': { stop: 46, spd: 1.45, y: -2 },
+    'c:eagle': { y: 20, sz: 1.04, stop: 7 }, 'c:giraffe': { sz: 0.68, y: -12, stop: -10 }, 'c:lion': { sz: 0.9, y: -6, stop: 37 }, 'c:elephant': { sz: 0.8, y: -9, spd: 1.1, stop: 10 },
   },
   skFx: { 1: { sz: 0.82, spd: 1.5, fly: 1.25, x: 0, y: 0, fr: {} }, 2: { sz: 0.74, spd: 0.3, fly: 1.5, x: 0, y: 0, fr: {} }, 16: { sz: 1, spd: 1, fly: 1, x: 0, y: 0, fr: {} }, 18: { sz: 1.04, spd: 1.6, fly: 1, x: 0, y: 0, fr: {} }, 20: { sz: 0.74, spd: 1.25, fly: 1, x: 0, y: 0, fr: {} } },  // 스킬 이펙트 (x/y=위치, fr={프레임:{sz,x,y}} 프레임별)
 }
@@ -514,7 +520,7 @@ const EV_DUNGEONS = [
   { key: 'ev3', name: '잊혀진 밀림', from: 6, to: 10 },
   { key: 'ev4', name: '용암의 심장', from: 1, to: 5 },
 ]
-const EV_EXTS = ['jpg', 'png', 'jpeg', 'webp']   // 확장자를 추측하지 않고 순서대로 실제 로드해 확인
+const EV_EXTS = ['jpg', 'png', 'jpeg', 'webp', '']   // 순서대로 실제 로드해 확인. 마지막 ''는 확장자 없이 저장한 경우
 
 const BOSS_TYPES = [
   { name: '저주받은 검치호', h: 125 }, { name: '뇌전 매머드', h: 145 }, { name: '암흑 고릴라', h: 135 },
@@ -1715,7 +1721,10 @@ export default function App() {
         const __skp = __skId != null ? ((motRef.current.hero.skillPos || {})[__skId] || {}) : {}   // 스킬별 그림 위치 오프셋
         const __skfp = __skId != null ? (((motRef.current.hero.skillFrPos || {})[__skId] || {})[fi + 1] || {}) : {}   // 스킬 프레임별 위치
         const __frMul = (((hcfg.atkFrSz || {})[key] || {})[fi + 1] ?? 1)   // 기본공격 크기 = 프레임별 배율
-        const hStMul = w.skill != null ? (((hcfg.skillSz || {})[__skId] || 1) * ((((hcfg.skillFrSz || {})[__skId] || {})[fi + 1]) ?? 1)) : (hero.state === 'attack' ? __frMul : ((hcfg.walkSz || {})[__pvEvo] ?? 1))
+        // 공격 스프라이트를 그리는 동안은(공격 중이든, 적 앞에서 대기 중이든) 항상 공격 프레임 크기를 쓴다.
+        // 예전엔 대기 중일 때만 걷기 크기라서, 공격이 끝나고 다음 공격 전에 크기가 줄었다 커지는 게 보였음.
+        const __isAtkSprite = !!((hcfg.atkFrSz || {})[key])
+        const hStMul = w.skill != null ? (((hcfg.skillSz || {})[__skId] || 1) * ((((hcfg.skillFrSz || {})[__skId] || {})[fi + 1]) ?? 1)) : (__isAtkSprite ? __frMul : ((hcfg.walkSz || {})[__pvEvo] ?? 1))
         const hh = a.h * (hcfg.sz || 1) * hStMul * ((hcfg.evoSz || {})[__pvEvo] ?? 1)
         const hw = hh * (im.naturalWidth / im.naturalHeight)
         ctx.save()
@@ -2616,8 +2625,8 @@ export default function App() {
               {(() => {
                 const k = EV_DUNGEONS[evSel].key
                 const ei = evExt[k] ?? 0
-                if (ei >= EV_EXTS.length) return <div data-edit="evprevimg" style={{ ...st.evPrevImg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#9c8a6c', textAlign: 'center', padding: 8 }}>배경 파일 없음<br />/bg/event/{k}.{EV_EXTS.join(' · ')}</div>
-                return <img key={`${k}-${ei}`} src={`/bg/event/${k}.${EV_EXTS[ei]}`} alt="" data-edit="evprevimg" style={st.evPrevImg}
+                if (ei >= EV_EXTS.length) return <div data-edit="evprevimg" style={{ ...st.evPrevImg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#9c8a6c', textAlign: 'center', padding: 8 }}>배경 파일 없음<br />/bg/event/{k} · .jpg · .png · .jpeg · .webp<br />전부 404</div>
+                return <img key={`${k}-${ei}`} src={EV_EXTS[ei] ? `/bg/event/${k}.${EV_EXTS[ei]}` : `/bg/event/${k}`} alt="" data-edit="evprevimg" style={st.evPrevImg}
                   onError={() => setEvExt(m => (m[k] ?? 0) >= EV_EXTS.length ? m : { ...m, [k]: (m[k] ?? 0) + 1 })} />
               })()}
               <div data-edit="evname" style={st.evName}>{EV_DUNGEONS[evSel].name}</div>
