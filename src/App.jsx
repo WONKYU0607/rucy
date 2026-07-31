@@ -153,6 +153,10 @@ const MOTION_DEFAULT = {
     sz: 0.94, x: 0, y: 0,
     walkSz: { 0: 0.94, 1: 0.94, 2: 0.94, 3: 0.94, 4: 0.94, 5: 0.94 },
     skillSz: { 1: 0.87, 2: 0.88, 13: 0.92, 15: 0.83, 17: 0.88, 18: 1.07, 20: 1.09 },
+    skillPos: {},                                              // 스킬별 그림 위치 오프셋 { id: { x, y } } — 없으면 0
+    skillFrSz: {},                                             // 스킬 프레임별 크기 배율 { id: { 프레임(1부터): 배율 } }
+    skillFrPos: {},                                            // 스킬 프레임별 위치 { id: { 프레임: { x, y } } }
+    skillFrT: {},                                              // 스킬 프레임별 재생시간(초) { id: [t1, t2, ...] } — 없으면 SKILL_FRAME_T
     evoSz: { 0: 0.98, 1: 0.94, 2: 0.94, 3: 0.94, 4: 1, 5: 1 },
     hit: { erectus: 3, neander: 2, sapiens: 5, human: 4 },     // 기본공격 데미지가 들어가는 프레임 번호(1부터). 기본=마지막(임팩트) 프레임
     atkFrSz: atkFrAll(1.03),                                   // 기본공격 크기 = 프레임별 배율 하나로만 관리 { 스프라이트키: { 프레임번호(1부터): 배율 } }
@@ -170,7 +174,7 @@ const MOTION_DEFAULT = {
     'c:boar': { sz: 0.69, y: -5, stop: 14 }, 'c:wolf': { y: -20, stop: 23, spd: 1.4 }, 'c:hyena': { sz: 0.92, y: -13, stop: 58, spd: 1.3 },
     'c:bear': { sz: 0.87, y: -14, stop: 67, spd: 1.35 },
   },
-  skFx: { 1: { sz: 0.82, spd: 1.5, fly: 1.25 }, 2: { sz: 0.74, spd: 0.3, fly: 1.5 }, 16: { sz: 1, spd: 1, fly: 1 }, 18: { sz: 1.04, spd: 1.6, fly: 1 }, 20: { sz: 0.74, spd: 1.25, fly: 1 } },  // 스킬 이펙트
+  skFx: { 1: { sz: 0.82, spd: 1.5, fly: 1.25, x: 0, y: 0, fr: {} }, 2: { sz: 0.74, spd: 0.3, fly: 1.5, x: 0, y: 0, fr: {} }, 16: { sz: 1, spd: 1, fly: 1, x: 0, y: 0, fr: {} }, 18: { sz: 1.04, spd: 1.6, fly: 1, x: 0, y: 0, fr: {} }, 20: { sz: 0.74, spd: 1.25, fly: 1, x: 0, y: 0, fr: {} } },  // 스킬 이펙트 (x/y=위치, fr={프레임:{sz,x,y}} 프레임별)
 }
 const MOT_FX_IDS = [1, 2, 16, 18, 20]                          // 이펙트 있는 스킬 id
 const perStage = (v, def) => typeof v === 'number' ? { 0: v, 1: v, 2: v, 3: v, 4: v, 5: v } : { ...def, ...(v || {}) }   // 옛 전역 숫자값 → 전 단계 동일값으로 마이그레이션
@@ -193,7 +197,7 @@ function mergeMotion(sv) {   // 저장된 모션값 + 기본값 병합 (초기 �
     cd: { ...MOTION_DEFAULT.cd, ...(sv.cd || {}) }, dur: { ...MOTION_DEFAULT.dur, ...(sv.dur || {}) },
     lunge: { ...MOTION_DEFAULT.lunge, ...(sv.lunge || {}) },
     stop: { ...MOTION_DEFAULT.stop, ...(sv.stop || {}) }, size: { ...MOTION_DEFAULT.size, ...(sv.size || {}) },
-    hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}), evoSz: { ...MOTION_DEFAULT.hero.evoSz, ...((sv.hero || {}).evoSz || {}) }, walkSz: perStage((sv.hero || {}).walkSz, MOTION_DEFAULT.hero.walkSz), skillSz: { ...MOTION_DEFAULT.hero.skillSz, ...((sv.hero || {}).skillSz || {}) }, hit: { ...MOTION_DEFAULT.hero.hit, ...((sv.hero || {}).hit || {}) }, atkFrSz: mergeAtkFrSz(sv.hero || {}) },
+    hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}), evoSz: { ...MOTION_DEFAULT.hero.evoSz, ...((sv.hero || {}).evoSz || {}) }, walkSz: perStage((sv.hero || {}).walkSz, MOTION_DEFAULT.hero.walkSz), skillSz: { ...MOTION_DEFAULT.hero.skillSz, ...((sv.hero || {}).skillSz || {}) }, skillPos: { ...MOTION_DEFAULT.hero.skillPos, ...((sv.hero || {}).skillPos || {}) }, skillFrSz: { ...((sv.hero || {}).skillFrSz || {}) }, skillFrPos: { ...((sv.hero || {}).skillFrPos || {}) }, skillFrT: { ...((sv.hero || {}).skillFrT || {}) }, hit: { ...MOTION_DEFAULT.hero.hit, ...((sv.hero || {}).hit || {}) }, atkFrSz: mergeAtkFrSz(sv.hero || {}) },
     mob: { ...MOTION_DEFAULT.mob, ...(sv.mob || {}) }, boss: { ...MOTION_DEFAULT.boss, ...(sv.boss || {}) },   // 기본값(사용자 확정값) 위에 저장값 덮어쓰기
     ally: { hunter: { ...MOTION_DEFAULT.ally.hunter, ...((sv.ally || {}).hunter || {}) }, shaman: { ...MOTION_DEFAULT.ally.shaman, ...((sv.ally || {}).shaman || {}) }, healer: { ...MOTION_DEFAULT.ally.healer, ...((sv.ally || {}).healer || {}) }, giant: { ...MOTION_DEFAULT.ally.giant, ...((sv.ally || {}).giant || {}) } },
     skFx: Object.fromEntries(MOT_FX_IDS.map(id => [id, { ...MOTION_DEFAULT.skFx[id], ...((sv.skFx || {})[id] || {}) }])),
@@ -340,11 +344,15 @@ const SKILLS = SKILL_SHEET.map(c => {
   return {
     key: 's' + c.id, id: c.id, name: c.title || ('스킬 ' + c.id), anim: 's_' + c.id, icon: String(c.id), stage: c.stage,
     stages: c.stages || null, passive: !!c.passive, icon2: c.ic || null, desc2: c.desc2 || null,
-    h: c.h, fx: c.fx || null, frameEnds: ends,
+    h: c.h, fx: c.fx || null, frameEnds: ends, frameT: ft,
     cd: c.cd ?? 2, cast: acc, hitAt: c.hitAt ?? 0.55, dmgMult: c.dmgMult ?? 2, aoe: c.aoe || false, rangeMul: c.rangeMul || null, maxTargets: c.maxTargets || 1,
     desc: c.n + '프레임 · 임시값',
   }
 })
+// 스킬 프레임 타이밍은 모션 편집기에서 덮어쓸 수 있음 → 매 프레임 런타임 계산
+const skFrT = (sk, mot) => ((((mot || {}).hero) || {}).skillFrT || {})[sk.id] || sk.frameT
+const skEnds = t => { const e = []; let a = 0; for (const v of t) { a += v; e.push(a) } return e }
+const skCast = t => t.reduce((a, b) => a + b, 0)
 // 대시 프레임 타이밍: 0=기모으기 앞부분 짧게, 주먹뻗기(3,4번) 길게
 
 // ── 동료 정의: 영웅 뒤에서 투사체 공격 (겹침 허용, 소형) ──
@@ -698,6 +706,8 @@ export default function App() {
   const [motAlly, setMotAlly] = useState('hunter') // 동료 선택
   const [motFx, setMotFx] = useState(1)            // 스킬 이펙트 선택(id)
   const [motHeroSk, setMotHeroSk] = useState(1)    // 히어로 모션 크기 편집용 스킬(id)
+  const [motSkFr, setMotSkFr] = useState(1)        // 편집 중인 스킬 프레임 번호
+  const [motFxFr, setMotFxFr] = useState(1)        // 편집 중인 이펙트 프레임 번호
   const [motHeroEvo, setMotHeroEvo] = useState(0)  // 히어로 크기 편집용 진화단계(0~5)
   const motHeroEvoRef = useRef(0); motHeroEvoRef.current = motHeroEvo   // 아래 3개: 게임루프가 편집중 선택단계 미리보기
   const motEditRef = useRef(false); motEditRef.current = motEdit
@@ -1160,8 +1170,9 @@ export default function App() {
           }
         } else {
           const sk = SKILLS[w.skill]
+          const _skCast = skCast(skFrT(sk, motRef.current))   // 편집기에서 프레임 시간 바꾸면 즉시 반영
           w.skillT += dt * SPEED
-          if (!w.skillDid && w.skillT >= sk.cast * sk.hitAt) {
+          if (!w.skillDid && w.skillT >= _skCast * sk.hitAt) {
             w.skillDid = true
             const dmg = st.atk * sk.dmgMult
             if (sk.fx && sk.fx.type === 'proj') {
@@ -1184,7 +1195,7 @@ export default function App() {
             }
             w.shake = 8
           }
-          if (w.skillT >= sk.cast) { w.skill = null; w.skillT = 0 }
+          if (w.skillT >= _skCast) { w.skill = null; w.skillT = 0 }
         }
         // UI 동기화 (0.2초 간격)
         w.skillUiT = (w.skillUiT || 0) + dt
@@ -1505,7 +1516,8 @@ export default function App() {
       if (w.skill != null) {
         const sk = SKILLS[w.skill]
         const arr = ANIM[sk.anim].srcs
-        let k = sk.frameEnds.findIndex(e => w.skillT <= e)
+        const ends = skEnds(skFrT(sk, motRef.current))
+        let k = ends.findIndex(e => w.skillT <= e)
         if (k < 0 || k >= arr.length) k = arr.length - 1
         return [sk.anim, k]
       }
@@ -1679,7 +1691,7 @@ export default function App() {
       if (im.complete && im.naturalWidth > 0) {
         const hcfg = motRef.current.hero
         const __frMul = (((hcfg.atkFrSz || {})[key] || {})[fi + 1] ?? 1)   // 기본공격 크기 = 프레임별 배율
-        const hStMul = w.skill != null ? ((hcfg.skillSz || {})[SKILLS[w.skill].id] || 1) : (hero.state === 'attack' ? __frMul : ((hcfg.walkSz || {})[__pvEvo] ?? 1))
+        const hStMul = w.skill != null ? (((hcfg.skillSz || {})[__skId] || 1) * ((((hcfg.skillFrSz || {})[__skId] || {})[fi + 1]) ?? 1)) : (hero.state === 'attack' ? __frMul : ((hcfg.walkSz || {})[__pvEvo] ?? 1))
         const hh = a.h * (hcfg.sz || 1) * hStMul * ((hcfg.evoSz || {})[__pvEvo] ?? 1)
         const hw = hh * (im.naturalWidth / im.naturalHeight)
         ctx.save()
@@ -1724,7 +1736,10 @@ export default function App() {
           }
         }
         const lunge = hero.state === 'attack' ? Math.sin(Math.min(1, hero.t / 0.4) * Math.PI) * 12 : 0
-        ctx.translate(w.heroX + lunge - (w.heroKb || 0) + (motRef.current.hero.x || 0), w.groundY + (motRef.current.hero.y || 0))
+        const __skId = w.skill != null ? SKILLS[w.skill].id : null
+        const __skp = __skId != null ? ((motRef.current.hero.skillPos || {})[__skId] || {}) : {}   // 스킬별 그림 위치 오프셋
+        const __skfp = __skId != null ? (((motRef.current.hero.skillFrPos || {})[__skId] || {})[fi + 1] || {}) : {}   // 스킬 프레임별 위치
+        ctx.translate(w.heroX + lunge - (w.heroKb || 0) + (motRef.current.hero.x || 0) + (__skp.x || 0) + (__skfp.x || 0), w.groundY + (motRef.current.hero.y || 0) + (__skp.y || 0) + (__skfp.y || 0))
         if (hero.flash > 0) ctx.filter = 'brightness(2.5)'
         if (a.flip) ctx.scale(-1, 1)
         ctx.drawImage(im, -hw / 2, -hh, hw, hh)
@@ -1762,9 +1777,11 @@ export default function App() {
         const fi = Math.min(stk.frames.length - 1, Math.floor(stk.t / stk.dur * stk.frames.length))
         const im = SIMG[stk.id][stk.frames[fi] - 1]
         if (im && im.complete && im.naturalWidth > 0) {
-          const hh = stk.h * ((motRef.current.skFx[stk.id] || {}).sz || 1)
+          const fxc = motRef.current.skFx[stk.id] || {}
+          const ffr = (fxc.fr || {})[fi + 1] || {}
+          const hh = stk.h * (fxc.sz || 1) * (ffr.sz ?? 1)
           const ww = hh * (im.naturalWidth / im.naturalHeight)
-          ctx.drawImage(im, stk.x - ww / 2, w.groundY - hh, ww, hh)
+          ctx.drawImage(im, stk.x - ww / 2 + (fxc.x || 0) + (ffr.x || 0), w.groundY - hh + (fxc.y || 0) + (ffr.y || 0), ww, hh)
         }
       }
       // 스킬 투사체 (몬스터 쪽으로 비행)
@@ -1773,9 +1790,11 @@ export default function App() {
         let pfi = prj.fe.findIndex(e => tm <= e); if (pfi < 0) pfi = prj.fly.length - 1
         const im = SIMG[prj.id][prj.fly[pfi] - 1]
         if (im && im.complete && im.naturalWidth > 0) {
-          const hh = prj.h * prj.scale * ((motRef.current.skFx[prj.id] || {}).sz || 1)
+          const fxc = motRef.current.skFx[prj.id] || {}
+          const ffr = (fxc.fr || {})[pfi + 1] || {}
+          const hh = prj.h * prj.scale * (fxc.sz || 1) * (ffr.sz ?? 1)
           const ww = hh * (im.naturalWidth / im.naturalHeight)
-          ctx.drawImage(im, prj.x - ww / 2, w.groundY - prj.yOff - hh, ww, hh)
+          ctx.drawImage(im, prj.x - ww / 2 + (fxc.x || 0) + (ffr.x || 0), w.groundY - prj.yOff - hh + (fxc.y || 0) + (ffr.y || 0), ww, hh)
         }
       }
 
@@ -2910,11 +2929,14 @@ export default function App() {
         const frames = DINO_ATK_FRAMES[motSel] || [1, 2, 3, 4]
         const arr = M.atk[motSel] || DINO_ATK_DEF
         const setArr = (i, v) => setMotCfg({ ...M, atk: { ...M.atk, [motSel]: arr.map((x, j) => (j === i ? v : x)) } })
+        const mbtn = { width: 24, height: 24, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
         const row = (label, val, min, max, step, on) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
             <span style={{ width: 96, fontSize: 12, flexShrink: 0, color: '#f0dfae', fontWeight: 700 }}>{label}</span>
+            <button style={mbtn} onClick={() => on(+(Math.min(max, Math.max(min, val - step))).toFixed(4))}>−</button>
             <input type="range" min={min} max={max} step={step} value={val} onChange={e => on(parseFloat(e.target.value))} style={{ flex: 1, minWidth: 0 }} />
-            <span style={{ width: 44, textAlign: 'right', fontSize: 12, color: GOLD }}>{val}</span>
+            <button style={mbtn} onClick={() => on(+(Math.min(max, Math.max(min, val + step))).toFixed(4))}>+</button>
+            <span style={{ width: 42, textAlign: 'right', fontSize: 12, color: GOLD }}>{val}</span>
           </div>
         )
         return (
@@ -2998,6 +3020,32 @@ export default function App() {
               ))}
             </div>
             {row('선택 스킬 크기', (M.hero.skillSz || {})[motHeroSk] ?? 1, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, skillSz: { ...(M.hero.skillSz || {}), [motHeroSk]: v } } }))}
+            {row('선택 스킬 좌우', ((M.hero.skillPos || {})[motHeroSk] || {}).x ?? 0, -250, 250, 1, v => setMotCfg({ ...M, hero: { ...M.hero, skillPos: { ...(M.hero.skillPos || {}), [motHeroSk]: { ...((M.hero.skillPos || {})[motHeroSk] || {}), x: v } } } }))}
+            {row('선택 스킬 상하', ((M.hero.skillPos || {})[motHeroSk] || {}).y ?? 0, -250, 250, 1, v => setMotCfg({ ...M, hero: { ...M.hero, skillPos: { ...(M.hero.skillPos || {}), [motHeroSk]: { ...((M.hero.skillPos || {})[motHeroSk] || {}), y: v } } } }))}
+            {(() => {
+              const sk = SKILLS.find(x => x.id === motHeroSk)
+              if (!sk) return null
+              const n = sk.frameEnds.length
+              const f = Math.min(motSkFr, n)
+              const put = (grp, key, v) => setMotCfg({ ...M, hero: { ...M.hero, [grp]: { ...(M.hero[grp] || {}), [motHeroSk]: { ...((M.hero[grp] || {})[motHeroSk] || {}), [f]: key ? { ...(((M.hero[grp] || {})[motHeroSk] || {})[f] || {}), [key]: v } : v } } } })
+              const ft = ((M.hero.skillFrT || {})[motHeroSk] || sk.frameT).slice()
+              return (<>
+                <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
+                <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>스킬 프레임별 (총 {n}장) — 재생 순서 기준</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
+                  {Array.from({ length: n }, (_, i) => i + 1).map(i => (
+                    <button key={i} onClick={() => setMotSkFr(i)}
+                      style={{ width: 26, height: 24, fontSize: 11, borderRadius: 5, border: `1px solid ${i === f ? GOLD : '#4a3a22'}`,
+                        background: i === f ? 'linear-gradient(180deg,#d4872e,#a85f1f)' : '#2c2013', color: i === f ? '#fff' : '#cbb89a', padding: 0 }}
+                    >{i}</button>
+                  ))}
+                </div>
+                {row(`${f}번 크기`, (((M.hero.skillFrSz || {})[motHeroSk] || {})[f]) ?? 1, 0.2, 4, 0.01, v => put('skillFrSz', null, v))}
+                {row(`${f}번 좌우`, ((((M.hero.skillFrPos || {})[motHeroSk] || {})[f]) || {}).x ?? 0, -400, 400, 1, v => put('skillFrPos', 'x', v))}
+                {row(`${f}번 상하`, ((((M.hero.skillFrPos || {})[motHeroSk] || {})[f]) || {}).y ?? 0, -400, 400, 1, v => put('skillFrPos', 'y', v))}
+                {row(`${f}번 시간(초)`, ft[f - 1] ?? 0.15, 0.02, 1.5, 0.01, v => { ft[f - 1] = v; setMotCfg({ ...M, hero: { ...M.hero, skillFrT: { ...(M.hero.skillFrT || {}), [motHeroSk]: ft } } }) })}
+              </>)
+            })()}
           </>)}
 
           {motCat === 'ally' && (<>
@@ -3079,6 +3127,33 @@ export default function App() {
             {row('이펙트 크기', M.skFx[motFx].sz, 0.3, 3, 0.01, v => setMotCfg({ ...M, skFx: { ...M.skFx, [motFx]: { ...M.skFx[motFx], sz: v } } }))}
             {row('프레임 속도', M.skFx[motFx].spd, 0.3, 3, 0.05, v => setMotCfg({ ...M, skFx: { ...M.skFx, [motFx]: { ...M.skFx[motFx], spd: v } } }))}
             {row('비행 속도(투사체)', M.skFx[motFx].fly ?? 1, 0.2, 3, 0.05, v => setMotCfg({ ...M, skFx: { ...M.skFx, [motFx]: { ...M.skFx[motFx], fly: v } } }))}
+            {row('이펙트 좌우', M.skFx[motFx].x ?? 0, -250, 250, 1, v => setMotCfg({ ...M, skFx: { ...M.skFx, [motFx]: { ...M.skFx[motFx], x: v } } }))}
+            {row('이펙트 상하', M.skFx[motFx].y ?? 0, -250, 250, 1, v => setMotCfg({ ...M, skFx: { ...M.skFx, [motFx]: { ...M.skFx[motFx], y: v } } }))}
+            {(() => {
+              const sk = SKILLS.find(x => x.id === motFx)
+              const fx = sk && sk.fx
+              if (!fx) return null
+              const n = (fx.type === 'proj' ? (fx.fly || []) : (fx.frames || [])).length
+              if (!n) return null
+              const f = Math.min(motFxFr, n)
+              const cur = ((M.skFx[motFx].fr || {})[f]) || {}
+              const put = (key, v) => setMotCfg({ ...M, skFx: { ...M.skFx, [motFx]: { ...M.skFx[motFx], fr: { ...(M.skFx[motFx].fr || {}), [f]: { ...cur, [key]: v } } } } })
+              return (<>
+                <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
+                <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>이펙트 프레임별 (총 {n}장)</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
+                  {Array.from({ length: n }, (_, i) => i + 1).map(i => (
+                    <button key={i} onClick={() => setMotFxFr(i)}
+                      style={{ width: 26, height: 24, fontSize: 11, borderRadius: 5, border: `1px solid ${i === f ? GOLD : '#4a3a22'}`,
+                        background: i === f ? 'linear-gradient(180deg,#d4872e,#a85f1f)' : '#2c2013', color: i === f ? '#fff' : '#cbb89a', padding: 0 }}
+                    >{i}</button>
+                  ))}
+                </div>
+                {row(`${f}번 크기`, cur.sz ?? 1, 0.2, 4, 0.01, v => put('sz', v))}
+                {row(`${f}번 좌우`, cur.x ?? 0, -400, 400, 1, v => put('x', v))}
+                {row(`${f}번 상하`, cur.y ?? 0, -400, 400, 1, v => put('y', v))}
+              </>)
+            })()}
           </>)}
 
           <div style={{ display: 'flex', gap: 6, marginTop: 8, borderTop: '1px solid #3a2a14', paddingTop: 8 }}>
