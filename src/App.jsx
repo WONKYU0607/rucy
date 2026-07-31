@@ -30,9 +30,9 @@ const ANIM = {
   nwalk: { srcs: ['/hero/neander_walk/nwalk_1.png', '/hero/neander_walk/nwalk_2.png', '/hero/neander_walk/nwalk_3.png', '/hero/neander_walk/nwalk_4.png'], h: 120, flip: false },
   natk1: { srcs: ['/hero/neander_atk1/natk1_1.png', '/hero/neander_atk1/natk1_2.png'], h: 130, flip: false },
   pwalk: { srcs: [1, 2, 3, 4, 5, 6, 7, 8].map(i => `/hero/sapiens_walk/pwalk_${i}.png`), h: 140, flip: false },
-  patk1: { srcs: [1, 2, 3, 4, 5].map(i => `/hero/sapiens_atk1/patk1_${i}.png`), h: 157, flip: false },
+  patk1: { srcs: [2, 3, 4, 5].map(i => `/hero/sapiens_atk1/patk1_${i}.png`), h: 157, flip: false },   // 1번 삭제됨
   hmwalk: { srcs: [1, 2, 3, 4, 5, 6, 7, 8].map(i => `/hero/human_walk/hmwalk_${i}.png`), h: 140, flip: false },
-  hmatk1: { srcs: [1, 2, 3, 4].map(i => `/hero/human_atk1/hmatk1_${i}.png`), h: 157, flip: false },
+  hmatk1: { srcs: [2, 3, 4].map(i => `/hero/human_atk1/hmatk1_${i}.png`), h: 157, flip: false },   // 1번 삭제됨
 }
 // 스킬 정의 — charSeq: 히어로가 재생할 프레임(1-based, 없으면 전체), fx: 분리 이펙트
 //   fx proj  = 투사체: fly 프레임이 몬스터 쪽으로 날아가 명중 시 데미지(+impact 프레임)
@@ -149,29 +149,29 @@ const MOTION_DEFAULT = {
   stop: { ...DINO_STOP },                                      // 종별 정지 위치 보정(px, +면 멀리)
   size: { trex: 1.08, spino: 1.15, trike: 1.04, stego: 1.20, raptor: 0.90, anky: 1, ptera: 1.05, brachio: 1.73 },  // 종별 크기 배율
   hero: {
-    sz: 0.94, x: 0, y: 0,
-    walkSz: { 0: 0.94, 1: 0.94, 2: 0.94, 3: 0.94, 4: 0.94, 5: 0.94 },
-    skillSz: { 1: 0.87, 2: 0.88, 13: 0.92, 15: 0.83, 17: 0.88, 18: 1.07, 20: 1.09 },
+    sz: 0.95, x: -20, y: 0,
+    walkSz: { 0: 0.94, 1: 0.96, 2: 0.94, 3: 0.94, 4: 0.86, 5: 0.94 },
+    skillSz: { 1: 0.87, 2: 0.88, 13: 0.92, 15: 0.83, 17: 0.88, 18: 1.07, 20: 1.09, 22: 1.03, 23: 0.9 },
     skillPos: {},                                              // 스킬별 그림 위치 오프셋 { id: { x, y } } — 없으면 0
     skillFrSz: {},                                             // 스킬 프레임별 크기 배율 { id: { 프레임(1부터): 배율 } }
     skillFrPos: {},                                            // 스킬 프레임별 위치 { id: { 프레임: { x, y } } }
-    skillFrT: {},                                              // 스킬 프레임별 재생시간(초) { id: [t1, t2, ...] } — 없으면 SKILL_FRAME_T
-    evoSz: { 0: 0.98, 1: 0.94, 2: 0.94, 3: 0.94, 4: 1, 5: 1 },
-    hit: { erectus: 3, neander: 2, sapiens: 5, human: 4 },     // 기본공격 데미지가 들어가는 프레임 번호(1부터). 기본=마지막(임팩트) 프레임
-    atkFrSz: atkFrAll(1.03),                                   // 기본공격 크기 = 프레임별 배율 하나로만 관리 { 스프라이트키: { 프레임번호(1부터): 배율 } }
+    skillFrT: { 22: [0.03, 0.04, 0.05, 0.06], 23: [1, 1, 1, 1, 1] },   // 프레임별 재생시간(초). 23은 프레임 5개라 앞 5개만 사용
+    evoSz: { 0: 0.98, 1: 0.91, 2: 1, 3: 0.94, 4: 1, 5: 1.05 },
+    hit: { erectus: 3, neander: 2, sapiens: 4, human: 3 },     // 데미지 프레임(1부터, 기본=마지막). 사피엔스·인간은 1번 삭제로 5→4, 4→3
+    atkFrSz: { 'punch': { 1: 1.03, 2: 1.03, 3: 1.03 }, 'throw': { 1: 1.03, 2: 1.03 }, 'eatk1': { 1: 0.95, 2: 1, 3: 1 }, 'natk1': { 1: 0.95, 2: 1 }, 'patk1': { 1: 1.08, 2: 1.08, 3: 1.08, 4: 1.08 }, 'hmatk1': { 1: 1.05, 2: 1.05, 3: 1.05 } },   // 기본공격 크기 = 프레임별 배율 { 스프라이트키: { 프레임(1부터): 배율 } }
   },  // walkSz(걷기)·evoSz(전체)는 진화단계별{0~5}, skillSz=스킬별{id:배율}, hit=모드별 타격 프레임, atkFrSz=공격 프레임별 크기
-  ally: { hunter: { sz: 1, x: 9, y: 0, atkSz: 1, atkSpd: 1 }, shaman: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, healer: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 }, giant: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 } },  // 동료 크기·위치·공격프레임 크기·속도
+  ally: { hunter: { sz: 1, x: -21, y: -31, atkSz: 1, atkSpd: 1 }, shaman: { sz: 1, x: 8, y: 0, atkSz: 1, atkSpd: 1 }, healer: { sz: 1, x: 13, y: 35, atkSz: 1, atkSpd: 1 }, giant: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 } },  // 동료 크기·위치·공격프레임 크기·속도
   mob: {                                                       // 일반몹 종별 크기·높이·정지·속도
     'd:trex': { sz: 1.46, stop: -5, spd: 1.25 }, 'd:spino': { sz: 1.36 }, 'd:trike': { sz: 1.38, stop: -5 }, 'd:stego': { sz: 1.47 },
-    'd:raptor': { sz: 1.17, spd: 1.4 }, 'd:anky': { sz: 1.24, stop: 25 }, 'd:ptera': { sz: 1.3, stop: -14 }, 'd:brachio': { sz: 2 },
-    hyena: { stop: 9, spd: 1.3 }, bear: { sz: 1.16, stop: 46, spd: 1.25, y: -7 }, rhino: { stop: 34, spd: 1.2 },
+    'd:raptor': { sz: 1.17, spd: 1.4 }, 'd:anky': { stop: 25, sz: 1.24 }, 'd:ptera': { sz: 1.3, stop: -14 }, 'd:brachio': { sz: 2 },
+    'hyena': { stop: 30, spd: 1.5, sz: 1.16 }, 'bear': { sz: 1.16, stop: 46, spd: 1.25, y: -7 }, 'rhino': { stop: 43, spd: 1.2, sz: 1.19 }, 'rabbit': { sz: 1.69, stop: 15 },
+    'antelope': { sz: 1.44, stop: 43 }, 'deer': { stop: 35, sz: 1.06 }, 'boar': { stop: 45, sz: 1.12, spd: 1.4 }, 'wolf': { sz: 1.14, stop: 40, spd: 1.5 },
   },
   boss: {                                                      // 보스 종별 크기·높이·정지·속도
     'd:trex': { stop: 53 }, 'd:spino': { sz: 1.26, spd: 1.5 }, 'd:trike': { sz: 1.08 }, 'd:stego': { y: -12, stop: -2 },
-    'd:raptor': { sz: 1.08, spd: 1.8 }, 'd:anky': { sz: 0.79 }, 'd:ptera': { spd: 1.95, stop: 18, y: -25 }, 'd:brachio': { sz: 1.6, y: -12 },
-    'c:rabbit': { sz: 1.34, y: -10, stop: 7 }, 'c:antelope': { y: -8, stop: 30 }, 'c:deer': { sz: 0.79, y: -4, stop: 34, spd: 1.35 },
-    'c:boar': { sz: 0.69, y: -5, stop: 14 }, 'c:wolf': { y: -20, stop: 23, spd: 1.4 }, 'c:hyena': { sz: 0.92, y: -13, stop: 58, spd: 1.3 },
-    'c:bear': { sz: 0.87, y: -14, stop: 67, spd: 1.35 },
+    'd:raptor': { spd: 1.8, sz: 1.08 }, 'd:anky': { sz: 0.79 }, 'd:ptera': { spd: 1.95, stop: 18, y: -25 }, 'd:brachio': { y: -12, sz: 1.6 },
+    'c:rabbit': { sz: 1.34, y: -7, stop: 22, spd: 1.4 }, 'c:antelope': { y: -6, stop: 30, sz: 1.29 }, 'c:deer': { stop: 37, y: -7, sz: 0.85, spd: 1.4 }, 'c:boar': { sz: 1.07, y: -12, stop: 70, spd: 1.3 },
+    'c:wolf': { stop: 85, y: -11, spd: 1.5, sz: 1.24 }, 'c:hyena': { stop: 56, y: -12, sz: 0.88, spd: 1.3 }, 'c:bear': { y: -14, stop: 27, sz: 0.85, spd: 1.35 }, 'c:rhino': { stop: 68, sz: 0.9, spd: 1.25 },
   },
   skFx: { 1: { sz: 0.82, spd: 1.5, fly: 1.25, x: 0, y: 0, fr: {} }, 2: { sz: 0.74, spd: 0.3, fly: 1.5, x: 0, y: 0, fr: {} }, 16: { sz: 1, spd: 1, fly: 1, x: 0, y: 0, fr: {} }, 18: { sz: 1.04, spd: 1.6, fly: 1, x: 0, y: 0, fr: {} }, 20: { sz: 0.74, spd: 1.25, fly: 1, x: 0, y: 0, fr: {} } },  // 스킬 이펙트 (x/y=위치, fr={프레임:{sz,x,y}} 프레임별)
 }
@@ -1152,7 +1152,7 @@ export default function App() {
                   hero.hp -= e.dmg
                   hero.flash = 0.28
                   w.shake = e.boss ? 9 : 4
-                  w.heroKb = Math.max(w.heroKb || 0, e.boss ? 18 : 8)      // 히어로 넉백
+                  w.heroKb = Math.max(w.heroKb || 0, e.boss ? 9 : 4)       // 히어로 넉백 (사용자 요청으로 절반: 18/8 → 9/4)
                   w.hitstop = Math.max(w.hitstop || 0, e.boss ? 0.06 : 0.025)
                   burst(w.heroX + 15, w.groundY - 70, '#c81818', 8, true)
                 } else {
@@ -3089,10 +3089,11 @@ export default function App() {
               const n = sk.frameEnds.length
               const f = Math.min(motSkFr, n)
               const put = (grp, key, v) => setMotCfg({ ...M, hero: { ...M.hero, [grp]: { ...(M.hero[grp] || {}), [motHeroSk]: { ...((M.hero[grp] || {})[motHeroSk] || {}), [f]: key ? { ...(((M.hero[grp] || {})[motHeroSk] || {})[f] || {}), [key]: v } : v } } } })
-              const ft = ((M.hero.skillFrT || {})[motHeroSk] || sk.frameT).slice()
+              const saved = (M.hero.skillFrT || {})[motHeroSk]
+              const ft = ((Array.isArray(saved) && saved.length === n) ? saved : sk.frameT).slice()
               return (<>
                 <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
-                <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>스킬 프레임별 (총 {n}장) — 재생 순서 기준</div>
+                <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>스킬 프레임별 (총 {n}장) — 시전 시간 합계 {ft.reduce((a, b) => a + b, 0).toFixed(2)}초</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
                   {Array.from({ length: n }, (_, i) => i + 1).map(i => (
                     <button key={i} onClick={() => setMotSkFr(i)}
@@ -3104,7 +3105,7 @@ export default function App() {
                 {row(`${f}번 크기`, (((M.hero.skillFrSz || {})[motHeroSk] || {})[f]) ?? 1, 0.2, 4, 0.01, v => put('skillFrSz', null, v))}
                 {row(`${f}번 좌우`, ((((M.hero.skillFrPos || {})[motHeroSk] || {})[f]) || {}).x ?? 0, -400, 400, 1, v => put('skillFrPos', 'x', v))}
                 {row(`${f}번 상하`, ((((M.hero.skillFrPos || {})[motHeroSk] || {})[f]) || {}).y ?? 0, -400, 400, 1, v => put('skillFrPos', 'y', v))}
-                {row(`${f}번 시간(초)`, ft[f - 1] ?? 0.15, 0.02, 1.5, 0.01, v => { ft[f - 1] = v; setMotCfg({ ...M, hero: { ...M.hero, skillFrT: { ...(M.hero.skillFrT || {}), [motHeroSk]: ft } } }) })}
+                {row(`${f}번 시간(초)`, ft[f - 1] ?? 0.15, 0.02, 3, 0.01, v => { ft[f - 1] = v; setMotCfg({ ...M, hero: { ...M.hero, skillFrT: { ...(M.hero.skillFrT || {}), [motHeroSk]: ft } } }) })}
               </>)
             })()}
           </>)}
