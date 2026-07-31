@@ -75,7 +75,7 @@ const SKILL_SHEET = [
   { id: 25, n: 5, h: 200, stage: 2, title: '뇌전 질주', charSeq: [1, 2, 3, 5], cd: 2, dmgMult: 3 },
   { id: 26, n: 6, h: 200, stage: 2, title: '회전 폭풍', charSeq: [1, 2, 3, 4, 5, 6], cd: 2, dmgMult: 3, aoe: true, rangeMul: 1.5 },
   { id: 27, n: 5, h: 200, stage: 2, title: '화염 참격', charSeq: [1, 2, 4, 5, 3], cd: 2, dmgMult: 3 },
-  { id: 28, n: 7, h: 200, stage: 2, title: '대지 분쇄', charSeq: [1, 2, 3, 5, 6, 7], cd: 2, dmgMult: 3, aoe: true },
+  { id: 28, n: 7, h: 200, stage: 2, title: '피폭', charSeq: [1, 2, 3, 5, 6, 7], cd: 2, dmgMult: 3, aoe: true },
   ...PASSIVE_SHEET,   // 진화 단계별 패시브 (오스트랄로~인간)
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
@@ -2241,7 +2241,7 @@ export default function App() {
     <div ref={rootRef} style={{ ...st.root, width: BASE_W, maxWidth: 'none', height: view.h, flexShrink: 0, transform: `scale(${view.s})`, transformOrigin: 'top center' }} onClickCapture={e => {
       if (splash || !uiEdit) return
       const t = e.target.closest('[data-edit]')
-      if (t) { const de = t.dataset.edit; setEditSel(de); if (de === 'treasure') setOffOpen(true); const mAdv = /^adv(btn|txt)(\d)$/.exec(de); if (mAdv) setAdvSel(CONTINENTS[+mAdv[2]]); if (!['skimg', 'skname', 'skbar', 'skcell', 'avatar', 'avaface', 'evtab'].includes(de)) { e.stopPropagation(); e.preventDefault() } }
+      if (t) { const de = t.dataset.edit; setEditSel(de); if (de === 'treasure') setOffOpen(true); const mAdv = /^adv(btn|txt)(\d)$/.exec(de); if (mAdv) setAdvSel(CONTINENTS[+mAdv[2]]); if (!['skcell', 'avatar', 'avaface', 'evtab'].includes(de)) { e.stopPropagation(); e.preventDefault() } }   // skimg/skname/skbar 는 선택만(상세창 안 열림)
     }}>
       {splash && (
         <div style={st.splashWrap} onClick={() => setSplash(false)}>
