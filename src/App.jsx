@@ -104,9 +104,9 @@ function LootPiece({ p, done }) {
   useEffect(() => {
     requestAnimationFrame(() => requestAnimationFrame(() => {
       const el = r.current
-      if (el) { el.style.transform = `translate(${p.tx - p.x}px, ${p.ty - p.y}px) scale(0.35)`; el.style.opacity = '0.5' }
+      if (el) { el.style.transform = `translate(${p.tx - p.x}px, ${p.ty - p.y}px) scale(0.2)`; el.style.opacity = '0' }
     }))
-    const t = setTimeout(done, 700)
+    const t = setTimeout(done, 620)
     return () => clearTimeout(t)
   }, [])
   return <img ref={r} src={LOOT_IMG[p.k]} alt="" style={{ position: 'fixed', left: p.x - 5, top: p.y - 5, width: 10, height: 10, objectFit: 'contain', imageRendering: 'pixelated', transition: 'transform 0.55s cubic-bezier(0.55,-0.05,0.85,0.4), opacity 0.55s', zIndex: 55, pointerEvents: 'none' }} />
@@ -175,6 +175,7 @@ const MOTION_DEFAULT = {
     skillFrT: { 22: [0.03, 0.04, 0.05, 0.06], 23: [0.3, 0.3, 0.3, 0.3, 0.5] },   // 스킬 프레임별 재생시간(초)
     evoSz: { 0: 0.98, 1: 0.91, 2: 1, 3: 0.94, 4: 1, 5: 1.05 },
     hit: { erectus: 3, neander: 2, sapiens: 4, human: 4 },     // 데미지 프레임(1부터, 기본=마지막). 사피엔스는 1번 삭제로 4장이라 4
+    atkFrX: {},                                                // 기본공격 프레임별 좌우 보정(px) { 스프라이트키: { 프레임: x } }
     atkFrSz: { 'punch': { 1: 1.03, 2: 1.03, 3: 1.03 }, 'throw': { 1: 1.03, 2: 1.03 }, 'eatk1': { 1: 0.95, 2: 1, 3: 1 }, 'natk1': { 1: 0.95, 2: 1 }, 'patk1': { 1: 1.08, 2: 1.08, 3: 1.08, 4: 1.08 }, 'hmatk1': { 1: 1.08, 2: 1.05, 3: 1.05, 4: 1.05 } },   // 기본공격 프레임별 크기
   },  // walkSz(걷기)·evoSz(전체)는 진화단계별{0~5}, skillSz=스킬별{id:배율}, hit=모드별 타격 프레임, atkFrSz=공격 프레임별 크기
   ally: { hunter: { sz: 1, x: -21, y: -31, atkSz: 1, atkSpd: 1 }, shaman: { sz: 1, x: 8, y: 0, atkSz: 1, atkSpd: 1 }, healer: { sz: 1, x: 13, y: 35, atkSz: 1, atkSpd: 1 }, giant: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 } },  // 동료 크기·위치·공격프레임 크기·속도
@@ -219,7 +220,7 @@ function mergeMotion(sv) {   // 저장된 모션값 + 기본값 병합 (초기 �
     cd: { ...MOTION_DEFAULT.cd, ...(sv.cd || {}) }, dur: { ...MOTION_DEFAULT.dur, ...(sv.dur || {}) },
     lunge: { ...MOTION_DEFAULT.lunge, ...(sv.lunge || {}) },
     stop: { ...MOTION_DEFAULT.stop, ...(sv.stop || {}) }, size: { ...MOTION_DEFAULT.size, ...(sv.size || {}) },
-    hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}), evoSz: { ...MOTION_DEFAULT.hero.evoSz, ...((sv.hero || {}).evoSz || {}) }, walkSz: perStage((sv.hero || {}).walkSz, MOTION_DEFAULT.hero.walkSz), skillSz: { ...MOTION_DEFAULT.hero.skillSz, ...((sv.hero || {}).skillSz || {}) }, skillPos: { ...MOTION_DEFAULT.hero.skillPos, ...((sv.hero || {}).skillPos || {}) }, skillFrSz: { ...((sv.hero || {}).skillFrSz || {}) }, skillFrPos: { ...((sv.hero || {}).skillFrPos || {}) }, skillFrT: { ...((sv.hero || {}).skillFrT || {}) }, hit: { ...MOTION_DEFAULT.hero.hit, ...((sv.hero || {}).hit || {}) }, atkFrSz: mergeAtkFrSz(sv.hero || {}) },
+    hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}), evoSz: { ...MOTION_DEFAULT.hero.evoSz, ...((sv.hero || {}).evoSz || {}) }, walkSz: perStage((sv.hero || {}).walkSz, MOTION_DEFAULT.hero.walkSz), skillSz: { ...MOTION_DEFAULT.hero.skillSz, ...((sv.hero || {}).skillSz || {}) }, skillPos: { ...MOTION_DEFAULT.hero.skillPos, ...((sv.hero || {}).skillPos || {}) }, skillFrSz: { ...((sv.hero || {}).skillFrSz || {}) }, skillFrPos: { ...((sv.hero || {}).skillFrPos || {}) }, skillFrT: { ...((sv.hero || {}).skillFrT || {}) }, hit: { ...MOTION_DEFAULT.hero.hit, ...((sv.hero || {}).hit || {}) }, atkFrSz: mergeAtkFrSz(sv.hero || {}), atkFrX: { ...MOTION_DEFAULT.hero.atkFrX, ...((sv.hero || {}).atkFrX || {}) } },
     mob: { ...MOTION_DEFAULT.mob, ...(sv.mob || {}) }, boss: { ...MOTION_DEFAULT.boss, ...(sv.boss || {}) },   // 기본값(사용자 확정값) 위에 저장값 덮어쓰기
     ally: { hunter: { ...MOTION_DEFAULT.ally.hunter, ...((sv.ally || {}).hunter || {}) }, shaman: { ...MOTION_DEFAULT.ally.shaman, ...((sv.ally || {}).shaman || {}) }, healer: { ...MOTION_DEFAULT.ally.healer, ...((sv.ally || {}).healer || {}) }, giant: { ...MOTION_DEFAULT.ally.giant, ...((sv.ally || {}).giant || {}) } },
     skFx: Object.fromEntries(MOT_FX_IDS.map(id => [id, { ...MOTION_DEFAULT.skFx[id], ...((sv.skFx || {})[id] || {}) }])),
@@ -694,6 +695,12 @@ export default function App() {
   const [skillDetail, setSkillDetail] = useState(null) // 스킬 상세창 index | null (UI 골격)
   const [skillAuto, setSkillAuto] = useState({})       // 스킬별 AUTO 토글 (세션, 표시용)
   const [lootFly, setLootFly] = useState([])          // 재화칸으로 비행 중인 전리품 조각
+  // 안전장치: 조각이 어떤 이유로든 안 지워지면 화면 구석에 반투명 점으로 박힌 채 남는다.
+  // 도착 시간(0.62s)보다 넉넉히 지난 것은 주기적으로 강제 제거.
+  useEffect(() => {
+    const iv = setInterval(() => setLootFly(v => (v.length ? v.filter(q => Date.now() - q.ts < 1500) : v)), 1000)
+    return () => clearInterval(iv)
+  }, [])
   const [detailTab, setDetailTab] = useState('강화')  // 상세창 탭: 강화/융합
   const [fuseQty, setFuseQty] = useState(0)           // 융합 수량
   const [gearEq, setGearEq] = useState(init.gearEq || { 무기: null, 방어구: null, 유물: null })  // 장착 슬롯
@@ -779,6 +786,7 @@ export default function App() {
   motRef.current = motCfg                            // 게임 루프가 매 프레임 최신값을 읽음
   const rootRef = useRef(null)
   const uiScaleRef = useRef(1)
+  const lootSeq = useRef(0)   // 조각 고유 id (Date.now 는 같은 ms 에 겹칠 수 있어 순번 사용)
   const [view, setView] = useState({ s: 1, h: BASE_H, sw: 0, sh: 0 })   // 화면 맞춤 배율/판 높이
   const dockSide = view.sw - BASE_W * view.s > 300           // 게임판 옆 여백이 넉넉하면 편집기를 밖으로
   const dockStyle = { right: 0, left: 'auto', top: 0, bottom: 0, width: 330, maxWidth: 'none', margin: 0, maxHeight: 'none', borderRadius: 0, borderTop: 'none', borderBottom: 'none', borderLeft: `2px solid ${GOLD_D}` }
@@ -1063,7 +1071,7 @@ export default function App() {
         const sel = L.k === 'meat' ? '[data-edit="pillmeat"]' : L.k === 'exp' ? '[data-edit="expbar"]' : '[data-edit="pillgem"]'
         const el = document.querySelector(sel); if (!el) continue
         const tr = el.getBoundingClientRect()
-        items.push({ id: Date.now() + Math.random(), k: L.k, x: cx0 + L.x, y: cy0 + L.y, tx: toLX(tr.left + tr.width / 2), ty: toLY(tr.top + tr.height / 2) })
+        items.push({ id: `lf${++lootSeq.current}`, ts: Date.now(), k: L.k, x: cx0 + L.x, y: cy0 + L.y, tx: toLX(tr.left + tr.width / 2), ty: toLY(tr.top + tr.height / 2) })
       }
       if (items.length) setLootFly(v => [...v, ...items])
     }
@@ -1165,7 +1173,6 @@ export default function App() {
           const espd = emb.spd || 1                                                       // 달려오는 속도 배율(공룡·웨이브 공통)
           const stopX = w.heroX + Math.min(atkRange - 15, 60 + e.h * szm * 0.4) + estop
           e.stopX = stopX   // 정지위치 저장 → 멈춘 몬스터는 사거리 밖이어도 기본공격 판정(그림상 코앞인데 안닿는 문제 해결)
-          if (DEBUG) e._dbgStop = stopX
           if (e.x > stopX && !(e.atkT > 0)) {
             const near = Math.min(1, Math.max(0.3, (e.x - stopX) / 55))  // 정지 전 감속
             e.x -= (e.speed * (e.spdV || 1) * espd * SPEED * 1.3 * e.vt * near + scroll) * dt
@@ -1188,7 +1195,7 @@ export default function App() {
                   hero.hp -= e.dmg
                   hero.flash = 0.28
                   w.shake = e.boss ? 9 : 4
-                  w.heroKb = Math.max(w.heroKb || 0, e.boss ? 9 : 4)       // 히어로 넉백 (사용자 요청으로 절반: 18/8 → 9/4)
+                  w.heroKb = Math.max(w.heroKb || 0, e.boss ? 4 : 2)       // 히어로 넉백 (18/8 → 9/4 → 4/2)
                   w.hitstop = Math.max(w.hitstop || 0, e.boss ? 0.06 : 0.025)
                   burst(w.heroX + 15, w.groundY - 70, '#c81818', 8, true)
                 } else {
@@ -1682,12 +1689,6 @@ export default function App() {
           drawStar(ctx, sx, sy, 5, 3, '#ffd42a')
         }
       }
-      if (DEBUG) {   // 진단: 공격 상태 (atkT>0=공격중, gap>0=정지위치 미도달, stun=기절)
-        const gap = e._dbgStop != null ? Math.round(e.x - e._dbgStop) : '?'
-        ctx.fillStyle = e.atkT > 0 ? '#3f6' : (typeof gap === 'number' && gap > 0 ? '#fc3' : '#f66')
-        ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center'
-        ctx.fillText(`aT${(e.atkT || 0).toFixed(2)} cd${Math.round(e.cd || 0)} gap${gap}${stunned ? ' STUN' : ''}`, e.x, y - H - 20)
-      }
     }
     function drawStar(ctx, cx, cy, outer, inner, color) {
       ctx.save()
@@ -1755,6 +1756,9 @@ export default function App() {
         // 공격 스프라이트를 그리는 동안은(공격 중이든, 적 앞에서 대기 중이든) 항상 공격 프레임 크기를 쓴다.
         // 예전엔 대기 중일 때만 걷기 크기라서, 공격이 끝나고 다음 공격 전에 크기가 줄었다 커지는 게 보였음.
         const __isAtkSprite = !!((hcfg.atkFrSz || {})[key])
+        // 공격 스프라이트는 캔버스 가로 중앙 기준으로 그려지는데, 몽둥이 궤적이 한쪽으로 뻗어 있으면
+        // 몸이 반대쪽으로 밀려 보인다(=공격할 때 뒤로 빠지는 것처럼 보이는 원인). 프레임별로 보정.
+        const __frX = __isAtkSprite ? (((hcfg.atkFrX || {})[key] || {})[fi + 1] || 0) : 0
         const hStMul = w.skill != null ? (((hcfg.skillSz || {})[__skId] || 1) * ((((hcfg.skillFrSz || {})[__skId] || {})[fi + 1]) ?? 1)) : (__isAtkSprite ? __frMul : ((hcfg.walkSz || {})[__pvEvo] ?? 1))
         const hh = a.h * (hcfg.sz || 1) * hStMul * ((hcfg.evoSz || {})[__pvEvo] ?? 1)
         const hw = hh * (im.naturalWidth / im.naturalHeight)
@@ -1800,7 +1804,7 @@ export default function App() {
           }
         }
         const lunge = hero.state === 'attack' ? Math.sin(Math.min(1, hero.t / 0.4) * Math.PI) * 12 : 0
-        ctx.translate(w.heroX + lunge - (w.heroKb || 0) + (motRef.current.hero.x || 0) + (__skp.x || 0) + (__skfp.x || 0), w.groundY + (motRef.current.hero.y || 0) + (__skp.y || 0) + (__skfp.y || 0))
+        ctx.translate(w.heroX + lunge - (w.heroKb || 0) + (motRef.current.hero.x || 0) + __frX + (__skp.x || 0) + (__skfp.x || 0), w.groundY + (motRef.current.hero.y || 0) + (__skp.y || 0) + (__skfp.y || 0))
         if (hero.flash > 0) ctx.filter = 'brightness(2.5)'
         if (a.flip) ctx.scale(-1, 1)
         ctx.drawImage(im, -hw / 2, -hh, hw, hh)
@@ -3132,8 +3136,12 @@ export default function App() {
               return (<>
                 <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
                 <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>{motHeroEvo}단계 기본공격 크기 (프레임별)</div>
-                {Array.from({ length: n }, (_, i) => i + 1).map(f => row(`${f}번 프레임 크기`, ((M.hero.atkFrSz || {})[ak] || {})[f] ?? 1, 0.4, 2.5, 0.01,
-                  v => setMotCfg({ ...M, hero: { ...M.hero, atkFrSz: { ...(M.hero.atkFrSz || {}), [ak]: { ...((M.hero.atkFrSz || {})[ak] || {}), [f]: v } } } })))}
+                {Array.from({ length: n }, (_, i) => i + 1).map(f => (<React.Fragment key={f}>
+                  {row(`${f}번 프레임 크기`, ((M.hero.atkFrSz || {})[ak] || {})[f] ?? 1, 0.4, 2.5, 0.01,
+                    v => setMotCfg({ ...M, hero: { ...M.hero, atkFrSz: { ...(M.hero.atkFrSz || {}), [ak]: { ...((M.hero.atkFrSz || {})[ak] || {}), [f]: v } } } }))}
+                  {row(`${f}번 좌우`, ((M.hero.atkFrX || {})[ak] || {})[f] ?? 0, -120, 120, 1,
+                    v => setMotCfg({ ...M, hero: { ...M.hero, atkFrX: { ...(M.hero.atkFrX || {}), [ak]: { ...((M.hero.atkFrX || {})[ak] || {}), [f]: v } } } }))}
+                </React.Fragment>))}
               </>)
             })()}
             <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
@@ -3551,8 +3559,8 @@ Object.assign(UI_DEFAULT, {
   allymatY: 14, dtabX: 0, dtabY: 0, dtitleX: 0, dtitleY: 0, darrowX: 0, darrowY: 0, diconX: 0, diconY: 0, dstatX: 0, dstatY: 0, denhX: 0,
   denhY: 0, dequipX: 0, dequipY: 0, dfusebtnX: 0, dfusebtnY: 0, dstepX: 0, dstepY: 0, skqbarw: 194, skqbarX: 153, skqbarY: 39, skqslotsz: 29, skqsetw: 16,
   skqseth: 19, skqsetfz: 8, skqsetX: 149, skqsetY: 46, skhtfz: 14, skhtitleX: 25, skhtitleY: 9, skfusew: 54, skfuseh: 20, skfusefz: 12, skfuseX: -24, skfuseY: 11,
-  sklearnw: 60, sklearnh: 20, sklearnfz: 11, sklearnX: -24, sklearnY: 11, skcellsz: 49, skcellgap: 38, skcellrgap: 0, skcellX: -1, skcellY: -5, skimgsz: 46, skimgX: 0,
-  skimgY: 0, sknamefz: 12, sknameX: 0, sknameY: 0, skbarX: 1, skbarY: 0, skdiconsz: 87, skdiconX: 0, skdiconY: 0, profherow: 116, profheroh: 150, profherozoom: 115,
+  sklearnw: 60, sklearnh: 20, sklearnfz: 11, sklearnX: -24, sklearnY: 11, skcellsz: 49, skcellgap: 38, skcellrgap: 0, skcellX: -1, skcellY: -5, skimgsz: 48, skimgX: 1,
+  skimgY: 1, sknamefz: 12, sknameX: 0, sknameY: 0, skbarX: 1, skbarY: 0, skdiconsz: 87, skdiconX: 0, skdiconY: 0, profherow: 116, profheroh: 150, profherozoom: 115,
   profheroX: 0, profheroY: 0, profstatfz: 13, profcurfz: 13, profcuric: 18, profgearsz: 56, profsecfz: 13, skdtitlefz: 18, skdtitleX: 0, skdtitleY: 0, skddescfz: 13, skddescX: 0,
   skddescY: 0, skdefffz: 15, skdeffectX: 0, skdeffectY: 0, skdstatfz: 14, skdstatX: 0, skdstatY: 0, skdautofz: 12, skdautoX: 0, skdautoY: 0, skdbtnh: 48, skdbtnfz: 15,
   skdenhX: 0, skdenhY: 0, skdequipX: 0, skdequipY: 0, qww: 340, qwh: 540, qwinX: 0, qwinY: 0, qtitlefz: 20, qtitleX: 0, qtitleY: 0, qclsz: 30,
