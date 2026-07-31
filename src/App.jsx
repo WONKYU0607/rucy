@@ -68,14 +68,13 @@ const SKILL_SHEET = [
   { id: 17, n: 5, h: 133, stage: 0, title: '포효' },
   { id: 18, n: 5, h: 210, stage: 1, title: '바위치기 (강화)', charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5] } },
   { id: 20, n: 5, h: 195, stage: 1, title: '바위 회오리', charSeq: [1, 2, 3, 5], fx: { type: 'proj', fly: [4], flyScale: 0.9, yOff: 0 } },
-  { id: 21, n: 7, h: 220, stage: 1, title: '메테오', charSeq: [1, 2, 3, 4, 5, 6, 7], cd: 2, dmgMult: 3, aoe: true },   // 광역: 화면 전체(엄청 큰 사거리)
   { id: 22, n: 4, h: 180, stage: 1, title: '전광석화', charSeq: [1, 2, 3, 4], cd: 2, dmgMult: 3 },   // 나중에 손볼 예정(킵)
-  { id: 23, n: 6, h: 180, stage: 1, title: '사신과 함께', charSeq: [1, 2, 3, 4, 2, 3, 4, 5, 6], cd: 2, dmgMult: 3, aoe: true, rangeMul: 1.5 },   // 원투-원투-어퍼컷, 기본사거리 1.5배 내 모두
+  { id: 23, n: 6, h: 180, stage: 1, title: '사신과 함께', charSeq: [3, 4, 3, 4, 6], cd: 2, dmgMult: 3, aoe: true, rangeMul: 1.5 },   // 원투-원투-어퍼컷 — 3·4·6번 그림만 사용(1·2·5번 삭제됨), 기본사거리 1.5배 내 모두
   ...PASSIVE_SHEET,   // 진화 단계별 패시브 (오스트랄로~인간)
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
 // 스킬 아이콘: 해당 스킬 시트의 지정 프레임 사용 (없으면 번호 텍스트)
-const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4, 21: 3, 22: 4, 23: 6 }
+const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4, 22: 4, 23: 6 }
 const skillIconSrc = id => SKILL_ICON_FRAME[id] ? `/skill/s${id}/s${id}_${SKILL_ICON_FRAME[id]}.png` : null
 const skIcon = s => (s ? (skillIconSrc(s.id) || s.icon2 || null) : null)
 // ── 전리품 조각 (사망 드롭 → 상단 재화칸 흡수 연출) ──
@@ -238,7 +237,12 @@ for (const c of CONTINENTS) {
 const BASE_W = 420, BASE_H = 695
 const SIMG = {}
 SKILL_SHEET.forEach(c => {
-  SIMG[c.id] = Array.from({ length: c.n }, (_, j) => { const im = new Image(); im.src = `/skill/s${c.id}/s${c.id}_${j + 1}.png`; return im })
+  const useFr = new Set([...(c.charSeq || Array.from({ length: c.n }, (_, j) => j + 1)),
+    ...((c.fx && c.fx.frames) || []), ...((c.fx && c.fx.fly) || []), SKILL_ICON_FRAME[c.id] || 1])
+  SIMG[c.id] = Array.from({ length: c.n }, (_, j) => {          // 실제 쓰는 프레임만 로드 (삭제된 번호 404 방지)
+    if (!useFr.has(j + 1)) return null                          // 인덱스는 '프레임번호-1' 그대로 — strike/proj 가 그 인덱스로 찾음
+    const im = new Image(); im.src = `/skill/s${c.id}/s${c.id}_${j + 1}.png`; return im
+  })
   const seq = c.charSeq || Array.from({ length: c.n }, (_, j) => j + 1)
   ANIM['s_' + c.id] = { srcs: seq.map(j => `/skill/s${c.id}/s${c.id}_${j}.png`), h: c.h, flip: false }
 })
@@ -268,9 +272,8 @@ const SKILL_FRAME_T = {
   17: [0.15, 0.15, 0.15, 0.15, 0.15],      // (5)
   18: [0.25, 0.25],                        // 점프낙석 시전 (2)
   20: [0.15, 0.15, 0.15, 0.15],            // 토네이도 (4: 휘두르기3+복귀1)
-  21: [0.12, 0.12, 0.10, 0.10, 0.12, 0.16, 0.22],              // 메테오 (7: 충전→투척→낙하→폭발)
   22: [0.10, 0.12, 0.12, 0.16],                                // 전광석화 (4)
-  23: [0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.15, 0.22],  // 사신과 함께 (9: 원투 원투 어퍼컷)
+  23: [0.10, 0.12, 0.10, 0.12, 0.30],                          // 사신과 함께 (5: 원-투-원-투-어퍼컷)
 }
 // 이펙트 타이밍
 const STRIKE_DUR = 0.55   // 낙뢰/낙석 이펙트 재생 시간(초) 기본값
@@ -350,7 +353,12 @@ const SKILLS = SKILL_SHEET.map(c => {
   }
 })
 // 스킬 프레임 타이밍은 모션 편집기에서 덮어쓸 수 있음 → 매 프레임 런타임 계산
-const skFrT = (sk, mot) => ((((mot || {}).hero) || {}).skillFrT || {})[sk.id] || sk.frameT
+// 저장된 프레임 시간은 프레임 수가 맞을 때만 사용. 스킬 프레임을 줄이면 옛 배열이 남아
+// 마지막 프레임에서 몇 초씩 멈추므로(23번이 9→5로 줄었음) 길이 다르면 코드 기본값으로.
+const skFrT = (sk, mot) => {
+  const v = ((((mot || {}).hero) || {}).skillFrT || {})[sk.id]
+  return (Array.isArray(v) && v.length === sk.frameT.length) ? v : sk.frameT
+}
 const skEnds = t => { const e = []; let a = 0; for (const v of t) { a += v; e.push(a) } return e }
 const skCast = t => t.reduce((a, b) => a + b, 0)
 // 대시 프레임 타이밍: 0=기모으기 앞부분 짧게, 주먹뻗기(3,4번) 길게
@@ -3436,6 +3444,62 @@ Object.assign(UI_DEFAULT, {
   skdimgsz: 88, skdimgX: 0, skdimgY: 0,          // 스킬 상세창 아이콘 틀 안쪽 그림
   avafacesz: 26, avafaceX: 0, avafaceY: 0,       // 상단 아바타 버튼 안쪽 히어로 그림
   profheroimgX: 0, profheroimgY: 0,              // 프로필 상세창 사진 (크기는 profherozoom)
+})
+// 사용자 확정 UI 값 (2026-07-31 최신) — 맨 뒤에서 덮어써 우선 적용
+Object.assign(UI_DEFAULT, {
+  panelbwV: 2, panelbwH: 4, rowbwV: 2, rowbwH: 19, rowmin: 38, rowgap: 7, icon: 27, name: 12, lv: 11, val: 12, costw: 35, costh: 28,
+  costfz: 14, inputw: 43, inputfz: 12, spw: 35, sph: 4, spfz: 13, tabpt: 7, tabpb: 10, tabfz: 13, navicon: 26, navpt: 10, navpb: 8,
+  avatar: 40, slotmax: 50, equipcols: 5, equipgap: 14, slotfz: 23, catfz: 13, spbarfz: 11, equipimg: 60, equiptier: 10, equipcell: 54, nickfz: 15, lvbadgefz: 12,
+  exph: 11, pillfz: 72, wavefz: 11, evoimg0: 56, evoimg1: 56, evoimg2: 56, evoimg3: 56, evoimg4: 56, evoimg5: 56, evoimg0X: 0, evoimg0Y: 1, evoimg1X: 0,
+  evoimg1Y: 1, evoimg2X: 0, evoimg2Y: 1, evoimg3X: 0, evoimg3Y: 1, evoimg4X: 0, evoimg4Y: 1, evoimg5X: 0, evoimg5Y: 1, gachacell: 62, gachafz: 10, gtierfz: 10,
+  gachaimg: 74, gainfz: 10, shoprowmin: 46, shopic: 43, shopic0: 43, shopic1: 57, shopic2: 43, shoptfz: 14, shopsubfz: 11, shopbw: 4, shopbh: 40, shopbbv: 0,
+  shopbbh: 21, shopbfz: 11, shopgem: 12, gainic: 14, gainpv: 0, gainph: 6, gbtnfz: 13, gbtnpw: 16, gbtnph: 10, pbsz: 30, wjfz: 13, caslot: 81,
+  caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 163, bth: 27, bhpw: 163, bhph: 27, pmw: 70, pmh: 23, pmfz: 11, pgw: 70,
+  pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 39, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
+  avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: -1, pillY: 2, iconX: -3, iconY: 1,
+  panelX: 0, panelY: 0, rowX: 0, rowY: -7, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0, spX: 0, spY: 0,
+  slotX: 23, slotY: 8, catX: 21, catY: -5, spbarX: 20, spbarY: 1, equipX: -4, equipY: -3, spbarAX: 18, spbarAY: 12, spbarBX: 18, spbarBY: 0,
+  spbarCX: 19, spbarCY: -8, nickX: 0, nickY: 0, expX: 0, expY: 0, gainX: 0, gainY: 0, hpX: -1, hpY: 1, bossX: 2, bossY: -6,
+  clearX: 0, clearY: 0, waveX: -1, waveY: 0, gachaX: 0, gachaY: 0, eqtierX: -1, eqtierY: 1, eqimgX: 0, eqimgY: 0, shoprowX: 0, shoprowY: 0,
+  shopicX: 0, shopicY: 0, shopic0X: 0, shopic0Y: 0, shopic1X: 0, shopic1Y: 0, shopic2X: 0, shopic2Y: 0, shoptX: 0, shoptY: 0, shopsubX: 0, shopsubY: 0,
+  shopbX: -2, shopbY: 0, shopbtX: 0, shopbtY: 0, shopgemX: 0, shopgemY: 0, gainicX: 0, gainicY: 0, gaintX: 0, gaintY: 0, gbtnX: 0, gbtnY: 0,
+  gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0,
+  hambX: 1, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: -9, bhpX: 0, bhpY: -14, pbX: 0, pbY: 0, wjX: 0, wjY: 0,
+  caslotX: 3, caslotY: 16, caimgX: 0, caimgY: 0, canameX: 0, canameY: 0, catabX: 15, catabY: 14, cabtnX: 0, cabtnY: 0, wtitleX: 0, wtitleY: 1,
+  diaX: 0, diaY: 0, btextX: 0, btextY: 7, trsz: 35, offw: 322, offtfz: 14, offnfz: 13, offiw: 56, offih: 50, offgap: 9, offic: 24,
+  offifz: 11, offrfz: 11, offbtw: 135, offbth: 51, offbfz: 14, offclw: 100, offclh: 50, offcfz: 15, trX: -3, trY: 14, offtX: -1, offtY: 66,
+  offnX: 1, offnY: 76, offitX: -29, offitY: 80, offitiX: 0, offitiY: 6, offvX: 0, offvY: 2, offrX: 0, offrY: -3, offbtX: 0, offbtY: -15,
+  offclX: 2, offclY: -15, fuseallw: 94, fuseallh: 26, fuseallfz: 15, fuseallX: -36, fuseallY: -10, matchipic: 17, matchipfz: 13, allychipic: 15, allychipfz: 10, dtabh: 40,
+  dtabfz: 15, dgradefz: 14, dtitlefz: 17, darrowfz: 26, diconsz: 92, dtierfz: 12, dstatfz: 14, denhh: 48, denhfz: 14, denhic: 22, dequiph: 48, dequipfz: 15,
+  dfuseh: 50, dfusefz: 17, dstepsz: 46, dstepfz: 20, skicon: 120, skiconX: 0, skiconY: 0, slicon: 100, sliconX: 0, sliconY: 0, advbw: 40, advbh: 20,
+  advbfz: 10, advww: 301, advwh: 400, advmonkfz: 15, advmonvfz: 13, advregkfz: 15, advregvfz: 13, advrewkfz: 15, advrewvfz: 14, advrewic: 17, advibw: 120, advibh: 106,
+  adviw: 100, advih: 88, advmbw: 116, advmbh: 48, advrbw: 115, advrbh: 51, advwbw: 247, advwbh: 38, advsw: 249, advsh: 71, advsfz: 17, advbarw: 205,
+  advbarh: 19, advew: 93, adveh: 34, advefz: 11, advcw: 93, advch: 35, advcfz: 11, advwinX: 0, advwinY: 0, adviconX: 0, adviconY: 0, adviconbX: 12,
+  adviconbY: 0, advmonbX: 0, advmonbY: 0, advregbX: 0, advregbY: 0, advrewbX: 1, advrewbY: 29, advsignX: 0, advsignY: 0, advsigntX: 0, advsigntY: -6, advbarX: 0,
+  advbarY: -7, advmonkX: -1, advmonkY: 2, advmonvX: -1, advmonvY: 2, advregkX: -3, advregkY: 2, advregvX: -4, advregvY: 2, advrewkX: -28, advrewkY: 0, advrewdX: 0,
+  advrewdY: -1, advrewmX: 0, advrewmY: -1, adventerX: 0, adventerY: 4, advcloseX: 0, advcloseY: 4, advtxt0X: 47, advtxt0Y: 1, advtxt1X: 39, advtxt1Y: 1, advtxt2X: 43,
+  advtxt2Y: 2, advtxt3X: 39, advtxt3Y: 1, advtxt4X: 50, advtxt4Y: 1, advtxt5X: 51, advtxt5Y: 2, advtxt6X: 50, advtxt6Y: 2, advtxt7X: 47, advtxt7Y: 2, advbtn0X: 172,
+  advbtn0Y: -13, advbtn1X: 251, advbtn1Y: 0, advbtn2X: 326, advbtn2Y: -5, advbtn3X: 200, advbtn3Y: 27, advbtn4X: 66, advbtn4Y: 11, advbtn5X: 121, advbtn5Y: 4, advbtn6X: 305,
+  advbtn6Y: 36, advbtn7X: 188, advbtn7Y: 0, mailsz: 26, questsz: 39, mailboxX: 0, mailboxY: 0, questX: 9, questY: -7, matchipX: 23, matchipY: -14, allymatX: -19,
+  allymatY: 14, dtabX: 0, dtabY: 0, dtitleX: 0, dtitleY: 0, darrowX: 0, darrowY: 0, diconX: 0, diconY: 0, dstatX: 0, dstatY: 0, denhX: 0,
+  denhY: 0, dequipX: 0, dequipY: 0, dfusebtnX: 0, dfusebtnY: 0, dstepX: 0, dstepY: 0, skqbarw: 194, skqbarX: 153, skqbarY: 39, skqslotsz: 29, skqsetw: 16,
+  skqseth: 19, skqsetfz: 8, skqsetX: 149, skqsetY: 46, skhtfz: 14, skhtitleX: 25, skhtitleY: 9, skfusew: 54, skfuseh: 20, skfusefz: 12, skfuseX: -24, skfuseY: 11,
+  sklearnw: 60, sklearnh: 20, sklearnfz: 11, sklearnX: -24, sklearnY: 11, skcellsz: 49, skcellgap: 38, skcellrgap: 0, skcellX: -1, skcellY: -5, skimgsz: 46, skimgX: 0,
+  skimgY: 0, sknamefz: 12, sknameX: 0, sknameY: 0, skbarX: 1, skbarY: 0, skdiconsz: 87, skdiconX: 0, skdiconY: 0, profherow: 116, profheroh: 150, profherozoom: 115,
+  profheroX: 0, profheroY: 0, profstatfz: 13, profcurfz: 13, profcuric: 18, profgearsz: 56, profsecfz: 13, skdtitlefz: 18, skdtitleX: 0, skdtitleY: 0, skddescfz: 13, skddescX: 0,
+  skddescY: 0, skdefffz: 15, skdeffectX: 0, skdeffectY: 0, skdstatfz: 14, skdstatX: 0, skdstatY: 0, skdautofz: 12, skdautoX: 0, skdautoY: 0, skdbtnh: 48, skdbtnfz: 15,
+  skdenhX: 0, skdenhY: 0, skdequipX: 0, skdequipY: 0, qww: 340, qwh: 540, qwinX: 0, qwinY: 0, qtitlefz: 20, qtitleX: 0, qtitleY: 0, qclsz: 30,
+  qcloseX: 0, qcloseY: 0, qtabw: 92, qtabh: 30, qtabfz: 12, qtabX: 0, qtabY: 0, qrowh: 64, qrowX: 0, qrowY: 0, qiconsz: 40, qiconX: 0,
+  qiconY: 0, qnamefz: 14, qnameX: 0, qnameY: 0, qbarw: 150, qbarh: 14, qbarX: 0, qbarY: 0, qbarfz: 10, qbartX: 0, qbartY: 0, qreww: 46,
+  qrewh: 37, qrewX: 3, qrewY: 0, qrewisz: 18, qrewiX: 0, qrewiY: 2, qrewvfz: 12, qrewvX: 1, qrewvY: 1, qlvfz: 7, qlvX: -3, qlvY: -6,
+  advicotrexw: 141, advicotrexh: 254, advicotrexX: -3, advicotrexY: 0, advicospinow: 131, advicospinoh: 97, advicospinoX: 5, advicospinoY: -7, advicotrikew: 133, advicotrikeh: 93, advicotrikeX: 6, advicotrikeY: 0,
+  advicostegow: 131, advicostegoh: 105, advicostegoX: 0, advicostegoY: -9, advicoraptorw: 302, advicoraptorh: 92, advicoraptorX: -11, advicoraptorY: -5, advicoankyw: 142, advicoankyh: 103, advicoankyX: 6, advicoankyY: -18,
+  advicopteraw: 195, advicopterah: 201, advicopteraX: 21, advicopteraY: -16, advicobrachiow: 135, advicobrachioh: 115, advicobrachioX: 0, advicobrachioY: -5, evbtnw: 55, evbtnh: 58, evbtnX: 6, evbtnY: 32,
+  evbtntfz: 10, evbtntX: 2, evbtntY: 2, evww: 340, evwh: 540, evwinX: 0, evwinY: 0, evtitlefz: 20, evtitleX: 0, evtitleY: 0, evclsz: 30, evcloseX: 0,
+  evcloseY: 0, evtabw: 60, evtabh: 30, evtabfz: 13, evtabX: 0, evtabY: 0, evprevh: 120, evprevX: 0, evprevY: 0, evnamefz: 15, evnameX: 0, evnameY: 0,
+  evrowh: 46, evrowX: 0, evrowY: 0, evnosz: 26, evnoX: 0, evnoY: 0, evbnamefz: 13, evbnameX: 0, evbnameY: 0, evgow: 54, evgoh: 26, evgofz: 12,
+  evgoX: 0, evgoY: 0, evprevzoom: 100, evprevimgX: 0, evprevimgY: 0, evnoimgsz: 28, evnoimgX: 0, evnoimgY: 0, skdimgsz: 88, skdimgX: 0, skdimgY: 0, avafacesz: 31,
+  avafaceX: 0, avafaceY: -1, profheroimgX: 3, profheroimgY: -22,
 })
 const EDIT_GROUPS = {
   avatar: { label: '아바타 틀', size: ['avatar'], pos: 'avatar' },
