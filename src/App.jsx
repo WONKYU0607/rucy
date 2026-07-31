@@ -70,11 +70,28 @@ const SKILL_SHEET = [
   { id: 20, n: 5, h: 195, stage: 1, title: '바위 회오리', charSeq: [1, 2, 3, 5], fx: { type: 'proj', fly: [4], flyScale: 0.9, yOff: 0 } },
   { id: 22, n: 4, h: 180, stage: 1, title: '전광석화', charSeq: [1, 2, 3, 4], cd: 2, dmgMult: 3 },   // 나중에 손볼 예정(킵)
   { id: 23, n: 6, h: 180, stage: 1, title: '사신과 함께', charSeq: [3, 4, 3, 4, 6], cd: 2, dmgMult: 3, aoe: true, rangeMul: 1.5 },   // 원투-원투-어퍼컷 — 3·4·6번 그림만 사용(1·2·5번 삭제됨), 기본사거리 1.5배 내 모두
+  // ── 호모 에렉투스(stage 2) ── 효과(대상/데미지/사거리/쿨타임)는 인게임 스킬 상세창에서 조절
+  { id: 24, n: 7, h: 200, stage: 2, title: '암흑 강타', charSeq: [2, 4, 6, 7], cd: 2, dmgMult: 3 },
+  { id: 25, n: 5, h: 200, stage: 2, title: '뇌전 질주', charSeq: [1, 2, 3, 5], cd: 2, dmgMult: 3 },
+  { id: 26, n: 6, h: 200, stage: 2, title: '회전 폭풍', charSeq: [1, 2, 3, 4, 5, 6], cd: 2, dmgMult: 3, aoe: true, rangeMul: 1.5 },
+  { id: 27, n: 5, h: 200, stage: 2, title: '화염 참격', charSeq: [1, 2, 4, 5, 3], cd: 2, dmgMult: 3 },
+  { id: 28, n: 7, h: 200, stage: 2, title: '대지 분쇄', charSeq: [1, 2, 3, 5, 6, 7], cd: 2, dmgMult: 3, aoe: true },
   ...PASSIVE_SHEET,   // 진화 단계별 패시브 (오스트랄로~인간)
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
 // 스킬 아이콘: 해당 스킬 시트의 지정 프레임 사용 (없으면 번호 텍스트)
-const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4, 22: 4, 23: 6 }
+const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4, 22: 4, 23: 6, 24: 7, 25: 3, 26: 3, 27: 1, 28: 6 }
+// 스킬 효과(대상/데미지/사거리/쿨타임)를 인게임 상세창에서 조절 — 인덱스가 아닌 **id 기준**이라
+// 스킬을 넣고 빼도 값이 안 밀린다(예전 cdConf는 인덱스 배열이라 매번 리셋됐음).
+const skEff = (sk, cfg) => {
+  const c = (cfg || {})[sk.id] || {}
+  return {
+    cd: c.cd ?? sk.cd,
+    dmgMult: c.dmg ?? sk.dmgMult,
+    aoe: c.aoe != null ? !!c.aoe : sk.aoe,
+    rangeMul: c.range != null ? (c.range > 0 ? c.range : null) : sk.rangeMul,
+  }
+}
 const skillIconSrc = id => SKILL_ICON_FRAME[id] ? `/skill/s${id}/s${id}_${SKILL_ICON_FRAME[id]}.png` : null
 const skIcon = s => (s ? (skillIconSrc(s.id) || s.icon2 || null) : null)
 // ── 전리품 조각 (사망 드롭 → 상단 재화칸 흡수 연출) ──
@@ -280,6 +297,11 @@ const SKILL_FRAME_T = {
   20: [0.15, 0.15, 0.15, 0.15],            // 토네이도 (4: 휘두르기3+복귀1)
   22: [0.10, 0.12, 0.12, 0.16],                                // 전광석화 (4)
   23: [0.10, 0.12, 0.10, 0.12, 0.30],                          // 사신과 함께 (5: 원-투-원-투-어퍼컷)
+  24: [0.18, 0.18, 0.18, 0.18],                                // 암흑 강타 (4, 균등)
+  25: [0.18, 0.18, 0.18, 0.18],                                // 뇌전 질주 (4, 균등)
+  26: [0.18, 0.18, 0.18, 0.18, 0.18, 0.18],                    // 회전 폭풍 (6, 균등)
+  27: [0.18, 0.18, 0.18, 0.18, 0.18],                          // 화염 참격 (5, 균등)
+  28: [0.18, 0.18, 0.18, 0.18, 0.18, 0.18],                    // 대지 분쇄 (6, 균등)
 }
 // 이펙트 타이밍
 const STRIKE_DUR = 0.55   // 낙뢰/낙석 이펙트 재생 시간(초) 기본값
@@ -630,6 +652,13 @@ function loadSave() {
       skill: { ...statInit(), ...s.skill },
       skillSets: normSets(s.skillSets, s.equipped), activeSet: (typeof s.activeSet === 'number' && s.activeSet >= 0 && s.activeSet < SET_COUNT) ? s.activeSet : 0,
       cdConf: Array.isArray(s.cdConf) && s.cdConf.length === SKILLS.length ? s.cdConf : SKILLS.map(k => k.cd),
+      skCfg: (() => {                                     // 스킬 효과 설정(id 기준)
+        const o = (s.skCfg && typeof s.skCfg === 'object') ? { ...s.skCfg } : {}
+        if (!s.skCfg && Array.isArray(s.cdConf)) SKILLS.forEach((k, i) => {   // 옛 인덱스 배열 → id 기준 이관
+          if (s.cdConf[i] != null && s.cdConf[i] !== k.cd) o[k.id] = { ...(o[k.id] || {}), cd: s.cdConf[i] }
+        })
+        return o
+      })(),
       // 장착·재화·기록: 저장된 값 그대로 복원 (누락 시 기본값)
       alliesOn: s.alliesOn && typeof s.alliesOn === 'object' ? s.alliesOn : {},
       gem: s.gem ?? 0, inv: s.inv && typeof s.inv === 'object' ? s.inv : {}, best: s.best ?? s.wave ?? 1,
@@ -640,7 +669,7 @@ function loadSave() {
       pearl: typeof s.pearl === 'number' ? s.pearl : 0, quest: s.quest && typeof s.quest === 'object' && s.quest.ev ? s.quest : questInit(),
     }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, nick: 'Slayer_' + Math.floor(Math.random() * 9000000 + 1000000), mats: [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, advStage: {}, pearl: 0, quest: questInit() }
+  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, skCfg: {}, cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, nick: 'Slayer_' + Math.floor(Math.random() * 9000000 + 1000000), mats: [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, advStage: {}, pearl: 0, quest: questInit() }
 }
 const fmt = n => n >= 1e8 ? (n/1e8).toFixed(1)+'억' : n >= 1e4 ? (n/1e4).toFixed(1)+'만' : Math.floor(n).toLocaleString()
 const fmtPct = v => v >= 10000 ? fmt(Math.round(v)) : (Math.round(v * 10) / 10).toString()
@@ -819,7 +848,8 @@ export default function App() {
   const [skillSets, setSkillSets] = useState(init.skillSets)       // 3세트 × 8슬롯
   const [activeSet, setActiveSet] = useState(init.activeSet ?? 0)  // 현재 활성 세트 (0~2)
   const equipped = skillSets[activeSet] || emptySet()              // 파생: 활성 세트 = 전투가 읽는 장착 슬롯
-  const [cdConf, setCdConf] = useState(init.cdConf)                // 스킬별 쿨타임 설정(초, 직접입력)
+  const [cdConf, setCdConf] = useState(init.cdConf)                // (구) 인덱스 기반 — skCfg 로 이관됨
+  const [skCfg, setSkCfg] = useState(init.skCfg || {})             // 스킬 효과 설정 { id: { cd, dmg, range, aoe } }
 
   // 스탯 총 레벨 = 강화(고기) + 스킬(SP), 효과는 STAT_LIST.per 기준
   const tot = k => (lv[k] || 0) + (skill[k] || 0)
@@ -848,14 +878,14 @@ export default function App() {
     // TODO(패시브 효과): 장착된 패시브(SKILLS[si].passive)의 수치가 확정되면 여기서 상시형은 위 스탯에 합산,
     // 주기형은 전투 루프에서 슬롯 쿨(w.skillCd) 돌 때마다 버프 적용. 현재는 표시·장착만 되고 효과 0.
     equippedPassives: (equipped || []).filter(si => si != null && SKILLS[si] && SKILLS[si].passive),
-    cdConf,
+    cdConf, skCfg,
   }
 
   const cloudBusy = useRef(false)   // 어댑트/불러오기 중 로컬 저장 차단
   useEffect(() => {
     if (cloudBusy.current) return
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, gem, inv, best, alliesOn, gearEq, nick, mats, enh, ruby, advStage, pearl, quest, ts: Date.now() }))
-  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, gem, inv, best, alliesOn, gearEq, nick, mats, enh, ruby, advStage, pearl, quest])
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, skCfg, gem, inv, best, alliesOn, gearEq, nick, mats, enh, ruby, advStage, pearl, quest, ts: Date.now() }))
+  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, skCfg, gem, inv, best, alliesOn, gearEq, nick, mats, enh, ruby, advStage, pearl, quest])
 
   // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제
   useEffect(() => {
@@ -1193,7 +1223,7 @@ export default function App() {
             for (const si of slots) {
               if (si != null && SKILLS[si].stage === st.evo && w.skillCd[si] <= 0) { ready = si; break }
             }
-            if (ready >= 0) { w.skill = ready; w.skillT = 0; w.skillDid = false; w.skillCd[ready] = st.cdConf?.[ready] ?? SKILLS[ready].cd }
+            if (ready >= 0) { w.skill = ready; w.skillT = 0; w.skillDid = false; w.skillCd[ready] = skEff(SKILLS[ready], st.skCfg).cd }
           }
         } else {
           const sk = SKILLS[w.skill]
@@ -1201,7 +1231,8 @@ export default function App() {
           w.skillT += dt * SPEED
           if (!w.skillDid && w.skillT >= _skCast * sk.hitAt) {
             w.skillDid = true
-            const dmg = st.atk * sk.dmgMult
+            const __ef = skEff(sk, st.skCfg)
+          const dmg = st.atk * __ef.dmgMult
             if (sk.fx && sk.fx.type === 'proj') {
               // 투사체: 히어로 앞에서 생성, 명중 시 데미지
               const _spd = (motRef.current.skFx[sk.id] || {}).spd || 1
@@ -1213,8 +1244,8 @@ export default function App() {
               const ts = w.enemies.filter(e => !e.dead).slice(0, 5)
               const xs = ts.length ? ts.map(e => e.x) : [w.heroX + 260]
               for (const x of xs) w.strikes.push({ id: sk.id, frames: sk.fx.frames, x, t: 0, dur: (STRIKE_DUR_BY[sk.id] ?? STRIKE_DUR) / ((motRef.current.skFx[sk.id] || {}).spd || 1), dmg, hitDone: false, h: sk.fx.fxH ?? sk.h })
-            } else if (sk.aoe) {
-              const rng = sk.rangeMul ? atkRange * sk.rangeMul : Infinity   // rangeMul 있으면 기본사거리×배수 이내만, 없으면 화면 전체(메테오)
+            } else if (__ef.aoe) {
+              const rng = __ef.rangeMul ? atkRange * __ef.rangeMul : Infinity   // rangeMul 있으면 기본사거리×배수 이내만, 없으면 화면 전체(메테오)
               for (const t of w.enemies) if (!t.dead && t.x - w.heroX < rng) { applySkillDmg(t, dmg); if (sk.stun) t.stun = sk.stun }
             } else {
               const targets = w.enemies.filter(e => !e.dead).sort((a, b) => a.x - b.x).slice(0, sk.maxTargets || 1)
@@ -2334,6 +2365,7 @@ export default function App() {
         const eqSlot = equipped.indexOf(skillDetail)
         const isEq = eqSlot >= 0
         const auto = !!skillAuto[skillDetail]
+        const ef = skEff(s, skCfg)                       // 현재 적용 중인 효과값(설정 > 코드 기본)
         return (
           <div style={st.dOverlay} onClick={e => { if (!uiEdit && e.target === e.currentTarget) setSkillDetail(null) }}>
             <div style={st.skdBox}>
@@ -2351,16 +2383,41 @@ export default function App() {
                   AUTO<span style={{ ...st.skdAutoDot, ...(auto ? st.skdAutoDotOn : {}) }} />
                 </button>
               </div>
-              <div data-edit="skdeffect" style={st.skdEffect}>{s.aoe ? (s.rangeMul ? `기본 사거리 ${s.rangeMul}배 이내` : '화면 전체') + '의 적 모두에게' : '적 1명에게'}<br />공격력의 <b style={{ color: '#f0a830' }}>{s.dmgMult * 100}%</b>로 1회 공격</div>
+              <div data-edit="skdeffect" style={st.skdEffect}>{ef.aoe ? (ef.rangeMul ? `기본 사거리 ${ef.rangeMul}배 이내` : '화면 전체') + '의 적 모두에게' : '적 1명에게'}<br />공격력의 <b style={{ color: '#f0a830' }}>{s.dmgMult * 100}%</b>로 1회 공격</div>
               <div style={st.skdStatRow}>
                 <div data-edit="skdstat" style={st.skdStat}><span style={st.skdStatK}>필요공격수</span><span style={st.skdStatV}>—</span></div>
                 <div data-edit="skdstat" style={st.skdStat}><span style={st.skdStatK}>MP 소모</span><span style={st.skdStatV}>—</span></div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, margin: '4px 0 8px' }}>
-                <span style={{ fontSize: 12, color: '#c9b596' }}>쿨타임</span>
-                <button onClick={() => setCdConf(c => c.map((v, i) => i === skillDetail ? Math.max(0.2, +((v ?? s.cd) - 0.5).toFixed(1)) : v))} style={{ width: 30, height: 30, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#f0dfae', fontSize: 18, lineHeight: 1 }}>−</button>
-                <span style={{ fontSize: 15, fontWeight: 800, color: '#fff5df', minWidth: 52, textAlign: 'center' }}>{(cdConf[skillDetail] ?? s.cd).toFixed(1)}초</span>
-                <button onClick={() => setCdConf(c => c.map((v, i) => i === skillDetail ? +(((v ?? s.cd) + 0.5)).toFixed(1) : v))} style={{ width: 30, height: 30, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: '#f0dfae', fontSize: 18, lineHeight: 1 }}>+</button>
+              <div style={st.skdCfgBox}>
+                {(() => {
+                  const put = (k, v) => setSkCfg(c => ({ ...c, [s.id]: { ...(c[s.id] || {}), [k]: v } }))
+                  const row = (label, val, onMinus, onPlus, extra) => (
+                    <div style={st.skdCfgRow}>
+                      <span style={st.skdCfgK}>{label}</span>
+                      <button style={st.skdCfgBtn} onClick={() => { if (!uiEdit) onMinus() }}>−</button>
+                      <span style={st.skdCfgV}>{val}</span>
+                      <button style={st.skdCfgBtn} onClick={() => { if (!uiEdit) onPlus() }}>+</button>
+                      {extra}
+                    </div>
+                  )
+                  return (<>
+                    <div style={st.skdCfgRow}>
+                      <span style={st.skdCfgK}>대상</span>
+                      <button style={{ ...st.skdCfgTog, ...(!ef.aoe ? st.skdCfgTogOn : {}) }} onClick={() => { if (!uiEdit) put('aoe', 0) }}>단일</button>
+                      <button style={{ ...st.skdCfgTog, ...(ef.aoe ? st.skdCfgTogOn : {}) }} onClick={() => { if (!uiEdit) put('aoe', 1) }}>광역</button>
+                    </div>
+                    {row('데미지', `x${ef.dmgMult.toFixed(1)}`,
+                      () => put('dmg', Math.max(0.1, +(ef.dmgMult - 0.1).toFixed(1))),
+                      () => put('dmg', Math.min(99, +(ef.dmgMult + 0.1).toFixed(1))))}
+                    {ef.aoe && row('사거리', ef.rangeMul ? `기본 x${ef.rangeMul.toFixed(1)}` : '화면 전체',
+                      () => put('range', Math.max(0, +(((ef.rangeMul ?? 0.5)) - 0.5).toFixed(1))),
+                      () => put('range', Math.min(20, +(((ef.rangeMul ?? 0)) + 0.5).toFixed(1))))}
+                    {row('쿨타임', `${ef.cd.toFixed(1)}초`,
+                      () => put('cd', Math.max(0.2, +(ef.cd - 0.5).toFixed(1))),
+                      () => put('cd', Math.min(60, +(ef.cd + 0.5).toFixed(1))))}
+                    <button style={st.skdCfgReset} onClick={() => { if (!uiEdit) setSkCfg(c => { const n = { ...c }; delete n[s.id]; return n }) }}>기본값으로</button>
+                  </>)
+                })()}
               </div>
               <div style={st.skdBtns}>
                 <button data-edit="skdenh" style={st.skdEnhBtn} onClick={() => { /* TODO: 스킬 강화 */ }}>
@@ -3507,8 +3564,8 @@ Object.assign(UI_DEFAULT, {
   advicopteraw: 195, advicopterah: 201, advicopteraX: 21, advicopteraY: -16, advicobrachiow: 135, advicobrachioh: 115, advicobrachioX: 0, advicobrachioY: -5, evbtnw: 55, evbtnh: 58, evbtnX: 6, evbtnY: 32,
   evbtntfz: 10, evbtntX: 2, evbtntY: 2, evww: 340, evwh: 540, evwinX: 0, evwinY: 0, evtitlefz: 20, evtitleX: 0, evtitleY: 0, evclsz: 30, evcloseX: 0,
   evcloseY: 0, evtabw: 60, evtabh: 30, evtabfz: 13, evtabX: 0, evtabY: 0, evprevh: 120, evprevX: 0, evprevY: 0, evnamefz: 15, evnameX: 0, evnameY: 0,
-  evrowh: 46, evrowX: 0, evrowY: 0, evnosz: 26, evnoX: 0, evnoY: 0, evbnamefz: 13, evbnameX: 0, evbnameY: 0, evgow: 54, evgoh: 26, evgofz: 12,
-  evgoX: 0, evgoY: 0, evprevzoom: 100, evprevimgX: 0, evprevimgY: 0, evnoimgsz: 33, evnoimgX: 6, evnoimgY: 0, skdimgsz: 88, skdimgX: 0, skdimgY: 0, avafacesz: 31,
+  evrowh: 46, evrowX: 0, evrowY: 0, evnosz: 26, evnoX: 0, evnoY: 0, evbnamefz: 15, evbnameX: 32, evbnameY: 0, evgow: 54, evgoh: 26, evgofz: 12,
+  evgoX: 0, evgoY: 0, evprevzoom: 100, evprevimgX: 0, evprevimgY: 0, evnoimgsz: 57, evnoimgX: 14, evnoimgY: -1, skdimgsz: 88, skdimgX: 0, skdimgY: 0, avafacesz: 31,
   avafaceX: 0, avafaceY: -1, profheroimgX: 3, profheroimgY: -22,
 })
 const EDIT_GROUPS = {
@@ -4089,6 +4146,15 @@ const st = {
   skdStat: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 8, background: 'rgba(0,0,0,0.28)', border: '1px solid #4a3822', transform: 'translate(var(--pd-skdstat-x), var(--pd-skdstat-y))' },
   skdStatK: { fontSize: 'var(--pd-skdstatfz)', color: '#b8a684', fontWeight: 700 },
   skdStatV: { fontSize: 'var(--pd-skdstatfz)', color: '#fff', fontWeight: 800 },
+  // ── 스킬 효과 설정 (상세창) ──
+  skdCfgBox: { margin: '4px 0 8px', padding: '6px 8px', borderRadius: 8, background: 'rgba(0,0,0,0.25)', border: '1px solid #4a3822', display: 'flex', flexDirection: 'column', gap: 4 },
+  skdCfgRow: { display: 'flex', alignItems: 'center', gap: 6 },
+  skdCfgK: { width: 52, flexShrink: 0, fontSize: 12, color: '#c9b596' },
+  skdCfgV: { flex: 1, textAlign: 'center', fontSize: 14, fontWeight: 800, color: '#fff5df' },
+  skdCfgBtn: { width: 28, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 15, lineHeight: 1, padding: 0, cursor: 'pointer' },
+  skdCfgTog: { flex: 1, height: 26, borderRadius: 6, border: '1px solid #4a3a22', background: '#2c2013', color: '#cbb89a', fontSize: 12, fontWeight: 700, padding: 0, cursor: 'pointer' },
+  skdCfgTogOn: { border: `1px solid ${GOLD}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff' },
+  skdCfgReset: { height: 22, marginTop: 2, borderRadius: 6, border: '1px solid #4a3a22', background: 'transparent', color: '#9c8a6c', fontSize: 11, cursor: 'pointer' },
   skdBtns: { display: 'flex', gap: 10, marginTop: 14 },
   skdEnhBtn: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, height: 'var(--pd-skdbtnh)', justifyContent: 'center', fontSize: 'var(--pd-skdbtnfz)', fontWeight: 800, color: '#2a1c0a', border: '1px solid #f0b040', borderRadius: 9, background: 'linear-gradient(180deg,#ffcf5a,#e8992a)', cursor: 'pointer', transform: 'translate(var(--pd-skdenh-x), var(--pd-skdenh-y))' },
   skdEnhCost: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 'calc(var(--pd-skdbtnfz) - 1px)' },
