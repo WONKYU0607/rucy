@@ -1690,6 +1690,9 @@ export default function App() {
       const im = safeImg(key, fi)
       if (im.complete && im.naturalWidth > 0) {
         const hcfg = motRef.current.hero
+        const __skId = w.skill != null ? SKILLS[w.skill].id : null
+        const __skp = __skId != null ? ((motRef.current.hero.skillPos || {})[__skId] || {}) : {}   // 스킬별 그림 위치 오프셋
+        const __skfp = __skId != null ? (((motRef.current.hero.skillFrPos || {})[__skId] || {})[fi + 1] || {}) : {}   // 스킬 프레임별 위치
         const __frMul = (((hcfg.atkFrSz || {})[key] || {})[fi + 1] ?? 1)   // 기본공격 크기 = 프레임별 배율
         const hStMul = w.skill != null ? (((hcfg.skillSz || {})[__skId] || 1) * ((((hcfg.skillFrSz || {})[__skId] || {})[fi + 1]) ?? 1)) : (hero.state === 'attack' ? __frMul : ((hcfg.walkSz || {})[__pvEvo] ?? 1))
         const hh = a.h * (hcfg.sz || 1) * hStMul * ((hcfg.evoSz || {})[__pvEvo] ?? 1)
@@ -1736,9 +1739,6 @@ export default function App() {
           }
         }
         const lunge = hero.state === 'attack' ? Math.sin(Math.min(1, hero.t / 0.4) * Math.PI) * 12 : 0
-        const __skId = w.skill != null ? SKILLS[w.skill].id : null
-        const __skp = __skId != null ? ((motRef.current.hero.skillPos || {})[__skId] || {}) : {}   // 스킬별 그림 위치 오프셋
-        const __skfp = __skId != null ? (((motRef.current.hero.skillFrPos || {})[__skId] || {})[fi + 1] || {}) : {}   // 스킬 프레임별 위치
         ctx.translate(w.heroX + lunge - (w.heroKb || 0) + (motRef.current.hero.x || 0) + (__skp.x || 0) + (__skfp.x || 0), w.groundY + (motRef.current.hero.y || 0) + (__skp.y || 0) + (__skfp.y || 0))
         if (hero.flash > 0) ctx.filter = 'brightness(2.5)'
         if (a.flip) ctx.scale(-1, 1)
