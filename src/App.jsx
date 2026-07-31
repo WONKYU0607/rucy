@@ -468,7 +468,7 @@ const ENEMY_TYPES = {
   chicken: { name: '닭', hp: 25, speed: 75, dmg: 6, reward: 5, h: 45, color: '#e8e0d0', flip: false, frames: ['/monster/chicken/chicken_1.png', '/monster/chicken/chicken_2.png', '/monster/chicken/chicken_3.png', '/monster/chicken/chicken_4.png'] },
   duck: { name: '오리', hp: 35, speed: 85, dmg: 8, reward: 7, h: 40, color: '#4a6a3a', flip: false, frames: ['/monster/duck/duck_1.png', '/monster/duck/duck_2.png', '/monster/duck/duck_3.png', '/monster/duck/duck_4.png'] },
   frog: { name: '개구리', hp: 45, speed: 70, dmg: 10, reward: 8, h: 35, color: '#6a9a3a', flip: false, frames: ['/monster/frog/frog_1.png', '/monster/frog/frog_2.png', '/monster/frog/frog_3.png', '/monster/frog/frog_4.png'] },
-  bat: { name: '박쥐', hp: 55, speed: 135, dmg: 14, reward: 12, h: 50, color: '#4a3a4a', flip: false, air: 80, frames: ['/monster/bat/bat_1.png', '/monster/bat/bat_2.png', '/monster/bat/bat_3.png', '/monster/bat/bat_4.png'] },
+  bat: { name: '박쥐', hp: 55, speed: 135, dmg: 14, reward: 12, h: 50, color: '#4a3a4a', flip: false, air: 80, frames: ['/monster/bat/bat_1.png', '/monster/bat/bat_3.png', '/monster/bat/bat_4.png'] },   // 2번 삭제됨
   pelican: { name: '펠리컨', hp: 90, speed: 110, dmg: 16, reward: 15, h: 70, color: '#e0d8c8', flip: false, air: 60, frames: ['/monster/pelican/pelican_1.png', '/monster/pelican/pelican_2.png', '/monster/pelican/pelican_3.png', '/monster/pelican/pelican_4.png'] },
   mantis: { name: '사마귀', hp: 75, speed: 95, dmg: 20, reward: 15, h: 60, color: '#7aa03a', flip: false, frames: ['/monster/mantis/mantis_1.png', '/monster/mantis/mantis_2.png', '/monster/mantis/mantis_3.png', '/monster/mantis/mantis_4.png'] },
   polarbear: { name: '북극곰', hp: 420, speed: 42, dmg: 38, reward: 52, h: 75, color: '#e8e8e0', flip: false, frames: ['/monster/polarbear/polarbear_1.png', '/monster/polarbear/polarbear_2.png', '/monster/polarbear/polarbear_3.png', '/monster/polarbear/polarbear_4.png'] },
@@ -3508,7 +3508,7 @@ Object.assign(UI_DEFAULT, {
   evbtntfz: 10, evbtntX: 2, evbtntY: 2, evww: 340, evwh: 540, evwinX: 0, evwinY: 0, evtitlefz: 20, evtitleX: 0, evtitleY: 0, evclsz: 30, evcloseX: 0,
   evcloseY: 0, evtabw: 60, evtabh: 30, evtabfz: 13, evtabX: 0, evtabY: 0, evprevh: 120, evprevX: 0, evprevY: 0, evnamefz: 15, evnameX: 0, evnameY: 0,
   evrowh: 46, evrowX: 0, evrowY: 0, evnosz: 26, evnoX: 0, evnoY: 0, evbnamefz: 13, evbnameX: 0, evbnameY: 0, evgow: 54, evgoh: 26, evgofz: 12,
-  evgoX: 0, evgoY: 0, evprevzoom: 100, evprevimgX: 0, evprevimgY: 0, evnoimgsz: 28, evnoimgX: 0, evnoimgY: 0, skdimgsz: 88, skdimgX: 0, skdimgY: 0, avafacesz: 31,
+  evgoX: 0, evgoY: 0, evprevzoom: 100, evprevimgX: 0, evprevimgY: 0, evnoimgsz: 33, evnoimgX: 6, evnoimgY: 0, skdimgsz: 88, skdimgX: 0, skdimgY: 0, avafacesz: 31,
   avafaceX: 0, avafaceY: -1, profheroimgX: 3, profheroimgY: -22,
 })
 const EDIT_GROUPS = {
@@ -3671,7 +3671,7 @@ Object.assign(EDIT_GROUPS, {
   evnoimg: { label: '보스 그림', size: ['evnoimgsz'], pos: 'evnoimg' },
   evname: { label: '던전 이름', size: ['evnamefz'], pos: 'evname' },
   evrow: { label: '보스 줄', size: ['evrowh'], pos: 'evrow' },
-  evno: { label: '보스 그림 틀', size: ['evnosz'], pos: 'evno' },
+  evno: { label: '보스 그림 자리', size: ['evnosz'], pos: 'evno' },
   evbname: { label: '보스 이름', size: ['evbnamefz'], pos: 'evbname' },
   evgo: { label: '도전 버튼', size: ['evgow', 'evgoh', 'evgofz'], pos: 'evgo' },
   qwin: { label: '퀘스트 창', size: ['qww', 'qwh'], pos: 'qwin' },
@@ -3716,7 +3716,7 @@ Object.assign(UI_LABELS, {
   skdefffz: '효과 글자', skdstatfz: '스탯 글자', skdautofz: 'AUTO 글자', skdbtnh: '버튼 높이', skdbtnfz: '버튼 글자',
   evbtnw: '버튼 너비', evbtnh: '버튼 높이', evbtntfz: '글씨 크기', evww: '창 너비', evwh: '창 높이', evtitlefz: '제목 글자', evclsz: '버튼 크기',
   evtabw: '탭 너비', evtabh: '탭 높이', evtabfz: '탭 글자', evprevh: '틀 높이', evprevzoom: '그림 크기%', evnoimgsz: '그림 크기', evnamefz: '이름 글자', evrowh: '줄 높이',
-  evnosz: '틀 크기', evbnamefz: '이름 글자', evgow: '버튼 너비', evgoh: '버튼 높이', evgofz: '버튼 글자',
+  evnosz: '자리 크기', evbnamefz: '이름 글자', evgow: '버튼 너비', evgoh: '버튼 높이', evgofz: '버튼 글자',
   qww: '창 너비', qwh: '창 높이', qtitlefz: '제목 글자', qclsz: '버튼 크기',
   qtabw: '탭 너비', qtabh: '탭 높이', qtabfz: '탭 글자', qrowh: '행 높이',
   qiconsz: '아이콘 크기', qnamefz: '이름 글자', qbarw: '바 너비', qbarh: '바 높이', qbarfz: '바 글자',
@@ -4149,10 +4149,9 @@ const st = {
     borderRadius: 8, background: 'rgba(0,0,0,0.28)', border: '1px solid #4a3822',
     transform: 'translate(var(--pd-evrow-x), var(--pd-evrow-y))',
   },
-  evNo: {
-    flexShrink: 0, width: 'var(--pd-evnosz)', height: 'var(--pd-evnosz)', borderRadius: '50%',
+  evNo: {                                                   // 보스 그림 자리 (원형 테두리·배경 없음 — 누끼 그림만)
+    flexShrink: 0, width: 'var(--pd-evnosz)', height: 'var(--pd-evnosz)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    overflow: 'hidden', background: '#3a2a14', border: `1px solid ${GOLD}`,
     transform: 'translate(var(--pd-evno-x), var(--pd-evno-y))',
   },
   evNoImg: {                                                // 번호 칸 안 보스 그림 (독립 크기·위치)
