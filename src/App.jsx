@@ -203,6 +203,7 @@ const MOTION_DEFAULT = {
     'c:ostrich': { sz: 0.76, y: -5, stop: -4 }, 'c:turtle': { stop: 4 }, 'c:croc': { sz: 1.05, y: -3, stop: 46 }, 'c:komodo': { stop: 46, spd: 1.45, y: -2 },
     'c:eagle': { y: 20, sz: 1.04, stop: 7 }, 'c:giraffe': { sz: 0.68, y: -12, stop: -10 }, 'c:lion': { sz: 0.9, y: -6, stop: 37 }, 'c:elephant': { sz: 0.8, y: -9, spd: 1.1, stop: 10 },
   },
+  wave: { gap: 65, idle: 0.55 },                              // 웨이브 몹 일렬 간격(px) / 제자리 대기 프레임 속도
   skFx: { 1: { sz: 0.82, spd: 1.5, fly: 1.25, x: 0, y: 0, fr: {} }, 2: { sz: 0.74, spd: 0.3, fly: 1.5, x: 0, y: 0, fr: {} }, 16: { sz: 1, spd: 1, fly: 1, x: 0, y: 0, fr: {} }, 18: { sz: 1.04, spd: 1.6, fly: 1, x: 0, y: 0, fr: {} }, 20: { sz: 0.74, spd: 1.25, fly: 1, x: 0, y: 0, fr: {} } },  // 스킬 이펙트 (x/y=위치, fr={프레임:{sz,x,y}} 프레임별)
 }
 const MOT_FX_IDS = [1, 2, 16, 18, 20]                          // 이펙트 있는 스킬 id
@@ -227,7 +228,8 @@ function mergeMotion(sv) {   // 저장된 모션값 + 기본값 병합 (초기 �
     lunge: { ...MOTION_DEFAULT.lunge, ...(sv.lunge || {}) },
     stop: { ...MOTION_DEFAULT.stop, ...(sv.stop || {}) }, size: { ...MOTION_DEFAULT.size, ...(sv.size || {}) },
     hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}), evoSz: { ...MOTION_DEFAULT.hero.evoSz, ...((sv.hero || {}).evoSz || {}) }, walkSz: perStage((sv.hero || {}).walkSz, MOTION_DEFAULT.hero.walkSz), skillSz: { ...MOTION_DEFAULT.hero.skillSz, ...((sv.hero || {}).skillSz || {}) }, skillPos: { ...MOTION_DEFAULT.hero.skillPos, ...((sv.hero || {}).skillPos || {}) }, skillFrSz: { ...((sv.hero || {}).skillFrSz || {}) }, skillFrPos: { ...((sv.hero || {}).skillFrPos || {}) }, skillFrT: { ...((sv.hero || {}).skillFrT || {}) }, hit: { ...MOTION_DEFAULT.hero.hit, ...((sv.hero || {}).hit || {}) }, atkFrSz: mergeAtkFrSz(sv.hero || {}), atkFrX: { ...MOTION_DEFAULT.hero.atkFrX, ...((sv.hero || {}).atkFrX || {}) } },
-    mob: { ...MOTION_DEFAULT.mob, ...(sv.mob || {}) }, boss: { ...MOTION_DEFAULT.boss, ...(sv.boss || {}) },   // 기본값(사용자 확정값) 위에 저장값 덮어쓰기
+    mob: { ...MOTION_DEFAULT.mob, ...(sv.mob || {}) }, boss: { ...MOTION_DEFAULT.boss, ...(sv.boss || {}) },
+    wave: { ...MOTION_DEFAULT.wave, ...(sv.wave || {}) },   // 기본값(사용자 확정값) 위에 저장값 덮어쓰기
     ally: { hunter: { ...MOTION_DEFAULT.ally.hunter, ...((sv.ally || {}).hunter || {}) }, shaman: { ...MOTION_DEFAULT.ally.shaman, ...((sv.ally || {}).shaman || {}) }, healer: { ...MOTION_DEFAULT.ally.healer, ...((sv.ally || {}).healer || {}) }, giant: { ...MOTION_DEFAULT.ally.giant, ...((sv.ally || {}).giant || {}) } },
     skFx: Object.fromEntries(MOT_FX_IDS.map(id => [id, { ...MOTION_DEFAULT.skFx[id], ...((sv.skFx || {})[id] || {}) }])),
   }
@@ -446,9 +448,7 @@ const _deadCtx = _deadCv ? _deadCv.getContext('2d') : null
 const HERO_X = 200  // 평상시 영웅 x (동료가 설 왼쪽 공간 확보 / 보스전에선 화면 중앙 쪽으로 이동)
 const SPEED = 1                                      // 전역 속도 배율
 const SCROLL = 140 * SPEED                            // 전진 속도 (px/s)
-const IDLE_ANIM = 0.55                                // 제자리 대기 프레임 속도(숨쉬기). 값↑ = 빨리 들썩임
-const WAVE_GAP = 110                                  // 웨이브 몹 일렬 배치 간격(px). 9칸이라 웨이브 길이 = 9×이 값
-                                                      // 110이면 이동속도 1배에서 7.1초, 2배 강화 시 3.5초 (예전은 5초 고정)
+// 웨이브 간격·대기속도는 모션 편집기(일반몹 탭)에서 조절 — MOTION_DEFAULT.wave 참조
 const PUNCH = { hitAt: 0.12, total: 0.3, range: 95 } // 4족 주먹질
 const THROW = { windupEnd: 0.14, releaseEnd: 0.30, total: 0.42, range: 340 }
 // 에렉투스 몽둥이: 1타 내려치기(위→아래), 2타 올려치기(아래→위) 번갈아
@@ -980,6 +980,7 @@ export default function App() {
       w.killed = 0
       w.bossPending = false
       w.spawnTimer = 200
+      w.spawnIdx = 0                 // 일렬 배치 순번 (웨이브마다 리셋)
       w.waveNum = n
       w.clearedFlag = false
     }
@@ -1001,6 +1002,7 @@ export default function App() {
       w.killed = 0
       w.bossPending = true
       w.spawnTimer = 200
+      w.spawnIdx = 0                 // 보스전은 한 마리뿐 — 화면 끝에서 걸어 나오게 0부터
       w.clearedFlag = false
     }
 
@@ -1033,7 +1035,7 @@ export default function App() {
       const t = ENEMY_TYPES[key]
       const sc = (1 + 0.4 * (w.waveNum - 1)) * (boss ? 12 : 1)
       w.enemies.push({
-        type: key, boss, x: w.W + 40 + (seq ? (seq - 1) * WAVE_GAP : 0), hp: t.hp * sc, maxHp: t.hp * sc,
+        type: key, boss, x: w.W + 40 + (seq ? (seq - 1) * (motRef.current.wave.gap ?? 65) : 0), hp: t.hp * sc, maxHp: t.hp * sc,
         speed: t.speed * (boss ? 0.6 : 0.9 + Math.random() * 0.2),
         dmg: t.dmg * (1 + 0.1 * (w.waveNum - 1)) * (boss ? 3 : 1),
         meat: Math.floor(t.meat * (1 + 0.2 * (w.waveNum - 1))) * (boss ? 15 : 1),
@@ -1154,7 +1156,12 @@ export default function App() {
       const heroTargetX = w.bossBattle ? Math.max(HERO_X, Math.round(w.W * 0.34)) : HERO_X
       w.heroX += (heroTargetX - w.heroX) * Math.min(1, dt * 4)
       const atkRange0 = st.mode === 'quad' ? PUNCH.range : MELEE_MODES.includes(st.mode) ? MC(st.mode).range : THROW.range
-      const blocked = w.enemies.some(e => !e.dead && (e.x - w.heroX < atkRange0 || (e.stopX != null && e.x <= e.stopX + 6)))
+      const blocked = w.enemies.some(e => {
+        if (e.dead) return false
+        const reached = e.stopX != null && e.x <= e.stopX + 6
+        if (!w.adv && !e.boss) return reached          // 제자리 몹: 정지위치까지 히어로가 걸어가야 멈춤
+        return e.x - w.heroX < atkRange0 || reached    // 걸어오는 몹·보스: 기존 사거리 판정
+      })
       w._blocked = blocked
       const moving = (st.phase === 'fighting' || st.phase === 'cleared') && hero.state === 'move' && !blocked
       const scroll = moving ? SCROLL * st.mspdMult : 0
@@ -1188,7 +1195,10 @@ export default function App() {
           const szm = e.dino ? (emb.sz ?? (motRef.current.size[e.dino] || 1)) : (emb.sz || 1)
           const estop = e.dino ? (emb.stop ?? (motRef.current.stop[e.dino] || 0)) : (emb.stop || 0)   // 좌우 정지 위치(+면 오른쪽/멀리)
           const espd = emb.spd || 1                                                       // 달려오는 속도 배율(공룡·웨이브 공통)
-          const stopX = w.heroX + Math.min(atkRange - 15, 60 + e.h * szm * 0.4) + estop
+          // 제자리 몹은 히어로가 직접 걸어가서 만나므로 더 바짝 붙어야 자연스럽다.
+          // (걸어오는 몹·보스는 달려오는 맛이 있어야 해서 기존 여유 거리 유지)
+          const base = (!w.adv && !e.boss) ? (30 + e.h * szm * 0.25) : (60 + e.h * szm * 0.4)
+          const stopX = w.heroX + Math.min(atkRange - 15, base) + estop
           e.stopX = stopX   // 정지위치 저장 → 멈춘 몬스터는 사거리 밖이어도 기본공격 판정(그림상 코앞인데 안닿는 문제 해결)
           // 웨이브 일반몹은 제자리에 서 있는다 — 히어로가 전진할 때만(scroll) 화면에서 왼쪽으로 흐른다.
           // 교전 중엔 scroll=0 이라 완전히 멈춘다. 모험 몹과 보스는 예전처럼 걸어온다.
@@ -1199,7 +1209,7 @@ export default function App() {
             e.x -= (own + scroll) * dt
             if (e.atkT > 0) { e.atkT = 0; e.lunge = 0 }
             e.animT += standStill
-              ? dt * SPEED * IDLE_ANIM                                   // 제자리 = 대기 숨쉬기 속도
+              ? dt * SPEED * (motRef.current.wave.idle ?? 0.55)          // 제자리 = 대기 숨쉬기 속도
               : dt * SPEED * (0.4 + 0.6 * e.vt * near) * (1 + scroll / SCROLL * 0.4) * Math.min(1.5, Math.max(0.6, 0.55 + e.speed / 160))
           } else {
             if (e.atkT > 0) {
@@ -1235,7 +1245,7 @@ export default function App() {
               e.cd = isDinoBoss ? M.cd.advBoss : e.dino ? M.cd.advMob : M.cd.wave
               e.atkT = e.atkDur; e.atkHit = false
             }
-            if (!(e.atkT > 0)) e.animT += dt * SPEED * IDLE_ANIM   // 대기 숨쉬기 (공격 중엔 자체 시계로 프레임 계산)
+            if (!(e.atkT > 0)) e.animT += dt * SPEED * (motRef.current.wave.idle ?? 0.55)   // 대기 숨쉬기 (공격 중엔 자체 시계)
           }
         }
 
@@ -1677,7 +1687,7 @@ export default function App() {
       if (e.dead) { const p = Math.max(0, e.dieT) / 0.5; ctx.globalAlpha = Math.min(1, p * 2) * 0.9 }
       if (!e.dead && e.flash > 0.5) ctx.filter = 'brightness(3)'
       if (im.complete && im.naturalWidth > 0) {
-        const eh = H * (e.scaleV || 1)
+        const eh = H * (e.scaleV || 1) * (((mb.fr || {})[fi + 1]) ?? 1)   // 프레임별 크기(대기 숨쉬기 강약)
         const ew = eh * (im.naturalWidth / im.naturalHeight)
         if (t.flip) ctx.scale(-1, 1)
         if (e.dead && _deadCtx) {
@@ -3203,6 +3213,10 @@ export default function App() {
             }
             if (!entries.length) return <div style={{ fontSize: 12, color: '#c9a06a', padding: '8px 0' }}>화면에 일반몹이 없어요. 웨이브/모험이 시작되면 자동으로 잡혀요.</div>
             return (<>
+              <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>웨이브 공통</div>
+              {row('일렬 간격(px)', M.wave.gap ?? 65, 20, 300, 5, v => setMotCfg({ ...M, wave: { ...M.wave, gap: v } }))}
+              {row('대기 숨쉬기 속도', M.wave.idle ?? 0.55, 0, 3, 0.05, v => setMotCfg({ ...M, wave: { ...M.wave, idle: v } }))}
+              <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>간격은 다음 웨이브부터 적용 (이미 깔린 몹은 그대로)</div>
               <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>화면의 일반몹 (종별)</div>
               {entries.map(({ key, label, szDef, dino }) => { const c = M.mob[key] || {}; return (
                 <div key={key} style={{ borderTop: '1px solid #2a1e10', paddingTop: 5, marginTop: 5 }}>
@@ -3211,6 +3225,11 @@ export default function App() {
                   {row('높이(+위)', c.y ?? 0, -100, 100, 1, v => setMotCfg({ ...M, mob: { ...M.mob, [key]: { ...(M.mob[key] || {}), y: v } } }))}
                   {row('좌우 정지(+멀리)', c.stop ?? 0, -120, 250, 1, v => setMotCfg({ ...M, mob: { ...M.mob, [key]: { ...(M.mob[key] || {}), stop: v } } }))}
                   {row('달려오는 속도', c.spd ?? 1, 0.2, 3, 0.05, v => setMotCfg({ ...M, mob: { ...M.mob, [key]: { ...(M.mob[key] || {}), spd: v } } }))}
+                  {!dino && (() => {                       // 대기 프레임별 크기 — 두 장을 다르게 주면 숨쉬는 느낌
+                    const n = ((ENEMY_TYPES[key] || {}).frames || []).length
+                    return Array.from({ length: n }, (_, i) => i + 1).map(f => row(`${f}번 프레임 크기`, ((c.fr || {})[f]) ?? 1, 0.7, 1.4, 0.01,
+                      v => setMotCfg({ ...M, mob: { ...M.mob, [key]: { ...(M.mob[key] || {}), fr: { ...((M.mob[key] || {}).fr || {}), [f]: v } } } })))
+                  })()}
                 </div>
               ) })}
             </>)
