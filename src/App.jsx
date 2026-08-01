@@ -203,7 +203,7 @@ const MOTION_DEFAULT = {
     'c:ostrich': { sz: 0.76, y: -5, stop: -4 }, 'c:turtle': { stop: 4 }, 'c:croc': { sz: 1.05, y: -3, stop: 46 }, 'c:komodo': { stop: 46, spd: 1.45, y: -2 },
     'c:eagle': { y: 20, sz: 1.04, stop: 7 }, 'c:giraffe': { sz: 0.68, y: -12, stop: -10 }, 'c:lion': { sz: 0.9, y: -6, stop: 37 }, 'c:elephant': { sz: 0.8, y: -9, spd: 1.1, stop: 10 },
   },
-  wave: { gap: 65, idle: 0.55 },                              // 웨이브 몹 일렬 간격(px) / 제자리 대기 프레임 속도
+  wave: { gap: 65, dist: 95 },                                 // 웨이브 몹 일렬 간격(px) / 히어로와의 거리(px) — 둘 다 종 무관 일괄
   skFx: { 1: { sz: 0.82, spd: 1.5, fly: 1.25, x: 0, y: 0, fr: {} }, 2: { sz: 0.74, spd: 0.3, fly: 1.5, x: 0, y: 0, fr: {} }, 16: { sz: 1, spd: 1, fly: 1, x: 0, y: 0, fr: {} }, 18: { sz: 1.04, spd: 1.6, fly: 1, x: 0, y: 0, fr: {} }, 20: { sz: 0.74, spd: 1.25, fly: 1, x: 0, y: 0, fr: {} } },  // 스킬 이펙트 (x/y=위치, fr={프레임:{sz,x,y}} 프레임별)
 }
 const MOT_FX_IDS = [1, 2, 16, 18, 20]                          // 이펙트 있는 스킬 id
@@ -1042,7 +1042,7 @@ export default function App() {
         exp: Math.floor(t.exp * (1 + 0.2 * (w.waveNum - 1))) * (boss ? 15 : 1),
         acc: t.acc, eva: t.eva, air: boss ? 0 : (t.air || 0),
         h: boss ? t.h * 2 : t.h, color: t.color, cd: 0, flash: 0, animT: Math.random() * 10,   // 저주보스: 일반몹 2배(모션편집기 개별조절)
-        scaleV: boss ? 1 : 0.95 + Math.random() * 0.1, yOff: boss ? 0 : Math.random() * 8 - 4, spdV: boss ? 1 : 0.93 + Math.random() * 0.14,
+        scaleV: 1, yOff: 0, spdV: boss ? 1 : 0.93 + Math.random() * 0.14,   // 크기·높이 랜덤 제거 — 일렬로 서므로 균일해야 함(크기는 편집기에서 종별로)
       })
     }
 
@@ -1195,10 +1195,12 @@ export default function App() {
           const szm = e.dino ? (emb.sz ?? (motRef.current.size[e.dino] || 1)) : (emb.sz || 1)
           const estop = e.dino ? (emb.stop ?? (motRef.current.stop[e.dino] || 0)) : (emb.stop || 0)   // 좌우 정지 위치(+면 오른쪽/멀리)
           const espd = emb.spd || 1                                                       // 달려오는 속도 배율(공룡·웨이브 공통)
-          // 제자리 몹은 히어로가 직접 걸어가서 만나므로 더 바짝 붙어야 자연스럽다.
-          // (걸어오는 몹·보스는 달려오는 맛이 있어야 해서 기존 여유 거리 유지)
-          const base = (!w.adv && !e.boss) ? (30 + e.h * szm * 0.25) : (60 + e.h * szm * 0.4)
-          const stopX = w.heroX + Math.min(atkRange - 15, base) + estop
+          // 제자리 몹은 종·크기와 무관하게 **일괄 거리**로 선다 (편집기 '히어로와 거리')
+          // 걸어오는 몹·보스만 예전 종별 계산 유지
+          const still = !w.adv && !e.boss
+          const stopX = still
+            ? w.heroX + (motRef.current.wave.dist ?? 95)
+            : w.heroX + Math.min(atkRange - 15, 60 + e.h * szm * 0.4) + estop
           e.stopX = stopX   // 정지위치 저장 → 멈춘 몬스터는 사거리 밖이어도 기본공격 판정(그림상 코앞인데 안닿는 문제 해결)
           // 웨이브 일반몹은 제자리에 서 있는다 — 히어로가 전진할 때만(scroll) 화면에서 왼쪽으로 흐른다.
           // 교전 중엔 scroll=0 이라 완전히 멈춘다. 모험 몹과 보스는 예전처럼 걸어온다.
@@ -1208,9 +1210,7 @@ export default function App() {
             const own = standStill ? 0 : e.speed * (e.spdV || 1) * espd * SPEED * 1.3 * e.vt * near
             e.x -= (own + scroll) * dt
             if (e.atkT > 0) { e.atkT = 0; e.lunge = 0 }
-            e.animT += standStill
-              ? dt * SPEED * (motRef.current.wave.idle ?? 0.55)          // 제자리 = 대기 숨쉬기 속도
-              : dt * SPEED * (0.4 + 0.6 * e.vt * near) * (1 + scroll / SCROLL * 0.4) * Math.min(1.5, Math.max(0.6, 0.55 + e.speed / 160))
+            if (!standStill) e.animT += dt * SPEED * (0.4 + 0.6 * e.vt * near) * (1 + scroll / SCROLL * 0.4) * Math.min(1.5, Math.max(0.6, 0.55 + e.speed / 160))   // 제자리 몹은 완전 정지
           } else {
             if (e.atkT > 0) {
               e.atkT -= dt
@@ -1245,7 +1245,6 @@ export default function App() {
               e.cd = isDinoBoss ? M.cd.advBoss : e.dino ? M.cd.advMob : M.cd.wave
               e.atkT = e.atkDur; e.atkHit = false
             }
-            if (!(e.atkT > 0)) e.animT += dt * SPEED * (motRef.current.wave.idle ?? 0.55)   // 대기 숨쉬기 (공격 중엔 자체 시계)
           }
         }
 
@@ -1668,17 +1667,18 @@ export default function App() {
       const H = e.h * szm
       const imgs = e.dino ? (e.boss ? (e.atkT > 0 ? DINO_BOSS[e.dino].a : DINO_BOSS[e.dino].w) : DINO_MOB[e.dino]) : (e.boss ? CIMG[e.type] : EIMG[e.type])   // 저주보스=CIMG(저주동물)
       const stunned = e.stun > 0
+      const still = !w.adv && !e.boss          // 제자리 웨이브 몹: 완전 정지(들썩임·기울기·프레임순환 없음)
       const gall = e.animT * 9
       const fi = e.atkT > 0
         ? (e.dino && e.boss
             ? dinoAtkFrame(e.dino, (e.atkDur || dinoAtkDur(e.dino, motRef.current.atk)) - e.atkT, motRef.current.atk)   // 보스: 종별 프레임 시간표
             : Math.min(imgs.length - 1, Math.floor(((e.atkDur || motRef.current.dur.wave) - e.atkT) / (e.atkDur || motRef.current.dur.wave) * imgs.length)))
-        : stunned ? 0 : Math.floor(gall / Math.PI) % imgs.length  // 기절 시 프레임 고정
+        : (stunned || still) ? 0 : Math.floor(gall / Math.PI) % imgs.length  // 기절·제자리는 1번 프레임 고정
       const wf = e.boss ? 0.55 : Math.min(1.15, Math.max(0.45, 62 / H))  // 무게 차등: 클수록 덜 들썩임
-      const bounce = stunned ? 0 : e.air
+      const bounce = (stunned || still) ? 0 : e.air
         ? Math.sin(gall * 0.45 + (e.yOff || 0)) * 5                        // 공중: 부드러운 부유
         : Math.abs(Math.sin(gall)) * H * 0.08 * wf
-      const rock = stunned ? 0 : Math.sin(gall) * 0.06 * (e.air ? 0.35 : wf)
+      const rock = (stunned || still) ? 0 : Math.sin(gall) * 0.06 * (e.air ? 0.35 : wf)
       const im = imgs[fi]
       ctx.save()
       ctx.translate(e.x + (e.lunge || 0), y - bounce + (e.air ? 0 : (e.yOff || 0)))
@@ -3215,15 +3215,15 @@ export default function App() {
             return (<>
               <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>웨이브 공통</div>
               {row('일렬 간격(px)', M.wave.gap ?? 65, 20, 300, 5, v => setMotCfg({ ...M, wave: { ...M.wave, gap: v } }))}
-              {row('대기 숨쉬기 속도', M.wave.idle ?? 0.55, 0, 3, 0.05, v => setMotCfg({ ...M, wave: { ...M.wave, idle: v } }))}
-              <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>간격은 다음 웨이브부터 적용 (이미 깔린 몹은 그대로)</div>
+              {row('히어로와 거리(px)', M.wave.dist ?? 95, 30, 300, 1, v => setMotCfg({ ...M, wave: { ...M.wave, dist: v } }))}
+              <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>둘 다 종 무관 일괄 적용. 간격은 다음 웨이브부터 (이미 깔린 몹은 그대로)</div>
               <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>화면의 일반몹 (종별)</div>
               {entries.map(({ key, label, szDef, dino }) => { const c = M.mob[key] || {}; return (
                 <div key={key} style={{ borderTop: '1px solid #2a1e10', paddingTop: 5, marginTop: 5 }}>
                   <div style={{ fontSize: 11, color: GOLD, fontWeight: 700, marginBottom: 3 }}>{label}{dino ? ' (공룡)' : ''}</div>
                   {row('크기 배율', c.sz ?? szDef, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, mob: { ...M.mob, [key]: { ...(M.mob[key] || {}), sz: v } } }))}
                   {row('높이(+위)', c.y ?? 0, -100, 100, 1, v => setMotCfg({ ...M, mob: { ...M.mob, [key]: { ...(M.mob[key] || {}), y: v } } }))}
-                  {row('좌우 정지(+멀리)', c.stop ?? 0, -120, 250, 1, v => setMotCfg({ ...M, mob: { ...M.mob, [key]: { ...(M.mob[key] || {}), stop: v } } }))}
+                  {row('좌우 정지(걸어오는 몹만)', c.stop ?? 0, -120, 250, 1, v => setMotCfg({ ...M, mob: { ...M.mob, [key]: { ...(M.mob[key] || {}), stop: v } } }))}
                   {row('달려오는 속도', c.spd ?? 1, 0.2, 3, 0.05, v => setMotCfg({ ...M, mob: { ...M.mob, [key]: { ...(M.mob[key] || {}), spd: v } } }))}
                   {!dino && (() => {                       // 대기 프레임별 크기 — 두 장을 다르게 주면 숨쉬는 느낌
                     const n = ((ENEMY_TYPES[key] || {}).frames || []).length
