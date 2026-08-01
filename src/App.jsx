@@ -21,7 +21,7 @@ const DEBUG = true
 // · 모바일처럼 편집 안 하는 기기 → 배포만 하면 PC 값이 자동으로 들어옴
 // · PC에서 배포 후 편집한 값 → 편집 시각이 더 최신이라 그대로 유지됨
 // 사용자 설정을 코드에 새로 박을 때만 이 줄을 현재 시각으로 갱신할 것.
-const CFG_STAMP = Date.parse('2026-07-31T13:30:00+09:00')
+const CFG_STAMP = Date.parse('2026-08-01T14:00:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -172,29 +172,37 @@ const MOTION_DEFAULT = {
   stop: { ...DINO_STOP },                                      // 종별 정지 위치 보정(px, +면 멀리)
   size: { trex: 1.08, spino: 1.15, trike: 1.04, stego: 1.20, raptor: 0.90, anky: 1, ptera: 1.05, brachio: 1.73 },  // 종별 크기 배율
   hero: {
-    sz: 0.95, x: -20, y: 0,
-    walkSz: { 0: 0.94, 1: 0.96, 2: 0.94, 3: 0.94, 4: 0.86, 5: 0.94 },
+    sz: 0.85, x: -35, y: 0,
+    walkSz: { 0: 0.95, 1: 0.96, 2: 0.94, 3: 0.94, 4: 0.86, 5: 0.9 },
     skillSz: { 1: 0.85, 2: 0.85, 7: 0.9, 8: 0.95, 13: 0.85, 15: 0.83, 17: 0.88, 18: 1.07, 20: 1.06, 22: 1.03, 23: 0.9, 24: 0.9, 25: 0.8, 26: 0.54, 27: 0.8 },
     skillPos: { '23': { x: -5 } },   // 스킬별 그림 위치
     skillFrSz: { '2': { 2: 0.98 }, '22': { 4: 0.95 }, '23': { 1: 0.97, 2: 0.97, 3: 0.97, 4: 0.97, 5: 0.97 }, '25': { 1: 0.96 }, '28': { 1: 2.1, 2: 2.07, 3: 2, 4: 1.7, 5: 1.34, 6: 1.5 } },   // 스킬 프레임별 크기
     skillFrPos: { '22': { 2: { x: 20 }, 3: { x: 75 }, 4: { x: 150 } }, '23': { 3: { x: 22 }, 4: { x: 39 }, 5: { x: 100 } }, '24': { 3: { x: 50, y: 14 }, 4: { y: 15, x: 50 } }, '25': { 2: { x: 45, y: -3 }, 3: { x: 80 }, 4: { x: 100 } }, '26': { 1: { x: 20 }, 2: { x: 30 }, 3: { x: 40 }, 4: { x: 50 }, 5: { x: 60 }, 6: { x: 70 } }, '27': { 1: { x: 20 }, 2: { x: 20 }, 3: { x: 25 }, 4: { x: 15 }, 5: { x: 20 } }, '28': { 1: { x: 22, y: 0 }, 2: { y: 3, x: 30 }, 3: { x: 50, y: -45 }, 4: { x: 80, y: 13 }, 5: { x: 143, y: 25 }, 6: { x: 148, y: 25 } } },   // 스킬 프레임별 위치
     skillFrT: { 18: [0.2, 0.25], 22: [0.15, 0.15, 0.15, 0.15], 23: [0.3, 0.3, 0.3, 0.3, 0.5], 24: [0.2, 0.2, 0.3, 0.2], 25: [0.12, 0.12, 0.12, 0.15], 26: [0.12, 0.12, 0.12, 0.12, 0.12, 0.12], 27: [0.1, 0.1, 0.1, 0.12, 0.15], 28: [0.12, 0.12, 0.17, 0.1, 0.3, 0.35] },   // 스킬 프레임별 재생시간(초)
-    evoSz: { 0: 0.98, 1: 0.91, 2: 1, 3: 0.94, 4: 1, 5: 1.05 },
-    hit: { erectus: 3, neander: 2, sapiens: 4, human: 4 },     // 데미지 프레임(1부터, 기본=마지막). 사피엔스는 1번 삭제로 4장이라 4
+    evoSz: { 0: 0.95, 1: 0.85, 2: 0.9, 3: 0.88, 4: 0.9, 5: 0.9 },
+    hit: { erectus: 3, neander: 2, sapiens: 4, human: 4 },     // 데미지 프레임(1부터). 사피엔스는 1번 삭제로 4프레임
+     // 데미지 프레임(1부터, 기본=마지막). 사피엔스는 1번 삭제로 4장이라 4
     atkFrX: { 'eatk1': { 2: 10, 3: 25 }, 'natk1': { 2: 20 }, 'hmatk1': { 1: 0, 2: 2, 4: 1 } },   // 기본공격 프레임별 좌우 보정(px)
-    atkFrSz: { 'punch': { 1: 1.03, 2: 1.03, 3: 1.03 }, 'throw': { 1: 1.03, 2: 1.03 }, 'eatk1': { 1: 0.95, 2: 1, 3: 1 }, 'natk1': { 1: 0.95, 2: 1 }, 'patk1': { 1: 1.08, 2: 1.08, 3: 1.08, 4: 1.08 }, 'hmatk1': { 1: 1.09, 2: 1.07, 3: 1.05, 4: 1.05 } },   // 기본공격 프레임별 크기
+    atkFrSz: { 'punch': { 1: 1.03, 2: 1.03, 3: 1.03 }, 'throw': { 1: 1, 2: 1 }, 'eatk1': { 1: 0.95, 2: 1, 3: 1 }, 'natk1': { 1: 0.95, 2: 1 }, 'patk1': { 1: 1.08, 2: 1.08, 3: 1.08, 4: 1.08 }, 'hmatk1': { 1: 1.09, 2: 1.07, 3: 1.05, 4: 1.05 } },   // 기본공격 프레임별 크기
   },  // walkSz(걷기)·evoSz(전체)는 진화단계별{0~5}, skillSz=스킬별{id:배율}, hit=모드별 타격 프레임, atkFrSz=공격 프레임별 크기
-  ally: { hunter: { sz: 1, x: -21, y: -31, atkSz: 1, atkSpd: 1 }, shaman: { sz: 1, x: 8, y: 0, atkSz: 1, atkSpd: 1 }, healer: { sz: 1, x: 13, y: 35, atkSz: 1, atkSpd: 1 }, giant: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 } },  // 동료 크기·위치·공격프레임 크기·속도
+  ally: { hunter: { sz: 0.85, x: -21, y: -36, atkSz: 1, atkSpd: 1 }, shaman: { sz: 0.85, x: 8, y: 0, atkSz: 1, atkSpd: 1 }, healer: { sz: 0.85, x: 12, y: 38, atkSz: 1, atkSpd: 1 }, giant: { sz: 0.85, x: 0, y: -3, atkSz: 1, atkSpd: 1 } },  // 동료 크기·위치·공격프레임 크기·속도
   mob: {   // 일반몹 종별 크기·높이·정지·속도
     'd:trex': { sz: 1.46, stop: -5, spd: 1.25 }, 'd:spino': { sz: 1.36 }, 'd:trike': { sz: 1.38, stop: -5 }, 'd:stego': { sz: 1.47 },
     'd:raptor': { sz: 1.17, spd: 1.4 }, 'd:anky': { stop: 25, sz: 1.24 }, 'd:ptera': { sz: 1.3, stop: -14 }, 'd:brachio': { sz: 2 },
-    'hyena': { stop: 30, spd: 1.5, sz: 1.16 }, 'bear': { sz: 1.16, stop: 46, spd: 1.25, y: -7 }, 'rhino': { stop: 43, spd: 1.2, sz: 1.19 }, 'rabbit': { sz: 1.69, stop: 15 },
-    'antelope': { sz: 1.44, stop: 43 }, 'deer': { stop: 35, sz: 1.06 }, 'boar': { stop: 45, sz: 1.12, spd: 1.4 }, 'wolf': { sz: 1.14, stop: 40, spd: 1.5 },
+    'hyena': { stop: 30, spd: 1.5, sz: 1.16 }, 'bear': { sz: 1.16, stop: 46, spd: 1.25, y: -7 }, 'rhino': { stop: 43, spd: 1.2, sz: 1.19 }, 'rabbit': { sz: 1.61, stop: 15 },
+    'antelope': { sz: 1.28, stop: -20 }, 'deer': { stop: 35, sz: 1 }, 'boar': { stop: 45, sz: 1, spd: 1.4 }, 'wolf': { sz: 1.14, stop: 40, spd: 1.5 },
     'tiger': { sz: 1.09, stop: 15, spd: 1.3 }, 'monkey': { sz: 1.12, stop: -12, spd: 1.5, y: -1 }, 'snake': { sz: 1.08, stop: 6, spd: 1.45 }, 'ostrich': { sz: 1.02, stop: 4 },
     'turtle': { sz: 1.01 }, 'croc': { stop: 5 }, 'komodo': { stop: 4 }, 'eagle': { y: -16, spd: 1.7 },
-    'giraffe': { sz: 1.1 }, 'lion': { sz: 1.08, spd: 1.5, stop: 30 }, 'elephant': { stop: 33 },
+    'giraffe': { sz: 1.1 }, 'lion': { sz: 1.08, spd: 1.5, stop: 30 }, 'elephant': { stop: 40, sz: 0.98 }, 'pig': { sz: 1.08, stop: 5 },
+    'chicken': { sz: 1.2, spd: 1.5 }, 'duck': { sz: 1.15, spd: 1.2 }, 'frog': { spd: 1.3, sz: 1.02 }, 'bat': { y: -12, stop: -4 },
+    'pelican': { y: -42 }, 'mantis': { sz: 1.02, stop: -5 }, 'polarbear': { sz: 1.06, y: -1, stop: 25 }, 'alpaca': { sz: 1.2, stop: 4 },
+    'buffalo': { stop: 8, spd: 1.4 }, 'camel': { stop: 35 }, 'horse': { sz: 1.44, stop: 53 }, 'panda': { sz: 1.24, stop: 55, y: -1 },
+    'scorpion': { sz: 1.28, y: 1, spd: 1.4 }, 'tarantula': { stop: 5 }, 'cobra': { sz: 1.25, stop: 20 }, 'zebra': { sz: 1.06, stop: 19 },
+    'cheetah': { stop: 13, sz: 1.09 }, 'koala': { sz: 1.07, stop: 3 }, 'kangaroo': { stop: 12, spd: 1.25 }, 'cat': { sz: 1.48, stop: 2, spd: 1.5 },
+    'dog': { sz: 1.28, stop: 5 }, 'hippo': { stop: 20 }, 'gorilla': { sz: 1.1, stop: 26 }, 'gator': { sz: 1.24, stop: 33 },
+    'penguin': { sz: 1.3, stop: 2 }, 'seal': { sz: 1.3, stop: 5 }, 'cow': { sz: 1.19, stop: 15 }, 'tiger2': { sz: 1.1, stop: 5, spd: 1.5 },
   },
-  boss: {  // 보스 종별 크기·높이·정지·속도
+  boss: {  // 보스 종별
     'd:trex': { stop: 53 }, 'd:spino': { sz: 1.26, spd: 1.5 }, 'd:trike': { sz: 1.08 }, 'd:stego': { y: -12, stop: -2 },
     'd:raptor': { spd: 1.8, sz: 1.08 }, 'd:anky': { sz: 0.79 }, 'd:ptera': { spd: 1.95, stop: 18, y: -25 }, 'd:brachio': { y: -12, sz: 1.6 },
     'c:rabbit': { sz: 1.34, y: -7, stop: 22, spd: 1.4 }, 'c:antelope': { y: -6, stop: 30, sz: 1.29 }, 'c:deer': { stop: 37, y: -7, sz: 0.85, spd: 1.4 }, 'c:boar': { sz: 1.07, y: -12, stop: 70, spd: 1.3 },
@@ -202,8 +210,17 @@ const MOTION_DEFAULT = {
     'c:tiger': { spd: 1.3, sz: 0.93, y: -4, stop: 3 }, 'c:mammoth': { spd: 1.3, sz: 0.7, y: -7, stop: 15 }, 'c:monkey': { spd: 1.5, y: -3, stop: 5 }, 'c:snake': { sz: 1.66, spd: 1.6 },
     'c:ostrich': { sz: 0.76, y: -5, stop: -4 }, 'c:turtle': { stop: 4 }, 'c:croc': { sz: 1.05, y: -3, stop: 46 }, 'c:komodo': { stop: 46, spd: 1.45, y: -2 },
     'c:eagle': { y: 20, sz: 1.04, stop: 7 }, 'c:giraffe': { sz: 0.68, y: -12, stop: -10 }, 'c:lion': { sz: 0.9, y: -6, stop: 37 }, 'c:elephant': { sz: 0.8, y: -9, spd: 1.1, stop: 10 },
+    'c:pig': { spd: 1.2, y: -5, stop: 5 }, 'c:chicken': { spd: 1.65, sz: 1.16, y: -6, stop: 2 }, 'c:duck': { spd: 1.2, sz: 1.15, y: -5, stop: -9 }, 'c:frog': { spd: 1.4, sz: 1.18, y: -4, stop: -6 },
+    'c:bat': { y: 37, sz: 1.27, stop: -5 }, 'c:pelican': { spd: 1.2, sz: 0.98, y: -6, stop: 2 }, 'c:mantis': { y: -4, stop: 5 }, 'c:polarbear': { sz: 0.89, y: -3, spd: 1.3, stop: 5 },
+    'c:alpaca': { spd: 1.45, sz: 1.04, stop: -10, y: -6 }, 'c:buffalo': { sz: 0.84, y: -7, stop: 18, spd: 1.5 }, 'c:camel': { sz: 0.85, y: -5, stop: -1 }, 'c:horse': { sz: 0.93, y: -8, stop: 0 },
+    'c:panda': { sz: 0.97, y: -6, stop: 45, spd: 1.4 }, 'c:scorpion': { sz: 1.41, y: -3, stop: 12, spd: 1.2 }, 'c:tarantula': { sz: 1.27, y: -3, stop: 33, spd: 1.45 }, 'c:cobra': { sz: 1.29, y: -1, stop: 14, spd: 1.6 },
+    'c:zebra': { y: -4, stop: 7, spd: 1.4 }, 'c:cheetah': { sz: 0.9, y: -4, stop: 27, spd: 1.8 }, 'c:koala': { y: -3, stop: 4 }, 'c:kangaroo': { sz: 0.78, y: -6, stop: 4 },
+    'c:cat': { sz: 1.15, y: -3, stop: -1, spd: 1.3 }, 'c:dog': { y: -3, stop: 5 }, 'c:hippo': { sz: 0.79, y: -5, stop: 34 }, 'c:gorilla': { y: -6, stop: 10 },
+    'c:gator': { sz: 1.13, y: -3, stop: 46, spd: 1.3 }, 'c:squirrel': { stop: 2, spd: 1.6 }, 'c:penguin': { sz: 1.38, y: -2, spd: 1.45, stop: -35 }, 'c:seal': { sz: 1.24, y: -2, stop: 7, spd: 1.3 },
+    'c:cow': { y: -6, spd: 1.45, stop: 10 }, 'c:tiger2': { y: -4, stop: 42, spd: 1.65 },
   },
-  wave: { gap: 65, dist: 95 },                                 // 웨이브 몹 일렬 간격(px) / 히어로와의 거리(px) — 둘 다 종 무관 일괄
+  wave: { gap: 40, dist: 35 },                                  // 웨이브 몹 일렬 간격(px) / 히어로와의 거리(px) — 종 무관 일괄
+  stone: { spd: 1, sz: 18, arc: 1 },                           // 직립 돌던지기: 비행속도 배율 / 그림 크기(px) / 포물선 높이 배율
   skFx: { 1: { sz: 0.82, spd: 1.5, fly: 1.25, x: 0, y: 0, fr: {} }, 2: { sz: 0.74, spd: 0.3, fly: 1.5, x: 0, y: 0, fr: {} }, 16: { sz: 1, spd: 1, fly: 1, x: 0, y: 0, fr: {} }, 18: { sz: 1.04, spd: 1.6, fly: 1, x: 0, y: 0, fr: {} }, 20: { sz: 0.74, spd: 1.25, fly: 1, x: 0, y: 0, fr: {} } },  // 스킬 이펙트 (x/y=위치, fr={프레임:{sz,x,y}} 프레임별)
 }
 const MOT_FX_IDS = [1, 2, 16, 18, 20]                          // 이펙트 있는 스킬 id
@@ -229,7 +246,7 @@ function mergeMotion(sv) {   // 저장된 모션값 + 기본값 병합 (초기 �
     stop: { ...MOTION_DEFAULT.stop, ...(sv.stop || {}) }, size: { ...MOTION_DEFAULT.size, ...(sv.size || {}) },
     hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}), evoSz: { ...MOTION_DEFAULT.hero.evoSz, ...((sv.hero || {}).evoSz || {}) }, walkSz: perStage((sv.hero || {}).walkSz, MOTION_DEFAULT.hero.walkSz), skillSz: { ...MOTION_DEFAULT.hero.skillSz, ...((sv.hero || {}).skillSz || {}) }, skillPos: { ...MOTION_DEFAULT.hero.skillPos, ...((sv.hero || {}).skillPos || {}) }, skillFrSz: { ...((sv.hero || {}).skillFrSz || {}) }, skillFrPos: { ...((sv.hero || {}).skillFrPos || {}) }, skillFrT: { ...((sv.hero || {}).skillFrT || {}) }, hit: { ...MOTION_DEFAULT.hero.hit, ...((sv.hero || {}).hit || {}) }, atkFrSz: mergeAtkFrSz(sv.hero || {}), atkFrX: { ...MOTION_DEFAULT.hero.atkFrX, ...((sv.hero || {}).atkFrX || {}) } },
     mob: { ...MOTION_DEFAULT.mob, ...(sv.mob || {}) }, boss: { ...MOTION_DEFAULT.boss, ...(sv.boss || {}) },
-    wave: { ...MOTION_DEFAULT.wave, ...(sv.wave || {}) },   // 기본값(사용자 확정값) 위에 저장값 덮어쓰기
+    wave: { ...MOTION_DEFAULT.wave, ...(sv.wave || {}) }, stone: { ...MOTION_DEFAULT.stone, ...(sv.stone || {}) },   // 기본값(사용자 확정값) 위에 저장값 덮어쓰기
     ally: { hunter: { ...MOTION_DEFAULT.ally.hunter, ...((sv.ally || {}).hunter || {}) }, shaman: { ...MOTION_DEFAULT.ally.shaman, ...((sv.ally || {}).shaman || {}) }, healer: { ...MOTION_DEFAULT.ally.healer, ...((sv.ally || {}).healer || {}) }, giant: { ...MOTION_DEFAULT.ally.giant, ...((sv.ally || {}).giant || {}) } },
     skFx: Object.fromEntries(MOT_FX_IDS.map(id => [id, { ...MOTION_DEFAULT.skFx[id], ...((sv.skFx || {})[id] || {}) }])),
   }
@@ -449,12 +466,12 @@ const HERO_X = 200  // 평상시 영웅 x (동료가 설 왼쪽 공간 확보 / 
 const SPEED = 1                                      // 전역 속도 배율
 const SCROLL = 140 * SPEED                            // 전진 속도 (px/s)
 // 웨이브 간격·대기속도는 모션 편집기(일반몹 탭)에서 조절 — MOTION_DEFAULT.wave 참조
-const PUNCH = { hitAt: 0.12, total: 0.3, range: 95 } // 4족 주먹질
-const THROW = { windupEnd: 0.14, releaseEnd: 0.30, total: 0.42, range: 340 }
+const PUNCH = { hitAt: 0.12, total: 0.3, range: 90 } // 4족 주먹질
+const THROW = { windupEnd: 0.14, releaseEnd: 0.30, total: 0.42, range: 200 }   // 직립 돌던지기 — 이 거리에서 멈춰 던짐
 // 에렉투스 몽둥이: 1타 내려치기(위→아래), 2타 올려치기(아래→위) 번갈아
 const ECLUB = { total: 0.65, range: 150, hitAt: 0.72 }  // 몽둥이 내려치기 (erectus 3프레임/neander 2프레임 모두 마지막=내리치는 프레임에 데미지)
-const SPIN = { total: 0.6, range: 160, hitAt: 0.7 }    // 사피엔스 회전 베기 (5프레임)
-const HSLASH = { total: 0.55, range: 175, hitAt: 0.6 } // 인간 검격 (4프레임)
+const SPIN = { total: 0.6, range: 150, hitAt: 0.7 }    // 사피엔스 회전 베기 (5프레임)
+const HSLASH = { total: 0.55, range: 150, hitAt: 0.6 } // 인간 검격 (4프레임)
 const MC = m => (m === 'sapiens' ? SPIN : m === 'human' ? HSLASH : ECLUB)   // 근접 모드별 타이밍
 const MELEE_MODES = ['erectus', 'neander', 'sapiens', 'human']
 const HERO_ATK_ANIM = m => m === 'neander' ? 'natk1' : m === 'sapiens' ? 'patk1' : m === 'human' ? 'hmatk1' : 'eatk1'
@@ -1156,12 +1173,19 @@ export default function App() {
       const heroTargetX = w.bossBattle ? Math.max(HERO_X, Math.round(w.W * 0.34)) : HERO_X
       w.heroX += (heroTargetX - w.heroX) * Math.min(1, dt * 4)
       const atkRange0 = st.mode === 'quad' ? PUNCH.range : MELEE_MODES.includes(st.mode) ? MC(st.mode).range : THROW.range
-      const blocked = w.enemies.some(e => {
-        if (e.dead) return false
+      // 교전 판정은 blocked·공격시작·데미지가 **같은 기준**을 써야 한다.
+      // 예전엔 공격 시작만 사거리(150px)를 봐서, 몹이 정지위치(95px)에 닿기 전에 히어로가 휘두르고
+      // 그 순간 hero.state='attack'이 되며 스크롤이 멈춰 몹이 멀찍이 굳었다.
+      const thrower = st.mode === 'biped'                       // 직립: 원거리(돌던지기)
+      const engaged = (e, extra = 0) => {
         const reached = e.stopX != null && e.x <= e.stopX + 6
-        if (!w.adv && !e.boss) return reached          // 제자리 몹: 정지위치까지 히어로가 걸어가야 멈춤
-        return e.x - w.heroX < atkRange0 || reached    // 걸어오는 몹·보스: 기존 사거리 판정
-      })
+        // 원거리는 사거리에 닿는 순간 멈춰서 던진다 (가까이 갈 이유가 없음)
+        if (thrower) return e.x - w.heroX < atkRange0 + extra
+        if (!w.adv && !e.boss) return reached                  // 근접 + 제자리 몹: 정지위치에 닿아야 교전
+        return e.x - w.heroX < atkRange0 + extra || reached    // 근접 + 걸어오는 몹·보스
+      }
+      w._engaged = engaged
+      const blocked = w.enemies.some(e => !e.dead && engaged(e))
       w._blocked = blocked
       const moving = (st.phase === 'fighting' || st.phase === 'cleared') && hero.state === 'move' && !blocked
       const scroll = moving ? SCROLL * st.mspdMult : 0
@@ -1350,7 +1374,7 @@ export default function App() {
           // 스킬 시전 중: 상태 유지, 이동/공격 정지
         } else if (hero.state === 'move') {
           if (!blocked) hero.animT += dt * SPEED * st.mspdMult   // 앞이 막히면 걷기 애니 정지
-          const target = w.enemies.find(e => !e.dead && (e.x - w.heroX < atkRange || (e.stopX != null && e.x <= e.stopX + 6)))
+          const target = w.enemies.find(e => !e.dead && w._engaged(e))
           if (hero.cd <= 0 && target) {
             hero.state = 'attack'; hero.t = 0; hero.did = false
             hero.cd = st.cd
@@ -1370,14 +1394,14 @@ export default function App() {
           if (st.mode === 'quad') {
             if (!hero.did && hero.t >= PUNCH.hitAt) {
               hero.did = true
-              const t = w.enemies.find(e => !e.dead && (e.x - w.heroX < PUNCH.range + 40 || (e.stopX != null && e.x <= e.stopX + 6)))
+              const t = w.enemies.find(e => !e.dead && w._engaged(e, 40))
               if (t) dealDamage(t, st)
             }
             if (hero.t >= PUNCH.total) { hero.state = 'move'; hero.t = 0 }
           } else if (MELEE_MODES.includes(st.mode)) {
             const mc = MC(st.mode)
             const prog = hero.t / mc.total
-            const inRange = w.enemies.find(e => !e.dead && (e.x - w.heroX < mc.range + 40 || (e.stopX != null && e.x <= e.stopX + 6)))
+            const inRange = w.enemies.find(e => !e.dead && w._engaged(e, 40))
             if (!hero.did && !inRange && prog < 0.35) {
               // 스윙 초반에 대상 소멸 → 취소 + 쿨다운 환불 (헛스윙/헛대기 방지)
               hero.state = 'move'; hero.t = 0; hero.cd = Math.min(hero.cd, 100)
@@ -1397,8 +1421,8 @@ export default function App() {
                 const d = Math.hypot(target.x - sx, (w.groundY - target.h * 0.55) - sy)
                 w.stones.push({
                   sx, sy, x: sx, y: sy, target, t: 0,
-                  T: Math.min(0.45, Math.max(0.18, d / 900)),
-                  arc: Math.min(40, 15 + d * 0.12),
+                  T: Math.min(0.45, Math.max(0.18, d / 900)) / (motRef.current.stone.spd || 1),   // 비행 시간(속도 배율의 역수)
+                  arc: Math.min(40, 15 + d * 0.12) * (motRef.current.stone.arc ?? 1),
                   rot: 0,
                 })
               }
@@ -1709,7 +1733,7 @@ export default function App() {
         ctx.beginPath(); ctx.ellipse(0, -H * 0.5, H * 0.6, H * 0.4, 0, 0, Math.PI * 2); ctx.fill()
       }
       ctx.restore()
-      const bw = Math.min(52, H * 0.9)
+      const bw = Math.min(26, H * 0.45)   // 일반몹 체력바 (기존 52/0.9의 절반)
       ctx.fillStyle = 'rgba(0,0,0,0.55)'
       ctx.fillRect(e.x - bw / 2, y - H - 12, bw, 4)
       ctx.fillStyle = '#d51616'
@@ -1852,7 +1876,7 @@ export default function App() {
         ctx.translate(p.x, p.y)
         ctx.rotate(p.rot)
         if (STONE.complete && STONE.naturalWidth > 0) {
-          const sw = 18, sh = sw * (STONE.naturalHeight / STONE.naturalWidth)
+          const sw = motRef.current.stone.sz || 18, sh = sw * (STONE.naturalHeight / STONE.naturalWidth)
           ctx.drawImage(STONE, -sw / 2, -sh / 2, sw, sh)
         } else {
           ctx.fillStyle = '#b09a72'
@@ -3124,6 +3148,13 @@ export default function App() {
             <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
             <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>모션별 크기 (전체 크기에 곱해짐)</div>
             {row(`${motHeroEvo}단계 걷기 크기`, (M.hero.walkSz || {})[motHeroEvo] ?? 1, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, walkSz: { ...(M.hero.walkSz || {}), [motHeroEvo]: v } } }))}
+            {EVOS[motHeroEvo].mode === 'biped' && (<>
+              <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
+              <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>돌 던지기 (직립보행 기본공격)</div>
+              {row('돌 비행 속도', M.stone.spd ?? 1, 0.2, 4, 0.05, v => setMotCfg({ ...M, stone: { ...M.stone, spd: v } }))}
+              {row('돌 크기(px)', M.stone.sz ?? 18, 4, 80, 1, v => setMotCfg({ ...M, stone: { ...M.stone, sz: v } }))}
+              {row('포물선 높이', M.stone.arc ?? 1, 0, 3, 0.05, v => setMotCfg({ ...M, stone: { ...M.stone, arc: v } }))}
+            </>)}
             {MELEE_MODES.includes(EVOS[motHeroEvo].mode) && (<>
               <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
               <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>데미지가 들어가는 프레임 (총 {heroAtkFrames(EVOS[motHeroEvo].mode)}장, 마지막=임팩트)</div>
@@ -3454,7 +3485,7 @@ Object.assign(UI_DEFAULT, {
   advicopteraw: 195, advicopterah: 201, advicopteraX: 21, advicopteraY: -16,
   advicobrachiow: 135, advicobrachioh: 115, advicobrachioX: 0, advicobrachioY: -5,
 })
-// 사용자 확정 UI 값 (2026-07-30 반영) — 마지막에 덮어써서 우선 적용
+// 사용자 확정 UI 값 (2026-08-01 최신) — 맨 뒤에서 덮어써 우선 적용
 Object.assign(UI_DEFAULT, {
   panelbwV: 2, panelbwH: 4, rowbwV: 2, rowbwH: 19, rowmin: 38, rowgap: 7, icon: 27, name: 12, lv: 11, val: 12, costw: 35, costh: 28,
   costfz: 14, inputw: 43, inputfz: 12, spw: 35, sph: 4, spfz: 13, tabpt: 7, tabpb: 10, tabfz: 13, navicon: 26, navpt: 10, navpb: 8,
@@ -3493,8 +3524,8 @@ Object.assign(UI_DEFAULT, {
   allymatY: 14, dtabX: 0, dtabY: 0, dtitleX: 0, dtitleY: 0, darrowX: 0, darrowY: 0, diconX: 0, diconY: 0, dstatX: 0, dstatY: 0, denhX: 0,
   denhY: 0, dequipX: 0, dequipY: 0, dfusebtnX: 0, dfusebtnY: 0, dstepX: 0, dstepY: 0, skqbarw: 194, skqbarX: 153, skqbarY: 39, skqslotsz: 29, skqsetw: 16,
   skqseth: 19, skqsetfz: 8, skqsetX: 149, skqsetY: 46, skhtfz: 14, skhtitleX: 25, skhtitleY: 9, skfusew: 54, skfuseh: 20, skfusefz: 12, skfuseX: -24, skfuseY: 11,
-  sklearnw: 60, sklearnh: 20, sklearnfz: 11, sklearnX: -24, sklearnY: 11, skcellsz: 49, skcellgap: 38, skcellrgap: 0, skcellX: -1, skcellY: -5, skimgsz: 46, skimgX: 0,
-  skimgY: 0, sknamefz: 12, sknameX: 0, sknameY: 0, skbarX: 1, skbarY: 0, skdiconsz: 88, skdiconX: 0, skdiconY: 0, profherow: 116, profheroh: 150, profherozoom: 100,
+  sklearnw: 60, sklearnh: 20, sklearnfz: 11, sklearnX: -24, sklearnY: 11, skcellsz: 49, skcellgap: 38, skcellrgap: 0, skcellX: -1, skcellY: -5, skimgsz: 48, skimgX: 1,
+  skimgY: 1, sknamefz: 12, sknameX: 0, sknameY: 0, skbarX: 1, skbarY: 0, skdiconsz: 87, skdiconX: 0, skdiconY: 0, profherow: 116, profheroh: 150, profherozoom: 115,
   profheroX: 0, profheroY: 0, profstatfz: 13, profcurfz: 13, profcuric: 18, profgearsz: 56, profsecfz: 13, skdtitlefz: 18, skdtitleX: 0, skdtitleY: 0, skddescfz: 13, skddescX: 0,
   skddescY: 0, skdefffz: 15, skdeffectX: 0, skdeffectY: 0, skdstatfz: 14, skdstatX: 0, skdstatY: 0, skdautofz: 12, skdautoX: 0, skdautoY: 0, skdbtnh: 48, skdbtnfz: 15,
   skdenhX: 0, skdenhY: 0, skdequipX: 0, skdequipY: 0, qww: 340, qwh: 540, qwinX: 0, qwinY: 0, qtitlefz: 20, qtitleX: 0, qtitleY: 0, qclsz: 30,
@@ -3503,7 +3534,12 @@ Object.assign(UI_DEFAULT, {
   qrewh: 37, qrewX: 3, qrewY: 0, qrewisz: 18, qrewiX: 0, qrewiY: 2, qrewvfz: 12, qrewvX: 1, qrewvY: 1, qlvfz: 7, qlvX: -3, qlvY: -6,
   advicotrexw: 141, advicotrexh: 254, advicotrexX: -3, advicotrexY: 0, advicospinow: 131, advicospinoh: 97, advicospinoX: 5, advicospinoY: -7, advicotrikew: 133, advicotrikeh: 93, advicotrikeX: 6, advicotrikeY: 0,
   advicostegow: 131, advicostegoh: 105, advicostegoX: 0, advicostegoY: -9, advicoraptorw: 302, advicoraptorh: 92, advicoraptorX: -11, advicoraptorY: -5, advicoankyw: 142, advicoankyh: 103, advicoankyX: 6, advicoankyY: -18,
-  advicopteraw: 195, advicopterah: 201, advicopteraX: 21, advicopteraY: -16, advicobrachiow: 135, advicobrachioh: 115, advicobrachioX: 0, advicobrachioY: -5,
+  advicopteraw: 195, advicopterah: 201, advicopteraX: 21, advicopteraY: -16, advicobrachiow: 135, advicobrachioh: 115, advicobrachioX: 0, advicobrachioY: -5, evbtnw: 55, evbtnh: 58, evbtnX: 6, evbtnY: 32,
+  evbtntfz: 10, evbtntX: 2, evbtntY: 2, evww: 340, evwh: 540, evwinX: 0, evwinY: 0, evtitlefz: 20, evtitleX: 0, evtitleY: 0, evclsz: 30, evcloseX: 0,
+  evcloseY: 0, evtabw: 60, evtabh: 30, evtabfz: 13, evtabX: 0, evtabY: 0, evprevh: 120, evprevX: 0, evprevY: 0, evnamefz: 15, evnameX: 0, evnameY: 0,
+  evrowh: 46, evrowX: 0, evrowY: 0, evnosz: 26, evnoX: 0, evnoY: 0, evbnamefz: 15, evbnameX: 32, evbnameY: 0, evgow: 54, evgoh: 26, evgofz: 12,
+  evgoX: 0, evgoY: 0, evprevzoom: 100, evprevimgX: 0, evprevimgY: 0, evnoimgsz: 57, evnoimgX: 14, evnoimgY: -1, skdimgsz: 88, skdimgX: 0, skdimgY: 0, avafacesz: 31,
+  avafaceX: 0, avafaceY: -1, profheroimgX: 3, profheroimgY: -22,
 })
 // 이벤트 던전 (버튼 + 창)
 Object.assign(UI_DEFAULT, {
