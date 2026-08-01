@@ -16,6 +16,12 @@ const fbDb = FB_ON ? getFirestore() : null
 
 // ── 디버그 모드: 업그레이드 비용 무료 + 레벨 직접입력 (출시 전 false로) ──
 const DEBUG = true
+// ── 코드에 박아둔 UI·모션 값의 기준 시각 ─────────────────────────────
+// 저장된(브라우저/클라우드) 편집 시각이 이 시각보다 **오래됐으면** 코드값으로 덮는다.
+// · 모바일처럼 편집 안 하는 기기 → 배포만 하면 PC 값이 자동으로 들어옴
+// · PC에서 배포 후 편집한 값 → 편집 시각이 더 최신이라 그대로 유지됨
+// 사용자 설정을 코드에 새로 박을 때만 이 줄을 현재 시각으로 갱신할 것.
+const CFG_STAMP = Date.parse('2026-07-31T13:30:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -168,15 +174,15 @@ const MOTION_DEFAULT = {
   hero: {
     sz: 0.95, x: -20, y: 0,
     walkSz: { 0: 0.94, 1: 0.96, 2: 0.94, 3: 0.94, 4: 0.86, 5: 0.94 },
-    skillSz: { 1: 0.87, 2: 0.88, 13: 0.92, 15: 0.83, 17: 0.88, 18: 1.07, 20: 1.09, 22: 1.03, 23: 0.9 },
-    skillPos: {},                                              // 스킬별 그림 위치 오프셋 { id: { x, y } }
-    skillFrSz: { '23': { 1: 0.97, 2: 0.97, 3: 0.97, 4: 0.97, 5: 0.97 } },   // 스킬 프레임별 크기
-    skillFrPos: { '22': { 3: { x: 73 }, 4: { x: 133 } }, '23': { 3: { x: 22 }, 4: { x: 39 }, 5: { x: 100 } } },   // 스킬 프레임별 위치
-    skillFrT: { 22: [0.03, 0.04, 0.05, 0.06], 23: [0.3, 0.3, 0.3, 0.3, 0.5] },   // 스킬 프레임별 재생시간(초)
+    skillSz: { 1: 0.85, 2: 0.85, 7: 0.9, 8: 0.95, 13: 0.85, 15: 0.83, 17: 0.88, 18: 1.07, 20: 1.06, 22: 1.03, 23: 0.9, 24: 0.9, 25: 0.8, 26: 0.54, 27: 0.8 },
+    skillPos: { '23': { x: -5 } },   // 스킬별 그림 위치
+    skillFrSz: { '2': { 2: 0.98 }, '22': { 4: 0.95 }, '23': { 1: 0.97, 2: 0.97, 3: 0.97, 4: 0.97, 5: 0.97 }, '25': { 1: 0.96 }, '28': { 1: 2.1, 2: 2.07, 3: 2, 4: 1.7, 5: 1.34, 6: 1.5 } },   // 스킬 프레임별 크기
+    skillFrPos: { '22': { 2: { x: 20 }, 3: { x: 75 }, 4: { x: 150 } }, '23': { 3: { x: 22 }, 4: { x: 39 }, 5: { x: 100 } }, '24': { 3: { x: 50, y: 14 }, 4: { y: 15, x: 50 } }, '25': { 2: { x: 45, y: -3 }, 3: { x: 80 }, 4: { x: 100 } }, '26': { 1: { x: 20 }, 2: { x: 30 }, 3: { x: 40 }, 4: { x: 50 }, 5: { x: 60 }, 6: { x: 70 } }, '27': { 1: { x: 20 }, 2: { x: 20 }, 3: { x: 25 }, 4: { x: 15 }, 5: { x: 20 } }, '28': { 1: { x: 22, y: 0 }, 2: { y: 3, x: 30 }, 3: { x: 50, y: -45 }, 4: { x: 80, y: 13 }, 5: { x: 143, y: 25 }, 6: { x: 148, y: 25 } } },   // 스킬 프레임별 위치
+    skillFrT: { 18: [0.2, 0.25], 22: [0.15, 0.15, 0.15, 0.15], 23: [0.3, 0.3, 0.3, 0.3, 0.5], 24: [0.2, 0.2, 0.3, 0.2], 25: [0.12, 0.12, 0.12, 0.15], 26: [0.12, 0.12, 0.12, 0.12, 0.12, 0.12], 27: [0.1, 0.1, 0.1, 0.12, 0.15], 28: [0.12, 0.12, 0.17, 0.1, 0.3, 0.35] },   // 스킬 프레임별 재생시간(초)
     evoSz: { 0: 0.98, 1: 0.91, 2: 1, 3: 0.94, 4: 1, 5: 1.05 },
     hit: { erectus: 3, neander: 2, sapiens: 4, human: 4 },     // 데미지 프레임(1부터, 기본=마지막). 사피엔스는 1번 삭제로 4장이라 4
-    atkFrX: {},                                                // 기본공격 프레임별 좌우 보정(px) { 스프라이트키: { 프레임: x } }
-    atkFrSz: { 'punch': { 1: 1.03, 2: 1.03, 3: 1.03 }, 'throw': { 1: 1.03, 2: 1.03 }, 'eatk1': { 1: 0.95, 2: 1, 3: 1 }, 'natk1': { 1: 0.95, 2: 1 }, 'patk1': { 1: 1.08, 2: 1.08, 3: 1.08, 4: 1.08 }, 'hmatk1': { 1: 1.08, 2: 1.05, 3: 1.05, 4: 1.05 } },   // 기본공격 프레임별 크기
+    atkFrX: { 'eatk1': { 2: 10, 3: 25 }, 'natk1': { 2: 20 }, 'hmatk1': { 1: 0, 2: 2, 4: 1 } },   // 기본공격 프레임별 좌우 보정(px)
+    atkFrSz: { 'punch': { 1: 1.03, 2: 1.03, 3: 1.03 }, 'throw': { 1: 1.03, 2: 1.03 }, 'eatk1': { 1: 0.95, 2: 1, 3: 1 }, 'natk1': { 1: 0.95, 2: 1 }, 'patk1': { 1: 1.08, 2: 1.08, 3: 1.08, 4: 1.08 }, 'hmatk1': { 1: 1.09, 2: 1.07, 3: 1.05, 4: 1.05 } },   // 기본공격 프레임별 크기
   },  // walkSz(걷기)·evoSz(전체)는 진화단계별{0~5}, skillSz=스킬별{id:배율}, hit=모드별 타격 프레임, atkFrSz=공격 프레임별 크기
   ally: { hunter: { sz: 1, x: -21, y: -31, atkSz: 1, atkSpd: 1 }, shaman: { sz: 1, x: 8, y: 0, atkSz: 1, atkSpd: 1 }, healer: { sz: 1, x: 13, y: 35, atkSz: 1, atkSpd: 1 }, giant: { sz: 1, x: 0, y: 0, atkSz: 1, atkSpd: 1 } },  // 동료 크기·위치·공격프레임 크기·속도
   mob: {   // 일반몹 종별 크기·높이·정지·속도
@@ -761,7 +767,11 @@ export default function App() {
     return () => window.removeEventListener('resize', recalcAdv)
   }, [nav])
   const advOffset = -(advMax * (mapSeg / 2))  // 0→0, 1→중앙, 2→끝           // 소환 결과 오버레이 { cat, items:[{k,t}] }
-  const [uiCfg, setUiCfg] = useState(() => { try { const sv = JSON.parse(localStorage.getItem('paleoUiCfg') || '{}'); return { ...UI_DEFAULT, ...Object.fromEntries(Object.entries(sv).filter(([k]) => k in UI_DEFAULT)) } } catch { return { ...UI_DEFAULT } } })
+  const [uiCfg, setUiCfg] = useState(() => {
+    // 저장값이 코드값보다 오래됐으면 코드값 사용 (모바일 등 편집 안 하는 기기 자동 반영)
+    if (Number(localStorage.getItem('paleoUiTs') || 0) < CFG_STAMP) return { ...UI_DEFAULT }
+    try { const sv = JSON.parse(localStorage.getItem('paleoUiCfg') || '{}'); return { ...UI_DEFAULT, ...Object.fromEntries(Object.entries(sv).filter(([k]) => k in UI_DEFAULT)) } } catch { return { ...UI_DEFAULT } }
+  })
   const [uiEdit, setUiEdit] = useState(false)
   const [motEdit, setMotEdit] = useState(false)     // 모션 편집기
   const [motSel, setMotSel] = useState('trex')
@@ -779,6 +789,7 @@ export default function App() {
   useEffect(() => { if (!motEdit) return; const iv = setInterval(() => setMotTick(t => t + 1), 500); return () => clearInterval(iv) }, [motEdit])
   const [copiedMot, setCopiedMot] = useState(false)
   const [motCfg, setMotCfg] = useState(() => {
+    if (Number(localStorage.getItem('paleoMotionTs') || 0) < CFG_STAMP) return JSON.parse(JSON.stringify(MOTION_DEFAULT))
     try { return mergeMotion(JSON.parse(localStorage.getItem('paleoMotion') || '{}')) }
     catch { return JSON.parse(JSON.stringify(MOTION_DEFAULT)) }
   })
@@ -817,7 +828,6 @@ export default function App() {
     localStorage.setItem('paleoMotionTs', String(Date.now()))
     // 편집할 때마다 모션 전용 클라우드에 독립 백업 (세이브와 무관 — 세이브 저장 실패해도 모션은 보존)
     if (motPushT.current) clearTimeout(motPushT.current)
-    motPushT.current = setTimeout(() => { if (typeof pushMotionCloud === 'function') pushMotionCloud() }, 2500)
   }, [motCfg])
   const [offReward, setOffReward] = useState(null) // 오프라인 보상 대기(pending)
   const [offOpen, setOffOpen] = useState(false)    // 오프라인 보상 창 열림
@@ -2060,24 +2070,12 @@ export default function App() {
       // 세이브 전체를 문자열 필드로 저장 (skillSets 같은 중첩 배열을 Firestore가 거부 → invalid-argument 방지)
       const payload = {
         data: raw,
-        ui: localStorage.getItem('paleoUiCfg') || null,
-        uiTs: Number(localStorage.getItem('paleoUiTs') || 0),
         ts: sv.ts || 0,
         wave: sv.wave || 0,
       }
       await setDoc(doc(fbDb, 'paleoSaves', fbAuth.currentUser.uid), payload)
-      await pushMotionCloud()   // 모션도 함께(전용 doc)
       setCloudMsg('저장됨 ' + new Date().toLocaleTimeString())
     } catch (e) { setCloudMsg('저장 실패: ' + (e.code || e.message)) }
-  }
-  async function pushMotionCloud() {   // 모션 전용 클라우드 백업 (세이브와 독립)
-    if (!FB_ON || !fbAuth.currentUser) return
-    try {
-      await setDoc(doc(fbDb, 'paleoMotion', fbAuth.currentUser.uid), {
-        motion: localStorage.getItem('paleoMotion') || null,
-        motionTs: Number(localStorage.getItem('paleoMotionTs') || 0),
-      })
-    } catch {}
   }
   useEffect(() => {
     if (!FB_ON) return
@@ -2093,29 +2091,9 @@ export default function App() {
         let cloudSave = null; try { cloudSave = cloudSaveStr ? JSON.parse(cloudSaveStr) : null } catch {}
         const cloudTs = cloud ? (cloud.ts || (cloudSave && cloudSave.ts) || 0) : 0
         const cloudWave = cloud ? (cloud.wave || (cloudSave && cloudSave.wave) || 0) : 0
-        // UI 편집값: 신형은 문자열, 구형은 객체. 로컬 편집 시각과 비교해 최신쪽 적용
-        const cloudUiStr = cloud ? (typeof cloud.ui === 'string' ? cloud.ui : (cloud.ui ? JSON.stringify(cloud.ui) : null)) : null
-        const localUiTs = Number(localStorage.getItem('paleoUiTs') || 0)
-        if (cloudUiStr && (cloud.uiTs || 0) > localUiTs) {
-          localStorage.setItem('paleoUiCfg', cloudUiStr)
-          localStorage.setItem('paleoUiTs', String(cloud.uiTs || 0))
-          try { const o = JSON.parse(cloudUiStr); setUiCfg({ ...UI_DEFAULT, ...Object.fromEntries(Object.entries(o).filter(([k]) => k in UI_DEFAULT)) }) } catch {}
-        }
-        // 모션 편집값: 전용 doc에서 복원 (편집시각이 로컬보다 최신일 때만 적용 → 옛 값이 최신 로컬을 덮지 않음)
-        try {
-          const msnap = await getDoc(doc(fbDb, 'paleoMotion', u.uid))
-          if (msnap.exists()) {
-            const md = msnap.data()
-            const localMotionTs = Number(localStorage.getItem('paleoMotionTs') || 0)
-            if (md.motion && (md.motionTs || 0) > localMotionTs) {
-              localStorage.setItem('paleoMotion', md.motion)
-              localStorage.setItem('paleoMotionTs', String(md.motionTs || 0))
-              setMotCfg(mergeMotion(JSON.parse(md.motion)))
-            } else if (!md.motion || (md.motionTs || 0) < localMotionTs) {
-              pushMotionCloud()   // 로컬이 더 최신이면 클라우드 갱신
-            }
-          } else { pushMotionCloud() }
-        } catch {}
+        // UI·모션 편집값은 클라우드에서 다루지 않는다.
+        // PC에서 편집 → 코드(UI_DEFAULT/MOTION_DEFAULT + CFG_STAMP)에 박아 배포 → 모든 기기가 그대로 받음.
+        // 기기끼리 최신 여부를 비교할 일이 없어 "누가 먼저" 문제 자체가 생기지 않는다.
         // 진행도 동기화: 저장 시각(ts) 최신쪽 채택 (init.ts=로드시점 원래값과 비교). ts 둘 다 없으면 웨이브 폴백
         const bootTs = init.ts || 0
         const cloudNewer = (cloudTs !== 0 || bootTs !== 0) ? cloudTs > bootTs : cloudWave > (local?.wave || 0)
@@ -2131,9 +2109,9 @@ export default function App() {
   }, [])
   useEffect(() => {
     if (!FB_ON) return
-    const iv = setInterval(() => { pushCloud(); pushMotionCloud() }, 15000)   // 60초→15초: 기기 전환 시 클라우드 최신화
-    const onVis = () => { if (document.visibilityState === 'hidden') { pushCloud(); pushMotionCloud() } }
-    const onHide = () => { pushCloud(); pushMotionCloud() }            // 페이지 이탈/전환 즉시 저장 (모바일 Safari는 pagehide가 신뢰성 높음)
+    const iv = setInterval(() => { pushCloud() }, 15000)   // 60초→15초: 기기 전환 시 클라우드 최신화
+    const onVis = () => { if (document.visibilityState === 'hidden') pushCloud() }
+    const onHide = () => { pushCloud() }            // 페이지 이탈/전환 즉시 저장 (모바일 Safari는 pagehide가 신뢰성 높음)
     document.addEventListener('visibilitychange', onVis)
     window.addEventListener('pagehide', onHide)
     window.addEventListener('beforeunload', onHide)
@@ -2153,9 +2131,7 @@ export default function App() {
       cloudBusy.current = true                                                       // 리로드 전 로컬 자동저장 차단
       const saveStr = typeof cloud.data === 'string' ? cloud.data : JSON.stringify(cloud)   // 신형 문자열 or 구형 객체
       localStorage.setItem(SAVE_KEY, saveStr)                                        // 웨이브 등 진행도
-      const uiStr = typeof cloud.ui === 'string' ? cloud.ui : (cloud.ui ? JSON.stringify(cloud.ui) : null)
-      if (uiStr) { localStorage.setItem('paleoUiCfg', uiStr); localStorage.setItem('paleoUiTs', String(cloud.uiTs || Date.now())) }         // UI 배치
-      // 모션은 전용 doc에서 시각 비교로만 동기화 → "불러오기"는 모션을 덮지 않음(최신 모션 보호)
+      // 불러오기는 진행도만 — UI·모션은 코드값이 출처라 건드리지 않음
       location.reload()
     } catch (e) { setCloudMsg('불러오기 실패: ' + (e.code || e.message)) }
   }
