@@ -21,7 +21,7 @@ const DEBUG = true
 // · 모바일처럼 편집 안 하는 기기 → 배포만 하면 PC 값이 자동으로 들어옴
 // · PC에서 배포 후 편집한 값 → 편집 시각이 더 최신이라 그대로 유지됨
 // 사용자 설정을 코드에 새로 박을 때만 이 줄을 현재 시각으로 갱신할 것.
-const CFG_STAMP = Date.parse('2026-08-02T15:12:00+09:00')
+const CFG_STAMP = Date.parse('2026-08-02T19:17:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -179,9 +179,9 @@ const MOTION_DEFAULT = {
     walkSz: { 0: 0.95, 1: 0.96, 2: 0.94, 3: 0.94, 4: 0.86, 5: 0.9 },
     skillSz: { 1: 0.85, 2: 0.85, 7: 0.9, 8: 0.95, 13: 0.85, 15: 0.83, 17: 0.88, 18: 1.07, 20: 1.06, 22: 1.03, 23: 0.9, 24: 0.9, 25: 0.8, 26: 0.54, 27: 0.8 },
     skillPos: { '23': { x: -5 } },   // 스킬별 그림 위치
-    skillFrSz: {"2": {"2": 0.98}, "22": {"4": 0.95}, "23": {"1": 0.97, "2": 0.97, "3": 0.97, "4": 0.97, "5": 0.97}, "25": {"1": 0.96}, "28": {"1": 2.1, "2": 2.1, "3": 2.1, "4": 1.7, "5": 1.6, "6": 1.91}, "29": {"1": 0.88, "2": 0.87, "3": 0.9}, "30": {"1": 0.9, "2": 0.85}},   // 스킬 프레임별 크기
-    skillFrPos: {"22": {"2": {"x": 20}, "3": {"x": 75}, "4": {"x": 155}}, "23": {"1": {"x": 35}, "2": {"x": 70}, "3": {"x": 105}, "4": {"x": 140}, "5": {"x": 175}}, "24": {"3": {"x": 50, "y": 14}, "4": {"y": 15, "x": 50}}, "25": {"2": {"x": 45, "y": -3}, "3": {"x": 80}, "4": {"x": 100}}, "26": {"1": {"x": 20}, "2": {"x": 40}, "3": {"x": 60}, "4": {"x": 80}, "5": {"x": 100}, "6": {"x": 120}}, "27": {"1": {"x": 20}, "2": {"x": 20}, "3": {"x": 25}, "4": {"x": 15}, "5": {"x": 20}}, "28": {"1": {"x": 22, "y": 0}, "2": {"y": 3, "x": 30}, "3": {"x": 50, "y": -45}, "4": {"x": 110, "y": 13}, "5": {"x": 128, "y": 12}, "6": {"x": 132, "y": 16}}, "29": {"1": {"x": 10, "y": 3}, "2": {"x": 10, "y": 5}, "3": {"x": 2}}, "30": {"1": {"x": 0, "y": 4}, "2": {"y": 10, "x": 35}}},   // 스킬 프레임별 위치
-    skillFrT: {"18": [0.2, 0.25], "22": [0.12, 0.15, 0.18, 0.2], "23": [0.15, 0.15, 0.15, 0.15, 0.25], "24": [0.3, 0.3, 0.2, 0.2], "25": [0.12, 0.12, 0.12, 0.15], "26": [0.15, 0.15, 0.15, 0.15, 0.15, 0.15], "27": [0.1, 0.1, 0.1, 0.25, 0.25], "28": [0.15, 0.15, 0.2, 0.15, 0.2, 0.25], "29": [0.2, 0.3, 0.45], "30": [0.2, 0.2]},   // 스킬 프레임별 재생시간(초)
+    skillFrSz: {"2": {"2": 0.98}, "22": {"4": 0.95}, "23": {"1": 0.97, "2": 0.97, "3": 0.97, "4": 0.97, "5": 0.97}, "25": {"1": 0.98, "2": 1.06, "3": 1.18}, "28": {"1": 2.1, "2": 2.1, "3": 2.1, "4": 1.7, "5": 1.6, "6": 1.91}, "29": {"1": 0.88, "2": 0.87, "3": 0.9}, "30": {"1": 0.8, "2": 0.75}},   // 스킬 프레임별 크기
+    skillFrPos: {"22": {"2": {"x": 20}, "3": {"x": 75}, "4": {"x": 155}}, "23": {"1": {"x": 35}, "2": {"x": 70}, "3": {"x": 105}, "4": {"x": 140}, "5": {"x": 175}}, "24": {"3": {"x": 50, "y": 14}, "4": {"y": 15, "x": 50}}, "25": {"1": {"y": 7}, "2": {"x": 45, "y": 3}, "3": {"x": 86, "y": 5}, "4": {"x": 100, "y": 9}}, "26": {"1": {"x": 20}, "2": {"x": 40}, "3": {"x": 60}, "4": {"x": 80}, "5": {"x": 100}, "6": {"x": 120}}, "27": {"1": {"x": 20}, "2": {"x": 20}, "3": {"x": 25}, "4": {"x": 15}, "5": {"x": 20}}, "28": {"1": {"x": 22, "y": 0}, "2": {"y": 3, "x": 30}, "3": {"x": 50, "y": -45}, "4": {"x": 110, "y": 13}, "5": {"x": 128, "y": 12}, "6": {"x": 132, "y": 16}}, "29": {"1": {"x": 10, "y": 3}, "2": {"x": 10, "y": 5}, "3": {"x": 2}}, "30": {"1": {"x": 0, "y": 4}, "2": {"y": 12, "x": 54}}},   // 스킬 프레임별 위치
+    skillFrT: {"18": [0.2, 0.25], "22": [0.12, 0.15, 0.18, 0.2], "23": [0.15, 0.15, 0.15, 0.15, 0.25], "24": [0.3, 0.3, 0.2, 0.2], "25": [0.12, 0.12, 0.12, 0.15], "26": [0.15, 0.15, 0.15, 0.15, 0.15, 0.15], "27": [0.1, 0.1, 0.1, 0.25, 0.25], "28": [0.15, 0.15, 0.2, 0.15, 0.2, 0.25], "29": [0.1, 0.15, 0.25], "30": [0.2, 0.2]},   // 스킬 프레임별 재생시간(초)
     evoSz: { 0: 0.95, 1: 0.85, 2: 0.9, 3: 0.88, 4: 0.9, 5: 0.9 },
     range: {"0": 25, "1": 90, "2": 35, "3": 35, "4": 35, "5": 40},   // 진화단계별 기본공격 사거리(px). 히어로 x=200, 화면 폭 420 → 220이면 화면 끝
     hit: { erectus: 3, neander: 2, sapiens: 4, human: 4 },     // 데미지 프레임(1부터). 사피엔스는 1번 삭제로 4프레임
@@ -210,7 +210,7 @@ const MOTION_DEFAULT = {
     'd:trex': { stop: 53 }, 'd:spino': { sz: 1.26, spd: 1.5 }, 'd:trike': { sz: 1.08 }, 'd:stego': { y: -12, stop: -2 },
     'd:raptor': { spd: 1.8, sz: 1.08 }, 'd:anky': { sz: 0.79 }, 'd:ptera': { spd: 1.95, stop: 18, y: -25 }, 'd:brachio': { y: -12, sz: 1.6 },
     'c:rabbit': { sz: 1.3, y: -6, stop: 85, spd: 1.4 }, 'c:antelope': { y: -6, stop: 30, sz: 1.29 }, 'c:deer': { stop: 37, y: -7, sz: 0.85, spd: 1.4 }, 'c:boar': { sz: 1.07, y: -12, stop: 70, spd: 1.3 },
-    'c:wolf': { stop: 85, y: -11, spd: 1.5, sz: 1.24 }, 'c:hyena': { stop: 90, y: -12, sz: 0.88, spd: 1.3 }, 'c:bear': { y: -14, stop: 27, sz: 0.85, spd: 1.35 }, 'c:rhino': { stop: 27, sz: 0.9, spd: 1.35 },
+    'c:wolf': { stop: 85, y: -11, spd: 1.5, sz: 1.24 }, 'c:hyena': { stop: 90, y: -12, sz: 0.88, spd: 1.3 }, 'c:bear': { y: -13, stop: 110, sz: 0.8, spd: 1.35 }, 'c:rhino': { stop: 27, sz: 0.9, spd: 1.35 },
     'c:tiger': { spd: 1.3, sz: 0.93, y: -4, stop: 3 }, 'c:mammoth': { spd: 1.3, sz: 0.7, y: -7, stop: 15 }, 'c:monkey': { spd: 1.5, y: -3, stop: 5 }, 'c:snake': { sz: 1.66, spd: 1.6 },
     'c:ostrich': { sz: 0.65, y: -8, stop: 77 }, 'c:turtle': { stop: 4 }, 'c:croc': { sz: 1.05, y: -3, stop: 46 }, 'c:komodo': { stop: 46, spd: 1.45, y: -2 },
     'c:eagle': { y: 20, sz: 1.04, stop: 7 }, 'c:giraffe': { sz: 0.68, y: -12, stop: -10 }, 'c:lion': { sz: 0.9, y: -6, stop: 37 }, 'c:elephant': { sz: 0.8, y: -9, spd: 1.1, stop: 10 },
@@ -221,7 +221,7 @@ const MOTION_DEFAULT = {
     'c:zebra': { y: -4, stop: 7, spd: 1.4 }, 'c:cheetah': { sz: 0.9, y: -4, stop: 27, spd: 1.8 }, 'c:koala': { y: -3, stop: 4 }, 'c:kangaroo': { sz: 0.78, y: -6, stop: 4 },
     'c:cat': { sz: 1.15, y: -3, stop: -1, spd: 1.3 }, 'c:dog': { y: -3, stop: 5 }, 'c:hippo': { sz: 0.79, y: -5, stop: 34 }, 'c:gorilla': { y: -6, stop: 10 },
     'c:gator': { sz: 1.13, y: -3, stop: 46, spd: 1.3 }, 'c:squirrel': { stop: 2, spd: 1.6 }, 'c:penguin': { sz: 1.38, y: -2, spd: 1.45, stop: -35 }, 'c:seal': { sz: 1.24, y: -2, stop: 7, spd: 1.3 },
-    'c:cow': { y: -6, spd: 1.45, stop: 10 }, 'c:tiger2': { y: -4, stop: 42, spd: 1.65 },
+    'c:cow': { y: -6, spd: 1.45, stop: 10 }, 'e:16': { stop: 105, y: -8 }, 'c:tiger2': { y: -4, stop: 42, spd: 1.65 },
   },
   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값, 종별 아님 / 보스·모험 몹은 미적용): 가로로 눌리고(x) 세로로 늘어나며(y) 발을 축으로 뒤로 젖혀졌다(rot) dur 동안 복귀. 위치는 안 움직임
   hitSq: {"x": 1.1, "y": 1.1, "rot": 10, "dur": 0.15},   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값)
@@ -229,8 +229,8 @@ const MOTION_DEFAULT = {
   stone: { spd: 0.6, sz: 13, arc: 0.4 },                           // 직립 돌던지기: 비행속도 배율 / 그림 크기(px) / 포물선 높이 배율
   // 이펙트 프레임별 재생시간(초). 합 = 총 재생시간(전체 '프레임 속도'로 나눔).
   // 길이가 실제 프레임 수와 다르면 무시하고 균등 분할 — 프레임을 지우거나 늘려도 굳지 않음
-  fxFrT: {"1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.139, 0.153, 0.153, 0.255], "30": [0.221, 0.158, 0.138, 0.123, 0.11]},
-  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "fr": {"1": {"sz": 0.9, "t": 1.1}, "2": {"sz": 0.9}, "3": {"sz": 0.9}, "4": {"sz": 0.9, "t": 0.6}}}, "30": {"sz": 0.75, "spd": 1, "fly": 1, "x": -20, "y": 0, "fr": {"1": {"t": 0.5, "x": -10, "sz": 1.1}, "2": {"x": 30, "sz": 1.05, "t": 0.7}, "3": {"x": 50, "sz": 1.05, "t": 0.8}, "4": {"x": 70, "sz": 1.05, "t": 0.9}, "5": {"x": 90, "sz": 1.05, "t": 1}}}},  // 스킬 이펙트 (x/y=위치, fr={프레임:{sz,x,y,t}} 프레임별)
+  fxFrT: {"1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.12, 0.12, 0.15, 0.15], "30": [0.23, 0.2, 0.12, 0.12, 0.12]},
+  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "30": {"startP": 0.5, "anchor": 1, "sz": 0.75, "spd": 1, "fly": 1, "x": -20, "y": 0, "fr": {"1": {"t": 0.5, "x": 12, "sz": 0.95, "y": 2}, "2": {"x": 50, "sz": 0.95, "t": 0.7}, "3": {"x": 90, "sz": 0.95, "t": 0.8}, "4": {"x": 110, "sz": 0.95, "t": 0.9, "y": 3}, "5": {"x": 130, "sz": 0.95, "t": 1, "y": 4}}}},  // 스킬 이펙트 (x/y=위치, fr={프레임:{sz,x,y}} 프레임별)
 }
 const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 30]                          // 이펙트 있는 스킬 id
 // 이펙트 프레임 시간(초) 배열 — 넣은 값을 그대로 씀. 프레임을 늘리거나 줄이면 값도 같이 조정할 것.
@@ -1374,12 +1374,27 @@ export default function App() {
             for (const si of slots) {
               if (si != null && SKILLS[si].stage === st.evo && w.skillCd[si] <= 0) { ready = si; break }
             }
-            if (ready >= 0) { w.skill = ready; w.skillT = 0; w.skillDid = false; w.skillCd[ready] = skEff(SKILLS[ready], st.skCfg).cd }
+            if (ready >= 0) { w.skill = ready; w.skillT = 0; w.skillDid = false; w.skillFx = false; w.skillCd[ready] = skEff(SKILLS[ready], st.skCfg).cd }
           }
         } else {
           const sk = SKILLS[w.skill]
           const _skCast = skCast(skFrT(sk, motRef.current))   // 편집기에서 프레임 시간 바꾸면 즉시 반영
           w.skillT += dt * SPEED
+          // 낙하 이펙트는 데미지 시점(hitAt)이 아니라 **startP 시점**에 생성 — 히어로 모션에 겹칠 수 있게
+          if (sk.fx && sk.fx.type === 'strike' && !w.skillFx) {
+            const _fxc = motRef.current.skFx[sk.id] || {}
+            if (w.skillT >= _skCast * (_fxc.startP ?? sk.hitAt)) {
+              w.skillFx = true
+              const __e2 = skEff(sk, st.skCfg)
+              const rng2 = __e2.rangePx || Infinity
+              const inR2 = w.enemies.filter(e => !e.dead && e.x - w.heroX < rng2).sort((a, b) => a.x - b.x)
+              const x2 = _fxc.anchor ? w.heroX : (inR2.length ? inR2[0].x : w.heroX + 260)
+              w.strikes.push({ id: sk.id, frames: sk.fx.frames, x: x2, anchor: _fxc.anchor ? 1 : 0, t: 0,
+                dur: fxTotal(motRef.current, sk.id, sk.fx.frames.length, STRIKE_DUR_BY[sk.id] ?? STRIKE_DUR) / (_fxc.spd || 1),
+                dmg: st.atk * __e2.dmgMult, hitDone: false, h: sk.fx.fxH ?? sk.h, hitP: sk.fx.hitP ?? 0.45,
+                aoe: __e2.aoe, rng: rng2, hx: w.heroX, stun: sk.stun || 0 })
+            }
+          }
           if (!w.skillDid && w.skillT >= _skCast * sk.hitAt) {
             w.skillDid = true
             const __ef = skEff(sk, st.skCfg)
@@ -1392,12 +1407,7 @@ export default function App() {
               const fe = []; let fa = 0; for (const t of ft) { fa += t; fe.push(fa) }
               w.projs.push({ id: sk.id, fly: sk.fx.fly, impact: sk.fx.impact || null, x: w.heroX + 70, t: 0, dmg, h: sk.fx.fxH ?? sk.h, scale: sk.fx.flyScale || 1, yOff: sk.fx.yOff ?? 40, fe, feTotal: fa })
             } else if (sk.fx && sk.fx.type === 'strike') {
-              // 낙하/타격: **시전당 이펙트 1개만** 재생(적 수만큼 찍으면 화면이 정신없음).
-              // 데미지는 타격 프레임(fx.hitP)에 한 번, 광역이면 사거리 안 전체에 들어간다.
-              const rng = __ef.rangePx || Infinity
-              const inR = w.enemies.filter(e => !e.dead && e.x - w.heroX < rng).sort((a, b) => a.x - b.x)
-              const x = inR.length ? inR[0].x : w.heroX + 260   // 가장 가까운 적 위에 떨어뜨림
-              w.strikes.push({ id: sk.id, frames: sk.fx.frames, x, t: 0, dur: fxTotal(motRef.current, sk.id, sk.fx.frames.length, STRIKE_DUR_BY[sk.id] ?? STRIKE_DUR) / ((motRef.current.skFx[sk.id] || {}).spd || 1), dmg, hitDone: false, h: sk.fx.fxH ?? sk.h, hitP: sk.fx.hitP ?? 0.45, aoe: __ef.aoe, rng, hx: w.heroX, stun: sk.stun || 0 })
+              // 이펙트는 위 startP 시점에 이미 생성됨(시전당 1개). 데미지도 그 이펙트가 hitP에서 처리
             } else if (__ef.aoe) {
               const rng = __ef.rangePx || Infinity   // 히어로 기준 px 이내만, 0/null이면 화면 전체(메테오)
               for (const t of w.enemies) if (!t.dead && t.x - w.heroX < rng) { applySkillDmg(t, dmg); if (sk.stun) t.stun = sk.stun }
@@ -2051,7 +2061,8 @@ export default function App() {
           const ffr = (fxc.fr || {})[fi + 1] || {}
           const hh = stk.h * (fxc.sz || 1) * (ffr.sz ?? 1)
           const ww = hh * (im.naturalWidth / im.naturalHeight)
-          ctx.drawImage(im, stk.x - ww / 2 + (fxc.x || 0) + (ffr.x || 0), w.groundY - hh + (fxc.y || 0) + (ffr.y || 0), ww, hh)
+          const bx = stk.anchor ? w.heroX : stk.x   // 히어로 기준이면 히어로를 따라 움직임
+          ctx.drawImage(im, bx - ww / 2 + (fxc.x || 0) + (ffr.x || 0), w.groundY - hh + (fxc.y || 0) + (ffr.y || 0), ww, hh)
         }
       }
       // 스킬 투사체 (몬스터 쪽으로 비행)
@@ -2737,7 +2748,7 @@ export default function App() {
         const cleared = evStage[evPick.no] || 0
         const stage = Math.min(EV_STAGES, cleared + 1)
         return (
-        <div style={st.advOverlay} onClick={() => { if (!uiEdit) setEvPick(null) }}>
+        <div style={st.evpOverlay} onClick={() => { if (!uiEdit) setEvPick(null) }}>
           <div data-edit="evpwin" style={st.evpWin} onClick={e => e.stopPropagation()}>
             <div data-edit="evptitle" style={st.evpTitle}>{evPick.dname}</div>
             <img data-edit="evpimg" src={`/boss/boss${evPick.no}/boss${evPick.no}_1.png`} alt="" style={st.evpImg} />
@@ -2943,12 +2954,7 @@ export default function App() {
         )}
         {uiEdit && <div data-edit="warn" style={st.warnPrev}>WARNING</div>}
         {(evUI || uiEdit) && (
-          <>
-            <div data-edit="evbtln" style={{ ...st.evBtlName, ...(uiEdit ? { pointerEvents: 'auto' } : {}) }}>
-              {(evUI ? evUI.dname : '이벤트 던전')} — {(evUI ? evUI.name : '보스 이름')}
-            </div>
-            <button data-edit="evexit" style={st.evExitBtn} onClick={() => { if (!uiEdit) world.current.evGiveUp = true }}>나가기</button>
-          </>
+          <button data-edit="evexit" style={st.evExitBtn} onClick={() => { if (!uiEdit) world.current.evGiveUp = true }}>나가기</button>
         )}
         <div data-edit="gain" style={{ ...st.gainWrap, ...(uiEdit ? { pointerEvents: 'auto' } : {}) }}>
           {(gains.length ? gains : (uiEdit ? [{ id: '__s', exp: 1234, meat: 567 }] : [])).map(g => (
@@ -3520,6 +3526,16 @@ export default function App() {
             {row('이펙트 크기', M.skFx[motFx].sz, 0.3, 3, 0.01, v => setMotCfg({ ...M, skFx: { ...M.skFx, [motFx]: { ...M.skFx[motFx], sz: v } } }))}
             {row('프레임 속도', M.skFx[motFx].spd, 0.3, 3, 0.05, v => setMotCfg({ ...M, skFx: { ...M.skFx, [motFx]: { ...M.skFx[motFx], spd: v } } }))}
             {row('비행 속도(투사체)', M.skFx[motFx].fly ?? 1, 0.2, 3, 0.05, v => setMotCfg({ ...M, skFx: { ...M.skFx, [motFx]: { ...M.skFx[motFx], fly: v } } }))}
+            {(() => {                                    // 낙하 이펙트 전용: 시작 시점 · 위치 기준
+              const sk2 = SKILLS.find(k => k.id === motFx)
+              if (!sk2 || !sk2.fx || sk2.fx.type !== 'strike') return null
+              const put2 = (k, v) => setMotCfg({ ...M, skFx: { ...M.skFx, [motFx]: { ...M.skFx[motFx], [k]: v } } })
+              return (<>
+                {row('이펙트 시작(시전 진행도)', M.skFx[motFx].startP ?? (sk2.hitAt ?? 1), 0, 1, 0.01, v => put2('startP', v))}
+                {row('위치 기준 (0=적 1=히어로)', M.skFx[motFx].anchor ?? 0, 0, 1, 1, v => put2('anchor', v))}
+                <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>시작 0.5 = 히어로 모션 절반에서 이펙트 등장(겹침). 히어로 기준이면 이펙트가 히어로를 따라 움직입니다</div>
+              </>)
+            })()}
             {row('이펙트 좌우', M.skFx[motFx].x ?? 0, -250, 250, 1, v => setMotCfg({ ...M, skFx: { ...M.skFx, [motFx]: { ...M.skFx[motFx], x: v } } }))}
             {row('이펙트 상하', M.skFx[motFx].y ?? 0, -250, 250, 1, v => setMotCfg({ ...M, skFx: { ...M.skFx, [motFx]: { ...M.skFx[motFx], y: v } } }))}
             {(() => {
@@ -4019,7 +4035,6 @@ Object.assign(EDIT_GROUPS, {
   evno: { label: '보스 그림 자리', size: ['evnosz'], pos: 'evno' },
   evbname: { label: '보스 이름', size: ['evbnamefz'], pos: 'evbname' },
   evgo: { label: '도전 버튼', size: ['evgow', 'evgoh', 'evgofz'], pos: 'evgo' },
-  evbtln: { label: '던전 전투 보스이름', size: ['evbtlnfz'], pos: 'evbtln' },
   warn: { label: '경고 문구(WARNING)', size: ['warnfz'], pos: 'warn' },
   evpwin: { label: '도전창 틀', size: ['evpww', 'evpwh'], pos: 'evpwin' },
   evptitle: { label: '도전창 던전이름', size: ['evptitlefz'], pos: 'evptitle' },
@@ -4071,7 +4086,7 @@ Object.assign(UI_LABELS, {
   skdiconsz: '아이콘 크기', skdtitlefz: '제목 글자', skddescfz: '설명 글자',
   profherow: '틀 너비', profheroh: '틀 높이', profherozoom: '그림 크기%', skdimgsz: '그림 크기', avafacesz: '그림 크기', profstatfz: '능력치 글자', profcurfz: '재화 글자', profcuric: '재화 아이콘', profgearsz: '장비칸 크기', profsecfz: '제목 글자',
   skdefffz: '효과 글자', skdstatfz: '스탯 글자', skdautofz: 'AUTO 글자', skdbtnh: '버튼 높이', skdbtnfz: '버튼 글자',
-  evbtlnfz: '이름 글자', evexitw: '버튼 너비', evexith: '버튼 높이', evexitfz: '글씨 크기',
+  evexitw: '버튼 너비', evexith: '버튼 높이', evexitfz: '글씨 크기',
   warnfz: '글자 크기', evpww: '창 너비', evpwh: '창 높이', evptitlefz: '글자 크기', evpimgw: '그림 너비', evpimgh: '그림 높이',
   evpbnfz: '글자 크기', evprewfz: '글자 크기', evprewic: '아이콘 크기', evpsfz: '글자 크기', evpbarw: '바 너비', evpbarh: '바 높이',
   evpew: '버튼 너비', evpeh: '버튼 높이', evpefz: '글씨 크기', evpcw: '버튼 너비', evpch: '버튼 높이', evpcfz: '글씨 크기',
@@ -4095,7 +4110,7 @@ const uiVars = c => `:root{
 --pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
 ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg${i}-x:${c['evoimg' + i + 'X']}px;--pd-evoimg${i}-y:${c['evoimg' + i + 'Y']}px;`).join('')}--pd-slotfz:${c.slotfz}px;
---pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdimgsz:${c.skdimgsz}px;--pd-avafacesz:${c.avafacesz}px;--pd-profherow:${c.profherow}px;--pd-profheroh:${c.profheroh}px;--pd-profherozoom:${c.profherozoom};--pd-profstatfz:${c.profstatfz}px;--pd-profcurfz:${c.profcurfz}px;--pd-profcuric:${c.profcuric}px;--pd-profgearsz:${c.profgearsz}px;--pd-profsecfz:${c.profsecfz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;--pd-warnfz:${c.warnfz}px;--pd-evpww:${c.evpww}px;--pd-evpwh:${c.evpwh}px;--pd-evptitlefz:${c.evptitlefz}px;--pd-evpimgw:${c.evpimgw}px;--pd-evpimgh:${c.evpimgh}px;--pd-evpbnfz:${c.evpbnfz}px;--pd-evprewfz:${c.evprewfz}px;--pd-evprewic:${c.evprewic}px;--pd-evpsfz:${c.evpsfz}px;--pd-evpbarw:${c.evpbarw}px;--pd-evpbarh:${c.evpbarh}px;--pd-evpew:${c.evpew}px;--pd-evpeh:${c.evpeh}px;--pd-evpefz:${c.evpefz}px;--pd-evpcw:${c.evpcw}px;--pd-evpch:${c.evpch}px;--pd-evpcfz:${c.evpcfz}px;--pd-evbtlnfz:${c.evbtlnfz}px;--pd-evexitw:${c.evexitw}px;--pd-evexith:${c.evexith}px;--pd-evexitfz:${c.evexitfz}px;--pd-fevbtnw:${c.fevbtnw}px;--pd-fevbtnh:${c.fevbtnh}px;--pd-fevonzoom:${c.fevonzoom};--pd-fevbtntfz:${c.fevbtntfz}px;--pd-evbtnw:${c.evbtnw}px;--pd-evbtnh:${c.evbtnh}px;--pd-evbtntfz:${c.evbtntfz}px;--pd-evww:${c.evww}px;--pd-evwh:${c.evwh}px;--pd-evtitlefz:${c.evtitlefz}px;--pd-evclsz:${c.evclsz}px;--pd-evtabw:${c.evtabw}px;--pd-evtabh:${c.evtabh}px;--pd-evtabfz:${c.evtabfz}px;--pd-evprevh:${c.evprevh}px;--pd-evnamefz:${c.evnamefz}px;--pd-evrowh:${c.evrowh}px;--pd-evnosz:${c.evnosz}px;--pd-evbnamefz:${c.evbnamefz}px;--pd-evgow:${c.evgow}px;--pd-evgoh:${c.evgoh}px;--pd-evgofz:${c.evgofz}px;--pd-evprevzoom:${c.evprevzoom};--pd-evnoimgsz:${c.evnoimgsz}px;
+--pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdimgsz:${c.skdimgsz}px;--pd-avafacesz:${c.avafacesz}px;--pd-profherow:${c.profherow}px;--pd-profheroh:${c.profheroh}px;--pd-profherozoom:${c.profherozoom};--pd-profstatfz:${c.profstatfz}px;--pd-profcurfz:${c.profcurfz}px;--pd-profcuric:${c.profcuric}px;--pd-profgearsz:${c.profgearsz}px;--pd-profsecfz:${c.profsecfz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;--pd-warnfz:${c.warnfz}px;--pd-evpww:${c.evpww}px;--pd-evpwh:${c.evpwh}px;--pd-evptitlefz:${c.evptitlefz}px;--pd-evpimgw:${c.evpimgw}px;--pd-evpimgh:${c.evpimgh}px;--pd-evpbnfz:${c.evpbnfz}px;--pd-evprewfz:${c.evprewfz}px;--pd-evprewic:${c.evprewic}px;--pd-evpsfz:${c.evpsfz}px;--pd-evpbarw:${c.evpbarw}px;--pd-evpbarh:${c.evpbarh}px;--pd-evpew:${c.evpew}px;--pd-evpeh:${c.evpeh}px;--pd-evpefz:${c.evpefz}px;--pd-evpcw:${c.evpcw}px;--pd-evpch:${c.evpch}px;--pd-evpcfz:${c.evpcfz}px;--pd-evexitw:${c.evexitw}px;--pd-evexith:${c.evexith}px;--pd-evexitfz:${c.evexitfz}px;--pd-fevbtnw:${c.fevbtnw}px;--pd-fevbtnh:${c.fevbtnh}px;--pd-fevonzoom:${c.fevonzoom};--pd-fevbtntfz:${c.fevbtntfz}px;--pd-evbtnw:${c.evbtnw}px;--pd-evbtnh:${c.evbtnh}px;--pd-evbtntfz:${c.evbtntfz}px;--pd-evww:${c.evww}px;--pd-evwh:${c.evwh}px;--pd-evtitlefz:${c.evtitlefz}px;--pd-evclsz:${c.evclsz}px;--pd-evtabw:${c.evtabw}px;--pd-evtabh:${c.evtabh}px;--pd-evtabfz:${c.evtabfz}px;--pd-evprevh:${c.evprevh}px;--pd-evnamefz:${c.evnamefz}px;--pd-evrowh:${c.evrowh}px;--pd-evnosz:${c.evnosz}px;--pd-evbnamefz:${c.evbnamefz}px;--pd-evgow:${c.evgow}px;--pd-evgoh:${c.evgoh}px;--pd-evgofz:${c.evgofz}px;--pd-evprevzoom:${c.evprevzoom};--pd-evnoimgsz:${c.evnoimgsz}px;
 ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k}h:${c['advico' + k + 'h']}px;--pd-advico${k}-x:${c['advico' + k + 'X']}px;--pd-advico${k}-y:${c['advico' + k + 'Y']}px;`).join('')}
 --pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
 --pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
@@ -4122,7 +4137,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
 --pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evbtln', 'evexit', 'warn', 'evpwin', 'evptitle', 'evpimg', 'evpbn', 'evprew', 'evpsignt', 'evpbar', 'evpenter', 'evpclose', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evexit', 'warn', 'evpwin', 'evptitle', 'evpimg', 'evpbn', 'evprew', 'evpsignt', 'evpbar', 'evpenter', 'evpclose', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -4508,7 +4523,8 @@ const st = {
     fontSize: 'var(--pd-warnfz)', fontWeight: 800, color: 'rgba(255,70,60,0.9)',
     fontFamily: "'Do Hyeon', sans-serif", textShadow: '0 2px 4px #000', zIndex: 7,
   },
-  // ── 이벤트 던전 도전 확인창 ──
+  // ── 이벤트 던전 도전 확인창 ── (던전 목록창보다 위에 떠야 함 → zIndex 55 → 58)
+  evpOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.68)', zIndex: 58, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   evpWin: {
     position: 'relative', width: 'var(--pd-evpww)', height: 'var(--pd-evpwh)',
     transform: 'translate(var(--pd-evpwin-x), var(--pd-evpwin-y))',
@@ -4558,12 +4574,6 @@ const st = {
     borderRadius: 8, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontWeight: 700, padding: 0,
   },
   // ── 이벤트 던전 전투 HUD ──
-  evBtlName: {
-    position: 'absolute', left: '50%', top: 0, whiteSpace: 'nowrap', pointerEvents: 'none',
-    transform: 'translateX(-50%) translate(var(--pd-evbtln-x), var(--pd-evbtln-y))',
-    fontSize: 'var(--pd-evbtlnfz)', fontWeight: 800, color: '#ffd98a',
-    textShadow: '0 1px 3px #000, 0 0 6px #000', zIndex: 6,
-  },
   evExitBtn: {
     position: 'absolute', left: 0, top: 0,
     transform: 'translate(var(--pd-evexit-x), var(--pd-evexit-y))',
@@ -4862,16 +4872,15 @@ Object.assign(UI_DEFAULT, {
 
 // 이벤트 던전 전투 HUD (2026-08-02 신규)
 Object.assign(UI_DEFAULT, {
-  evbtlnfz: 13, evbtlnX: 0, evbtlnY: 46,          // 상단 '던전명 — 보스명'
-  warnfz: 43, warnX: 0, warnY: 0,                 // 캔버스 WARNING 문구
+  warnfz: 40, warnX: 0, warnY: -2,                 // 캔버스 WARNING 문구
   evpww: 300, evpwh: 380, evpwinX: 0, evpwinY: 0,
   evptitlefz: 18, evptitleX: 0, evptitleY: 0,
-  evpimgw: 150, evpimgh: 130, evpimgX: 0, evpimgY: 0,
-  evpbnfz: 15, evpbnX: 0, evpbnY: 0,
-  evprewfz: 13, evprewic: 16, evprewX: 0, evprewY: 0,
-  evpsfz: 13, evpsigntX: 0, evpsigntY: 0,
-  evpbarw: 240, evpbarh: 16, evpbarX: 0, evpbarY: 0,
-  evpew: 110, evpeh: 40, evpefz: 15, evpenterX: 0, evpenterY: 0,
-  evpcw: 90, evpch: 40, evpcfz: 14, evpcloseX: 0, evpcloseY: 0,
-  evexitw: 52, evexith: 22, evexitfz: 11, evexitX: 8, evexitY: 44,   // 나가기 버튼
+  evpimgw: 153, evpimgh: 133, evpimgX: 0, evpimgY: 0,
+  evpbnfz: 15, evpbnX: 0, evpbnY: 2,
+  evprewfz: 15, evprewic: 13, evprewX: 0, evprewY: 4,
+  evpsfz: 13, evpsigntX: 0, evpsigntY: 15,
+  evpbarw: 240, evpbarh: 16, evpbarX: 0, evpbarY: 25,
+  evpew: 83, evpeh: 28, evpefz: 13, evpenterX: 0, evpenterY: 0,
+  evpcw: 80, evpch: 29, evpcfz: 13, evpcloseX: 0, evpcloseY: 0,
+  evexitw: 48, evexith: 22, evexitfz: 11, evexitX: 7, evexitY: 70,   // 나가기 버튼
 })
