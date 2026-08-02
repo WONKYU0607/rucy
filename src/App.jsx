@@ -21,7 +21,7 @@ const DEBUG = true
 // · 모바일처럼 편집 안 하는 기기 → 배포만 하면 PC 값이 자동으로 들어옴
 // · PC에서 배포 후 편집한 값 → 편집 시각이 더 최신이라 그대로 유지됨
 // 사용자 설정을 코드에 새로 박을 때만 이 줄을 현재 시각으로 갱신할 것.
-const CFG_STAMP = Date.parse('2026-08-01T13:45:00+09:00')
+const CFG_STAMP = Date.parse('2026-08-02T13:10:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -75,16 +75,16 @@ const SKILL_SHEET = [
   { id: 18, n: 5, h: 210, stage: 1, title: '바위치기 (강화)', charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5] } },
   { id: 20, n: 5, h: 195, stage: 1, title: '바위 회오리', charSeq: [1, 2, 3, 5], fx: { type: 'proj', fly: [4], flyScale: 0.9, yOff: 0 } },
   { id: 22, n: 4, h: 180, stage: 1, title: '전광석화', charSeq: [1, 2, 3, 4], cd: 2, dmgMult: 3 },   // 나중에 손볼 예정(킵)
-  { id: 23, n: 6, h: 180, stage: 1, title: '사신과 함께', charSeq: [3, 4, 3, 4, 6], cd: 2, dmgMult: 3, aoe: true, rangeMul: 1.5 },   // 원투-원투-어퍼컷 — 3·4·6번 그림만 사용(1·2·5번 삭제됨), 기본사거리 1.5배 내 모두
+  { id: 23, n: 6, h: 180, stage: 1, title: '사신과 함께', charSeq: [3, 4, 3, 4, 6], cd: 2, dmgMult: 3, aoe: true, rangePx: 200 },   // 원투-원투-어퍼컷 — 3·4·6번 그림만 사용(1·2·5번 삭제됨), 기본사거리 1.5배 내 모두
   // ── 호모 에렉투스(stage 2) ── 효과(대상/데미지/사거리/쿨타임)는 인게임 스킬 상세창에서 조절
   { id: 24, n: 7, h: 200, stage: 2, title: '암흑 강타', charSeq: [2, 4, 6, 7], cd: 2, dmgMult: 3 },
   { id: 25, n: 5, h: 200, stage: 2, title: '뇌전 질주', charSeq: [1, 2, 3, 5], cd: 2, dmgMult: 3 },
-  { id: 26, n: 6, h: 200, stage: 2, title: '회전 폭풍', charSeq: [1, 2, 3, 4, 5, 6], cd: 2, dmgMult: 3, aoe: true, rangeMul: 1.5 },
+  { id: 26, n: 6, h: 200, stage: 2, title: '회전 폭풍', charSeq: [1, 2, 3, 4, 5, 6], cd: 2, dmgMult: 3, aoe: true, rangePx: 150 },
   { id: 27, n: 5, h: 200, stage: 2, title: '화염 참격', charSeq: [1, 2, 4, 5, 3], cd: 2, dmgMult: 3 },
   { id: 28, n: 7, h: 200, stage: 2, title: '피폭', charSeq: [1, 2, 3, 5, 6, 7], cd: 2, dmgMult: 3, aoe: true },
   // 29·30: 히어로 모션(charSeq)과 이펙트(fx)가 각각 다른 시트 → 이펙트가 별도 레이어라 몹에 안 가림
-  { id: 29, n: 7, h: 200, stage: 2, title: '사이오닉 스톰', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [4, 5, 6, 7], fxH: 240 }, cd: 2, dmgMult: 3, aoe: true, rangeMul: 1.5 },
-  { id: 30, n: 7, h: 300, stage: 2, title: '거대 몽둥이', charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5, 6, 7], fxH: 260 }, cd: 2, dmgMult: 3 },
+  { id: 29, n: 7, h: 200, stage: 2, title: '사이오닉 스톰', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [4, 5, 6, 7], fxH: 240, hitP: 0.6 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 150 },
+  { id: 30, n: 7, h: 300, stage: 2, title: '거대 몽둥이', charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5, 6, 7], fxH: 260, hitP: 0.9 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 200 },
   ...PASSIVE_SHEET,   // 진화 단계별 패시브 (오스트랄로~인간)
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
@@ -98,7 +98,7 @@ const skEff = (sk, cfg) => {
     cd: c.cd ?? sk.cd,
     dmgMult: c.dmg ?? sk.dmgMult,
     aoe: c.aoe != null ? !!c.aoe : sk.aoe,
-    rangeMul: c.range != null ? (c.range > 0 ? c.range : null) : sk.rangeMul,
+    rangePx: c.range != null ? (c.range > 0 ? c.range : null) : (sk.rangePx ?? null),   // px, 0/null = 화면 전체
   }
 }
 const skillIconSrc = id => SKILL_ICON_FRAME[id] ? `/skill/s${id}/s${id}_${SKILL_ICON_FRAME[id]}.png` : null
@@ -179,11 +179,11 @@ const MOTION_DEFAULT = {
     walkSz: { 0: 0.95, 1: 0.96, 2: 0.94, 3: 0.94, 4: 0.86, 5: 0.9 },
     skillSz: { 1: 0.85, 2: 0.85, 7: 0.9, 8: 0.95, 13: 0.85, 15: 0.83, 17: 0.88, 18: 1.07, 20: 1.06, 22: 1.03, 23: 0.9, 24: 0.9, 25: 0.8, 26: 0.54, 27: 0.8 },
     skillPos: { '23': { x: -5 } },   // 스킬별 그림 위치
-    skillFrSz: { '2': { 2: 0.98 }, '22': { 4: 0.95 }, '23': { 1: 0.97, 2: 0.97, 3: 0.97, 4: 0.97, 5: 0.97 }, '25': { 1: 0.96 }, '28': { 1: 2.1, 2: 2.07, 3: 2, 4: 1.7, 5: 1.34, 6: 1.5 } },   // 스킬 프레임별 크기
-    skillFrPos: { '22': { 2: { x: 20 }, 3: { x: 75 }, 4: { x: 150 } }, '23': { 3: { x: 22 }, 4: { x: 39 }, 5: { x: 100 } }, '24': { 3: { x: 50, y: 14 }, 4: { y: 15, x: 50 } }, '25': { 2: { x: 45, y: -3 }, 3: { x: 80 }, 4: { x: 100 } }, '26': { 1: { x: 20 }, 2: { x: 30 }, 3: { x: 40 }, 4: { x: 50 }, 5: { x: 60 }, 6: { x: 70 } }, '27': { 1: { x: 20 }, 2: { x: 20 }, 3: { x: 25 }, 4: { x: 15 }, 5: { x: 20 } }, '28': { 1: { x: 22, y: 0 }, 2: { y: 3, x: 30 }, 3: { x: 50, y: -45 }, 4: { x: 80, y: 13 }, 5: { x: 143, y: 25 }, 6: { x: 148, y: 25 } } },   // 스킬 프레임별 위치
-    skillFrT: { 18: [0.2, 0.25], 22: [0.15, 0.15, 0.15, 0.15], 23: [0.3, 0.3, 0.3, 0.3, 0.5], 24: [0.2, 0.2, 0.3, 0.2], 25: [0.12, 0.12, 0.12, 0.15], 26: [0.12, 0.12, 0.12, 0.12, 0.12, 0.12], 27: [0.1, 0.1, 0.1, 0.12, 0.15], 28: [0.12, 0.12, 0.17, 0.1, 0.3, 0.35] },   // 스킬 프레임별 재생시간(초)
+    skillFrSz: {"2": {"2": 0.98}, "22": {"4": 0.95}, "23": {"1": 0.97, "2": 0.97, "3": 0.97, "4": 0.97, "5": 0.97}, "25": {"1": 0.96}, "28": {"1": 2.1, "2": 2.07, "3": 2, "4": 1.7, "5": 1.34, "6": 1.5}, "29": {"1": 0.88, "2": 0.87, "3": 0.9}, "30": {"1": 0.85, "2": 0.85}},   // 스킬 프레임별 크기
+    skillFrPos: {"22": {"2": {"x": 20}, "3": {"x": 75}, "4": {"x": 150}}, "23": {"3": {"x": 22}, "4": {"x": 39}, "5": {"x": 100}}, "24": {"3": {"x": 50, "y": 14}, "4": {"y": 15, "x": 50}}, "25": {"2": {"x": 45, "y": -3}, "3": {"x": 80}, "4": {"x": 100}}, "26": {"1": {"x": 20}, "2": {"x": 40}, "3": {"x": 60}, "4": {"x": 80}, "5": {"x": 100}, "6": {"x": 120}}, "27": {"1": {"x": 20}, "2": {"x": 20}, "3": {"x": 25}, "4": {"x": 15}, "5": {"x": 20}}, "28": {"1": {"x": 22, "y": 0}, "2": {"y": 3, "x": 30}, "3": {"x": 50, "y": -45}, "4": {"x": 80, "y": 13}, "5": {"x": 143, "y": 25}, "6": {"x": 148, "y": 25}}, "29": {"1": {"x": 10, "y": 3}, "2": {"x": 10, "y": 5}, "3": {"x": 2}}, "30": {"1": {"x": -6, "y": 4}, "2": {"y": 8, "x": 0}}},   // 스킬 프레임별 위치
+    skillFrT: {"18": [0.2, 0.25], "22": [0.15, 0.15, 0.15, 0.15], "23": [0.3, 0.3, 0.3, 0.3, 0.5], "24": [0.3, 0.3, 0.2, 0.2], "25": [0.12, 0.12, 0.12, 0.15], "26": [0.15, 0.15, 0.15, 0.15, 0.15, 0.15], "27": [0.1, 0.1, 0.1, 0.25, 0.25], "28": [0.12, 0.12, 0.17, 0.1, 0.3, 0.35], "29": [0.2, 0.3, 0.45], "30": [0.82, 0.76]},   // 스킬 프레임별 재생시간(초)
     evoSz: { 0: 0.95, 1: 0.85, 2: 0.9, 3: 0.88, 4: 0.9, 5: 0.9 },
-    range: { 0: 85, 1: 130, 2: 100, 3: 100, 4: 100, 5: 100 },   // 진화단계별 기본공격 사거리(px). 히어로 x=200, 화면 폭 420 → 220이면 화면 끝
+    range: {"0": 25, "1": 90, "2": 35, "3": 35, "4": 35, "5": 40},   // 진화단계별 기본공격 사거리(px). 히어로 x=200, 화면 폭 420 → 220이면 화면 끝
     hit: { erectus: 3, neander: 2, sapiens: 4, human: 4 },     // 데미지 프레임(1부터). 사피엔스는 1번 삭제로 4프레임
      // 데미지 프레임(1부터, 기본=마지막). 사피엔스는 1번 삭제로 4장이라 4
     atkFrX: { 'eatk1': { 2: 10, 3: 25 }, 'natk1': { 2: 20 }, 'hmatk1': { 1: 0, 2: 2, 4: 1 } },   // 기본공격 프레임별 좌우 보정(px)
@@ -227,9 +227,17 @@ const MOTION_DEFAULT = {
   hitSq: { x: 0.86, y: 1.08, rot: 5, dur: 0.18 },
   wave: { gap: 40, dist: 35 },                                  // 웨이브 몹 일렬 간격(px) / 히어로와의 거리(px) — 종 무관 일괄
   stone: { spd: 0.6, sz: 13, arc: 0.4 },                           // 직립 돌던지기: 비행속도 배율 / 그림 크기(px) / 포물선 높이 배율
-  skFx: { 1: { sz: 0.82, spd: 1.5, fly: 1.25, x: 0, y: 0, fr: {} }, 2: { sz: 0.74, spd: 0.3, fly: 1.5, x: 0, y: 0, fr: {} }, 16: { sz: 1, spd: 1, fly: 1, x: 0, y: 0, fr: {} }, 18: { sz: 1.04, spd: 1.6, fly: 1, x: 0, y: 0, fr: {} }, 20: { sz: 0.74, spd: 1.25, fly: 1, x: 0, y: 0, fr: {} }, 29: { sz: 1, spd: 1, fly: 1, x: 0, y: 0, fr: {} }, 30: { sz: 1, spd: 1, fly: 1, x: 0, y: 0, fr: {} } },  // 스킬 이펙트 (x/y=위치, fr={프레임:{sz,x,y}} 프레임별)
+  skFx: {"1": {"sz": 0.82, "spd": 1.5, "fly": 1.25, "x": 0, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 0.3, "fly": 1.5, "x": 0, "y": 0, "fr": {}}, "16": {"sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.6, "fly": 1, "x": 0, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1, "spd": 1.5, "fly": 1.6, "x": 60, "y": 5, "fr": {"1": {"sz": 0.9}, "2": {"sz": 0.9}, "3": {"sz": 0.9}, "4": {"sz": 0.9}}}, "30": {"sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {}}},  // 스킬 이펙트 (x/y=위치, fr={프레임:{sz,x,y,t}} 프레임별)
 }
 const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 30]                          // 이펙트 있는 스킬 id
+// 이펙트 프레임 인덱스 — 프레임별 속도 배율(fr[i].t, 클수록 빨리 지나감)을 반영. p = 진행도 0~1
+const fxFrameIdx = (p, n, frc) => {
+  const w = []; let tot = 0
+  for (let i = 1; i <= n; i++) { const d = 1 / (((frc || {})[i] || {}).t || 1); w.push(d); tot += d }
+  let acc = 0
+  for (let i = 0; i < n; i++) { acc += w[i] / tot; if (p < acc) return i }
+  return n - 1
+}
 const perStage = (v, def) => typeof v === 'number' ? { 0: v, 1: v, 2: v, 3: v, 4: v, 5: v } : { ...def, ...(v || {}) }   // 옛 전역 숫자값 → 전 단계 동일값으로 마이그레이션
 // 옛 저장값의 atkSz(단계별 공격 크기)를 프레임별 값으로 이관 — 프레임 값이 이미 있으면 그대로 둠
 function mergeAtkFrSz(h) {
@@ -412,7 +420,7 @@ const SKILLS = SKILL_SHEET.map(c => {
     key: 's' + c.id, id: c.id, name: c.title || ('스킬 ' + c.id), anim: 's_' + c.id, icon: String(c.id), stage: c.stage,
     stages: c.stages || null, passive: !!c.passive, icon2: c.ic || null, desc2: c.desc2 || null,
     h: c.h, fx: c.fx || null, frameEnds: ends, frameT: ft,
-    cd: c.cd ?? 2, cast: acc, hitAt: c.hitAt ?? 0.55, dmgMult: c.dmgMult ?? 2, aoe: c.aoe || false, rangeMul: c.rangeMul || null, maxTargets: c.maxTargets || 1,
+    cd: c.cd ?? 2, cast: acc, hitAt: c.hitAt ?? 0.55, dmgMult: c.dmgMult ?? 2, aoe: c.aoe || false, rangePx: c.rangePx || null, maxTargets: c.maxTargets || 1,
     desc: c.n + '프레임 · 임시값',
   }
 })
@@ -697,6 +705,7 @@ function loadSave() {
         if (!s.skCfg && Array.isArray(s.cdConf)) SKILLS.forEach((k, i) => {   // 옛 인덱스 배열 → id 기준 이관
           if (s.cdConf[i] != null && s.cdConf[i] !== k.cd) o[k.id] = { ...(o[k.id] || {}), cd: s.cdConf[i] }
         })
+        if (s.skCfgV !== 2) for (const id in o) { if (o[id] && o[id].range != null) { o[id] = { ...o[id] }; delete o[id].range } }   // 옛 range는 '기본사거리 배수' — px로 바뀌었으니 버림(코드 기본값 사용)
         return o
       })(),
       // 장착·재화·기록: 저장된 값 그대로 복원 (누락 시 기본값)
@@ -937,7 +946,7 @@ export default function App() {
   const cloudBusy = useRef(false)   // 어댑트/불러오기 중 로컬 저장 차단
   useEffect(() => {
     if (cloudBusy.current) return
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, skCfg, gem, inv, best, alliesOn, gearEq, nick, mats, enh, ruby, advStage, pearl, quest, ts: Date.now() }))
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, skCfg, skCfgV: 2, gem, inv, best, alliesOn, gearEq, nick, mats, enh, ruby, advStage, pearl, quest, ts: Date.now() }))
   }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, skCfg, gem, inv, best, alliesOn, gearEq, nick, mats, enh, ruby, advStage, pearl, quest])
 
   // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제
@@ -1317,16 +1326,19 @@ export default function App() {
             if (sk.fx && sk.fx.type === 'proj') {
               // 투사체: 히어로 앞에서 생성, 명중 시 데미지
               const _spd = (motRef.current.skFx[sk.id] || {}).spd || 1
-              const ft = (FX_FRAME_T[sk.id] || sk.fx.fly.map(() => 1 / PROJ_FPS)).map(t => t / _spd)
+              const _fr = (motRef.current.skFx[sk.id] || {}).fr || {}
+              const ft = (FX_FRAME_T[sk.id] || sk.fx.fly.map(() => 1 / PROJ_FPS)).map((t, i) => t / _spd / ((_fr[i + 1] || {}).t || 1))
               const fe = []; let fa = 0; for (const t of ft) { fa += t; fe.push(fa) }
               w.projs.push({ id: sk.id, fly: sk.fx.fly, impact: sk.fx.impact || null, x: w.heroX + 70, t: 0, dmg, h: sk.fx.fxH ?? sk.h, scale: sk.fx.flyScale || 1, yOff: sk.fx.yOff ?? 40, fe, feTotal: fa })
             } else if (sk.fx && sk.fx.type === 'strike') {
-              // 낙하/타격: 살아있는 적 위치마다 (최대 5), 없으면 전방
-              const ts = w.enemies.filter(e => !e.dead).slice(0, 5)
-              const xs = ts.length ? ts.map(e => e.x) : [w.heroX + 260]
-              for (const x of xs) w.strikes.push({ id: sk.id, frames: sk.fx.frames, x, t: 0, dur: (STRIKE_DUR_BY[sk.id] ?? STRIKE_DUR) / ((motRef.current.skFx[sk.id] || {}).spd || 1), dmg, hitDone: false, h: sk.fx.fxH ?? sk.h })
+              // 낙하/타격: **시전당 이펙트 1개만** 재생(적 수만큼 찍으면 화면이 정신없음).
+              // 데미지는 타격 프레임(fx.hitP)에 한 번, 광역이면 사거리 안 전체에 들어간다.
+              const rng = __ef.rangePx || Infinity
+              const inR = w.enemies.filter(e => !e.dead && e.x - w.heroX < rng).sort((a, b) => a.x - b.x)
+              const x = inR.length ? inR[0].x : w.heroX + 260   // 가장 가까운 적 위에 떨어뜨림
+              w.strikes.push({ id: sk.id, frames: sk.fx.frames, x, t: 0, dur: (STRIKE_DUR_BY[sk.id] ?? STRIKE_DUR) / ((motRef.current.skFx[sk.id] || {}).spd || 1), dmg, hitDone: false, h: sk.fx.fxH ?? sk.h, hitP: sk.fx.hitP ?? 0.45, aoe: __ef.aoe, rng, hx: w.heroX, stun: sk.stun || 0 })
             } else if (__ef.aoe) {
-              const rng = __ef.rangeMul ? atkRange * __ef.rangeMul : Infinity   // rangeMul 있으면 기본사거리×배수 이내만, 없으면 화면 전체(메테오)
+              const rng = __ef.rangePx || Infinity   // 히어로 기준 px 이내만, 0/null이면 화면 전체(메테오)
               for (const t of w.enemies) if (!t.dead && t.x - w.heroX < rng) { applySkillDmg(t, dmg); if (sk.stun) t.stun = sk.stun }
             } else {
               const targets = w.enemies.filter(e => !e.dead).sort((a, b) => a.x - b.x).slice(0, sk.maxTargets || 1)
@@ -1359,9 +1371,12 @@ export default function App() {
         // 스킬 타격(낙뢰/낙석): 재생 중반에 해당 위치 적 데미지
         for (const stk of w.strikes) {
           stk.t += dt
-          if (!stk.hitDone && stk.t >= stk.dur * 0.45) {
+          if (!stk.hitDone && stk.t >= stk.dur * (stk.hitP ?? 0.45)) {
             stk.hitDone = true
-            if (stk.dmg > 0) for (const e of w.enemies) if (!e.dead && Math.abs(e.x - stk.x) < 70) applySkillDmg(e, stk.dmg)
+            if (stk.dmg > 0) {
+              if (stk.aoe) { for (const e of w.enemies) if (!e.dead && e.x - stk.hx < stk.rng) { applySkillDmg(e, stk.dmg); if (stk.stun) e.stun = stk.stun } }
+              else { const e = w.enemies.find(e2 => !e2.dead && Math.abs(e2.x - stk.x) < 70); if (e) applySkillDmg(e, stk.dmg) }
+            }
           }
         }
         w.strikes = w.strikes.filter(s => s.t < s.dur)
@@ -1933,10 +1948,10 @@ export default function App() {
 
       // 스킬 타격 이펙트 (적 위치 낙뢰/낙석/임팩트)
       for (const stk of w.strikes) {
-        const fi = Math.min(stk.frames.length - 1, Math.floor(stk.t / stk.dur * stk.frames.length))
+        const fxc = motRef.current.skFx[stk.id] || {}
+        const fi = fxFrameIdx(stk.t / stk.dur, stk.frames.length, fxc.fr)   // 프레임별 속도 반영
         const im = SIMG[stk.id][stk.frames[fi] - 1]
         if (im && im.complete && im.naturalWidth > 0) {
-          const fxc = motRef.current.skFx[stk.id] || {}
           const ffr = (fxc.fr || {})[fi + 1] || {}
           const hh = stk.h * (fxc.sz || 1) * (ffr.sz ?? 1)
           const ww = hh * (im.naturalWidth / im.naturalHeight)
@@ -2447,7 +2462,7 @@ export default function App() {
                   AUTO<span style={{ ...st.skdAutoDot, ...(auto ? st.skdAutoDotOn : {}) }} />
                 </button>
               </div>
-              <div data-edit="skdeffect" style={st.skdEffect}>{ef.aoe ? (ef.rangeMul ? `기본 사거리 ${ef.rangeMul}배 이내` : '화면 전체') + '의 적 모두에게' : '적 1명에게'}<br />공격력의 <b style={{ color: '#f0a830' }}>{s.dmgMult * 100}%</b>로 1회 공격</div>
+              <div data-edit="skdeffect" style={st.skdEffect}>{ef.aoe ? (ef.rangePx ? `${ef.rangePx}px 이내` : '화면 전체') + '의 적 모두에게' : '적 1명에게'}<br />공격력의 <b style={{ color: '#f0a830' }}>{s.dmgMult * 100}%</b>로 1회 공격</div>
               <div style={st.skdStatRow}>
                 <div data-edit="skdstat" style={st.skdStat}><span style={st.skdStatK}>필요공격수</span><span style={st.skdStatV}>—</span></div>
                 <div data-edit="skdstat" style={st.skdStat}><span style={st.skdStatK}>MP 소모</span><span style={st.skdStatV}>—</span></div>
@@ -2473,9 +2488,9 @@ export default function App() {
                     {row('데미지', `x${ef.dmgMult.toFixed(1)}`,
                       () => put('dmg', Math.max(0.1, +(ef.dmgMult - 0.1).toFixed(1))),
                       () => put('dmg', Math.min(99, +(ef.dmgMult + 0.1).toFixed(1))))}
-                    {ef.aoe && row('사거리', ef.rangeMul ? `기본 x${ef.rangeMul.toFixed(1)}` : '화면 전체',
-                      () => put('range', Math.max(0, +(((ef.rangeMul ?? 0.1)) - 0.1).toFixed(1))),
-                      () => put('range', Math.min(20, +(((ef.rangeMul ?? 0)) + 0.1).toFixed(1))))}
+                    {ef.aoe && row('사거리', ef.rangePx ? `${ef.rangePx}px` : '화면 전체',
+                      () => put('range', Math.max(0, (ef.rangePx ?? 10) - 10)),
+                      () => put('range', Math.min(1000, (ef.rangePx ?? 0) + 10)))}
                     {row('쿨타임', `${ef.cd.toFixed(1)}초`,
                       () => put('cd', Math.max(0.1, +(ef.cd - 0.1).toFixed(1))),
                       () => put('cd', Math.min(60, +(ef.cd + 0.1).toFixed(1))))}
@@ -3372,6 +3387,7 @@ export default function App() {
                     >{i}</button>
                   ))}
                 </div>
+                {row(`${f}번 속도`, cur.t ?? 1, 0.2, 3, 0.05, v => put('t', v))}
                 {row(`${f}번 크기`, cur.sz ?? 1, 0.2, 4, 0.01, v => put('sz', v))}
                 {row(`${f}번 좌우`, cur.x ?? 0, -400, 400, 1, v => put('x', v))}
                 {row(`${f}번 상하`, cur.y ?? 0, -400, 400, 1, v => put('y', v))}
@@ -3581,8 +3597,8 @@ Object.assign(UI_DEFAULT, {
   qrewh: 37, qrewX: 3, qrewY: 0, qrewisz: 18, qrewiX: 0, qrewiY: 2, qrewvfz: 12, qrewvX: 1, qrewvY: 1, qlvfz: 7, qlvX: -3, qlvY: -6,
   advicotrexw: 141, advicotrexh: 254, advicotrexX: -3, advicotrexY: 0, advicospinow: 131, advicospinoh: 97, advicospinoX: 5, advicospinoY: -7, advicotrikew: 133, advicotrikeh: 93, advicotrikeX: 6, advicotrikeY: 0,
   advicostegow: 131, advicostegoh: 105, advicostegoX: 0, advicostegoY: -9, advicoraptorw: 302, advicoraptorh: 92, advicoraptorX: -11, advicoraptorY: -5, advicoankyw: 142, advicoankyh: 103, advicoankyX: 6, advicoankyY: -18,
-  advicopteraw: 195, advicopterah: 201, advicopteraX: 21, advicopteraY: -16, advicobrachiow: 135, advicobrachioh: 115, advicobrachioX: 0, advicobrachioY: -5, evbtnw: 55, evbtnh: 58, evbtnX: 6, evbtnY: 32,
-  evbtntfz: 10, evbtntX: 2, evbtntY: 2, evww: 340, evwh: 540, evwinX: 0, evwinY: 0, evtitlefz: 20, evtitleX: 0, evtitleY: 0, evclsz: 30, evcloseX: 0,
+  advicopteraw: 195, advicopterah: 201, advicopteraX: 21, advicopteraY: -16, advicobrachiow: 135, advicobrachioh: 115, advicobrachioX: 0, advicobrachioY: -5, evbtnw: 45, evbtnh: 48, evbtnX: 6, evbtnY: 32,
+  evbtntfz: 9, evbtntX: 1, evbtntY: 2, evww: 340, evwh: 540, evwinX: 0, evwinY: 0, evtitlefz: 20, evtitleX: 0, evtitleY: 0, evclsz: 30, evcloseX: 0,
   evcloseY: 0, evtabw: 60, evtabh: 30, evtabfz: 13, evtabX: 0, evtabY: 0, evprevh: 120, evprevX: 0, evprevY: 0, evnamefz: 15, evnameX: 0, evnameY: 0,
   evrowh: 46, evrowX: 0, evrowY: 0, evnosz: 26, evnoX: 0, evnoY: 0, evbnamefz: 15, evbnameX: 32, evbnameY: 0, evgow: 54, evgoh: 26, evgofz: 12,
   evgoX: 0, evgoY: 0, evprevzoom: 100, evprevimgX: 0, evprevimgY: 0, evnoimgsz: 57, evnoimgX: 14, evnoimgY: -1, skdimgsz: 88, skdimgX: 0, skdimgY: 0, avafacesz: 31,
@@ -3590,8 +3606,8 @@ Object.assign(UI_DEFAULT, {
 })
 // 이벤트 던전 (버튼 + 창)
 Object.assign(UI_DEFAULT, {
-  evbtnw: 96, evbtnh: 92, evbtnX: 0, evbtnY: 0,          // 던전 버튼 틀
-  evbtntfz: 11, evbtntX: 0, evbtntY: 0,                  // 팻말 글씨 '이벤트 던전'
+  evbtnw: 45, evbtnh: 48, evbtnX: 0, evbtnY: 0,          // 던전 버튼 틀
+  evbtntfz: 9, evbtntX: 1, evbtntY: 0,                  // 팻말 글씨 '이벤트 던전'
   evww: 340, evwh: 540, evwinX: 0, evwinY: 0,            // 던전 창
   evtitlefz: 20, evtitleX: 0, evtitleY: 0,
   evclsz: 30, evcloseX: 0, evcloseY: 0,
@@ -3661,8 +3677,8 @@ Object.assign(UI_DEFAULT, {
   qrewh: 37, qrewX: 3, qrewY: 0, qrewisz: 18, qrewiX: 0, qrewiY: 2, qrewvfz: 12, qrewvX: 1, qrewvY: 1, qlvfz: 7, qlvX: -3, qlvY: -6,
   advicotrexw: 141, advicotrexh: 254, advicotrexX: -3, advicotrexY: 0, advicospinow: 131, advicospinoh: 97, advicospinoX: 5, advicospinoY: -7, advicotrikew: 133, advicotrikeh: 93, advicotrikeX: 6, advicotrikeY: 0,
   advicostegow: 131, advicostegoh: 105, advicostegoX: 0, advicostegoY: -9, advicoraptorw: 302, advicoraptorh: 92, advicoraptorX: -11, advicoraptorY: -5, advicoankyw: 142, advicoankyh: 103, advicoankyX: 6, advicoankyY: -18,
-  advicopteraw: 195, advicopterah: 201, advicopteraX: 21, advicopteraY: -16, advicobrachiow: 135, advicobrachioh: 115, advicobrachioX: 0, advicobrachioY: -5, evbtnw: 55, evbtnh: 58, evbtnX: 6, evbtnY: 32,
-  evbtntfz: 10, evbtntX: 2, evbtntY: 2, evww: 340, evwh: 540, evwinX: 0, evwinY: 0, evtitlefz: 20, evtitleX: 0, evtitleY: 0, evclsz: 30, evcloseX: 0,
+  advicopteraw: 195, advicopterah: 201, advicopteraX: 21, advicopteraY: -16, advicobrachiow: 135, advicobrachioh: 115, advicobrachioX: 0, advicobrachioY: -5, evbtnw: 45, evbtnh: 48, evbtnX: 6, evbtnY: 32,
+  evbtntfz: 9, evbtntX: 1, evbtntY: 2, evww: 340, evwh: 540, evwinX: 0, evwinY: 0, evtitlefz: 20, evtitleX: 0, evtitleY: 0, evclsz: 30, evcloseX: 0,
   evcloseY: 0, evtabw: 60, evtabh: 30, evtabfz: 13, evtabX: 0, evtabY: 0, evprevh: 120, evprevX: 0, evprevY: 0, evnamefz: 15, evnameX: 0, evnameY: 0,
   evrowh: 46, evrowX: 0, evrowY: 0, evnosz: 26, evnoX: 0, evnoY: 0, evbnamefz: 15, evbnameX: 32, evbnameY: 0, evgow: 54, evgoh: 26, evgofz: 12,
   evgoX: 0, evgoY: 0, evprevzoom: 100, evprevimgX: 0, evprevimgY: 0, evnoimgsz: 57, evnoimgX: 14, evnoimgY: -1, skdimgsz: 88, skdimgX: 0, skdimgY: 0, avafacesz: 31,
@@ -4584,7 +4600,7 @@ const st = {
 
 // 피버타임 버튼 (2026-08-01 신규) — 사용자 확정값 블록보다 뒤에 둬야 함
 Object.assign(UI_DEFAULT, {
-  fevbtnw: 100, fevbtnh: 49, fevbtnX: 0, fevbtnY: 6,       // 비활성 팻말 틀 (원본 956x466 비율)
-  fevonzoom: 123, fevonX: 0, fevonY: 0,                    // 활성 그림은 불꽃만큼 더 큼 — 팻말 크기가 맞도록 123%
-  fevbtntfz: 10, fevbtntX: 0, fevbtntY: 1,                 // '(광고 시청 0/3)'
+  fevbtnw: 54, fevbtnh: 34, fevbtnX: 8, fevbtnY: 29,       // 비활성 팻말 틀 (원본 956x466 비율)
+  fevonzoom: 123, fevonX: 0, fevonY: 1,                    // 활성 그림은 불꽃만큼 더 큼
+  fevbtntfz: 8, fevbtntX: 0, fevbtntY: -5,                 // '(광고 시청 0/3)'
 })
