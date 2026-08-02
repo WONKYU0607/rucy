@@ -21,7 +21,7 @@ const DEBUG = true
 // · 모바일처럼 편집 안 하는 기기 → 배포만 하면 PC 값이 자동으로 들어옴
 // · PC에서 배포 후 편집한 값 → 편집 시각이 더 최신이라 그대로 유지됨
 // 사용자 설정을 코드에 새로 박을 때만 이 줄을 현재 시각으로 갱신할 것.
-const CFG_STAMP = Date.parse('2026-08-02T14:46:00+09:00')
+const CFG_STAMP = Date.parse('2026-08-02T15:12:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -179,9 +179,9 @@ const MOTION_DEFAULT = {
     walkSz: { 0: 0.95, 1: 0.96, 2: 0.94, 3: 0.94, 4: 0.86, 5: 0.9 },
     skillSz: { 1: 0.85, 2: 0.85, 7: 0.9, 8: 0.95, 13: 0.85, 15: 0.83, 17: 0.88, 18: 1.07, 20: 1.06, 22: 1.03, 23: 0.9, 24: 0.9, 25: 0.8, 26: 0.54, 27: 0.8 },
     skillPos: { '23': { x: -5 } },   // 스킬별 그림 위치
-    skillFrSz: {"2": {"2": 0.98}, "22": {"4": 0.95}, "23": {"1": 0.97, "2": 0.97, "3": 0.97, "4": 0.97, "5": 0.97}, "25": {"1": 0.96}, "28": {"1": 2.1, "2": 2.1, "3": 2.1, "4": 1.7, "5": 1.6, "6": 1.91}, "29": {"1": 0.88, "2": 0.87, "3": 0.9}, "30": {"1": 0.95, "2": 0.95}},   // 스킬 프레임별 크기
-    skillFrPos: {"22": {"2": {"x": 20}, "3": {"x": 75}, "4": {"x": 155}}, "23": {"1": {"x": 35}, "2": {"x": 70}, "3": {"x": 105}, "4": {"x": 140}, "5": {"x": 175}}, "24": {"3": {"x": 50, "y": 14}, "4": {"y": 15, "x": 50}}, "25": {"2": {"x": 45, "y": -3}, "3": {"x": 80}, "4": {"x": 100}}, "26": {"1": {"x": 20}, "2": {"x": 40}, "3": {"x": 60}, "4": {"x": 80}, "5": {"x": 100}, "6": {"x": 120}}, "27": {"1": {"x": 20}, "2": {"x": 20}, "3": {"x": 25}, "4": {"x": 15}, "5": {"x": 20}}, "28": {"1": {"x": 22, "y": 0}, "2": {"y": 3, "x": 30}, "3": {"x": 50, "y": -45}, "4": {"x": 110, "y": 13}, "5": {"x": 128, "y": 12}, "6": {"x": 132, "y": 16}}, "29": {"1": {"x": 10, "y": 3}, "2": {"x": 10, "y": 5}, "3": {"x": 2}}, "30": {"1": {"x": -6, "y": 4}, "2": {"y": 10, "x": 30}}},   // 스킬 프레임별 위치
-    skillFrT: {"18": [0.2, 0.25], "22": [0.12, 0.15, 0.18, 0.2], "23": [0.15, 0.15, 0.15, 0.15, 0.25], "24": [0.3, 0.3, 0.2, 0.2], "25": [0.12, 0.12, 0.12, 0.15], "26": [0.15, 0.15, 0.15, 0.15, 0.15, 0.15], "27": [0.1, 0.1, 0.1, 0.25, 0.25], "28": [0.15, 0.15, 0.2, 0.15, 0.2, 0.25], "29": [0.2, 0.3, 0.45], "30": [0.25, 0.25]},   // 스킬 프레임별 재생시간(초)
+    skillFrSz: {"2": {"2": 0.98}, "22": {"4": 0.95}, "23": {"1": 0.97, "2": 0.97, "3": 0.97, "4": 0.97, "5": 0.97}, "25": {"1": 0.96}, "28": {"1": 2.1, "2": 2.1, "3": 2.1, "4": 1.7, "5": 1.6, "6": 1.91}, "29": {"1": 0.88, "2": 0.87, "3": 0.9}, "30": {"1": 0.9, "2": 0.85}},   // 스킬 프레임별 크기
+    skillFrPos: {"22": {"2": {"x": 20}, "3": {"x": 75}, "4": {"x": 155}}, "23": {"1": {"x": 35}, "2": {"x": 70}, "3": {"x": 105}, "4": {"x": 140}, "5": {"x": 175}}, "24": {"3": {"x": 50, "y": 14}, "4": {"y": 15, "x": 50}}, "25": {"2": {"x": 45, "y": -3}, "3": {"x": 80}, "4": {"x": 100}}, "26": {"1": {"x": 20}, "2": {"x": 40}, "3": {"x": 60}, "4": {"x": 80}, "5": {"x": 100}, "6": {"x": 120}}, "27": {"1": {"x": 20}, "2": {"x": 20}, "3": {"x": 25}, "4": {"x": 15}, "5": {"x": 20}}, "28": {"1": {"x": 22, "y": 0}, "2": {"y": 3, "x": 30}, "3": {"x": 50, "y": -45}, "4": {"x": 110, "y": 13}, "5": {"x": 128, "y": 12}, "6": {"x": 132, "y": 16}}, "29": {"1": {"x": 10, "y": 3}, "2": {"x": 10, "y": 5}, "3": {"x": 2}}, "30": {"1": {"x": 0, "y": 4}, "2": {"y": 10, "x": 35}}},   // 스킬 프레임별 위치
+    skillFrT: {"18": [0.2, 0.25], "22": [0.12, 0.15, 0.18, 0.2], "23": [0.15, 0.15, 0.15, 0.15, 0.25], "24": [0.3, 0.3, 0.2, 0.2], "25": [0.12, 0.12, 0.12, 0.15], "26": [0.15, 0.15, 0.15, 0.15, 0.15, 0.15], "27": [0.1, 0.1, 0.1, 0.25, 0.25], "28": [0.15, 0.15, 0.2, 0.15, 0.2, 0.25], "29": [0.2, 0.3, 0.45], "30": [0.2, 0.2]},   // 스킬 프레임별 재생시간(초)
     evoSz: { 0: 0.95, 1: 0.85, 2: 0.9, 3: 0.88, 4: 0.9, 5: 0.9 },
     range: {"0": 25, "1": 90, "2": 35, "3": 35, "4": 35, "5": 40},   // 진화단계별 기본공격 사거리(px). 히어로 x=200, 화면 폭 420 → 220이면 화면 끝
     hit: { erectus: 3, neander: 2, sapiens: 4, human: 4 },     // 데미지 프레임(1부터). 사피엔스는 1번 삭제로 4프레임
@@ -189,11 +189,11 @@ const MOTION_DEFAULT = {
     atkFrX: { 'eatk1': { 2: 10, 3: 25 }, 'natk1': { 2: 20 }, 'hmatk1': { 1: 0, 2: 2, 4: 1 } },   // 기본공격 프레임별 좌우 보정(px)
     atkFrSz: { 'punch': { 1: 1.03, 2: 1.03, 3: 1.03 }, 'throw': { 1: 1, 2: 1 }, 'eatk1': { 1: 0.95, 2: 1, 3: 1 }, 'natk1': { 1: 0.95, 2: 1 }, 'patk1': { 1: 1.08, 2: 1.08, 3: 1.08, 4: 1.08 }, 'hmatk1': { 1: 1.09, 2: 1.07, 3: 1.05, 4: 1.05 } },   // 기본공격 프레임별 크기
   },  // walkSz(걷기)·evoSz(전체)는 진화단계별{0~5}, skillSz=스킬별{id:배율}, hit=모드별 타격 프레임, atkFrSz=공격 프레임별 크기
-  ally: { hunter: { sz: 0.85, x: -21, y: -36, atkSz: 1, atkSpd: 1 }, shaman: { sz: 0.85, x: 8, y: 0, atkSz: 1, atkSpd: 1 }, healer: { sz: 0.85, x: 12, y: 38, atkSz: 1, atkSpd: 1 }, giant: { sz: 0.85, x: 0, y: -3, atkSz: 1, atkSpd: 1 } },  // 동료 크기·위치·공격프레임 크기·속도
+  ally: { hunter: { sz: 0.85, x: -21, y: -36, atkSz: 1, atkSpd: 1, projSz: 1, projX: 0, projY: 0 }, shaman: { sz: 0.85, x: 8, y: 0, atkSz: 1.04, atkSpd: 1, projSz: 1, projX: 0, projY: 0 }, healer: { sz: 0.85, x: 12, y: 38, atkSz: 1, atkSpd: 1 }, giant: { sz: 0.85, x: 0, y: -3, atkSz: 1, atkSpd: 1 } },  // 동료 크기·위치·공격프레임 크기·속도
   mob: {   // 일반몹 종별 크기·높이·정지·속도
     'd:trex': { sz: 1.46, stop: -5, spd: 1.25 }, 'd:spino': { sz: 1.36 }, 'd:trike': { sz: 1.38, stop: -5 }, 'd:stego': { sz: 1.47 },
     'd:raptor': { sz: 1.17, spd: 1.4 }, 'd:anky': { stop: 25, sz: 1.24 }, 'd:ptera': { sz: 1.3, stop: -14 }, 'd:brachio': { sz: 2 },
-    'hyena': { stop: 30, spd: 1.5, sz: 1.11 }, 'bear': { sz: 1.16, stop: 46, spd: 1.25, y: -7 }, 'rhino': { stop: 43, spd: 1.2, sz: 1.19 }, 'rabbit': { sz: 1.61, stop: 15 },
+    'hyena': { stop: 30, spd: 1.5, sz: 1.07 }, 'bear': { sz: 1.16, stop: 46, spd: 1.25, y: -7 }, 'rhino': { stop: 43, spd: 1.2, sz: 1.19 }, 'rabbit': { sz: 1.61, stop: 15 },
     'antelope': { sz: 1.28, stop: -20 }, 'deer': { stop: 35, sz: 1 }, 'boar': { stop: 45, sz: 1, spd: 1.4 }, 'wolf': { sz: 1.14, stop: 40, spd: 1.5 },
     'tiger': { sz: 1.09, stop: 15, spd: 1.3 }, 'monkey': { sz: 1.12, stop: -12, spd: 1.5, y: -1 }, 'snake': { sz: 1.08, stop: 6, spd: 1.45 }, 'ostrich': { sz: 0.88, stop: 4 },
     'turtle': { sz: 1.01 }, 'croc': { stop: 5 }, 'komodo': { stop: 4 }, 'eagle': { y: -16, spd: 1.7 },
@@ -210,7 +210,7 @@ const MOTION_DEFAULT = {
     'd:trex': { stop: 53 }, 'd:spino': { sz: 1.26, spd: 1.5 }, 'd:trike': { sz: 1.08 }, 'd:stego': { y: -12, stop: -2 },
     'd:raptor': { spd: 1.8, sz: 1.08 }, 'd:anky': { sz: 0.79 }, 'd:ptera': { spd: 1.95, stop: 18, y: -25 }, 'd:brachio': { y: -12, sz: 1.6 },
     'c:rabbit': { sz: 1.3, y: -6, stop: 85, spd: 1.4 }, 'c:antelope': { y: -6, stop: 30, sz: 1.29 }, 'c:deer': { stop: 37, y: -7, sz: 0.85, spd: 1.4 }, 'c:boar': { sz: 1.07, y: -12, stop: 70, spd: 1.3 },
-    'c:wolf': { stop: 85, y: -11, spd: 1.5, sz: 1.24 }, 'c:hyena': { stop: 56, y: -12, sz: 0.88, spd: 1.3 }, 'c:bear': { y: -14, stop: 27, sz: 0.85, spd: 1.35 }, 'c:rhino': { stop: 27, sz: 0.9, spd: 1.35 },
+    'c:wolf': { stop: 85, y: -11, spd: 1.5, sz: 1.24 }, 'c:hyena': { stop: 90, y: -12, sz: 0.88, spd: 1.3 }, 'c:bear': { y: -14, stop: 27, sz: 0.85, spd: 1.35 }, 'c:rhino': { stop: 27, sz: 0.9, spd: 1.35 },
     'c:tiger': { spd: 1.3, sz: 0.93, y: -4, stop: 3 }, 'c:mammoth': { spd: 1.3, sz: 0.7, y: -7, stop: 15 }, 'c:monkey': { spd: 1.5, y: -3, stop: 5 }, 'c:snake': { sz: 1.66, spd: 1.6 },
     'c:ostrich': { sz: 0.65, y: -8, stop: 77 }, 'c:turtle': { stop: 4 }, 'c:croc': { sz: 1.05, y: -3, stop: 46 }, 'c:komodo': { stop: 46, spd: 1.45, y: -2 },
     'c:eagle': { y: 20, sz: 1.04, stop: 7 }, 'c:giraffe': { sz: 0.68, y: -12, stop: -10 }, 'c:lion': { sz: 0.9, y: -6, stop: 37 }, 'c:elephant': { sz: 0.8, y: -9, spd: 1.1, stop: 10 },
@@ -227,15 +227,27 @@ const MOTION_DEFAULT = {
   hitSq: {"x": 1.1, "y": 1.1, "rot": 10, "dur": 0.15},   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값)
   wave: { gap: 40, dist: 35 },                                  // 웨이브 몹 일렬 간격(px) / 히어로와의 거리(px) — 종 무관 일괄
   stone: { spd: 0.6, sz: 13, arc: 0.4 },                           // 직립 돌던지기: 비행속도 배율 / 그림 크기(px) / 포물선 높이 배율
-  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "fr": {"1": {"sz": 0.9, "t": 1.1}, "2": {"sz": 0.9}, "3": {"sz": 0.9}, "4": {"sz": 0.9, "t": 0.6}}}, "30": {"sz": 0.75, "spd": 1, "fly": 1, "x": -20, "y": 0, "fr": {"1": {"t": 0.5, "x": -15, "sz": 1.05}, "2": {"x": 30, "sz": 1.05, "t": 0.7}, "3": {"x": 50, "sz": 1.05, "t": 0.8}, "4": {"x": 70, "sz": 1.05, "t": 0.9}, "5": {"x": 90, "sz": 1.05, "t": 1}}}},  // 스킬 이펙트 (x/y=위치, fr={프레임:{sz,x,y,t}} 프레임별)
+  // 이펙트 프레임별 재생시간(초). 합 = 총 재생시간(전체 '프레임 속도'로 나눔).
+  // 길이가 실제 프레임 수와 다르면 무시하고 균등 분할 — 프레임을 지우거나 늘려도 굳지 않음
+  fxFrT: {"1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.139, 0.153, 0.153, 0.255], "30": [0.221, 0.158, 0.138, 0.123, 0.11]},
+  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "fr": {"1": {"sz": 0.9, "t": 1.1}, "2": {"sz": 0.9}, "3": {"sz": 0.9}, "4": {"sz": 0.9, "t": 0.6}}}, "30": {"sz": 0.75, "spd": 1, "fly": 1, "x": -20, "y": 0, "fr": {"1": {"t": 0.5, "x": -10, "sz": 1.1}, "2": {"x": 30, "sz": 1.05, "t": 0.7}, "3": {"x": 50, "sz": 1.05, "t": 0.8}, "4": {"x": 70, "sz": 1.05, "t": 0.9}, "5": {"x": 90, "sz": 1.05, "t": 1}}}},  // 스킬 이펙트 (x/y=위치, fr={프레임:{sz,x,y,t}} 프레임별)
 }
 const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 30]                          // 이펙트 있는 스킬 id
-// 이펙트 프레임 인덱스 — 프레임별 속도 배율(fr[i].t, 클수록 빨리 지나감)을 반영. p = 진행도 0~1
-const fxFrameIdx = (p, n, frc) => {
-  const w = []; let tot = 0
-  for (let i = 1; i <= n; i++) { const d = 1 / (((frc || {})[i] || {}).t || 1); w.push(d); tot += d }
+// 이펙트 프레임 시간(초) 배열 — 넣은 값을 그대로 씀. 프레임을 늘리거나 줄이면 값도 같이 조정할 것.
+// 빈 칸은 0초(그 프레임은 건너뜀)로 두고, 전부 비었을 때만 균등 분할로 떨어져 NaN을 막는다
+const fxT = (mot, id, n) => {
+  const a = (mot.fxFrT || {})[id]
+  if (!Array.isArray(a)) return null
+  const r = Array.from({ length: n }, (_, i) => (Number(a[i]) > 0 ? Number(a[i]) : 0))
+  return r.some(v => v > 0) ? r : null
+}
+const fxTotal = (mot, id, n, fallback) => { const a = fxT(mot, id, n); return a ? a.reduce((x, y) => x + y, 0) : fallback }
+// 진행도 p(0~1)에 해당하는 프레임 인덱스. 초 배열이 있으면 그 비율로, 없으면 균등
+const fxFrameIdx = (p, n, arr) => {
+  if (!arr) return Math.min(n - 1, Math.floor(p * n))
+  const tot = arr.reduce((x, y) => x + y, 0)
   let acc = 0
-  for (let i = 0; i < n; i++) { acc += w[i] / tot; if (p < acc) return i }
+  for (let i = 0; i < n; i++) { acc += arr[i] / tot; if (p < acc) return i }
   return n - 1
 }
 const perStage = (v, def) => typeof v === 'number' ? { 0: v, 1: v, 2: v, 3: v, 4: v, 5: v } : { ...def, ...(v || {}) }   // 옛 전역 숫자값 → 전 단계 동일값으로 마이그레이션
@@ -262,6 +274,7 @@ function mergeMotion(sv) {   // 저장된 모션값 + 기본값 병합 (초기 �
     mob: { ...MOTION_DEFAULT.mob, ...(sv.mob || {}) }, boss: { ...MOTION_DEFAULT.boss, ...(sv.boss || {}) },
     wave: { ...MOTION_DEFAULT.wave, ...(sv.wave || {}) }, hitSq: { ...MOTION_DEFAULT.hitSq, ...(sv.hitSq || {}) }, stone: { ...MOTION_DEFAULT.stone, ...(sv.stone || {}) },   // 기본값(사용자 확정값) 위에 저장값 덮어쓰기
     ally: { hunter: { ...MOTION_DEFAULT.ally.hunter, ...((sv.ally || {}).hunter || {}) }, shaman: { ...MOTION_DEFAULT.ally.shaman, ...((sv.ally || {}).shaman || {}) }, healer: { ...MOTION_DEFAULT.ally.healer, ...((sv.ally || {}).healer || {}) }, giant: { ...MOTION_DEFAULT.ally.giant, ...((sv.ally || {}).giant || {}) } },
+    fxFrT: { ...MOTION_DEFAULT.fxFrT, ...(sv.fxFrT || {}) },
     skFx: Object.fromEntries(MOT_FX_IDS.map(id => [id, { ...MOTION_DEFAULT.skFx[id], ...((sv.skFx || {})[id] || {}) }])),
   }
 }
@@ -591,6 +604,18 @@ const EV_DUNGEONS = [
   { key: 'ev4', name: '용암의 심장', from: 1, to: 5 },
 ]
 const EV_EXTS = ['jpg', 'png', 'jpeg', 'webp', '']   // 순서대로 실제 로드해 확인. 마지막 ''는 확장자 없이 저장한 경우
+const EV_STAGES = 10           // 던전 보스당 단계 수 (도전창 10칸 바)
+const EV_REWARD = { dia: 3000, pearl: 100 }   // 클리어 보상: 다이아 / 강화 진주
+const evMult = st => 1 + 0.3 * (st - 1)       // 단계 배율 (1단계 1.0 → 10단계 3.7)
+const EV_TIME = 60             // 이벤트 던전 제한시간(초)
+const EV_WARN = 2.0            // 보스 등장 경고 연출 시간(초)
+const EV_BG = {}               // 던전별 배경 — 확장자를 순서대로 실제 로드 시도(추측 금지)
+for (const d of EV_DUNGEONS) {
+  const im = new Image(); let i = 0
+  const tryNext = () => { const e = EV_EXTS[i]; im.src = `/bg/event/${d.key}${e ? '.' + e : ''}` }
+  im.onerror = () => { i++; if (i < EV_EXTS.length) tryNext() }
+  tryNext(); EV_BG[d.key] = im
+}
 
 const BOSS_TYPES = [
   { name: '저주받은 검치호', h: 125 }, { name: '뇌전 매머드', h: 145 }, { name: '암흑 고릴라', h: 135 },
@@ -711,6 +736,7 @@ function loadSave() {
       // 장착·재화·기록: 저장된 값 그대로 복원 (누락 시 기본값)
       alliesOn: s.alliesOn && typeof s.alliesOn === 'object' ? s.alliesOn : {},
       gem: s.gem ?? 0, inv: s.inv && typeof s.inv === 'object' ? s.inv : {}, best: s.best ?? s.wave ?? 1,
+      evStage: s.evStage && typeof s.evStage === 'object' ? s.evStage : {},
       gearEq: s.gearEq && typeof s.gearEq === 'object' ? s.gearEq : { 무기: null, 방어구: null, 유물: null },
       nick: typeof s.nick === 'string' && s.nick ? s.nick : ('Slayer_' + Math.floor(Math.random() * 9000000 + 1000000)),
       mats: Array.isArray(s.mats) && s.mats.some(x => x > 0) ? s.mats : [99999, 99999, 99999, 99999, 99999], enh: s.enh && typeof s.enh === 'object' ? s.enh : {},
@@ -718,7 +744,7 @@ function loadSave() {
       pearl: typeof s.pearl === 'number' ? s.pearl : 0, quest: s.quest && typeof s.quest === 'object' && s.quest.ev ? s.quest : questInit(),
     }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, skCfg: {}, cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, nick: 'Slayer_' + Math.floor(Math.random() * 9000000 + 1000000), mats: [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, advStage: {}, pearl: 0, quest: questInit() }
+  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, skCfg: {}, cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, nick: 'Slayer_' + Math.floor(Math.random() * 9000000 + 1000000), mats: [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, advStage: {}, pearl: 0, evStage: {}, quest: questInit() }
 }
 const fmt = n => n >= 1e8 ? (n/1e8).toFixed(1)+'억' : n >= 1e4 ? (n/1e4).toFixed(1)+'만' : Math.floor(n).toLocaleString()
 const fmtPct = v => v >= 10000 ? fmt(Math.round(v)) : (Math.round(v * 10) / 10).toString()
@@ -759,6 +785,7 @@ export default function App() {
   const [mats, setMats] = useState(init.mats || [0, 0, 0, 0, 0])   // 재화 5종 (0~3 동료용, 4 무기강화용)
   const [ruby, setRuby] = useState(init.ruby ?? 0)                 // 루비 수정 (모험 진입 재화)
   const [pearl, setPearl] = useState(init.pearl ?? 0)              // 진주 (업적 보상 재화)
+  const [evStage, setEvStage] = useState(init.evStage || {})       // 이벤트 던전 보스별 클리어 단계 { 보스번호: 단계 }
   const [quest, setQuest] = useState(init.quest || questInit())    // 퀘스트 진행 상태
   const [advStage, setAdvStage] = useState(init.advStage || {})    // 대륙별 클리어 단계 { key: 0~10 }
   const [enh, setEnh] = useState(init.enh || {})                   // 강화레벨 { '무기:1': lv }
@@ -791,6 +818,8 @@ export default function App() {
   const [feverAds] = useState(0)                      // 오늘 광고 시청 횟수 (0/3, 광고 붙이면 연동)
   const [evOpen, setEvOpen] = useState(false)         // 이벤트 던전창
   const [evSel, setEvSel] = useState(0)               // 선택한 던전 인덱스
+  const [evUI, setEvUI] = useState(null)              // 이벤트 던전 전투 중 HUD { name, dname }
+  const [evPick, setEvPick] = useState(null)          // 던전 도전 확인창 { di, no, name, dname }
   const [evExt, setEvExt] = useState({})              // 던전별 배경 확장자 인덱스 (로드 실패 시 다음 후보로)
   const [questTab, setQuestTab] = useState(0)         // 0 일일 / 1 반복 / 2 업적
   const [mapSeg, setMapSeg] = useState(1)  // 모험 지도 구간(0~2), 아프리카 중심=1 시작
@@ -839,6 +868,8 @@ export default function App() {
   })
   const motRef = useRef(motCfg)
   motRef.current = motCfg                            // 게임 루프가 매 프레임 최신값을 읽음
+  const uiRef = useRef(uiCfg)
+  uiRef.current = uiCfg                              // 캔버스에 그리는 요소(경고 문구 등)도 UI 편집값을 씀
   const rootRef = useRef(null)
   const uiScaleRef = useRef(1)
   const lootSeq = useRef(0)   // 조각 고유 id (Date.now 는 같은 ms 에 겹칠 수 있어 순번 사용)
@@ -946,8 +977,8 @@ export default function App() {
   const cloudBusy = useRef(false)   // 어댑트/불러오기 중 로컬 저장 차단
   useEffect(() => {
     if (cloudBusy.current) return
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, skCfg, skCfgV: 2, gem, inv, best, alliesOn, gearEq, nick, mats, enh, ruby, advStage, pearl, quest, ts: Date.now() }))
-  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, skCfg, gem, inv, best, alliesOn, gearEq, nick, mats, enh, ruby, advStage, pearl, quest])
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, skCfg, skCfgV: 2, gem, inv, best, alliesOn, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, quest, ts: Date.now() }))
+  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, skCfg, gem, inv, best, alliesOn, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, quest])
 
   // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제
   useEffect(() => {
@@ -1032,6 +1063,31 @@ export default function App() {
       w.adv = { ...cfg, mult: advMult(cfg.stage), bossOut: false, done: false, win: false }
       w.advTime = ADV_TIME
       w.spawnLeft = 9999; w.total = ADV_MOBS + 1; w.killed = 0; w.spawnTimer = 200
+    }
+
+    function startEvDungeon(cfg) {                    // 이벤트 던전 진입: 경고 → 보스 1마리
+      w.enemies = []; w.stones = []; w.rocks = []; w.waves = []
+      w.adv = null; w.bossBattle = false; w.clearedFlag = false; w.bossPending = false
+      w.ev = { ...cfg, mult: evMult(cfg.stage || 1), bossOut: false, done: false, win: false, warnT: EV_WARN }
+      w.evTime = EV_TIME
+      w.spawnLeft = 0; w.total = 1; w.killed = 0; w.spawnTimer = 200; w.spawnIdx = 0
+      w.shake = 6
+    }
+
+    function pushEvBoss() {                          // 능력치는 그 보스가 등장하는 웨이브(번호×10) 난이도 기준
+      const c = w.ev
+      const key = WAVE_CYCLE[(c.no - 1) % WAVE_CYCLE.length]
+      const t = ENEMY_TYPES[key]
+      const wv = c.no * 10
+      const sc = (1 + 0.4 * (wv - 1)) * 12 * (c.mult || 1)
+      w.enemies.push({
+        type: key, evBoss: c.no, boss: true, x: w.W + 40, hp: t.hp * sc, maxHp: t.hp * sc,
+        speed: t.speed * 0.6, dmg: t.dmg * (1 + 0.1 * (wv - 1)) * 3 * (c.mult || 1),
+        meat: Math.floor(t.meat * (1 + 0.2 * (wv - 1))) * 15, exp: Math.floor(t.exp * (1 + 0.2 * (wv - 1))) * 15,
+        acc: t.acc, eva: t.eva, air: 0, atkT: 0,
+        h: (BOSS_TYPES[c.no - 1] || {}).h || 130, color: t.color, cd: 0, flash: 0, animT: 0,
+        scaleV: 1, yOff: 0, spdV: 1,
+      })
     }
 
     function startBossBattle() {
@@ -1219,6 +1275,7 @@ export default function App() {
 
       if (st.phase === 'fighting') {
         if (w.advStart) { const c = w.advStart; w.advStart = null; w.needStart = false; startAdventure(c); hero.hp = st.maxHp; hero.state = 'move'; hero.t = 0 }
+        if (w.evStart) { const c = w.evStart; w.evStart = null; w.needStart = false; startEvDungeon(c); hero.hp = st.maxHp; hero.state = 'move'; hero.t = 0; setEvUI({ name: c.name, dname: c.dname }) }
         if (w.startBossFlag) { w.startBossFlag = false; w.needStart = false; startBossBattle(); hero.state = 'move'; hero.t = 0 }
         if (w.needStart) { startWave(st.wave); w.needStart = false; hero.hp = st.maxHp; hero.state = 'move'; hero.t = 0 }
 
@@ -1244,7 +1301,7 @@ export default function App() {
           if (e.kb > 0.5) { if (!(e.atkT > 0) && !still) e.x += e.kb * dt; e.kb -= e.kb * Math.min(1, dt * 9) } else e.kb = 0  // 공격 중엔 밀리지 않음
           if (e.sq > 0) e.sq = Math.max(0, e.sq - dt)
           e.vt = Math.min(1, (e.vt ?? 0) + dt * 2.2)   // 스폰 직후 가속 (0→1)
-          const embKey = e.dino ? ('d:' + e.dino) : (e.boss ? ('c:' + e.type) : e.type)   // 저주보스=c:종(일반몹과 분리)
+          const embKey = e.dino ? ('d:' + e.dino) : (e.evBoss ? ('e:' + e.evBoss) : (e.boss ? ('c:' + e.type) : e.type))   // 이벤트보스=e:번호, 저주보스=c:종
           const emb = (e.boss ? motRef.current.boss[embKey] : motRef.current.mob[embKey]) || {}
           const szm = e.dino ? (emb.sz ?? (motRef.current.size[e.dino] || 1)) : (emb.sz || 1)
           const estop = e.dino ? (emb.stop ?? (motRef.current.stop[e.dino] || 0)) : (emb.stop || 0)   // 좌우 정지 위치(+면 오른쪽/멀리)
@@ -1330,8 +1387,8 @@ export default function App() {
             if (sk.fx && sk.fx.type === 'proj') {
               // 투사체: 히어로 앞에서 생성, 명중 시 데미지
               const _spd = (motRef.current.skFx[sk.id] || {}).spd || 1
-              const _fr = (motRef.current.skFx[sk.id] || {}).fr || {}
-              const ft = (FX_FRAME_T[sk.id] || sk.fx.fly.map(() => 1 / PROJ_FPS)).map((t, i) => t / _spd / ((_fr[i + 1] || {}).t || 1))
+              const _ftA = fxT(motRef.current, sk.id, sk.fx.fly.length)
+              const ft = (_ftA || FX_FRAME_T[sk.id] || sk.fx.fly.map(() => 1 / PROJ_FPS)).map(t => t / _spd)
               const fe = []; let fa = 0; for (const t of ft) { fa += t; fe.push(fa) }
               w.projs.push({ id: sk.id, fly: sk.fx.fly, impact: sk.fx.impact || null, x: w.heroX + 70, t: 0, dmg, h: sk.fx.fxH ?? sk.h, scale: sk.fx.flyScale || 1, yOff: sk.fx.yOff ?? 40, fe, feTotal: fa })
             } else if (sk.fx && sk.fx.type === 'strike') {
@@ -1340,7 +1397,7 @@ export default function App() {
               const rng = __ef.rangePx || Infinity
               const inR = w.enemies.filter(e => !e.dead && e.x - w.heroX < rng).sort((a, b) => a.x - b.x)
               const x = inR.length ? inR[0].x : w.heroX + 260   // 가장 가까운 적 위에 떨어뜨림
-              w.strikes.push({ id: sk.id, frames: sk.fx.frames, x, t: 0, dur: (STRIKE_DUR_BY[sk.id] ?? STRIKE_DUR) / ((motRef.current.skFx[sk.id] || {}).spd || 1), dmg, hitDone: false, h: sk.fx.fxH ?? sk.h, hitP: sk.fx.hitP ?? 0.45, aoe: __ef.aoe, rng, hx: w.heroX, stun: sk.stun || 0 })
+              w.strikes.push({ id: sk.id, frames: sk.fx.frames, x, t: 0, dur: fxTotal(motRef.current, sk.id, sk.fx.frames.length, STRIKE_DUR_BY[sk.id] ?? STRIKE_DUR) / ((motRef.current.skFx[sk.id] || {}).spd || 1), dmg, hitDone: false, h: sk.fx.fxH ?? sk.h, hitP: sk.fx.hitP ?? 0.45, aoe: __ef.aoe, rng, hx: w.heroX, stun: sk.stun || 0 })
             } else if (__ef.aoe) {
               const rng = __ef.rangePx || Infinity   // 히어로 기준 px 이내만, 0/null이면 화면 전체(메테오)
               for (const t of w.enemies) if (!t.dead && t.x - w.heroX < rng) { applySkillDmg(t, dmg); if (sk.stun) t.stun = sk.stun }
@@ -1498,7 +1555,15 @@ export default function App() {
         const prog = w.total ? w.killed / w.total : 0
         if (prog !== w.shownProg) { w.shownProg = prog; setProgress(prog) }
         if (Math.ceil(hero.hp) !== w.shownHp) { w.shownHp = Math.ceil(hero.hp); setHeroHpUI(Math.max(0, w.shownHp)) }
-        if (w.adv) {
+        if (w.ev) {
+          const bEn = w.enemies.find(e => e.boss && !e.dead)
+          const tt = Math.ceil(Math.max(0, w.evTime) * 10)
+          const hh = bEn ? Math.ceil(bEn.hp) : -1
+          if (tt !== w._btShown || hh !== w._bhShown) {
+            w._btShown = tt; w._bhShown = hh
+            setBossUI({ t: Math.max(0, w.evTime), max: EV_TIME, hp: bEn ? Math.max(0, bEn.hp) : 0, maxHp: bEn ? bEn.maxHp : 1, has: !!bEn })
+          }
+        } else if (w.adv) {
           const bEn = w.enemies.find(e => e.boss && !e.dead)
           const tt = Math.ceil(Math.max(0, w.advTime) * 10)
           const hh = bEn ? Math.ceil(bEn.hp) : -1
@@ -1541,8 +1606,9 @@ export default function App() {
                 }
               } else if (!au.thrown && au.t >= d.throwAt) {
                 au.thrown = true
-                const lx = au.x + d.h * 0.4
-                const ly = w.groundY - d.h * d.projYr + (d.yOff || 0)
+                const amb = motRef.current.ally[ak] || {}                    // 투사체 발사 위치 편집값
+                const lx = au.x + d.h * 0.4 + (amb.projX || 0)
+                const ly = w.groundY - d.h * d.projYr + (d.yOff || 0) + (amb.projY || 0)
                 const tgt = w.enemies.find(e => !e.dead && e.x > lx)
                 // 남은 시간에 맞춰 속도 역산 → 히어로 타격 순간에 명중
                 const remain = Math.max(0.05, au.hitIn - au.rt)
@@ -1579,6 +1645,31 @@ export default function App() {
           }
         }
 
+        // ── 이벤트 던전: 경고 → 보스 → 제한시간 / 승패 ──
+        if (w.ev && !w.ev.done) {
+          const c = w.ev
+          w.evTime -= dt
+          if (!c.bossOut) {
+            c.warnT -= dt
+            if (c.warnT <= 0) { c.bossOut = true; c.warnT = 0; pushEvBoss(); w.shake = 10 }
+          } else if (!w.enemies.some(e => e.boss && !e.dead)) { c.done = true; c.win = true }
+          if (!c.done && (w.evTime <= 0 || hero.hp <= 0 || w.evGiveUp)) { c.done = true; c.win = false }
+        }
+        if (w.ev && w.ev.done) {
+          const c = w.ev
+          w.ev = null; w.evTime = 0; w.evGiveUp = false
+          w.enemies = []; w.stones = []; w.rocks = []; w.waves = []
+          w._btShown = -1; w._bhShown = -1; setBossUI(null); setEvUI(null)
+          if (c.win) {
+            setEvStage(v => ({ ...v, [c.no]: Math.max(v[c.no] || 0, c.stage || 1) }))
+            setGem(g => g + EV_REWARD.dia)
+            setPearl(v => v + EV_REWARD.pearl)
+            setClearMsg(`${c.name} ${c.stage || 1}단계 격파!`)
+          } else setClearMsg(hero.hp <= 0 ? '던전 실패 — 쓰러짐' : '던전 실패 — 시간 초과')
+          w.needStart = true                                   // 웨이브로 복귀
+          hero.hp = st.maxHp
+        }
+
         // ── 모험: 제한시간 / 승패 ──
         if (w.adv && !w.adv.done) {
           w.advTime -= dt
@@ -1613,8 +1704,8 @@ export default function App() {
           hero.hp = st.maxHp
         }
 
-        if (hero.hp <= 0 && !w.adv) setPhase('gameover')
-        else if (!w.adv && w.spawnLeft === 0 && w.enemies.length === 0 && !w.clearedFlag) {
+        if (hero.hp <= 0 && !w.adv && !w.ev) setPhase('gameover')
+        else if (!w.adv && !w.ev && w.spawnLeft === 0 && w.enemies.length === 0 && !w.clearedFlag) {
           w.clearedFlag = true
           if (w.bossBattle) {
             // 보스 처치: 보상 크게 + 다음 웨이브 블록으로 진행
@@ -1719,14 +1810,14 @@ export default function App() {
 
     function drawEnemy(ctx, e, now) {
       const air = e.air ? e.air * (e.airT ?? 1) : 0   // 공중 높이 (스폰부터 고정 고도)
-      const mbKey = e.dino ? ('d:' + e.dino) : (e.boss ? ('c:' + e.type) : e.type)   // 공룡=d:종, 저주보스=c:종, 웨이브몹=type
+      const mbKey = e.dino ? ('d:' + e.dino) : (e.evBoss ? ('e:' + e.evBoss) : (e.boss ? ('c:' + e.type) : e.type))   // 공룡=d:종, 이벤트보스=e:번호, 저주보스=c:종
       const mb = (e.boss ? motRef.current.boss[mbKey] : motRef.current.mob[mbKey]) || {}
       const yoff = mb.y || 0                                                    // 높이(공룡도 적용)
       const y = w.groundY - air - yoff
       const t = ENEMY_TYPES[e.type]
       const szm = e.dino ? (mb.sz ?? (motRef.current.size[e.dino] || 1)) : (mb.sz || 1)   // 공룡은 편집값 우선, 없으면 공룡탭 값
       const H = e.h * szm
-      const imgs = e.dino ? (e.boss ? (e.atkT > 0 ? DINO_BOSS[e.dino].a : DINO_BOSS[e.dino].w) : DINO_MOB[e.dino]) : (e.boss ? CIMG[e.type] : EIMG[e.type])   // 저주보스=CIMG(저주동물)
+      const imgs = e.dino ? (e.boss ? (e.atkT > 0 ? DINO_BOSS[e.dino].a : DINO_BOSS[e.dino].w) : DINO_MOB[e.dino]) : (e.evBoss ? BIMG[e.evBoss - 1] : (e.boss ? CIMG[e.type] : EIMG[e.type]))   // 이벤트 던전 보스=BIMG, 저주보스=CIMG
       const stunned = e.stun > 0
       const still = !w.adv && !e.boss          // 제자리 웨이브 몹: 완전 정지(들썩임·기울기·프레임순환 없음)
       const gall = e.animT * 9
@@ -1815,7 +1906,7 @@ export default function App() {
       if (w.shake > 0.3) ctx.translate((Math.random() - 0.5) * w.shake, (Math.random() - 0.5) * w.shake)
 
       // 배경: 가로 무한 타일 스크롤 (10웨이브마다 테마 변경, 보스전투 시 보스 배경)
-      const advBG = w.adv ? ADV_BG[w.adv.key] : null
+      const advBG = w.adv ? ADV_BG[w.adv.key] : (w.ev ? EV_BG[w.ev.key] : null)
       const advOK = !!(advBG && advBG.complete && advBG.naturalWidth > 0)
       const BG = advOK ? advBG : bgFor(w.waveNum || 1, w.bossBattle)   // 모험 배경 로드 실패 시 일반 배경으로 대체
       if (BG.complete && BG.naturalWidth > 0) {
@@ -1911,7 +2002,7 @@ export default function App() {
           const d = ALLY_DEFS[sp2.ally]
           const si = ALLY_IMG[sp2.ally].proj
           if (si.complete && si.naturalWidth > 0) {
-            const pw = d.projW
+            const pw = d.projW * ((motRef.current.ally[sp2.ally] || {}).projSz || 1)   // 투사체 크기 편집값
             const ph = pw * (si.naturalHeight / si.naturalWidth)
             const by = d.projBob ? Math.sin(sp2.t * 9) * d.projBob : 0
             ctx.drawImage(si, sp2.x - pw / 2, sp2.y - ph / 2 + by, pw, ph)
@@ -1954,7 +2045,7 @@ export default function App() {
       // 스킬 타격 이펙트 (적 위치 낙뢰/낙석/임팩트)
       for (const stk of w.strikes) {
         const fxc = motRef.current.skFx[stk.id] || {}
-        const fi = fxFrameIdx(stk.t / stk.dur, stk.frames.length, fxc.fr)   // 프레임별 속도 반영
+        const fi = fxFrameIdx(stk.t / stk.dur, stk.frames.length, fxT(motRef.current, stk.id, stk.frames.length))   // 프레임별 시간(초) 반영
         const im = SIMG[stk.id][stk.frames[fi] - 1]
         if (im && im.complete && im.naturalWidth > 0) {
           const ffr = (fxc.fr || {})[fi + 1] || {}
@@ -2013,8 +2104,9 @@ export default function App() {
         if (im.complete && im.naturalWidth) ctx.drawImage(im, L.x - 4.5, L.y - 9, 9, 9)
       }
 
-      if (w.adv && w.adv.warnT > 0) {
-        const puls = 0.45 + 0.55 * Math.abs(Math.sin(w.adv.warnT * 9))
+      const __warnT = (w.adv && w.adv.warnT > 0) ? w.adv.warnT : ((w.ev && !w.ev.bossOut && w.ev.warnT > 0) ? w.ev.warnT : 0)
+      if (__warnT > 0) {
+        const puls = 0.45 + 0.55 * Math.abs(Math.sin(__warnT * 9))
         const cx = w.W / 2, cy = w.H / 2
         const g = ctx.createRadialGradient(cx, cy, Math.min(w.W, w.H) * 0.18, cx, cy, Math.max(w.W, w.H) * 0.72)
         g.addColorStop(0, 'rgba(255,0,0,0)')
@@ -2022,10 +2114,12 @@ export default function App() {
         ctx.fillStyle = g; ctx.fillRect(0, 0, w.W, w.H)
         ctx.save()
         ctx.textAlign = 'center'
-        ctx.font = `bold ${Math.round(w.H * 0.13)}px 'Do Hyeon', sans-serif`
+        const __uc = uiRef.current || {}
+        const __wx = cx + (__uc.warnX || 0), __wy = w.H * 0.42 - 15 + (__uc.warnY || 0)
+        ctx.font = `bold ${__uc.warnfz || 43}px 'Do Hyeon', sans-serif`
         ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,0.85)'
         ctx.fillStyle = `rgba(255,${Math.round(70 * puls)},${Math.round(60 * puls)},${(0.65 + 0.35 * puls).toFixed(3)})`
-        ctx.strokeText('WARNING', cx, w.H * 0.42 - 15); ctx.fillText('WARNING', cx, w.H * 0.42 - 15)
+        ctx.strokeText('WARNING', __wx, __wy); ctx.fillText('WARNING', __wx, __wy)
         ctx.restore()
       }
 
@@ -2639,6 +2733,39 @@ export default function App() {
         )
       })()}
 
+      {evPick && (() => {
+        const cleared = evStage[evPick.no] || 0
+        const stage = Math.min(EV_STAGES, cleared + 1)
+        return (
+        <div style={st.advOverlay} onClick={() => { if (!uiEdit) setEvPick(null) }}>
+          <div data-edit="evpwin" style={st.evpWin} onClick={e => e.stopPropagation()}>
+            <div data-edit="evptitle" style={st.evpTitle}>{evPick.dname}</div>
+            <img data-edit="evpimg" src={`/boss/boss${evPick.no}/boss${evPick.no}_1.png`} alt="" style={st.evpImg} />
+            <div data-edit="evpbn" style={st.evpBname}>{evPick.name}</div>
+            <div data-edit="evprew" style={st.evpRew}>
+              <span style={st.evpRewK}>던전 보상</span>
+              <span style={st.evpRewV}><img src="/ui/gem.png" alt="" style={st.evpRewIc} />{fmt(EV_REWARD.dia)}</span>
+              <span style={st.evpRewV}><img src="/ui/pearl.png" alt="" style={st.evpRewIc} />{fmt(EV_REWARD.pearl)}</span>
+            </div>
+            <div data-edit="evpsignt" style={st.evpSignTxt}>({stage}/{EV_STAGES})</div>
+            <div data-edit="evpbar" style={st.evpBar}>
+              {Array.from({ length: EV_STAGES }, (_, i) => (
+                <div key={i} style={{ ...st.evpBarCell, ...(i < cleared ? st.evpBarFill : null) }} />
+              ))}
+            </div>
+            <div style={st.evpBtns}>
+              <button data-edit="evpenter" style={st.evpEnter} onClick={() => {
+                if (uiEdit) return
+                world.current.evStart = { key: EV_DUNGEONS[evPick.di].key, dname: evPick.dname, no: evPick.no, name: evPick.name, stage }
+                setEvPick(null); setEvOpen(false); setNav('영웅'); setPaused(false)
+              }}>진입</button>
+              <button data-edit="evpclose" style={st.evpClose} onClick={() => { if (!uiEdit) setEvPick(null) }}>닫기</button>
+            </div>
+          </div>
+        </div>
+        )
+      })()}
+
       {questOpen && (
         <div style={st.advOverlay} onClick={() => { if (!uiEdit) setQuestOpen(false) }}>
           <div data-edit="qwin" style={st.qWin} onClick={e => e.stopPropagation()}>
@@ -2779,7 +2906,10 @@ export default function App() {
                     <img src={`/boss/boss${EV_DUNGEONS[evSel].from + i}/boss${EV_DUNGEONS[evSel].from + i}_1.png`} alt="" data-edit="evnoimg" style={st.evNoImg} />
                   </div>
                   <div data-edit="evbname" style={st.evBossName}>{b.name}</div>
-                  <button data-edit="evgo" style={st.evGo}>도전</button>
+                  <button data-edit="evgo" style={st.evGo} onClick={() => {
+                    if (uiEdit) return
+                    setEvPick({ di: evSel, no: EV_DUNGEONS[evSel].from + i, name: b.name, dname: EV_DUNGEONS[evSel].name })
+                  }}>도전</button>
                 </div>
               ))}
             </div>
@@ -2810,6 +2940,15 @@ export default function App() {
               </div>
             )}
           </div>
+        )}
+        {uiEdit && <div data-edit="warn" style={st.warnPrev}>WARNING</div>}
+        {(evUI || uiEdit) && (
+          <>
+            <div data-edit="evbtln" style={{ ...st.evBtlName, ...(uiEdit ? { pointerEvents: 'auto' } : {}) }}>
+              {(evUI ? evUI.dname : '이벤트 던전')} — {(evUI ? evUI.name : '보스 이름')}
+            </div>
+            <button data-edit="evexit" style={st.evExitBtn} onClick={() => { if (!uiEdit) world.current.evGiveUp = true }}>나가기</button>
+          </>
         )}
         <div data-edit="gain" style={{ ...st.gainWrap, ...(uiEdit ? { pointerEvents: 'auto' } : {}) }}>
           {(gains.length ? gains : (uiEdit ? [{ id: '__s', exp: 1234, meat: 567 }] : [])).map(g => (
@@ -3298,6 +3437,14 @@ export default function App() {
             <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>기본공격 모션</div>
             {row('공격프레임 크기', M.ally[motAlly].atkSz, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, ally: { ...M.ally, [motAlly]: { ...M.ally[motAlly], atkSz: v } } }))}
             {row('공격 속도', M.ally[motAlly].atkSpd, 0.3, 3, 0.05, v => setMotCfg({ ...M, ally: { ...M.ally, [motAlly]: { ...M.ally[motAlly], atkSpd: v } } }))}
+            {ALLY_DEFS[motAlly] && ALLY_IMG[motAlly] && ALLY_IMG[motAlly].proj && (<>
+              <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
+              <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>기본공격 투사체 (발사 위치·크기)</div>
+              {row('투사체 크기', M.ally[motAlly].projSz ?? 1, 0.3, 3, 0.01, v => setMotCfg({ ...M, ally: { ...M.ally, [motAlly]: { ...M.ally[motAlly], projSz: v } } }))}
+              {row('투사체 좌우', M.ally[motAlly].projX ?? 0, -150, 150, 1, v => setMotCfg({ ...M, ally: { ...M.ally, [motAlly]: { ...M.ally[motAlly], projX: v } } }))}
+              {row('투사체 상하', M.ally[motAlly].projY ?? 0, -150, 150, 1, v => setMotCfg({ ...M, ally: { ...M.ally, [motAlly]: { ...M.ally[motAlly], projY: v } } }))}
+              <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>발사 지점만 옮깁니다 — 명중 시점은 히어로 타격에 맞춰 속도가 자동 보정됩니다</div>
+            </>)}
           </>)}
 
           {motCat === 'mob' && (() => {
@@ -3338,9 +3485,12 @@ export default function App() {
             const on = ens.filter(e => !e.dead && e.boss)
             const seen = new Set(); const entries = []
             for (const e of on) {
-              const key = e.dino ? ('d:' + e.dino) : ('c:' + e.type)
+              const key = e.dino ? ('d:' + e.dino) : (e.evBoss ? ('e:' + e.evBoss) : ('c:' + e.type))
               if (seen.has(key)) continue; seen.add(key)
-              entries.push({ key, label: e.dino ? (DINO_NAME[e.dino] || e.dino) : ('저주받은 ' + ((ENEMY_TYPES[e.type] || {}).name || e.type)), szDef: e.dino ? (M.size[e.dino] ?? 1) : 1, dino: !!e.dino })
+              const lbl = e.dino ? (DINO_NAME[e.dino] || e.dino)
+                : e.evBoss ? ((BOSS_TYPES[e.evBoss - 1] || {}).name || ('보스' + e.evBoss)) + ' (던전)'
+                : ('저주받은 ' + ((ENEMY_TYPES[e.type] || {}).name || e.type))
+              entries.push({ key, label: lbl, szDef: e.dino ? (M.size[e.dino] ?? 1) : 1, dino: !!e.dino })
             }
             if (!entries.length) return <div style={{ fontSize: 12, color: '#c9a06a', padding: '8px 0' }}>화면에 보스가 없어요. 보스전/모험 보스에 들어가면 자동으로 잡혀요.</div>
             return (<>
@@ -3392,7 +3542,21 @@ export default function App() {
                     >{i}</button>
                   ))}
                 </div>
-                {row(`${f}번 속도`, cur.t ?? 1, 0.2, 3, 0.05, v => put('t', v))}
+                {(() => {                                     // 프레임별 시간(초). 길이가 프레임 수와 다르면 균등값으로 초기화
+                  const base = (STRIKE_DUR_BY[motFx] ?? STRIKE_DUR)
+                  const cur2 = (M.fxFrT || {})[motFx]
+                  const arr = Array.isArray(cur2)
+                    ? Array.from({ length: n }, (_, i) => (Number(cur2[i]) > 0 ? Number(cur2[i]) : 0))
+                    : Array.from({ length: n }, () => +(base / n).toFixed(3))
+                  const tot = arr.reduce((x, y) => x + y, 0)
+                  return (<>
+                    {row(`${f}번 시간(초)`, arr[f - 1] ?? 0, 0, 2, 0.01, v => {
+                      const nx = [...arr]; nx[f - 1] = v
+                      setMotCfg({ ...M, fxFrT: { ...(M.fxFrT || {}), [motFx]: nx } })
+                    })}
+                    <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>총 재생 {tot.toFixed(2)}초 (프레임 속도로 나눠 적용)</div>
+                  </>)
+                })()}
                 {row(`${f}번 크기`, cur.sz ?? 1, 0.2, 4, 0.01, v => put('sz', v))}
                 {row(`${f}번 좌우`, cur.x ?? 0, -400, 400, 1, v => put('x', v))}
                 {row(`${f}번 상하`, cur.y ?? 0, -400, 400, 1, v => put('y', v))}
@@ -3422,7 +3586,7 @@ export default function App() {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => { setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) })); localStorage.setItem('paleoUiTs', String(Date.now())) }
             const nbtn = { width: 26, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
-            const rng = k => k.startsWith('fev') ? (k.endsWith('fz') ? 40 : k === 'fevonzoom' ? 300 : 300) : k.startsWith('ev') ? (k.endsWith('fz') ? 60 : (k === 'evww' || k === 'evwh') ? 600 : 300) : k.startsWith('profhero') ? 300 : k.startsWith('prof') ? (k.endsWith('fz') ? 40 : 160) : k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
+            const rng = k => k.startsWith('fev') ? (k.endsWith('fz') ? 40 : k === 'fevonzoom' ? 300 : 300) : k.startsWith('ev') ? (k.endsWith('fz') ? 60 : (k === 'evww' || k === 'evwh' || k === 'evpww' || k === 'evpwh') ? 600 : 300) : k.startsWith('profhero') ? 300 : k.startsWith('prof') ? (k.endsWith('fz') ? 40 : 160) : k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
             const rmin = k => k === 'equipcols' ? 3 : 0
             return <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -3855,6 +4019,18 @@ Object.assign(EDIT_GROUPS, {
   evno: { label: '보스 그림 자리', size: ['evnosz'], pos: 'evno' },
   evbname: { label: '보스 이름', size: ['evbnamefz'], pos: 'evbname' },
   evgo: { label: '도전 버튼', size: ['evgow', 'evgoh', 'evgofz'], pos: 'evgo' },
+  evbtln: { label: '던전 전투 보스이름', size: ['evbtlnfz'], pos: 'evbtln' },
+  warn: { label: '경고 문구(WARNING)', size: ['warnfz'], pos: 'warn' },
+  evpwin: { label: '도전창 틀', size: ['evpww', 'evpwh'], pos: 'evpwin' },
+  evptitle: { label: '도전창 던전이름', size: ['evptitlefz'], pos: 'evptitle' },
+  evpimg: { label: '도전창 보스그림', size: ['evpimgw', 'evpimgh'], pos: 'evpimg' },
+  evpbn: { label: '도전창 보스이름', size: ['evpbnfz'], pos: 'evpbn' },
+  evprew: { label: '도전창 보상', size: ['evprewfz', 'evprewic'], pos: 'evprew' },
+  evpsignt: { label: '도전창 단계 글자', size: ['evpsfz'], pos: 'evpsignt' },
+  evpbar: { label: '도전창 10칸 바', size: ['evpbarw', 'evpbarh'], pos: 'evpbar' },
+  evpenter: { label: '도전창 진입 버튼', size: ['evpew', 'evpeh', 'evpefz'], pos: 'evpenter' },
+  evpclose: { label: '도전창 닫기 버튼', size: ['evpcw', 'evpch', 'evpcfz'], pos: 'evpclose' },
+  evexit: { label: '던전 나가기 버튼', size: ['evexitw', 'evexith', 'evexitfz'], pos: 'evexit' },
   qwin: { label: '퀘스트 창', size: ['qww', 'qwh'], pos: 'qwin' },
   qtitle: { label: '퀘스트 제목', size: ['qtitlefz'], pos: 'qtitle' },
   qclose: { label: '퀘스트 닫기', size: ['qclsz'], pos: 'qclose' },
@@ -3895,6 +4071,10 @@ Object.assign(UI_LABELS, {
   skdiconsz: '아이콘 크기', skdtitlefz: '제목 글자', skddescfz: '설명 글자',
   profherow: '틀 너비', profheroh: '틀 높이', profherozoom: '그림 크기%', skdimgsz: '그림 크기', avafacesz: '그림 크기', profstatfz: '능력치 글자', profcurfz: '재화 글자', profcuric: '재화 아이콘', profgearsz: '장비칸 크기', profsecfz: '제목 글자',
   skdefffz: '효과 글자', skdstatfz: '스탯 글자', skdautofz: 'AUTO 글자', skdbtnh: '버튼 높이', skdbtnfz: '버튼 글자',
+  evbtlnfz: '이름 글자', evexitw: '버튼 너비', evexith: '버튼 높이', evexitfz: '글씨 크기',
+  warnfz: '글자 크기', evpww: '창 너비', evpwh: '창 높이', evptitlefz: '글자 크기', evpimgw: '그림 너비', evpimgh: '그림 높이',
+  evpbnfz: '글자 크기', evprewfz: '글자 크기', evprewic: '아이콘 크기', evpsfz: '글자 크기', evpbarw: '바 너비', evpbarh: '바 높이',
+  evpew: '버튼 너비', evpeh: '버튼 높이', evpefz: '글씨 크기', evpcw: '버튼 너비', evpch: '버튼 높이', evpcfz: '글씨 크기',
   fevbtnw: '버튼 너비', fevbtnh: '버튼 높이', fevonzoom: '그림 크기%', fevbtntfz: '글씨 크기',
   evbtnw: '버튼 너비', evbtnh: '버튼 높이', evbtntfz: '글씨 크기', evww: '창 너비', evwh: '창 높이', evtitlefz: '제목 글자', evclsz: '버튼 크기',
   evtabw: '탭 너비', evtabh: '탭 높이', evtabfz: '탭 글자', evprevh: '틀 높이', evprevzoom: '그림 크기%', evnoimgsz: '그림 크기', evnamefz: '이름 글자', evrowh: '줄 높이',
@@ -3915,7 +4095,7 @@ const uiVars = c => `:root{
 --pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
 ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg${i}-x:${c['evoimg' + i + 'X']}px;--pd-evoimg${i}-y:${c['evoimg' + i + 'Y']}px;`).join('')}--pd-slotfz:${c.slotfz}px;
---pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdimgsz:${c.skdimgsz}px;--pd-avafacesz:${c.avafacesz}px;--pd-profherow:${c.profherow}px;--pd-profheroh:${c.profheroh}px;--pd-profherozoom:${c.profherozoom};--pd-profstatfz:${c.profstatfz}px;--pd-profcurfz:${c.profcurfz}px;--pd-profcuric:${c.profcuric}px;--pd-profgearsz:${c.profgearsz}px;--pd-profsecfz:${c.profsecfz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;--pd-fevbtnw:${c.fevbtnw}px;--pd-fevbtnh:${c.fevbtnh}px;--pd-fevonzoom:${c.fevonzoom};--pd-fevbtntfz:${c.fevbtntfz}px;--pd-evbtnw:${c.evbtnw}px;--pd-evbtnh:${c.evbtnh}px;--pd-evbtntfz:${c.evbtntfz}px;--pd-evww:${c.evww}px;--pd-evwh:${c.evwh}px;--pd-evtitlefz:${c.evtitlefz}px;--pd-evclsz:${c.evclsz}px;--pd-evtabw:${c.evtabw}px;--pd-evtabh:${c.evtabh}px;--pd-evtabfz:${c.evtabfz}px;--pd-evprevh:${c.evprevh}px;--pd-evnamefz:${c.evnamefz}px;--pd-evrowh:${c.evrowh}px;--pd-evnosz:${c.evnosz}px;--pd-evbnamefz:${c.evbnamefz}px;--pd-evgow:${c.evgow}px;--pd-evgoh:${c.evgoh}px;--pd-evgofz:${c.evgofz}px;--pd-evprevzoom:${c.evprevzoom};--pd-evnoimgsz:${c.evnoimgsz}px;
+--pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdimgsz:${c.skdimgsz}px;--pd-avafacesz:${c.avafacesz}px;--pd-profherow:${c.profherow}px;--pd-profheroh:${c.profheroh}px;--pd-profherozoom:${c.profherozoom};--pd-profstatfz:${c.profstatfz}px;--pd-profcurfz:${c.profcurfz}px;--pd-profcuric:${c.profcuric}px;--pd-profgearsz:${c.profgearsz}px;--pd-profsecfz:${c.profsecfz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;--pd-warnfz:${c.warnfz}px;--pd-evpww:${c.evpww}px;--pd-evpwh:${c.evpwh}px;--pd-evptitlefz:${c.evptitlefz}px;--pd-evpimgw:${c.evpimgw}px;--pd-evpimgh:${c.evpimgh}px;--pd-evpbnfz:${c.evpbnfz}px;--pd-evprewfz:${c.evprewfz}px;--pd-evprewic:${c.evprewic}px;--pd-evpsfz:${c.evpsfz}px;--pd-evpbarw:${c.evpbarw}px;--pd-evpbarh:${c.evpbarh}px;--pd-evpew:${c.evpew}px;--pd-evpeh:${c.evpeh}px;--pd-evpefz:${c.evpefz}px;--pd-evpcw:${c.evpcw}px;--pd-evpch:${c.evpch}px;--pd-evpcfz:${c.evpcfz}px;--pd-evbtlnfz:${c.evbtlnfz}px;--pd-evexitw:${c.evexitw}px;--pd-evexith:${c.evexith}px;--pd-evexitfz:${c.evexitfz}px;--pd-fevbtnw:${c.fevbtnw}px;--pd-fevbtnh:${c.fevbtnh}px;--pd-fevonzoom:${c.fevonzoom};--pd-fevbtntfz:${c.fevbtntfz}px;--pd-evbtnw:${c.evbtnw}px;--pd-evbtnh:${c.evbtnh}px;--pd-evbtntfz:${c.evbtntfz}px;--pd-evww:${c.evww}px;--pd-evwh:${c.evwh}px;--pd-evtitlefz:${c.evtitlefz}px;--pd-evclsz:${c.evclsz}px;--pd-evtabw:${c.evtabw}px;--pd-evtabh:${c.evtabh}px;--pd-evtabfz:${c.evtabfz}px;--pd-evprevh:${c.evprevh}px;--pd-evnamefz:${c.evnamefz}px;--pd-evrowh:${c.evrowh}px;--pd-evnosz:${c.evnosz}px;--pd-evbnamefz:${c.evbnamefz}px;--pd-evgow:${c.evgow}px;--pd-evgoh:${c.evgoh}px;--pd-evgofz:${c.evgofz}px;--pd-evprevzoom:${c.evprevzoom};--pd-evnoimgsz:${c.evnoimgsz}px;
 ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k}h:${c['advico' + k + 'h']}px;--pd-advico${k}-x:${c['advico' + k + 'X']}px;--pd-advico${k}-y:${c['advico' + k + 'Y']}px;`).join('')}
 --pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
 --pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
@@ -3942,7 +4122,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
 --pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evbtln', 'evexit', 'warn', 'evpwin', 'evptitle', 'evpimg', 'evpbn', 'evprew', 'evpsignt', 'evpbar', 'evpenter', 'evpclose', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -4321,6 +4501,76 @@ const st = {
     fontSize: 'var(--pd-fevbtntfz)', fontWeight: 700, color: '#cbb89a',
     textShadow: '0 1px 2px #000, 0 0 3px #000',
   },
+  // ── 경고 문구(WARNING) 편집용 미리보기 — 실제 그림은 캔버스 ──
+  warnPrev: {
+    position: 'absolute', left: '50%', top: '42%', whiteSpace: 'nowrap', pointerEvents: 'auto',
+    transform: 'translate(-50%, -50%) translate(var(--pd-warn-x), var(--pd-warn-y))',
+    fontSize: 'var(--pd-warnfz)', fontWeight: 800, color: 'rgba(255,70,60,0.9)',
+    fontFamily: "'Do Hyeon', sans-serif", textShadow: '0 2px 4px #000', zIndex: 7,
+  },
+  // ── 이벤트 던전 도전 확인창 ──
+  evpWin: {
+    position: 'relative', width: 'var(--pd-evpww)', height: 'var(--pd-evpwh)',
+    transform: 'translate(var(--pd-evpwin-x), var(--pd-evpwin-y))',
+    background: 'linear-gradient(180deg,#2a1d10,#160f07)', border: `2px solid ${GOLD_D}`, borderRadius: 12,
+    padding: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, overflow: 'hidden',
+  },
+  evpTitle: {
+    flexShrink: 0, fontSize: 'var(--pd-evptitlefz)', fontWeight: 800, color: GOLD,
+    transform: 'translate(var(--pd-evptitle-x), var(--pd-evptitle-y))',
+  },
+  evpImg: {
+    flexShrink: 0, width: 'var(--pd-evpimgw)', height: 'var(--pd-evpimgh)', objectFit: 'contain',
+    imageRendering: 'pixelated', transform: 'translate(var(--pd-evpimg-x), var(--pd-evpimg-y))',
+  },
+  evpBname: {
+    flexShrink: 0, fontSize: 'var(--pd-evpbnfz)', fontWeight: 700, color: '#f0dfae',
+    transform: 'translate(var(--pd-evpbn-x), var(--pd-evpbn-y))',
+  },
+  evpRew: {
+    flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10,
+    fontSize: 'var(--pd-evprewfz)', color: '#e8d5a8',
+    transform: 'translate(var(--pd-evprew-x), var(--pd-evprew-y))',
+  },
+  evpRewK: { color: '#9c8a6c' },
+  evpRewV: { display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 },
+  evpRewIc: { width: 'var(--pd-evprewic)', height: 'var(--pd-evprewic)', objectFit: 'contain' },
+  evpSignTxt: {
+    flexShrink: 0, fontSize: 'var(--pd-evpsfz)', color: '#cbb89a', fontWeight: 700,
+    transform: 'translate(var(--pd-evpsignt-x), var(--pd-evpsignt-y))',
+  },
+  evpBar: {
+    flexShrink: 0, width: 'var(--pd-evpbarw)', height: 'var(--pd-evpbarh)', display: 'flex', gap: 2,
+    transform: 'translate(var(--pd-evpbar-x), var(--pd-evpbar-y))',
+  },
+  evpBarCell: { flex: 1, background: '#3a2a14', border: '1px solid #5a4028', borderRadius: 2 },
+  evpBarFill: { background: 'linear-gradient(180deg,#f0a830,#a85f1f)' },
+  evpBtns: { flexShrink: 0, display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'center', marginTop: 'auto' },
+  evpEnter: {
+    width: 'var(--pd-evpew)', height: 'var(--pd-evpeh)', fontSize: 'var(--pd-evpefz)',
+    transform: 'translate(var(--pd-evpenter-x), var(--pd-evpenter-y))',
+    borderRadius: 8, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)',
+    color: '#fff', fontWeight: 800, padding: 0,
+  },
+  evpClose: {
+    width: 'var(--pd-evpcw)', height: 'var(--pd-evpch)', fontSize: 'var(--pd-evpcfz)',
+    transform: 'translate(var(--pd-evpclose-x), var(--pd-evpclose-y))',
+    borderRadius: 8, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontWeight: 700, padding: 0,
+  },
+  // ── 이벤트 던전 전투 HUD ──
+  evBtlName: {
+    position: 'absolute', left: '50%', top: 0, whiteSpace: 'nowrap', pointerEvents: 'none',
+    transform: 'translateX(-50%) translate(var(--pd-evbtln-x), var(--pd-evbtln-y))',
+    fontSize: 'var(--pd-evbtlnfz)', fontWeight: 800, color: '#ffd98a',
+    textShadow: '0 1px 3px #000, 0 0 6px #000', zIndex: 6,
+  },
+  evExitBtn: {
+    position: 'absolute', left: 0, top: 0,
+    transform: 'translate(var(--pd-evexit-x), var(--pd-evexit-y))',
+    width: 'var(--pd-evexitw)', height: 'var(--pd-evexith)', fontSize: 'var(--pd-evexitfz)',
+    borderRadius: 6, border: '1px solid #7a5a2a', background: 'linear-gradient(180deg,#4a3520,#2c2013)',
+    color: '#f0dfae', fontWeight: 700, zIndex: 6, padding: 0,
+  },
   evWin: {
     position: 'relative', width: 'var(--pd-evww)', height: 'var(--pd-evwh)',
     background: 'url(/ui/adv_frame.png) center / 100% 100% no-repeat',
@@ -4608,4 +4858,20 @@ Object.assign(UI_DEFAULT, {
   fevbtnw: 54, fevbtnh: 34, fevbtnX: 8, fevbtnY: 29,       // 비활성 팻말 틀 (원본 956x466 비율)
   fevonzoom: 123, fevonX: 0, fevonY: 1,                    // 활성 그림은 불꽃만큼 더 큼
   fevbtntfz: 8, fevbtntX: 0, fevbtntY: -5,                 // '(광고 시청 0/3)'
+})
+
+// 이벤트 던전 전투 HUD (2026-08-02 신규)
+Object.assign(UI_DEFAULT, {
+  evbtlnfz: 13, evbtlnX: 0, evbtlnY: 46,          // 상단 '던전명 — 보스명'
+  warnfz: 43, warnX: 0, warnY: 0,                 // 캔버스 WARNING 문구
+  evpww: 300, evpwh: 380, evpwinX: 0, evpwinY: 0,
+  evptitlefz: 18, evptitleX: 0, evptitleY: 0,
+  evpimgw: 150, evpimgh: 130, evpimgX: 0, evpimgY: 0,
+  evpbnfz: 15, evpbnX: 0, evpbnY: 0,
+  evprewfz: 13, evprewic: 16, evprewX: 0, evprewY: 0,
+  evpsfz: 13, evpsigntX: 0, evpsigntY: 0,
+  evpbarw: 240, evpbarh: 16, evpbarX: 0, evpbarY: 0,
+  evpew: 110, evpeh: 40, evpefz: 15, evpenterX: 0, evpenterY: 0,
+  evpcw: 90, evpch: 40, evpcfz: 14, evpcloseX: 0, evpcloseY: 0,
+  evexitw: 52, evexith: 22, evexitfz: 11, evexitX: 8, evexitY: 44,   // 나가기 버튼
 })
