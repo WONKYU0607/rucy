@@ -21,7 +21,7 @@ const DEBUG = true
 // · 모바일처럼 편집 안 하는 기기 → 배포만 하면 PC 값이 자동으로 들어옴
 // · PC에서 배포 후 편집한 값 → 편집 시각이 더 최신이라 그대로 유지됨
 // 사용자 설정을 코드에 새로 박을 때만 이 줄을 현재 시각으로 갱신할 것.
-const CFG_STAMP = Date.parse('2026-08-02T21:05:00+09:00')
+const CFG_STAMP = Date.parse('2026-08-02T21:42:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -189,9 +189,9 @@ const MOTION_DEFAULT = {
     atkFrX: { 'eatk1': { 2: 10, 3: 25 }, 'natk1': { 2: 20 }, 'hmatk1': { 1: 0, 2: 2, 4: 1 } },   // 기본공격 프레임별 좌우 보정(px)
     atkFrSz: { 'punch': { 1: 1.03, 2: 1.03, 3: 1.03 }, 'throw': { 1: 1, 2: 1 }, 'eatk1': { 1: 0.95, 2: 1, 3: 1 }, 'natk1': { 1: 0.95, 2: 1 }, 'patk1': { 1: 1.08, 2: 1.08, 3: 1.08, 4: 1.08 }, 'hmatk1': { 1: 1.09, 2: 1.07, 3: 1.05, 4: 1.05 } },   // 기본공격 프레임별 크기
   },  // walkSz(걷기)·evoSz(전체)는 진화단계별{0~5}, skillSz=스킬별{id:배율}, hit=모드별 타격 프레임, atkFrSz=공격 프레임별 크기
-  ally: { hunter: { sz: 0.85, x: -21, y: -36, atkSz: 1, atkSpd: 1, projSz: 1, projX: 0, projY: 0 }, shaman: { sz: 0.85, x: 8, y: 0, atkSz: 1.04, atkSpd: 1, projSz: 1, projX: 0, projY: 0 }, healer: { sz: 0.85, x: 12, y: 38, atkSz: 1, atkSpd: 1 }, giant: { sz: 0.85, x: 0, y: -3, atkSz: 1, atkSpd: 1 } },  // 동료 크기·위치·공격프레임 크기·속도
+  ally: { hunter: { sz: 0.85, x: -21, y: -36, atkSz: 1, atkSpd: 1, projSz: 1.25, projX: 0, projY: -40 }, shaman: { sz: 0.85, x: 8, y: 0, atkSz: 1.04, atkSpd: 1, projSz: 0.6, projX: 0, projY: 5 }, healer: { sz: 0.85, x: 12, y: 38, atkSz: 1, atkSpd: 1 }, giant: { sz: 0.85, x: 0, y: -3, atkSz: 1, atkSpd: 1 } },  // 동료 크기·위치·공격프레임 크기·속도
   mob: {   // 일반몹 종별 크기·높이·정지·속도
-    'd:trex': { sz: 1.46, stop: -5, spd: 1.25 }, 'd:spino': { sz: 1.36 }, 'd:trike': { sz: 1.38, stop: -5 }, 'd:stego': { sz: 1.47 },
+    'd:trex': { sz: 1.46, stop: -5, spd: 1.25 }, 'd:spino': { sz: 1.18 }, 'd:trike': { sz: 1.38, stop: -5 }, 'd:stego': { sz: 1.47 },
     'd:raptor': { sz: 1.17, spd: 1.4 }, 'd:anky': { stop: 25, sz: 1.24 }, 'd:ptera': { sz: 1.3, stop: -14 }, 'd:brachio': { sz: 2 },
     'hyena': { stop: 30, spd: 1.5, sz: 1.07 }, 'bear': { sz: 1.16, stop: 46, spd: 1.25, y: -7 }, 'rhino': { stop: 43, spd: 1.2, sz: 1.19 }, 'rabbit': { sz: 1.61, stop: 15 },
     'antelope': { sz: 1.28, stop: -20 }, 'deer': { stop: 35, sz: 1 }, 'boar': { stop: 45, sz: 1, spd: 1.4 }, 'wolf': { sz: 1.14, stop: 40, spd: 1.5 },
@@ -208,9 +208,9 @@ const MOTION_DEFAULT = {
   },
   boss: {  // 보스 종별
     'd:trex': { stop: 53 }, 'd:spino': { sz: 1.2, spd: 1.7, stop: 115, y: -8 }, 'd:trike': { sz: 1.08, stop: 110, y: -8, spd: 1.5 }, 'd:stego': { y: -12, stop: -2 },
-    'd:raptor': { spd: 1.8, sz: 1.08 }, 'd:anky': { sz: 0.79 }, 'd:ptera': { spd: 1.95, stop: 18, y: -25 }, 'd:brachio': { y: -12, sz: 1.6 },
+    'd:raptor': { spd: 1.8, sz: 1.08 }, 'd:anky': { sz: 0.79, stop: 90, y: -3 }, 'd:ptera': { spd: 1.95, stop: 18, y: -25 }, 'd:brachio': { y: -12, sz: 1.6 },
     'c:rabbit': { sz: 1.3, y: -6, stop: 85, spd: 1.4 }, 'c:antelope': { y: -6, stop: 30, sz: 1.29 }, 'c:deer': { stop: 37, y: -7, sz: 0.85, spd: 1.4 }, 'c:boar': { sz: 1.07, y: -12, stop: 70, spd: 1.3 },
-    'c:wolf': { stop: 85, y: -11, spd: 1.5, sz: 1.24 }, 'c:hyena': { stop: 90, y: -12, sz: 0.88, spd: 1.3 }, 'c:bear': { y: -13, stop: 110, sz: 0.8, spd: 1.35 }, 'c:rhino': { stop: 27, sz: 0.9, spd: 1.35 },
+    'c:wolf': { stop: 85, y: -11, spd: 1.5, sz: 1.24 }, 'c:hyena': { stop: 90, y: -12, sz: 0.88, spd: 1.3 }, 'c:bear': { y: -13, stop: 110, sz: 0.8, spd: 1.35 }, 'c:rhino': { stop: 95, sz: 0.8, y: -4, spd: 1.35 },
     'c:tiger': { spd: 1.3, sz: 0.93, y: -4, stop: 3 }, 'c:mammoth': { spd: 1.3, sz: 0.7, y: -7, stop: 15 }, 'c:monkey': { spd: 1.5, y: -3, stop: 5 }, 'c:snake': { sz: 1.66, spd: 1.6 },
     'c:ostrich': { sz: 0.65, y: -8, stop: 77 }, 'c:turtle': { stop: 4 }, 'c:croc': { sz: 1.05, y: -3, stop: 46 }, 'c:komodo': { stop: 46, spd: 1.45, y: -2 },
     'c:eagle': { y: 20, sz: 1.04, stop: 7 }, 'c:giraffe': { sz: 0.68, y: -12, stop: -10 }, 'c:lion': { sz: 0.9, y: -6, stop: 37 }, 'c:elephant': { sz: 0.8, y: -9, spd: 1.1, stop: 10 },
@@ -226,7 +226,7 @@ const MOTION_DEFAULT = {
   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값, 종별 아님 / 보스·모험 몹은 미적용): 가로로 눌리고(x) 세로로 늘어나며(y) 발을 축으로 뒤로 젖혀졌다(rot) dur 동안 복귀. 위치는 안 움직임
   hitSq: {"x": 1.1, "y": 1.1, "rot": 10, "dur": 0.15},   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값)
   wave: { gap: 40, dist: 35 },
-  adv: { gap: 40 },              // 모험 일반 몹 1열 대기 간격(px) — 웨이브의 '일렬 간격'과 분리                                  // 웨이브 몹 일렬 간격(px) / 히어로와의 거리(px) — 종 무관 일괄
+  adv: { gap: 100, dist: 60 },    // 모험 일반 몹 1열 대기 간격·히어로와 거리(px) — 웨이브와 분리                                  // 웨이브 몹 일렬 간격(px) / 히어로와의 거리(px) — 종 무관 일괄
   stone: { spd: 0.6, sz: 13, arc: 0.4 },                           // 직립 돌던지기: 비행속도 배율 / 그림 크기(px) / 포물선 높이 배율
   // 이펙트 프레임별 재생시간(초). 합 = 총 재생시간(전체 '프레임 속도'로 나눔).
   // 길이가 실제 프레임 수와 다르면 무시하고 균등 분할 — 프레임을 지우거나 늘려도 굳지 않음
@@ -821,6 +821,7 @@ export default function App() {
   const [evSel, setEvSel] = useState(0)               // 선택한 던전 인덱스
   const [evUI, setEvUI] = useState(null)              // 이벤트 던전 전투 중 HUD { name, dname }
   const [evPick, setEvPick] = useState(null)          // 던전 도전 확인창 { di, no, name, dname }
+  const [advUI, setAdvUI] = useState(false)           // 모험 전투 중 (나가기 버튼 표시)
   const [evExt, setEvExt] = useState({})              // 던전별 배경 확장자 인덱스 (로드 실패 시 다음 후보로)
   const [questTab, setQuestTab] = useState(0)         // 0 일일 / 1 반복 / 2 업적
   const [mapSeg, setMapSeg] = useState(1)  // 모험 지도 구간(0~2), 아프리카 중심=1 시작
@@ -1276,7 +1277,7 @@ export default function App() {
       w.scrollX += scroll * dt
 
       if (st.phase === 'fighting') {
-        if (w.advStart) { const c = w.advStart; w.advStart = null; w.needStart = false; startAdventure(c); hero.hp = st.maxHp; hero.state = 'move'; hero.t = 0 }
+        if (w.advStart) { const c = w.advStart; w.advStart = null; w.needStart = false; startAdventure(c); hero.hp = st.maxHp; hero.state = 'move'; hero.t = 0; setAdvUI(true) }
         if (w.evStart) { const c = w.evStart; w.evStart = null; w.needStart = false; startEvDungeon(c); hero.hp = st.maxHp; hero.state = 'move'; hero.t = 0; setEvUI({ name: c.name, dname: c.dname }) }
         if (w.startBossFlag) { w.startBossFlag = false; w.needStart = false; startBossBattle(); hero.state = 'move'; hero.t = 0 }
         if (w.needStart) { startWave(st.wave); w.needStart = false; hero.hp = st.maxHp; hero.state = 'move'; hero.t = 0 }
@@ -1301,9 +1302,10 @@ export default function App() {
           if (e.dead) continue
           e.flash = Math.max(0, e.flash - dt * 5)
           if (e.stun > 0) { e.stun -= dt; if (!(e.atkT > 0)) continue }  // 기절 중 정지 (진행 중인 공격은 계속)
-          // 웨이브 일반몹은 제자리에 박혀 있는다 — 히어로가 전진할 때만(scroll) 화면에서 왼쪽으로 흐른다.
-          // 교전 중엔 scroll=0 이라 완전히 멈춘다. 모험 몹과 보스는 예전처럼 걸어온다.
-          const still = !w.adv && !e.boss
+          // 일반 몹(웨이브·모험 공통)은 제자리에 박혀 있다 — 히어로가 전진할 때만(scroll) 왼쪽으로 흐른다.
+          // 교전 중엔 scroll=0 이라 완전히 멈춘다. 보스만 예전처럼 걸어온다.
+          const still = !e.boss
+          const waveMob = still && !w.adv          // 웨이브 일반몹(공격 안 함) / 모험 일반몹은 제자리에서 공격함
           // 넉백: ease-out 감쇠하며 뒤로 밀림 / 스쿼시 타이머
           // 제자리 몹은 **위치를 밀지 않는다** — 걸어오지 않으니 밀린 만큼 되돌아올 수단이 없어 맞을 때마다 누적되고 뒷줄과 겹침
           if (e.kb > 0.5) { if (!(e.atkT > 0) && !still) e.x += e.kb * dt; e.kb -= e.kb * Math.min(1, dt * 9) } else e.kb = 0  // 공격 중엔 밀리지 않음
@@ -1318,8 +1320,10 @@ export default function App() {
           // 걸어오는 몹·보스만 예전 종별 계산 유지
           const qi = (advRank && !e.boss) ? (advRank.get(e) || 0) : 0        // 모험 1열 순번(0=맨 앞)
           const stopX = still
-            ? w.heroX + (motRef.current.wave.dist ?? 95)
-            : w.heroX + Math.min(atkRange - 15, 60 + e.h * szm * 0.4) + estop + qi * (motRef.current.adv.gap ?? 40)
+            ? (w.adv
+                ? w.heroX + (motRef.current.adv.dist ?? 60) + qi * (motRef.current.adv.gap ?? 40)   // 모험 1열
+                : w.heroX + (motRef.current.wave.dist ?? 95))                                        // 웨이브 일렬
+            : w.heroX + Math.min(atkRange - 15, 60 + e.h * szm * 0.4) + estop
           e.stopX = stopX   // 정지위치 저장 → 멈춘 몬스터는 사거리 밖이어도 기본공격 판정(그림상 코앞인데 안닿는 문제 해결)
           if (e.x > stopX && !(e.atkT > 0)) {
             const near = still ? 1 : Math.min(1, Math.max(0.3, (e.x - stopX) / 55))  // 정지 전 감속
@@ -1327,7 +1331,7 @@ export default function App() {
             e.x -= (own + scroll) * dt
             if (e.atkT > 0) { e.atkT = 0; e.lunge = 0 }
             if (!still) e.animT += dt * SPEED * (0.4 + 0.6 * e.vt * near) * (1 + scroll / SCROLL * 0.4) * Math.min(1.5, Math.max(0.6, 0.55 + e.speed / 160))   // 제자리 몹은 완전 정지
-          } else if (still) {                              // 웨이브 일반몹은 히어로를 공격하지 않는다 — 맞아주는 역할만
+          } else if (waveMob) {                            // 웨이브 일반몹만 히어로를 공격하지 않는다 — 맞아주는 역할만
             e.lunge = 0; e.atkT = 0; e.atkHit = false
           } else {
             if (e.atkT > 0) {
@@ -1672,7 +1676,7 @@ export default function App() {
             c.warnT -= dt
             if (c.warnT <= 0) { c.bossOut = true; c.warnT = 0; pushEvBoss(); w.shake = 10 }
           } else if (!w.enemies.some(e => e.boss && !e.dead)) { c.done = true; c.win = true }
-          if (!c.done && (w.evTime <= 0 || hero.hp <= 0 || w.evGiveUp)) { c.done = true; c.win = false }
+          if (!c.done && (w.evTime <= 0 || hero.hp <= 0 || w.evGiveUp)) { c.done = true; c.win = false; c.quit = !!w.evGiveUp }
         }
         if (w.ev && w.ev.done) {
           const c = w.ev
@@ -1684,7 +1688,8 @@ export default function App() {
             setGem(g => g + EV_REWARD.dia)
             setPearl(v => v + EV_REWARD.pearl)
             setClearMsg(`${c.name} ${c.stage || 1}단계 격파!`)
-          } else setClearMsg(hero.hp <= 0 ? '던전 실패 — 쓰러짐' : '던전 실패 — 시간 초과')
+          } else setClearMsg(c.quit ? '던전 포기' : (hero.hp <= 0 ? '던전 실패 — 쓰러짐' : '던전 실패 — 시간 초과'))
+          if (c.quit) setEvOpen(true)                          // 포기하면 던전 목록창을 다시 열어둔다(도전 확인창 아님)
           w.needStart = true                                   // 웨이브로 복귀
           hero.hp = st.maxHp
         }
@@ -1700,13 +1705,13 @@ export default function App() {
           }
           const bossDown = w.adv.bossOut && !w.enemies.some(e => e.boss && !e.dead)
           if (bossDown) { w.adv.done = true; w.adv.win = true }
-          else if (w.advTime <= 0 || hero.hp <= 0) { w.adv.done = true; w.adv.win = false }
+          else if (w.advTime <= 0 || hero.hp <= 0 || w.advGiveUp) { w.adv.done = true; w.adv.win = false; w.adv.quit = !!w.advGiveUp }
         }
         if (w.adv && w.adv.done) {
           const a = w.adv
           w.adv = null; w.advTime = 0
           w.enemies = []; w.stones = []; w.rocks = []; w.waves = []
-          w._btShown = -1; w._bhShown = -1; setBossUI(null)
+          w._btShown = -1; w._bhShown = -1; setBossUI(null); setAdvUI(false); w.advGiveUp = false
           if (a.win) {
             setAdvStage(v => ({ ...v, [a.key]: Math.max(v[a.key] || 0, a.stage) }))
             qEv('adv_clear')
@@ -1715,9 +1720,9 @@ export default function App() {
             setMats(m => { const n = [...m]; n[4] = (n[4] || 0) + rw.mat; return n })
             setClearMsg(`${a.name} ${a.stage}단계 클리어!`)
           } else {
-            setClearMsg(hero.hp <= 0 ? '모험 실패 — 쓰러짐' : '모험 실패 — 시간 초과')
+            setClearMsg(a.quit ? '모험 포기' : (hero.hp <= 0 ? '모험 실패 — 쓰러짐' : '모험 실패 — 시간 초과'))
           }
-          setNav('모험')                                              // 전투 종료 → 모험 탭 배경 위에서
+          setNav('모험')                                              // 포기·실패·클리어 모두 모험 탭으로
           setAdvSel(CONTINENTS.find(c => c.key === a.key) || null)   // 진입창 복귀
           w.needStart = true
           hero.hp = st.maxHp
@@ -1838,7 +1843,7 @@ export default function App() {
       const H = e.h * szm
       const imgs = e.dino ? (e.boss ? (e.atkT > 0 ? DINO_BOSS[e.dino].a : DINO_BOSS[e.dino].w) : DINO_MOB[e.dino]) : (e.evBoss ? BIMG[e.evBoss - 1] : (e.boss ? CIMG[e.type] : EIMG[e.type]))   // 이벤트 던전 보스=BIMG, 저주보스=CIMG
       const stunned = e.stun > 0
-      const still = !w.adv && !e.boss          // 제자리 웨이브 몹: 완전 정지(들썩임·기울기·프레임순환 없음)
+      const still = !e.boss                    // 제자리 일반 몹(웨이브·모험): 완전 정지(들썩임·기울기·프레임순환 없음)
       const gall = e.animT * 9
       const fi = e.atkT > 0
         ? (e.dino && e.boss
@@ -1855,7 +1860,7 @@ export default function App() {
       ctx.translate(e.x + (e.lunge || 0), y - bounce + (e.air ? 0 : (e.yOff || 0)))
       ctx.rotate(rock)
       if (e.sq > 0) {                                    // 피격 반응: 젖힘 → 찌그러짐 (원점이 발밑이라 위치는 그대로)
-        if (!still) { const q = e.sq / (e.sqD || 0.18); ctx.scale(1 + 0.10 * q, 1 - 0.14 * q) }   // 보스·모험 몹은 종전 그대로
+        if (!still || w.adv) { const q = e.sq / (e.sqD || 0.18); ctx.scale(1 + 0.10 * q, 1 - 0.14 * q) }   // 보스·모험 몹은 종전 그대로
         else {                                           // 웨이브 일반몹 전체 = 편집기 값 하나로 일괄
           const hs = motRef.current.hitSq
           const q = e.sq / (e.sqD || hs.dur || 0.18)     // 1 → 0 으로 감쇠
@@ -2767,11 +2772,13 @@ export default function App() {
               <span style={st.evpRewV}><img src="/ui/gem.png" alt="" style={st.evpRewIc} />{fmt(EV_REWARD.dia)}</span>
               <span style={st.evpRewV}><img src="/ui/pearl.png" alt="" style={st.evpRewIc} />{fmt(EV_REWARD.pearl)}</span>
             </div>
-            <div data-edit="evpsignt" style={st.evpSignTxt}>({stage}/{EV_STAGES})</div>
-            <div data-edit="evpbar" style={st.evpBar}>
-              {Array.from({ length: EV_STAGES }, (_, i) => (
-                <div key={i} style={{ ...st.evpBarCell, ...(i < cleared ? st.evpBarFill : null) }} />
-              ))}
+            <div data-edit="evpsign" style={st.evpSign}>
+              <div data-edit="evpsignt" style={st.evpSignTxt}>({stage}/{EV_STAGES})</div>
+              <div data-edit="evpbar" style={st.evpBar}>
+                {Array.from({ length: EV_STAGES }, (_, i) => (
+                  <div key={i} style={{ ...st.evpBarCell, ...(i < cleared ? st.evpBarFill : null) }} />
+                ))}
+              </div>
             </div>
             <div style={st.evpBtns}>
               <button data-edit="evpenter" style={st.evpEnter} onClick={() => {
@@ -2963,7 +2970,10 @@ export default function App() {
         )}
         {uiEdit && <div data-edit="warn" style={st.warnPrev}>WARNING</div>}
         {(evUI || uiEdit) && (
-          <button data-edit="evexit" style={st.evExitBtn} onClick={() => { if (!uiEdit) world.current.evGiveUp = true }}>나가기</button>
+          <button data-edit="evexit" style={st.evExitBtn} onClick={() => { if (!uiEdit) world.current.evGiveUp = true }}>던전 포기</button>
+        )}
+        {(advUI || uiEdit) && (
+          <button data-edit="advexit" style={st.advExitBtn} onClick={() => { if (!uiEdit) world.current.advGiveUp = true }}>나가기</button>
         )}
         <div data-edit="gain" style={{ ...st.gainWrap, ...(uiEdit ? { pointerEvents: 'auto' } : {}) }}>
           {(gains.length ? gains : (uiEdit ? [{ id: '__s', exp: 1234, meat: 567 }] : [])).map(g => (
@@ -3330,8 +3340,9 @@ export default function App() {
                 >{DINO_NAME[k]}</button>
               ))}
             </div>
+            {row('모험 히어로와 거리(px)', M.adv.dist ?? 60, 0, 300, 1, v => setMotCfg({ ...M, adv: { ...M.adv, dist: v } }))}
             {row('모험 1열 간격(px)', M.adv.gap ?? 40, 0, 200, 1, v => setMotCfg({ ...M, adv: { ...M.adv, gap: v } }))}
-            <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>모험 일반 몹이 한 줄로 설 때의 앞뒤 간격 (웨이브 '일렬 간격'과 별개)</div>
+            <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>모험 일반 몹은 제자리에 박혀 한 줄로 선다 (웨이브 값과 별개, 공격은 함)</div>
             <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>{DINO_NAME[motSel]} 공격 프레임 {frames.join('·')}번 · 총 {arr.reduce((a, b) => a + b, 0).toFixed(2)}초</div>
             {arr.map((v, i) => row(`${i + 1}번(원본${frames[i]}) 시간`, v, 0.02, 0.6, 0.01, nv => setArr(i, nv)))}
             {row('데미지 프레임', M.hit[motSel] || 3, 1, arr.length, 1, v => setMotCfg({ ...M, hit: { ...M.hit, [motSel]: v } }))}
@@ -4052,11 +4063,13 @@ Object.assign(EDIT_GROUPS, {
   evpimg: { label: '도전창 보스그림', size: ['evpimgw', 'evpimgh'], pos: 'evpimg' },
   evpbn: { label: '도전창 보스이름', size: ['evpbnfz'], pos: 'evpbn' },
   evprew: { label: '도전창 보상', size: ['evprewfz', 'evprewic'], pos: 'evprew' },
+  evpsign: { label: '도전창 표지판', size: ['evpsw', 'evpsh'], pos: 'evpsign' },
   evpsignt: { label: '도전창 단계 글자', size: ['evpsfz'], pos: 'evpsignt' },
   evpbar: { label: '도전창 10칸 바', size: ['evpbarw', 'evpbarh'], pos: 'evpbar' },
   evpenter: { label: '도전창 진입 버튼', size: ['evpew', 'evpeh', 'evpefz'], pos: 'evpenter' },
   evpclose: { label: '도전창 닫기 버튼', size: ['evpcw', 'evpch', 'evpcfz'], pos: 'evpclose' },
   evexit: { label: '던전 나가기 버튼', size: ['evexitw', 'evexith', 'evexitfz'], pos: 'evexit' },
+  advexit: { label: '모험 나가기 버튼', size: ['advexitw', 'advexith', 'advexitfz'], pos: 'advexit' },
   qwin: { label: '퀘스트 창', size: ['qww', 'qwh'], pos: 'qwin' },
   qtitle: { label: '퀘스트 제목', size: ['qtitlefz'], pos: 'qtitle' },
   qclose: { label: '퀘스트 닫기', size: ['qclsz'], pos: 'qclose' },
@@ -4098,8 +4111,9 @@ Object.assign(UI_LABELS, {
   profherow: '틀 너비', profheroh: '틀 높이', profherozoom: '그림 크기%', skdimgsz: '그림 크기', avafacesz: '그림 크기', profstatfz: '능력치 글자', profcurfz: '재화 글자', profcuric: '재화 아이콘', profgearsz: '장비칸 크기', profsecfz: '제목 글자',
   skdefffz: '효과 글자', skdstatfz: '스탯 글자', skdautofz: 'AUTO 글자', skdbtnh: '버튼 높이', skdbtnfz: '버튼 글자',
   evexitw: '버튼 너비', evexith: '버튼 높이', evexitfz: '글씨 크기',
+  advexitw: '버튼 너비', advexith: '버튼 높이', advexitfz: '글씨 크기',
   warnfz: '글자 크기', evpww: '창 너비', evpwh: '창 높이', evptitlefz: '글자 크기', evpimgw: '그림 너비', evpimgh: '그림 높이',
-  evpbnfz: '글자 크기', evprewfz: '글자 크기', evprewic: '아이콘 크기', evpsfz: '글자 크기', evpbarw: '바 너비', evpbarh: '바 높이',
+  evpbnfz: '글자 크기', evprewfz: '글자 크기', evprewic: '아이콘 크기', evpsw: '표지판 너비', evpsh: '표지판 높이', evpsfz: '글자 크기', evpbarw: '바 너비', evpbarh: '바 높이',
   evpew: '버튼 너비', evpeh: '버튼 높이', evpefz: '글씨 크기', evpcw: '버튼 너비', evpch: '버튼 높이', evpcfz: '글씨 크기',
   fevbtnw: '버튼 너비', fevbtnh: '버튼 높이', fevonzoom: '그림 크기%', fevbtntfz: '글씨 크기',
   evbtnw: '버튼 너비', evbtnh: '버튼 높이', evbtntfz: '글씨 크기', evww: '창 너비', evwh: '창 높이', evtitlefz: '제목 글자', evclsz: '버튼 크기',
@@ -4121,7 +4135,7 @@ const uiVars = c => `:root{
 --pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
 ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg${i}-x:${c['evoimg' + i + 'X']}px;--pd-evoimg${i}-y:${c['evoimg' + i + 'Y']}px;`).join('')}--pd-slotfz:${c.slotfz}px;
---pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdimgsz:${c.skdimgsz}px;--pd-avafacesz:${c.avafacesz}px;--pd-profherow:${c.profherow}px;--pd-profheroh:${c.profheroh}px;--pd-profherozoom:${c.profherozoom};--pd-profstatfz:${c.profstatfz}px;--pd-profcurfz:${c.profcurfz}px;--pd-profcuric:${c.profcuric}px;--pd-profgearsz:${c.profgearsz}px;--pd-profsecfz:${c.profsecfz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;--pd-warnfz:${c.warnfz}px;--pd-evpww:${c.evpww}px;--pd-evpwh:${c.evpwh}px;--pd-evptitlefz:${c.evptitlefz}px;--pd-evpimgw:${c.evpimgw}px;--pd-evpimgh:${c.evpimgh}px;--pd-evpbnfz:${c.evpbnfz}px;--pd-evprewfz:${c.evprewfz}px;--pd-evprewic:${c.evprewic}px;--pd-evpsfz:${c.evpsfz}px;--pd-evpbarw:${c.evpbarw}px;--pd-evpbarh:${c.evpbarh}px;--pd-evpew:${c.evpew}px;--pd-evpeh:${c.evpeh}px;--pd-evpefz:${c.evpefz}px;--pd-evpcw:${c.evpcw}px;--pd-evpch:${c.evpch}px;--pd-evpcfz:${c.evpcfz}px;--pd-evexitw:${c.evexitw}px;--pd-evexith:${c.evexith}px;--pd-evexitfz:${c.evexitfz}px;--pd-fevbtnw:${c.fevbtnw}px;--pd-fevbtnh:${c.fevbtnh}px;--pd-fevonzoom:${c.fevonzoom};--pd-fevbtntfz:${c.fevbtntfz}px;--pd-evbtnw:${c.evbtnw}px;--pd-evbtnh:${c.evbtnh}px;--pd-evbtntfz:${c.evbtntfz}px;--pd-evww:${c.evww}px;--pd-evwh:${c.evwh}px;--pd-evtitlefz:${c.evtitlefz}px;--pd-evclsz:${c.evclsz}px;--pd-evtabw:${c.evtabw}px;--pd-evtabh:${c.evtabh}px;--pd-evtabfz:${c.evtabfz}px;--pd-evprevh:${c.evprevh}px;--pd-evnamefz:${c.evnamefz}px;--pd-evrowh:${c.evrowh}px;--pd-evnosz:${c.evnosz}px;--pd-evbnamefz:${c.evbnamefz}px;--pd-evgow:${c.evgow}px;--pd-evgoh:${c.evgoh}px;--pd-evgofz:${c.evgofz}px;--pd-evprevzoom:${c.evprevzoom};--pd-evnoimgsz:${c.evnoimgsz}px;
+--pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdimgsz:${c.skdimgsz}px;--pd-avafacesz:${c.avafacesz}px;--pd-profherow:${c.profherow}px;--pd-profheroh:${c.profheroh}px;--pd-profherozoom:${c.profherozoom};--pd-profstatfz:${c.profstatfz}px;--pd-profcurfz:${c.profcurfz}px;--pd-profcuric:${c.profcuric}px;--pd-profgearsz:${c.profgearsz}px;--pd-profsecfz:${c.profsecfz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;--pd-warnfz:${c.warnfz}px;--pd-evpww:${c.evpww}px;--pd-evpwh:${c.evpwh}px;--pd-evptitlefz:${c.evptitlefz}px;--pd-evpimgw:${c.evpimgw}px;--pd-evpimgh:${c.evpimgh}px;--pd-evpbnfz:${c.evpbnfz}px;--pd-evprewfz:${c.evprewfz}px;--pd-evprewic:${c.evprewic}px;--pd-evpsw:${c.evpsw}px;--pd-evpsh:${c.evpsh}px;--pd-evpsfz:${c.evpsfz}px;--pd-evpbarw:${c.evpbarw}px;--pd-evpbarh:${c.evpbarh}px;--pd-evpew:${c.evpew}px;--pd-evpeh:${c.evpeh}px;--pd-evpefz:${c.evpefz}px;--pd-evpcw:${c.evpcw}px;--pd-evpch:${c.evpch}px;--pd-evpcfz:${c.evpcfz}px;--pd-advexitw:${c.advexitw}px;--pd-advexith:${c.advexith}px;--pd-advexitfz:${c.advexitfz}px;--pd-evexitw:${c.evexitw}px;--pd-evexith:${c.evexith}px;--pd-evexitfz:${c.evexitfz}px;--pd-fevbtnw:${c.fevbtnw}px;--pd-fevbtnh:${c.fevbtnh}px;--pd-fevonzoom:${c.fevonzoom};--pd-fevbtntfz:${c.fevbtntfz}px;--pd-evbtnw:${c.evbtnw}px;--pd-evbtnh:${c.evbtnh}px;--pd-evbtntfz:${c.evbtntfz}px;--pd-evww:${c.evww}px;--pd-evwh:${c.evwh}px;--pd-evtitlefz:${c.evtitlefz}px;--pd-evclsz:${c.evclsz}px;--pd-evtabw:${c.evtabw}px;--pd-evtabh:${c.evtabh}px;--pd-evtabfz:${c.evtabfz}px;--pd-evprevh:${c.evprevh}px;--pd-evnamefz:${c.evnamefz}px;--pd-evrowh:${c.evrowh}px;--pd-evnosz:${c.evnosz}px;--pd-evbnamefz:${c.evbnamefz}px;--pd-evgow:${c.evgow}px;--pd-evgoh:${c.evgoh}px;--pd-evgofz:${c.evgofz}px;--pd-evprevzoom:${c.evprevzoom};--pd-evnoimgsz:${c.evnoimgsz}px;
 ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k}h:${c['advico' + k + 'h']}px;--pd-advico${k}-x:${c['advico' + k + 'X']}px;--pd-advico${k}-y:${c['advico' + k + 'Y']}px;`).join('')}
 --pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
 --pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
@@ -4148,7 +4162,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
 --pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evexit', 'warn', 'evpwin', 'evptitle', 'evpimg', 'evpbn', 'evprew', 'evpsignt', 'evpbar', 'evpenter', 'evpclose', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evexit', 'advexit', 'warn', 'evpwin', 'evptitle', 'evpimg', 'evpbn', 'evprew', 'evpsign', 'evpsignt', 'evpbar', 'evpenter', 'evpclose', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -4562,8 +4576,14 @@ const st = {
   evpRewK: { color: '#9c8a6c' },
   evpRewV: { display: 'inline-flex', alignItems: 'center', gap: 3, fontWeight: 700 },
   evpRewIc: { width: 'var(--pd-evprewic)', height: 'var(--pd-evprewic)', objectFit: 'contain' },
+  evpSign: {                                                // 모험 진입창과 같은 표지판 배경
+    flexShrink: 0, marginTop: 'auto', width: 'var(--pd-evpsw)', height: 'var(--pd-evpsh)',
+    background: 'url(/ui/adv_sign.png) center / 100% 100% no-repeat',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5,
+    boxSizing: 'border-box', transform: 'translate(var(--pd-evpsign-x), var(--pd-evpsign-y))',
+  },
   evpSignTxt: {
-    flexShrink: 0, fontSize: 'var(--pd-evpsfz)', color: '#cbb89a', fontWeight: 700,
+    flexShrink: 0, fontSize: 'var(--pd-evpsfz)', color: '#4a3418', fontWeight: 800,
     transform: 'translate(var(--pd-evpsignt-x), var(--pd-evpsignt-y))',
   },
   evpBar: {
@@ -4589,6 +4609,13 @@ const st = {
     position: 'absolute', left: 0, top: 0,
     transform: 'translate(var(--pd-evexit-x), var(--pd-evexit-y))',
     width: 'var(--pd-evexitw)', height: 'var(--pd-evexith)', fontSize: 'var(--pd-evexitfz)',
+    borderRadius: 6, border: '1px solid #7a5a2a', background: 'linear-gradient(180deg,#4a3520,#2c2013)',
+    color: '#f0dfae', fontWeight: 700, zIndex: 6, padding: 0,
+  },
+  advExitBtn: {                                             // 모험 나가기 (누르면 일반 웨이브 복귀)
+    position: 'absolute', left: 0, top: 0,
+    transform: 'translate(var(--pd-advexit-x), var(--pd-advexit-y))',
+    width: 'var(--pd-advexitw)', height: 'var(--pd-advexith)', fontSize: 'var(--pd-advexitfz)',
     borderRadius: 6, border: '1px solid #7a5a2a', background: 'linear-gradient(180deg,#4a3520,#2c2013)',
     color: '#f0dfae', fontWeight: 700, zIndex: 6, padding: 0,
   },
@@ -4889,9 +4916,11 @@ Object.assign(UI_DEFAULT, {
   evpimgw: 153, evpimgh: 133, evpimgX: 0, evpimgY: 0,
   evpbnfz: 15, evpbnX: 0, evpbnY: 2,
   evprewfz: 15, evprewic: 13, evprewX: 0, evprewY: 4,
+  evpsw: 249, evpsh: 71, evpsignX: 0, evpsignY: 0,
   evpsfz: 13, evpsigntX: 0, evpsigntY: 15,
   evpbarw: 240, evpbarh: 16, evpbarX: 0, evpbarY: 25,
   evpew: 83, evpeh: 28, evpefz: 13, evpenterX: 0, evpenterY: 0,
   evpcw: 80, evpch: 29, evpcfz: 13, evpcloseX: 0, evpcloseY: 0,
-  evexitw: 48, evexith: 22, evexitfz: 11, evexitX: 7, evexitY: 70,   // 나가기 버튼
+  evexitw: 48, evexith: 22, evexitfz: 11, evexitX: 7, evexitY: 70,   // 던전 나가기 버튼
+  advexitw: 48, advexith: 22, advexitfz: 11, advexitX: 7, advexitY: 70,  // 모험 나가기 버튼
 })
