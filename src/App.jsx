@@ -21,6 +21,14 @@ const DEBUG = true
 // · 모바일처럼 편집 안 하는 기기 → 배포만 하면 PC 값이 자동으로 들어옴
 // · PC에서 배포 후 편집한 값 → 편집 시각이 더 최신이라 그대로 유지됨
 // 사용자 설정을 코드에 새로 박을 때만 이 줄을 현재 시각으로 갱신할 것.
+// 진입창(TAP TO START) 배경: 한국어 사용자는 기존 그림, 그 외에는 영문 그림.
+// ?intro=en / ?intro=ko 로 강제 지정(테스트용)
+const isKoUser = () => { try { return /^ko/i.test(navigator.language || (navigator.languages || [])[0] || '') } catch { return true } }
+const SPLASH_BG = (() => {
+  let ko = isKoUser()
+  try { const q = new URLSearchParams(location.search); if (q.get('intro') === 'en') ko = false; if (q.get('intro') === 'ko') ko = true } catch {}
+  return ko ? '/startbg/startbg.jpg' : '/startbg/startbg_en.png'
+})()
 const CFG_STAMP = Date.parse('2026-08-02T21:42:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
@@ -84,12 +92,13 @@ const SKILL_SHEET = [
   { id: 28, n: 7, h: 200, stage: 2, title: '피폭', charSeq: [1, 2, 3, 5, 6, 7], cd: 2, dmgMult: 3, aoe: true },
   // 29·30: 히어로 모션(charSeq)과 이펙트(fx)가 각각 다른 시트 → 이펙트가 별도 레이어라 몹에 안 가림
   { id: 29, n: 7, h: 200, stage: 2, title: '사이오닉 스톰', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [4, 5, 6, 7], fxH: 240, hitP: 0.6 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 150 },
+  { id: 31, n: 8, h: 200, stage: 3, title: '회전 도끼', charSeq: [1, 2, 1, 2, 3, 4], fx: { type: 'proj', fly: [5, 6, 7, 8], fxH: 120 }, cd: 2, dmgMult: 3 },   // 관통 투사체(전기 작살과 동일 방식)
   { id: 30, n: 7, h: 300, stage: 2, title: '거대 몽둥이', charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5, 6, 7], fxH: 260, hitP: 0.9 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 200 },
   ...PASSIVE_SHEET,   // 진화 단계별 패시브 (오스트랄로~인간)
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
 // 스킬 아이콘: 해당 스킬 시트의 지정 프레임 사용 (없으면 번호 텍스트)
-const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4, 22: 4, 23: 6, 24: 7, 25: 3, 26: 3, 27: 1, 28: 6, 29: 6, 30: 2 }
+const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4, 22: 4, 23: 6, 24: 7, 25: 3, 26: 3, 27: 1, 28: 6, 29: 6, 30: 2, 31: 6 }
 // 스킬 효과(대상/데미지/사거리/쿨타임)를 인게임 상세창에서 조절 — 인덱스가 아닌 **id 기준**이라
 // 스킬을 넣고 빼도 값이 안 밀린다(예전 cdConf는 인덱스 배열이라 매번 리셋됐음).
 const skEff = (sk, cfg) => {
@@ -177,6 +186,7 @@ const MOTION_DEFAULT = {
   hero: {
     sz: 0.85, x: -35, y: 0,
     walkSz: { 0: 0.95, 1: 0.96, 2: 0.94, 3: 0.94, 4: 0.86, 5: 0.9 },
+    skillFront: { 30: 1 },   // 1이면 그 스킬 시전 중 히어로를 몬스터 위에 그림(앞으로 파고드는 스킬용)
     skillSz: { 1: 0.85, 2: 0.85, 7: 0.9, 8: 0.95, 13: 0.85, 15: 0.83, 17: 0.88, 18: 1.07, 20: 1.06, 22: 1.03, 23: 0.9, 24: 0.9, 25: 0.8, 26: 0.54, 27: 0.8 },
     skillPos: { '23': { x: -5 } },   // 스킬별 그림 위치
     skillFrSz: {"2": {"2": 0.98}, "22": {"4": 0.95}, "23": {"1": 0.97, "2": 0.97, "3": 0.97, "4": 0.97, "5": 0.97}, "25": {"1": 0.98, "2": 1.06, "3": 1.18}, "28": {"1": 2.1, "2": 2.1, "3": 2.1, "4": 1.7, "5": 1.6, "6": 1.91}, "29": {"1": 0.88, "2": 0.87, "3": 0.9}, "30": {"1": 0.72, "2": 0.72}},   // 스킬 프레임별 크기
@@ -230,10 +240,10 @@ const MOTION_DEFAULT = {
   stone: { spd: 0.6, sz: 13, arc: 0.4 },                           // 직립 돌던지기: 비행속도 배율 / 그림 크기(px) / 포물선 높이 배율
   // 이펙트 프레임별 재생시간(초). 합 = 총 재생시간(전체 '프레임 속도'로 나눔).
   // 길이가 실제 프레임 수와 다르면 무시하고 균등 분할 — 프레임을 지우거나 늘려도 굳지 않음
-  fxFrT: {"1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.12, 0.12, 0.15, 0.15], "30": [0.23, 0.2, 0.12, 0.12, 0.12]},
-  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "30": {"startP": 0.45, "anchor": 1, "sz": 0.75, "spd": 1, "fly": 1, "x": -20, "y": 0, "fr": {"1": {"t": 0.5, "x": 12, "sz": 0.95, "y": 2}, "2": {"x": 50, "sz": 0.95, "t": 0.7}, "3": {"x": 90, "sz": 0.95, "t": 0.8}, "4": {"x": 110, "sz": 0.95, "t": 0.9, "y": 3}, "5": {"x": 130, "sz": 0.95, "t": 1, "y": 4}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
+  fxFrT: {"1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.12, 0.12, 0.15, 0.15], "30": [0.23, 0.2, 0.12, 0.12, 0.12], "31": [0.06, 0.06, 0.06, 0.06]},
+  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "31": {"sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {}}, "30": {"startP": 0.45, "anchor": 1, "sz": 0.75, "spd": 1, "fly": 1, "x": -20, "y": 0, "fr": {"1": {"t": 0.5, "x": 12, "sz": 0.95, "y": 2}, "2": {"x": 50, "sz": 0.95, "t": 0.7}, "3": {"x": 90, "sz": 0.95, "t": 0.8}, "4": {"x": 110, "sz": 0.95, "t": 0.9, "y": 3}, "5": {"x": 130, "sz": 0.95, "t": 1, "y": 4}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
 }
-const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 30]                          // 이펙트 있는 스킬 id
+const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 30, 31]                          // 이펙트 있는 스킬 id
 // 이펙트 프레임 시간(초) 배열 — 넣은 값을 그대로 씀. 프레임을 늘리거나 줄이면 값도 같이 조정할 것.
 // 빈 칸은 0초(그 프레임은 건너뜀)로 두고, 전부 비었을 때만 균등 분할로 떨어져 NaN을 막는다
 const fxT = (mot, id, n) => {
@@ -271,7 +281,7 @@ function mergeMotion(sv) {   // 저장된 모션값 + 기본값 병합 (초기 �
     cd: { ...MOTION_DEFAULT.cd, ...(sv.cd || {}) }, dur: { ...MOTION_DEFAULT.dur, ...(sv.dur || {}) },
     lunge: { ...MOTION_DEFAULT.lunge, ...(sv.lunge || {}) },
     stop: { ...MOTION_DEFAULT.stop, ...(sv.stop || {}) }, size: { ...MOTION_DEFAULT.size, ...(sv.size || {}) },
-    hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}), evoSz: { ...MOTION_DEFAULT.hero.evoSz, ...((sv.hero || {}).evoSz || {}) }, range: { ...MOTION_DEFAULT.hero.range, ...((sv.hero || {}).range || {}) }, walkSz: perStage((sv.hero || {}).walkSz, MOTION_DEFAULT.hero.walkSz), skillSz: { ...MOTION_DEFAULT.hero.skillSz, ...((sv.hero || {}).skillSz || {}) }, skillPos: { ...MOTION_DEFAULT.hero.skillPos, ...((sv.hero || {}).skillPos || {}) }, skillFrSz: { ...((sv.hero || {}).skillFrSz || {}) }, skillFrPos: { ...((sv.hero || {}).skillFrPos || {}) }, skillFrT: { ...((sv.hero || {}).skillFrT || {}) }, hit: { ...MOTION_DEFAULT.hero.hit, ...((sv.hero || {}).hit || {}) }, atkFrSz: mergeAtkFrSz(sv.hero || {}), atkFrX: { ...MOTION_DEFAULT.hero.atkFrX, ...((sv.hero || {}).atkFrX || {}) } },
+    hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}), evoSz: { ...MOTION_DEFAULT.hero.evoSz, ...((sv.hero || {}).evoSz || {}) }, range: { ...MOTION_DEFAULT.hero.range, ...((sv.hero || {}).range || {}) }, walkSz: perStage((sv.hero || {}).walkSz, MOTION_DEFAULT.hero.walkSz), skillSz: { ...MOTION_DEFAULT.hero.skillSz, ...((sv.hero || {}).skillSz || {}) }, skillFront: { ...MOTION_DEFAULT.hero.skillFront, ...((sv.hero || {}).skillFront || {}) }, skillPos: { ...MOTION_DEFAULT.hero.skillPos, ...((sv.hero || {}).skillPos || {}) }, skillFrSz: { ...((sv.hero || {}).skillFrSz || {}) }, skillFrPos: { ...((sv.hero || {}).skillFrPos || {}) }, skillFrT: { ...((sv.hero || {}).skillFrT || {}) }, hit: { ...MOTION_DEFAULT.hero.hit, ...((sv.hero || {}).hit || {}) }, atkFrSz: mergeAtkFrSz(sv.hero || {}), atkFrX: { ...MOTION_DEFAULT.hero.atkFrX, ...((sv.hero || {}).atkFrX || {}) } },
     mob: { ...MOTION_DEFAULT.mob, ...(sv.mob || {}) }, boss: { ...MOTION_DEFAULT.boss, ...(sv.boss || {}) },
     wave: { ...MOTION_DEFAULT.wave, ...(sv.wave || {}) }, adv: { ...MOTION_DEFAULT.adv, ...(sv.adv || {}) }, hitSq: { ...MOTION_DEFAULT.hitSq, ...(sv.hitSq || {}) }, stone: { ...MOTION_DEFAULT.stone, ...(sv.stone || {}) },   // 기본값(사용자 확정값) 위에 저장값 덮어쓰기
     ally: { hunter: { ...MOTION_DEFAULT.ally.hunter, ...((sv.ally || {}).hunter || {}) }, shaman: { ...MOTION_DEFAULT.ally.shaman, ...((sv.ally || {}).shaman || {}) }, healer: { ...MOTION_DEFAULT.ally.healer, ...((sv.ally || {}).healer || {}) }, giant: { ...MOTION_DEFAULT.ally.giant, ...((sv.ally || {}).giant || {}) } },
@@ -358,6 +368,7 @@ const SKILL_FRAME_T = {
   28: [0.18, 0.18, 0.18, 0.18, 0.18, 0.18],                    // 대지 분쇄 (6, 균등)
   29: [0.18, 0.18, 0.24],                                      // 사이오닉 스톰 (3: 번개 충전)
   30: [0.25, 0.30],                                            // 거대 몽둥이 (2: 치켜들기 → 내려찍기)
+  31: [0.12, 0.12, 0.12, 0.12, 0.20, 0.12],                    // 회전 도끼 (회전 2바퀴 → 던지기 → 도끼 떠남 1컷)
 }
 // 이펙트 타이밍
 const STRIKE_DUR = 0.55   // 낙뢰/낙석 이펙트 재생 시간(초) 기본값
@@ -1957,6 +1968,9 @@ export default function App() {
       }
       ctx.globalAlpha = 1
 
+      // 앞으로 파고드는 스킬(hero.skillFront[id]=1)일 때만 히어로를 몬스터 위에 그린다. 동료·투사체는 항상 몹 뒤
+      const __heroFront = w.skill != null && !!((motRef.current.hero.skillFront || {})[SKILLS[w.skill].id])
+
       // 주인공
       const hero = w.hero
       const __heroPv = motEditRef.current && motCatRef.current === 'hero'   // 편집기 히어로탭: 선택단계 미리보기
@@ -2032,6 +2046,8 @@ export default function App() {
             ctx.drawImage(si, sp2.x - pw / 2, sp2.y - ph / 2 + by, pw, ph)
           }
         }
+        // 동료·동료 투사체까지 그린 뒤, 시전 중이면 여기서 몬스터를 먼저 깔고 히어로를 그 위에 올린다
+        if (__heroFront) for (const e of w.enemies) drawEnemy(ctx, e, now)
         const lunge = hero.state === 'attack' ? Math.sin(Math.min(1, hero.t / 0.4) * Math.PI) * 12 : 0
         ctx.translate(w.heroX + lunge - (w.heroKb || 0) + (motRef.current.hero.x || 0) + __frX + (__skp.x || 0) + (__skfp.x || 0), w.groundY + (motRef.current.hero.y || 0) + (__skp.y || 0) + (__skfp.y || 0))
         if (hero.flash > 0) ctx.filter = 'brightness(2.5)'
@@ -2040,7 +2056,7 @@ export default function App() {
         ctx.restore()
       }
 
-      for (const e of w.enemies) drawEnemy(ctx, e, now)
+      if (!__heroFront) for (const e of w.enemies) drawEnemy(ctx, e, now)
 
       for (const p of w.stones) {
         ctx.save()
@@ -2270,16 +2286,28 @@ export default function App() {
   }
   // 길게 누르면 연속 실행 (400ms 후 80ms 간격)
   const holdRef = useRef(null)
-  function holdStart(fn) {
-    if (uiEdit) return
+  // 꾹 누르면 반복 + 점점 빨라짐(140ms → 25ms). 손 떼면 멈춤
+  function holdRepeat(fn) {
     holdEnd()
     fn()
-    holdRef.current = { iv: null, t: setTimeout(() => { if (holdRef.current) holdRef.current.iv = setInterval(fn, 80) }, 400) }
+    let delay = 140
+    const tick = () => {
+      if (!holdRef.current) return
+      fn()
+      delay = Math.max(25, delay * 0.82)
+      holdRef.current.t = setTimeout(tick, delay)
+    }
+    holdRef.current = { t: setTimeout(tick, 400) }
   }
+  function holdStart(fn) { if (uiEdit) return; holdRepeat(fn) }   // 게임 버튼 (UI 편집 중엔 동작 안 함)
   function holdEnd() {
     const h = holdRef.current
-    if (h) { clearTimeout(h.t); clearInterval(h.iv); holdRef.current = null }
+    if (h) { clearTimeout(h.t); holdRef.current = null }
   }
+  const holdBtn = fn => ({                                        // 편집창 조절 버튼용 (편집 중에도 눌려야 함)
+    onPointerDown: () => holdRepeat(fn), onPointerUp: holdEnd, onPointerLeave: holdEnd,
+    onPointerCancel: holdEnd, onContextMenu: e => e.preventDefault(),
+  })
   useEffect(() => () => holdEnd(), [])
   // ── 클라우드 세이브: 로그인 시 웨이브 높은 쪽 채택, 이후 60초/백그라운드 전환 시 업로드 ──
   const [fbUser, setFbUser] = useState(null)
@@ -2447,7 +2475,7 @@ export default function App() {
       if (t) { const de = t.dataset.edit; setEditSel(de); if (de === 'treasure') setOffOpen(true); const mAdv = /^adv(btn|txt)(\d)$/.exec(de); if (mAdv) setAdvSel(CONTINENTS[+mAdv[2]]); if (!['skcell', 'avatar', 'avaface', 'evtab'].includes(de)) { e.stopPropagation(); e.preventDefault() } }   // skimg/skname/skbar 는 선택만(상세창 안 열림)
     }}>
       {splash && (
-        <div style={st.splashWrap} onClick={() => setSplash(false)}>
+        <div style={{ ...st.splashWrap, backgroundImage: `url(${SPLASH_BG})` }} onClick={() => setSplash(false)}>
           <div style={st.splashTap}>TAP TO START</div>
         </div>
       )}
@@ -3310,15 +3338,18 @@ export default function App() {
         const arr = M.atk[motSel] || DINO_ATK_DEF
         const setArr = (i, v) => setMotCfg({ ...M, atk: { ...M.atk, [motSel]: arr.map((x, j) => (j === i ? v : x)) } })
         const mbtn = { width: 24, height: 24, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
-        const row = (label, val, min, max, step, on) => (
+        const row = (label, val, min, max, step, on) => {
+          const bump = dir => { let cur = val; return () => { cur = +(Math.min(max, Math.max(min, cur + dir * step))).toFixed(4); on(cur) } }
+          return (
           <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
             <span style={{ width: 96, fontSize: 12, flexShrink: 0, color: '#f0dfae', fontWeight: 700 }}>{label}</span>
-            <button style={mbtn} onClick={() => on(+(Math.min(max, Math.max(min, val - step))).toFixed(4))}>−</button>
+            <button style={mbtn} {...holdBtn(bump(-1))}>−</button>
             <input type="range" min={min} max={max} step={step} value={val} onChange={e => on(parseFloat(e.target.value))} style={{ flex: 1, minWidth: 0 }} />
-            <button style={mbtn} onClick={() => on(+(Math.min(max, Math.max(min, val + step))).toFixed(4))}>+</button>
+            <button style={mbtn} {...holdBtn(bump(1))}>+</button>
             <span style={{ width: 42, textAlign: 'right', fontSize: 12, color: GOLD }}>{val}</span>
           </div>
-        )
+          )
+        }
         return (
         <div style={{ ...st.motPanel, ...(dockSide ? dockStyle : null) }}>
           <div style={{ fontSize: 13, color: GOLD, fontWeight: 800, marginBottom: 6 }}>모션 편집 — 전투 보면서 바로 조절</div>
@@ -3419,6 +3450,8 @@ export default function App() {
                 >{s.name}</button>
               ))}
             </div>
+            {row('선택 스킬 몹 앞 (0/1)', (M.hero.skillFront || {})[motHeroSk] ?? 0, 0, 1, 1, v => setMotCfg({ ...M, hero: { ...M.hero, skillFront: { ...(M.hero.skillFront || {}), [motHeroSk]: v } } }))}
+            <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>1이면 이 스킬 시전 중 히어로가 몬스터에 안 가려집니다 (앞으로 파고드는 스킬만)</div>
             {row('선택 스킬 크기', (M.hero.skillSz || {})[motHeroSk] ?? 1, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, skillSz: { ...(M.hero.skillSz || {}), [motHeroSk]: v } } }))}
             {row('선택 스킬 좌우', ((M.hero.skillPos || {})[motHeroSk] || {}).x ?? 0, -250, 250, 1, v => setMotCfg({ ...M, hero: { ...M.hero, skillPos: { ...(M.hero.skillPos || {}), [motHeroSk]: { ...((M.hero.skillPos || {})[motHeroSk] || {}), x: v } } } }))}
             {row('선택 스킬 상하', ((M.hero.skillPos || {})[motHeroSk] || {}).y ?? 0, -250, 250, 1, v => setMotCfg({ ...M, hero: { ...M.hero, skillPos: { ...(M.hero.skillPos || {}), [motHeroSk]: { ...((M.hero.skillPos || {})[motHeroSk] || {}), y: v } } } }))}
@@ -3634,9 +3667,9 @@ export default function App() {
               {g.size.map(k => (
                 <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <span style={{ width: 92, fontSize: 12, flexShrink: 0, color: '#f0dfae', fontWeight: 700 }}>{UI_LABELS[k]}</span>
-                  <button style={nbtn} onClick={() => nudge(k, k === 'val' ? -0.5 : -1, rmin(k), rng(k))}>−</button>
+                  <button style={nbtn} {...holdBtn(() => nudge(k, k === 'val' ? -0.5 : -1, rmin(k), rng(k)))}>−</button>
                   <input type="range" min={rmin(k)} max={rng(k)} step={k === 'val' ? 0.5 : 1} value={uiCfg[k]} onChange={e => { setUiCfg({ ...uiCfg, [k]: parseFloat(e.target.value) }); localStorage.setItem('paleoUiTs', String(Date.now())) }} style={{ flex: 1, minWidth: 0 }} />
-                  <button style={nbtn} onClick={() => nudge(k, k === 'val' ? 0.5 : 1, rmin(k), rng(k))}>+</button>
+                  <button style={nbtn} {...holdBtn(() => nudge(k, k === 'val' ? 0.5 : 1, rmin(k), rng(k)))}>+</button>
                   <span style={{ width: 34, textAlign: 'right', fontSize: 12, color: GOLD }}>{uiCfg[k]}</span>
                 </div>
               ))}
@@ -3645,9 +3678,9 @@ export default function App() {
                 const pmax = g.pos.startsWith('profhero') ? 200 : g.pos.startsWith('advbtn') ? 400 : (g.pos.startsWith('skq') || g.pos.startsWith('skd')) ? 240 : g.pos.startsWith('sk') ? 160 : 80
                 return <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <span style={{ width: 92, fontSize: 12, flexShrink: 0, color: '#f0dfae', fontWeight: 700 }}>{ax === 'X' ? '← 좌우 →' : '↑ 상하 ↓'}</span>
-                  <button style={nbtn} onClick={() => nudge(k, -1, -pmax, pmax)}>−</button>
+                  <button style={nbtn} {...holdBtn(() => nudge(k, -1, -pmax, pmax))}>−</button>
                   <input type="range" min={-pmax} max={pmax} step={1} value={uiCfg[k]} onChange={e => { setUiCfg({ ...uiCfg, [k]: parseFloat(e.target.value) }); localStorage.setItem('paleoUiTs', String(Date.now())) }} style={{ flex: 1, minWidth: 0 }} />
-                  <button style={nbtn} onClick={() => nudge(k, 1, -pmax, pmax)}>+</button>
+                  <button style={nbtn} {...holdBtn(() => nudge(k, 1, -pmax, pmax))}>+</button>
                   <span style={{ width: 34, textAlign: 'right', fontSize: 12, color: GOLD }}>{uiCfg[k]}</span>
                 </div>
               })}
