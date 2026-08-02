@@ -21,7 +21,7 @@ const DEBUG = true
 // · 모바일처럼 편집 안 하는 기기 → 배포만 하면 PC 값이 자동으로 들어옴
 // · PC에서 배포 후 편집한 값 → 편집 시각이 더 최신이라 그대로 유지됨
 // 사용자 설정을 코드에 새로 박을 때만 이 줄을 현재 시각으로 갱신할 것.
-const CFG_STAMP = Date.parse('2026-08-01T14:00:00+09:00')
+const CFG_STAMP = Date.parse('2026-08-01T13:45:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -82,11 +82,14 @@ const SKILL_SHEET = [
   { id: 26, n: 6, h: 200, stage: 2, title: '회전 폭풍', charSeq: [1, 2, 3, 4, 5, 6], cd: 2, dmgMult: 3, aoe: true, rangeMul: 1.5 },
   { id: 27, n: 5, h: 200, stage: 2, title: '화염 참격', charSeq: [1, 2, 4, 5, 3], cd: 2, dmgMult: 3 },
   { id: 28, n: 7, h: 200, stage: 2, title: '피폭', charSeq: [1, 2, 3, 5, 6, 7], cd: 2, dmgMult: 3, aoe: true },
+  // 29·30: 히어로 모션(charSeq)과 이펙트(fx)가 각각 다른 시트 → 이펙트가 별도 레이어라 몹에 안 가림
+  { id: 29, n: 7, h: 200, stage: 2, title: '사이오닉 스톰', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [4, 5, 6, 7], fxH: 240 }, cd: 2, dmgMult: 3, aoe: true, rangeMul: 1.5 },
+  { id: 30, n: 7, h: 300, stage: 2, title: '거대 몽둥이', charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5, 6, 7], fxH: 260 }, cd: 2, dmgMult: 3 },
   ...PASSIVE_SHEET,   // 진화 단계별 패시브 (오스트랄로~인간)
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
 // 스킬 아이콘: 해당 스킬 시트의 지정 프레임 사용 (없으면 번호 텍스트)
-const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4, 22: 4, 23: 6, 24: 7, 25: 3, 26: 3, 27: 1, 28: 6 }
+const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4, 22: 4, 23: 6, 24: 7, 25: 3, 26: 3, 27: 1, 28: 6, 29: 6, 30: 2 }
 // 스킬 효과(대상/데미지/사거리/쿨타임)를 인게임 상세창에서 조절 — 인덱스가 아닌 **id 기준**이라
 // 스킬을 넣고 빼도 값이 안 밀린다(예전 cdConf는 인덱스 배열이라 매번 리셋됐음).
 const skEff = (sk, cfg) => {
@@ -180,6 +183,7 @@ const MOTION_DEFAULT = {
     skillFrPos: { '22': { 2: { x: 20 }, 3: { x: 75 }, 4: { x: 150 } }, '23': { 3: { x: 22 }, 4: { x: 39 }, 5: { x: 100 } }, '24': { 3: { x: 50, y: 14 }, 4: { y: 15, x: 50 } }, '25': { 2: { x: 45, y: -3 }, 3: { x: 80 }, 4: { x: 100 } }, '26': { 1: { x: 20 }, 2: { x: 30 }, 3: { x: 40 }, 4: { x: 50 }, 5: { x: 60 }, 6: { x: 70 } }, '27': { 1: { x: 20 }, 2: { x: 20 }, 3: { x: 25 }, 4: { x: 15 }, 5: { x: 20 } }, '28': { 1: { x: 22, y: 0 }, 2: { y: 3, x: 30 }, 3: { x: 50, y: -45 }, 4: { x: 80, y: 13 }, 5: { x: 143, y: 25 }, 6: { x: 148, y: 25 } } },   // 스킬 프레임별 위치
     skillFrT: { 18: [0.2, 0.25], 22: [0.15, 0.15, 0.15, 0.15], 23: [0.3, 0.3, 0.3, 0.3, 0.5], 24: [0.2, 0.2, 0.3, 0.2], 25: [0.12, 0.12, 0.12, 0.15], 26: [0.12, 0.12, 0.12, 0.12, 0.12, 0.12], 27: [0.1, 0.1, 0.1, 0.12, 0.15], 28: [0.12, 0.12, 0.17, 0.1, 0.3, 0.35] },   // 스킬 프레임별 재생시간(초)
     evoSz: { 0: 0.95, 1: 0.85, 2: 0.9, 3: 0.88, 4: 0.9, 5: 0.9 },
+    range: { 0: 85, 1: 130, 2: 100, 3: 100, 4: 100, 5: 100 },   // 진화단계별 기본공격 사거리(px). 히어로 x=200, 화면 폭 420 → 220이면 화면 끝
     hit: { erectus: 3, neander: 2, sapiens: 4, human: 4 },     // 데미지 프레임(1부터). 사피엔스는 1번 삭제로 4프레임
      // 데미지 프레임(1부터, 기본=마지막). 사피엔스는 1번 삭제로 4장이라 4
     atkFrX: { 'eatk1': { 2: 10, 3: 25 }, 'natk1': { 2: 20 }, 'hmatk1': { 1: 0, 2: 2, 4: 1 } },   // 기본공격 프레임별 좌우 보정(px)
@@ -189,7 +193,7 @@ const MOTION_DEFAULT = {
   mob: {   // 일반몹 종별 크기·높이·정지·속도
     'd:trex': { sz: 1.46, stop: -5, spd: 1.25 }, 'd:spino': { sz: 1.36 }, 'd:trike': { sz: 1.38, stop: -5 }, 'd:stego': { sz: 1.47 },
     'd:raptor': { sz: 1.17, spd: 1.4 }, 'd:anky': { stop: 25, sz: 1.24 }, 'd:ptera': { sz: 1.3, stop: -14 }, 'd:brachio': { sz: 2 },
-    'hyena': { stop: 30, spd: 1.5, sz: 1.16 }, 'bear': { sz: 1.16, stop: 46, spd: 1.25, y: -7 }, 'rhino': { stop: 43, spd: 1.2, sz: 1.19 }, 'rabbit': { sz: 1.61, stop: 15 },
+    'hyena': { stop: 30, spd: 1.5, sz: 1.11 }, 'bear': { sz: 1.16, stop: 46, spd: 1.25, y: -7 }, 'rhino': { stop: 43, spd: 1.2, sz: 1.19 }, 'rabbit': { sz: 1.61, stop: 15 },
     'antelope': { sz: 1.28, stop: -20 }, 'deer': { stop: 35, sz: 1 }, 'boar': { stop: 45, sz: 1, spd: 1.4 }, 'wolf': { sz: 1.14, stop: 40, spd: 1.5 },
     'tiger': { sz: 1.09, stop: 15, spd: 1.3 }, 'monkey': { sz: 1.12, stop: -12, spd: 1.5, y: -1 }, 'snake': { sz: 1.08, stop: 6, spd: 1.45 }, 'ostrich': { sz: 1.02, stop: 4 },
     'turtle': { sz: 1.01 }, 'croc': { stop: 5 }, 'komodo': { stop: 4 }, 'eagle': { y: -16, spd: 1.7 },
@@ -219,11 +223,13 @@ const MOTION_DEFAULT = {
     'c:gator': { sz: 1.13, y: -3, stop: 46, spd: 1.3 }, 'c:squirrel': { stop: 2, spd: 1.6 }, 'c:penguin': { sz: 1.38, y: -2, spd: 1.45, stop: -35 }, 'c:seal': { sz: 1.24, y: -2, stop: 7, spd: 1.3 },
     'c:cow': { y: -6, spd: 1.45, stop: 10 }, 'c:tiger2': { y: -4, stop: 42, spd: 1.65 },
   },
+  // 피격 반응(웨이브 일반몹 전체 공통 하나의 값, 종별 아님 / 보스·모험 몹은 미적용): 가로로 눌리고(x) 세로로 늘어나며(y) 발을 축으로 뒤로 젖혀졌다(rot) dur 동안 복귀. 위치는 안 움직임
+  hitSq: { x: 0.86, y: 1.08, rot: 5, dur: 0.18 },
   wave: { gap: 40, dist: 35 },                                  // 웨이브 몹 일렬 간격(px) / 히어로와의 거리(px) — 종 무관 일괄
-  stone: { spd: 1, sz: 18, arc: 1 },                           // 직립 돌던지기: 비행속도 배율 / 그림 크기(px) / 포물선 높이 배율
-  skFx: { 1: { sz: 0.82, spd: 1.5, fly: 1.25, x: 0, y: 0, fr: {} }, 2: { sz: 0.74, spd: 0.3, fly: 1.5, x: 0, y: 0, fr: {} }, 16: { sz: 1, spd: 1, fly: 1, x: 0, y: 0, fr: {} }, 18: { sz: 1.04, spd: 1.6, fly: 1, x: 0, y: 0, fr: {} }, 20: { sz: 0.74, spd: 1.25, fly: 1, x: 0, y: 0, fr: {} } },  // 스킬 이펙트 (x/y=위치, fr={프레임:{sz,x,y}} 프레임별)
+  stone: { spd: 0.6, sz: 13, arc: 0.4 },                           // 직립 돌던지기: 비행속도 배율 / 그림 크기(px) / 포물선 높이 배율
+  skFx: { 1: { sz: 0.82, spd: 1.5, fly: 1.25, x: 0, y: 0, fr: {} }, 2: { sz: 0.74, spd: 0.3, fly: 1.5, x: 0, y: 0, fr: {} }, 16: { sz: 1, spd: 1, fly: 1, x: 0, y: 0, fr: {} }, 18: { sz: 1.04, spd: 1.6, fly: 1, x: 0, y: 0, fr: {} }, 20: { sz: 0.74, spd: 1.25, fly: 1, x: 0, y: 0, fr: {} }, 29: { sz: 1, spd: 1, fly: 1, x: 0, y: 0, fr: {} }, 30: { sz: 1, spd: 1, fly: 1, x: 0, y: 0, fr: {} } },  // 스킬 이펙트 (x/y=위치, fr={프레임:{sz,x,y}} 프레임별)
 }
-const MOT_FX_IDS = [1, 2, 16, 18, 20]                          // 이펙트 있는 스킬 id
+const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 30]                          // 이펙트 있는 스킬 id
 const perStage = (v, def) => typeof v === 'number' ? { 0: v, 1: v, 2: v, 3: v, 4: v, 5: v } : { ...def, ...(v || {}) }   // 옛 전역 숫자값 → 전 단계 동일값으로 마이그레이션
 // 옛 저장값의 atkSz(단계별 공격 크기)를 프레임별 값으로 이관 — 프레임 값이 이미 있으면 그대로 둠
 function mergeAtkFrSz(h) {
@@ -244,9 +250,9 @@ function mergeMotion(sv) {   // 저장된 모션값 + 기본값 병합 (초기 �
     cd: { ...MOTION_DEFAULT.cd, ...(sv.cd || {}) }, dur: { ...MOTION_DEFAULT.dur, ...(sv.dur || {}) },
     lunge: { ...MOTION_DEFAULT.lunge, ...(sv.lunge || {}) },
     stop: { ...MOTION_DEFAULT.stop, ...(sv.stop || {}) }, size: { ...MOTION_DEFAULT.size, ...(sv.size || {}) },
-    hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}), evoSz: { ...MOTION_DEFAULT.hero.evoSz, ...((sv.hero || {}).evoSz || {}) }, walkSz: perStage((sv.hero || {}).walkSz, MOTION_DEFAULT.hero.walkSz), skillSz: { ...MOTION_DEFAULT.hero.skillSz, ...((sv.hero || {}).skillSz || {}) }, skillPos: { ...MOTION_DEFAULT.hero.skillPos, ...((sv.hero || {}).skillPos || {}) }, skillFrSz: { ...((sv.hero || {}).skillFrSz || {}) }, skillFrPos: { ...((sv.hero || {}).skillFrPos || {}) }, skillFrT: { ...((sv.hero || {}).skillFrT || {}) }, hit: { ...MOTION_DEFAULT.hero.hit, ...((sv.hero || {}).hit || {}) }, atkFrSz: mergeAtkFrSz(sv.hero || {}), atkFrX: { ...MOTION_DEFAULT.hero.atkFrX, ...((sv.hero || {}).atkFrX || {}) } },
+    hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}), evoSz: { ...MOTION_DEFAULT.hero.evoSz, ...((sv.hero || {}).evoSz || {}) }, range: { ...MOTION_DEFAULT.hero.range, ...((sv.hero || {}).range || {}) }, walkSz: perStage((sv.hero || {}).walkSz, MOTION_DEFAULT.hero.walkSz), skillSz: { ...MOTION_DEFAULT.hero.skillSz, ...((sv.hero || {}).skillSz || {}) }, skillPos: { ...MOTION_DEFAULT.hero.skillPos, ...((sv.hero || {}).skillPos || {}) }, skillFrSz: { ...((sv.hero || {}).skillFrSz || {}) }, skillFrPos: { ...((sv.hero || {}).skillFrPos || {}) }, skillFrT: { ...((sv.hero || {}).skillFrT || {}) }, hit: { ...MOTION_DEFAULT.hero.hit, ...((sv.hero || {}).hit || {}) }, atkFrSz: mergeAtkFrSz(sv.hero || {}), atkFrX: { ...MOTION_DEFAULT.hero.atkFrX, ...((sv.hero || {}).atkFrX || {}) } },
     mob: { ...MOTION_DEFAULT.mob, ...(sv.mob || {}) }, boss: { ...MOTION_DEFAULT.boss, ...(sv.boss || {}) },
-    wave: { ...MOTION_DEFAULT.wave, ...(sv.wave || {}) }, stone: { ...MOTION_DEFAULT.stone, ...(sv.stone || {}) },   // 기본값(사용자 확정값) 위에 저장값 덮어쓰기
+    wave: { ...MOTION_DEFAULT.wave, ...(sv.wave || {}) }, hitSq: { ...MOTION_DEFAULT.hitSq, ...(sv.hitSq || {}) }, stone: { ...MOTION_DEFAULT.stone, ...(sv.stone || {}) },   // 기본값(사용자 확정값) 위에 저장값 덮어쓰기
     ally: { hunter: { ...MOTION_DEFAULT.ally.hunter, ...((sv.ally || {}).hunter || {}) }, shaman: { ...MOTION_DEFAULT.ally.shaman, ...((sv.ally || {}).shaman || {}) }, healer: { ...MOTION_DEFAULT.ally.healer, ...((sv.ally || {}).healer || {}) }, giant: { ...MOTION_DEFAULT.ally.giant, ...((sv.ally || {}).giant || {}) } },
     skFx: Object.fromEntries(MOT_FX_IDS.map(id => [id, { ...MOTION_DEFAULT.skFx[id], ...((sv.skFx || {})[id] || {}) }])),
   }
@@ -328,6 +334,8 @@ const SKILL_FRAME_T = {
   26: [0.18, 0.18, 0.18, 0.18, 0.18, 0.18],                    // 회전 폭풍 (6, 균등)
   27: [0.18, 0.18, 0.18, 0.18, 0.18],                          // 화염 참격 (5, 균등)
   28: [0.18, 0.18, 0.18, 0.18, 0.18, 0.18],                    // 대지 분쇄 (6, 균등)
+  29: [0.18, 0.18, 0.24],                                      // 사이오닉 스톰 (3: 번개 충전)
+  30: [0.25, 0.30],                                            // 거대 몽둥이 (2: 치켜들기 → 내려찍기)
 }
 // 이펙트 타이밍
 const STRIKE_DUR = 0.55   // 낙뢰/낙석 이펙트 재생 시간(초) 기본값
@@ -344,6 +352,8 @@ const STRIKE_DUR_BY = {
   1: 0.55,    // 번개
   16: 0.55,   // 낙석
   18: 0.55,   // 점프낙석
+  29: 0.70,   // 사이오닉 스톰 (먹구름+낙뢰 4프레임)
+  30: 0.75,   // 거대 몽둥이 (박힌 몽둥이 쓰러짐 5프레임)
 }
 
 // 무기/방어구/유물 각 30개 (6등급대 × 5티어, 1→30 강해짐). /equip/A/w01.png 등
@@ -466,13 +476,16 @@ const HERO_X = 200  // 평상시 영웅 x (동료가 설 왼쪽 공간 확보 / 
 const SPEED = 1                                      // 전역 속도 배율
 const SCROLL = 140 * SPEED                            // 전진 속도 (px/s)
 // 웨이브 간격·대기속도는 모션 편집기(일반몹 탭)에서 조절 — MOTION_DEFAULT.wave 참조
-const PUNCH = { hitAt: 0.12, total: 0.3, range: 90 } // 4족 주먹질
-const THROW = { windupEnd: 0.14, releaseEnd: 0.30, total: 0.42, range: 200 }   // 직립 돌던지기 — 이 거리에서 멈춰 던짐
+const PUNCH = { hitAt: 0.12, total: 0.3, range: 85 } // 4족 주먹질
+const THROW = { windupEnd: 0.14, releaseEnd: 0.30, total: 0.42, range: 130 }   // 직립 돌던지기 — 이 거리에서 멈춰 던짐
 // 에렉투스 몽둥이: 1타 내려치기(위→아래), 2타 올려치기(아래→위) 번갈아
-const ECLUB = { total: 0.65, range: 150, hitAt: 0.72 }  // 몽둥이 내려치기 (erectus 3프레임/neander 2프레임 모두 마지막=내리치는 프레임에 데미지)
-const SPIN = { total: 0.6, range: 150, hitAt: 0.7 }    // 사피엔스 회전 베기 (5프레임)
-const HSLASH = { total: 0.55, range: 150, hitAt: 0.6 } // 인간 검격 (4프레임)
+const ECLUB = { total: 0.65, range: 100, hitAt: 0.72 }  // 몽둥이 내려치기 (erectus 3프레임/neander 2프레임 모두 마지막=내리치는 프레임에 데미지)
+const SPIN = { total: 0.6, range: 100, hitAt: 0.7 }    // 사피엔스 회전 베기 (5프레임)
+const HSLASH = { total: 0.55, range: 100, hitAt: 0.6 } // 인간 검격 (4프레임)
 const MC = m => (m === 'sapiens' ? SPIN : m === 'human' ? HSLASH : ECLUB)   // 근접 모드별 타이밍
+// 기본공격 사거리: 모션 편집기의 진화단계별 값이 우선, 없으면 위 상수
+const heroRange = (mot, evoIdx, mode) => ((mot.hero || {}).range || {})[evoIdx]
+  ?? (mode === 'quad' ? PUNCH.range : MELEE_MODES.includes(mode) ? MC(mode).range : THROW.range)
 const MELEE_MODES = ['erectus', 'neander', 'sapiens', 'human']
 const HERO_ATK_ANIM = m => m === 'neander' ? 'natk1' : m === 'sapiens' ? 'patk1' : m === 'human' ? 'hmatk1' : 'eatk1'
 const HERO_ATK_KEY = m => m === 'quad' ? 'punch' : m === 'biped' ? 'throw' : HERO_ATK_ANIM(m)   // 편집·렌더 공용: 모드별 기본공격 스프라이트 키
@@ -765,6 +778,8 @@ export default function App() {
   }, [])
   const [advSel, setAdvSel] = useState(null)  // 진입창에 띄울 대륙
   const [questOpen, setQuestOpen] = useState(false)   // 퀘스트창
+  const [feverOn, setFeverOn] = useState(false)       // 피버타임 버프 on/off (광고 미구현 — 지금은 DEBUG 클릭으로만 토글)
+  const [feverAds] = useState(0)                      // 오늘 광고 시청 횟수 (0/3, 광고 붙이면 연동)
   const [evOpen, setEvOpen] = useState(false)         // 이벤트 던전창
   const [evSel, setEvSel] = useState(0)               // 선택한 던전 인덱스
   const [evExt, setEvExt] = useState({})              // 던전별 배경 확장자 인덱스 (로드 실패 시 다음 후보로)
@@ -1119,7 +1134,7 @@ export default function App() {
       t.hp -= dmg
       t.flash = 1
       t.kb = Math.max(t.kb || 0, t.boss ? 30 : 85)   // 넉백 초기속도(px/s), ease-out 감쇠
-      t.sq = 0.16                                     // 피격 스쿼시
+      t.sqD = motRef.current.hitSq.dur; t.sq = t.sqD    // 피격 스쿼시(편집기 값)
       if (t.boss && w.hsCd <= 0) { w.hitstop = Math.max(w.hitstop || 0, 0.06); w.hsCd = 0.35 }  // 연타 시 과도한 멈춤 방지
       const ty = w.groundY - t.h * 0.55
       addDmg(t.x, ty - t.h * 0.5 - 12, Math.round(dmg), crit)
@@ -1150,7 +1165,7 @@ export default function App() {
       t.hp -= dmg
       t.flash = 1
       t.kb = Math.max(t.kb || 0, t.boss ? 55 : 150)
-      t.sq = 0.18
+      t.sqD = motRef.current.hitSq.dur; t.sq = t.sqD
       w.hitstop = Math.max(w.hitstop || 0, t.boss ? 0.09 : 0.05)
       const ty = w.groundY - t.h * 0.55
       addDmg(t.x, ty - t.h * 0.5 - 12, Math.round(dmg), true)
@@ -1167,12 +1182,12 @@ export default function App() {
       const st = S.current
       const hero = w.hero
       const melee = MELEE_MODES.includes(st.mode)
-      const atkRange = st.mode === 'quad' ? PUNCH.range : melee ? MC(st.mode).range : THROW.range
+      const atkRange = heroRange(motRef.current, st.evo, st.mode)
 
       // 배경 스크롤: 이동 상태 + 앞을 막는 적이 없을 때만 전진
       const heroTargetX = w.bossBattle ? Math.max(HERO_X, Math.round(w.W * 0.34)) : HERO_X
       w.heroX += (heroTargetX - w.heroX) * Math.min(1, dt * 4)
-      const atkRange0 = st.mode === 'quad' ? PUNCH.range : MELEE_MODES.includes(st.mode) ? MC(st.mode).range : THROW.range
+      const atkRange0 = atkRange
       // 교전 판정은 blocked·공격시작·데미지가 **같은 기준**을 써야 한다.
       // 예전엔 공격 시작만 사거리(150px)를 봐서, 몹이 정지위치(95px)에 닿기 전에 히어로가 휘두르고
       // 그 순간 hero.state='attack'이 되며 스크롤이 멈춰 몹이 멀찍이 굳었다.
@@ -1210,8 +1225,12 @@ export default function App() {
           if (e.dead) continue
           e.flash = Math.max(0, e.flash - dt * 5)
           if (e.stun > 0) { e.stun -= dt; if (!(e.atkT > 0)) continue }  // 기절 중 정지 (진행 중인 공격은 계속)
+          // 웨이브 일반몹은 제자리에 박혀 있는다 — 히어로가 전진할 때만(scroll) 화면에서 왼쪽으로 흐른다.
+          // 교전 중엔 scroll=0 이라 완전히 멈춘다. 모험 몹과 보스는 예전처럼 걸어온다.
+          const still = !w.adv && !e.boss
           // 넉백: ease-out 감쇠하며 뒤로 밀림 / 스쿼시 타이머
-          if (e.kb > 0.5) { if (!(e.atkT > 0)) e.x += e.kb * dt; e.kb -= e.kb * Math.min(1, dt * 9) } else e.kb = 0  // 공격 중엔 밀리지 않음
+          // 제자리 몹은 **위치를 밀지 않는다** — 걸어오지 않으니 밀린 만큼 되돌아올 수단이 없어 맞을 때마다 누적되고 뒷줄과 겹침
+          if (e.kb > 0.5) { if (!(e.atkT > 0) && !still) e.x += e.kb * dt; e.kb -= e.kb * Math.min(1, dt * 9) } else e.kb = 0  // 공격 중엔 밀리지 않음
           if (e.sq > 0) e.sq = Math.max(0, e.sq - dt)
           e.vt = Math.min(1, (e.vt ?? 0) + dt * 2.2)   // 스폰 직후 가속 (0→1)
           const embKey = e.dino ? ('d:' + e.dino) : (e.boss ? ('c:' + e.type) : e.type)   // 저주보스=c:종(일반몹과 분리)
@@ -1221,20 +1240,18 @@ export default function App() {
           const espd = emb.spd || 1                                                       // 달려오는 속도 배율(공룡·웨이브 공통)
           // 제자리 몹은 종·크기와 무관하게 **일괄 거리**로 선다 (편집기 '히어로와 거리')
           // 걸어오는 몹·보스만 예전 종별 계산 유지
-          const still = !w.adv && !e.boss
           const stopX = still
             ? w.heroX + (motRef.current.wave.dist ?? 95)
             : w.heroX + Math.min(atkRange - 15, 60 + e.h * szm * 0.4) + estop
           e.stopX = stopX   // 정지위치 저장 → 멈춘 몬스터는 사거리 밖이어도 기본공격 판정(그림상 코앞인데 안닿는 문제 해결)
-          // 웨이브 일반몹은 제자리에 서 있는다 — 히어로가 전진할 때만(scroll) 화면에서 왼쪽으로 흐른다.
-          // 교전 중엔 scroll=0 이라 완전히 멈춘다. 모험 몹과 보스는 예전처럼 걸어온다.
-          const standStill = !w.adv && !e.boss
           if (e.x > stopX && !(e.atkT > 0)) {
-            const near = standStill ? 1 : Math.min(1, Math.max(0.3, (e.x - stopX) / 55))  // 정지 전 감속
-            const own = standStill ? 0 : e.speed * (e.spdV || 1) * espd * SPEED * 1.3 * e.vt * near
+            const near = still ? 1 : Math.min(1, Math.max(0.3, (e.x - stopX) / 55))  // 정지 전 감속
+            const own = still ? 0 : e.speed * (e.spdV || 1) * espd * SPEED * 1.3 * e.vt * near
             e.x -= (own + scroll) * dt
             if (e.atkT > 0) { e.atkT = 0; e.lunge = 0 }
-            if (!standStill) e.animT += dt * SPEED * (0.4 + 0.6 * e.vt * near) * (1 + scroll / SCROLL * 0.4) * Math.min(1.5, Math.max(0.6, 0.55 + e.speed / 160))   // 제자리 몹은 완전 정지
+            if (!still) e.animT += dt * SPEED * (0.4 + 0.6 * e.vt * near) * (1 + scroll / SCROLL * 0.4) * Math.min(1.5, Math.max(0.6, 0.55 + e.speed / 160))   // 제자리 몹은 완전 정지
+          } else if (still) {                              // 웨이브 일반몹은 히어로를 공격하지 않는다 — 맞아주는 역할만
+            e.lunge = 0; e.atkT = 0; e.atkHit = false
           } else {
             if (e.atkT > 0) {
               e.atkT -= dt
@@ -1707,7 +1724,15 @@ export default function App() {
       ctx.save()
       ctx.translate(e.x + (e.lunge || 0), y - bounce + (e.air ? 0 : (e.yOff || 0)))
       ctx.rotate(rock)
-      if (e.sq > 0) { const q = e.sq / 0.18; ctx.scale(1 + 0.10 * q, 1 - 0.14 * q) }
+      if (e.sq > 0) {                                    // 피격 반응: 젖힘 → 찌그러짐 (원점이 발밑이라 위치는 그대로)
+        if (!still) { const q = e.sq / (e.sqD || 0.18); ctx.scale(1 + 0.10 * q, 1 - 0.14 * q) }   // 보스·모험 몹은 종전 그대로
+        else {                                           // 웨이브 일반몹 전체 = 편집기 값 하나로 일괄
+          const hs = motRef.current.hitSq
+          const q = e.sq / (e.sqD || hs.dur || 0.18)     // 1 → 0 으로 감쇠
+          if (hs.rot) ctx.rotate((t.flip ? -1 : 1) * hs.rot * Math.PI / 180 * q)
+          ctx.scale(1 + (hs.x - 1) * q, 1 + (hs.y - 1) * q)
+        }
+      }
       if (e.dead) { const p = Math.max(0, e.dieT) / 0.5; ctx.globalAlpha = Math.min(1, p * 2) * 0.9 }
       if (!e.dead && e.flash > 0.5) ctx.filter = 'brightness(3)'
       if (im.complete && im.naturalWidth > 0) {
@@ -1802,6 +1827,17 @@ export default function App() {
       const __heroPv = motEditRef.current && motCatRef.current === 'hero'   // 편집기 히어로탭: 선택단계 미리보기
       const __pvEvo = __heroPv ? motHeroEvoRef.current : S.current.evo
       const __Sp = __heroPv ? { ...S.current, mode: EVOS[__pvEvo].mode, evo: __pvEvo } : S.current
+      if (__heroPv) {                                    // 사거리 가이드선 — 편집기 히어로탭에서만 보임
+        const __rg = heroRange(motRef.current, __pvEvo, EVOS[__pvEvo].mode)
+        const __rx = w.heroX + __rg
+        ctx.save()
+        ctx.setLineDash([6, 5]); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(240,168,48,0.9)'
+        ctx.beginPath(); ctx.moveTo(__rx, w.groundY - 190); ctx.lineTo(__rx, w.groundY + 4); ctx.stroke()
+        ctx.setLineDash([])
+        ctx.fillStyle = '#f0a830'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'
+        ctx.fillText(`사거리 ${Math.round(__rg)}`, __rx, w.groundY - 196)
+        ctx.restore()
+      }
       const [key, fi] = heroAnim(hero, __Sp)
       const a = ANIM[key]
       const im = safeImg(key, fi)
@@ -2438,11 +2474,11 @@ export default function App() {
                       () => put('dmg', Math.max(0.1, +(ef.dmgMult - 0.1).toFixed(1))),
                       () => put('dmg', Math.min(99, +(ef.dmgMult + 0.1).toFixed(1))))}
                     {ef.aoe && row('사거리', ef.rangeMul ? `기본 x${ef.rangeMul.toFixed(1)}` : '화면 전체',
-                      () => put('range', Math.max(0, +(((ef.rangeMul ?? 0.5)) - 0.5).toFixed(1))),
-                      () => put('range', Math.min(20, +(((ef.rangeMul ?? 0)) + 0.5).toFixed(1))))}
+                      () => put('range', Math.max(0, +(((ef.rangeMul ?? 0.1)) - 0.1).toFixed(1))),
+                      () => put('range', Math.min(20, +(((ef.rangeMul ?? 0)) + 0.1).toFixed(1))))}
                     {row('쿨타임', `${ef.cd.toFixed(1)}초`,
-                      () => put('cd', Math.max(0.2, +(ef.cd - 0.5).toFixed(1))),
-                      () => put('cd', Math.min(60, +(ef.cd + 0.5).toFixed(1))))}
+                      () => put('cd', Math.max(0.1, +(ef.cd - 0.1).toFixed(1))),
+                      () => put('cd', Math.min(60, +(ef.cd + 0.1).toFixed(1))))}
                     <button style={st.skdCfgReset} onClick={() => { if (!uiEdit) setSkCfg(c => { const n = { ...c }; delete n[s.id]; return n }) }}>기본값으로</button>
                   </>)
                 })()}
@@ -2737,6 +2773,11 @@ export default function App() {
         <button data-edit="evbtn" style={st.evBtn} onClick={() => { if (!uiEdit) setEvOpen(true) }}>
           <img src="/ui/evdungeon.png" alt="" style={st.evBtnImg} />
           <span data-edit="evbtnt" style={st.evBtnText}>이벤트 던전</span>
+        </button>
+        <button data-edit="fevbtn" style={st.fevBtn} onClick={() => { if (!uiEdit && DEBUG) setFeverOn(v => !v) }}>
+          <img src="/ui/fever_off.png" alt="" style={{ ...st.fevBtnImg, ...(feverOn ? { visibility: 'hidden' } : null) }} />
+          {feverOn && <img data-edit="fevon" src="/ui/fever_on.png" alt="" style={st.fevBtnOn} />}
+          <span data-edit="fevbtnt" style={st.fevBtnText}>(광고 시청 {feverAds}/3)</span>
         </button>
         {bossUI && (
           <div style={st.bossBars}>
@@ -3147,6 +3188,12 @@ export default function App() {
             {row('상하 위치', M.hero.y, -150, 150, 1, v => setMotCfg({ ...M, hero: { ...M.hero, y: v } }))}
             <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
             <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>모션별 크기 (전체 크기에 곱해짐)</div>
+            <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
+            <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>기본공격 사거리 (화면에 노란 점선으로 표시)</div>
+            {row(`${motHeroEvo}단계 사거리(px)`, (M.hero.range || {})[motHeroEvo] ?? heroRange(M, motHeroEvo, EVOS[motHeroEvo].mode), 20, 240, 1,
+              v => setMotCfg({ ...M, hero: { ...M.hero, range: { ...(M.hero.range || {}), [motHeroEvo]: v } } }))}
+            <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>히어로는 x=200, 화면 폭 420 — 220이면 화면 오른쪽 끝. 웨이브 몹은 '일반몹 탭 &gt; 히어로와 거리'에 서므로 그 값보다 커야 공격이 나갑니다</div>
+            <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
             {row(`${motHeroEvo}단계 걷기 크기`, (M.hero.walkSz || {})[motHeroEvo] ?? 1, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, walkSz: { ...(M.hero.walkSz || {}), [motHeroEvo]: v } } }))}
             {EVOS[motHeroEvo].mode === 'biped' && (<>
               <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
@@ -3247,6 +3294,11 @@ export default function App() {
               <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>웨이브 공통</div>
               {row('일렬 간격(px)', M.wave.gap ?? 65, 20, 300, 5, v => setMotCfg({ ...M, wave: { ...M.wave, gap: v } }))}
               {row('히어로와 거리(px)', M.wave.dist ?? 95, 30, 300, 1, v => setMotCfg({ ...M, wave: { ...M.wave, dist: v } }))}
+              <div style={{ fontSize: 11, color: '#9c8a6c', margin: '6px 0 2px' }}>피격 반응 — 웨이브 일반몹 전체 일괄 (종별 아님 / 보스·모험 제외)</div>
+              {row('피격 가로 배율', M.hitSq.x, 0.6, 1.4, 0.01, v => setMotCfg({ ...M, hitSq: { ...M.hitSq, x: v } }))}
+              {row('피격 세로 배율', M.hitSq.y, 0.6, 1.4, 0.01, v => setMotCfg({ ...M, hitSq: { ...M.hitSq, y: v } }))}
+              {row('피격 젖힘(도)', M.hitSq.rot, 0, 20, 0.5, v => setMotCfg({ ...M, hitSq: { ...M.hitSq, rot: v } }))}
+              {row('피격 지속(초)', M.hitSq.dur, 0.05, 0.6, 0.01, v => setMotCfg({ ...M, hitSq: { ...M.hitSq, dur: v } }))}
               <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>둘 다 종 무관 일괄 적용. 간격은 다음 웨이브부터 (이미 깔린 몹은 그대로)</div>
               <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>화면의 일반몹 (종별)</div>
               {entries.map(({ key, label, szDef, dino }) => { const c = M.mob[key] || {}; return (
@@ -3349,7 +3401,7 @@ export default function App() {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => { setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) })); localStorage.setItem('paleoUiTs', String(Date.now())) }
             const nbtn = { width: 26, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
-            const rng = k => k.startsWith('ev') ? (k.endsWith('fz') ? 60 : (k === 'evww' || k === 'evwh') ? 600 : 300) : k.startsWith('profhero') ? 300 : k.startsWith('prof') ? (k.endsWith('fz') ? 40 : 160) : k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
+            const rng = k => k.startsWith('fev') ? (k.endsWith('fz') ? 40 : k === 'fevonzoom' ? 300 : 300) : k.startsWith('ev') ? (k.endsWith('fz') ? 60 : (k === 'evww' || k === 'evwh') ? 600 : 300) : k.startsWith('profhero') ? 300 : k.startsWith('prof') ? (k.endsWith('fz') ? 40 : 160) : k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
             const rmin = k => k === 'equipcols' ? 3 : 0
             return <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -3766,6 +3818,9 @@ Object.assign(EDIT_GROUPS, {
   skdenh: { label: '상세 강화버튼', size: ['skdbtnh', 'skdbtnfz'], pos: 'skdenh' },
   skdequip: { label: '상세 장착버튼', size: ['skdbtnh', 'skdbtnfz'], pos: 'skdequip' },
   evbtn: { label: '던전 버튼 틀', size: ['evbtnw', 'evbtnh'], pos: 'evbtn' },
+  fevbtn: { label: '피버 버튼 틀', size: ['fevbtnw', 'fevbtnh'], pos: 'fevbtn' },
+  fevon: { label: '피버 활성 그림', size: ['fevonzoom'], pos: 'fevon' },
+  fevbtnt: { label: '피버 아래 글씨', size: ['fevbtntfz'], pos: 'fevbtnt' },
   evbtnt: { label: '팻말 글씨', size: ['evbtntfz'], pos: 'evbtnt' },
   evwin: { label: '던전 창', size: ['evww', 'evwh'], pos: 'evwin' },
   evtitle: { label: '던전 창 제목', size: ['evtitlefz'], pos: 'evtitle' },
@@ -3819,6 +3874,7 @@ Object.assign(UI_LABELS, {
   skdiconsz: '아이콘 크기', skdtitlefz: '제목 글자', skddescfz: '설명 글자',
   profherow: '틀 너비', profheroh: '틀 높이', profherozoom: '그림 크기%', skdimgsz: '그림 크기', avafacesz: '그림 크기', profstatfz: '능력치 글자', profcurfz: '재화 글자', profcuric: '재화 아이콘', profgearsz: '장비칸 크기', profsecfz: '제목 글자',
   skdefffz: '효과 글자', skdstatfz: '스탯 글자', skdautofz: 'AUTO 글자', skdbtnh: '버튼 높이', skdbtnfz: '버튼 글자',
+  fevbtnw: '버튼 너비', fevbtnh: '버튼 높이', fevonzoom: '그림 크기%', fevbtntfz: '글씨 크기',
   evbtnw: '버튼 너비', evbtnh: '버튼 높이', evbtntfz: '글씨 크기', evww: '창 너비', evwh: '창 높이', evtitlefz: '제목 글자', evclsz: '버튼 크기',
   evtabw: '탭 너비', evtabh: '탭 높이', evtabfz: '탭 글자', evprevh: '틀 높이', evprevzoom: '그림 크기%', evnoimgsz: '그림 크기', evnamefz: '이름 글자', evrowh: '줄 높이',
   evnosz: '자리 크기', evbnamefz: '이름 글자', evgow: '버튼 너비', evgoh: '버튼 높이', evgofz: '버튼 글자',
@@ -3838,7 +3894,7 @@ const uiVars = c => `:root{
 --pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
 ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg${i}-x:${c['evoimg' + i + 'X']}px;--pd-evoimg${i}-y:${c['evoimg' + i + 'Y']}px;`).join('')}--pd-slotfz:${c.slotfz}px;
---pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdimgsz:${c.skdimgsz}px;--pd-avafacesz:${c.avafacesz}px;--pd-profherow:${c.profherow}px;--pd-profheroh:${c.profheroh}px;--pd-profherozoom:${c.profherozoom};--pd-profstatfz:${c.profstatfz}px;--pd-profcurfz:${c.profcurfz}px;--pd-profcuric:${c.profcuric}px;--pd-profgearsz:${c.profgearsz}px;--pd-profsecfz:${c.profsecfz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;--pd-evbtnw:${c.evbtnw}px;--pd-evbtnh:${c.evbtnh}px;--pd-evbtntfz:${c.evbtntfz}px;--pd-evww:${c.evww}px;--pd-evwh:${c.evwh}px;--pd-evtitlefz:${c.evtitlefz}px;--pd-evclsz:${c.evclsz}px;--pd-evtabw:${c.evtabw}px;--pd-evtabh:${c.evtabh}px;--pd-evtabfz:${c.evtabfz}px;--pd-evprevh:${c.evprevh}px;--pd-evnamefz:${c.evnamefz}px;--pd-evrowh:${c.evrowh}px;--pd-evnosz:${c.evnosz}px;--pd-evbnamefz:${c.evbnamefz}px;--pd-evgow:${c.evgow}px;--pd-evgoh:${c.evgoh}px;--pd-evgofz:${c.evgofz}px;--pd-evprevzoom:${c.evprevzoom};--pd-evnoimgsz:${c.evnoimgsz}px;
+--pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdimgsz:${c.skdimgsz}px;--pd-avafacesz:${c.avafacesz}px;--pd-profherow:${c.profherow}px;--pd-profheroh:${c.profheroh}px;--pd-profherozoom:${c.profherozoom};--pd-profstatfz:${c.profstatfz}px;--pd-profcurfz:${c.profcurfz}px;--pd-profcuric:${c.profcuric}px;--pd-profgearsz:${c.profgearsz}px;--pd-profsecfz:${c.profsecfz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;--pd-fevbtnw:${c.fevbtnw}px;--pd-fevbtnh:${c.fevbtnh}px;--pd-fevonzoom:${c.fevonzoom};--pd-fevbtntfz:${c.fevbtntfz}px;--pd-evbtnw:${c.evbtnw}px;--pd-evbtnh:${c.evbtnh}px;--pd-evbtntfz:${c.evbtntfz}px;--pd-evww:${c.evww}px;--pd-evwh:${c.evwh}px;--pd-evtitlefz:${c.evtitlefz}px;--pd-evclsz:${c.evclsz}px;--pd-evtabw:${c.evtabw}px;--pd-evtabh:${c.evtabh}px;--pd-evtabfz:${c.evtabfz}px;--pd-evprevh:${c.evprevh}px;--pd-evnamefz:${c.evnamefz}px;--pd-evrowh:${c.evrowh}px;--pd-evnosz:${c.evnosz}px;--pd-evbnamefz:${c.evbnamefz}px;--pd-evgow:${c.evgow}px;--pd-evgoh:${c.evgoh}px;--pd-evgofz:${c.evgofz}px;--pd-evprevzoom:${c.evprevzoom};--pd-evnoimgsz:${c.evnoimgsz}px;
 ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k}h:${c['advico' + k + 'h']}px;--pd-advico${k}-x:${c['advico' + k + 'X']}px;--pd-advico${k}-y:${c['advico' + k + 'Y']}px;`).join('')}
 --pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
 --pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
@@ -3865,7 +3921,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
 --pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -4224,6 +4280,26 @@ const st = {
     fontSize: 'var(--pd-evbtntfz)', fontWeight: 800, color: '#f0dfae',
     textShadow: '0 1px 2px #000, 0 0 3px #000', whiteSpace: 'nowrap',
   },
+  // ── 피버타임 버튼 (던전 팻말 아래) ──
+  fevBtn: {
+    position: 'absolute', top: 8, right: 8, marginTop: 'calc(var(--pd-questsz) + var(--pd-evbtnh))',
+    width: 'var(--pd-fevbtnw)', height: 'var(--pd-fevbtnh)', padding: 0, border: 'none',
+    background: 'transparent', cursor: 'pointer', zIndex: 5,
+    transform: 'translate(var(--pd-fevbtn-x), var(--pd-fevbtn-y))',
+  },
+  fevBtnImg: { width: '100%', height: '100%', objectFit: 'contain', imageRendering: 'pixelated', display: 'block' },
+  fevBtnOn: {                                               // 활성(불꽃) 그림 — 불꽃이 틀 밖으로 삐져나오므로 별도 배율
+    position: 'absolute', left: '50%', top: 0,
+    width: 'calc(var(--pd-fevbtnw) * var(--pd-fevonzoom) / 100)', height: 'auto',
+    transform: 'translateX(-50%) translate(var(--pd-fevon-x), var(--pd-fevon-y))',
+    imageRendering: 'pixelated',
+  },
+  fevBtnText: {                                             // 팻말 아래 작은 글씨
+    position: 'absolute', left: '50%', top: '100%', whiteSpace: 'nowrap',
+    transform: 'translate(-50%, 0) translate(var(--pd-fevbtnt-x), var(--pd-fevbtnt-y))',
+    fontSize: 'var(--pd-fevbtntfz)', fontWeight: 700, color: '#cbb89a',
+    textShadow: '0 1px 2px #000, 0 0 3px #000',
+  },
   evWin: {
     position: 'relative', width: 'var(--pd-evww)', height: 'var(--pd-evwh)',
     background: 'url(/ui/adv_frame.png) center / 100% 100% no-repeat',
@@ -4506,3 +4582,9 @@ const st = {
   dClose: { position: 'absolute', top: 8, right: 10, width: 28, height: 28, border: 'none', borderRadius: '50%', background: 'rgba(0,0,0,0.4)', color: '#f3e6d0', fontSize: 15, cursor: 'pointer', padding: 0 },
 }
 
+// 피버타임 버튼 (2026-08-01 신규) — 사용자 확정값 블록보다 뒤에 둬야 함
+Object.assign(UI_DEFAULT, {
+  fevbtnw: 100, fevbtnh: 49, fevbtnX: 0, fevbtnY: 6,       // 비활성 팻말 틀 (원본 956x466 비율)
+  fevonzoom: 123, fevonX: 0, fevonY: 0,                    // 활성 그림은 불꽃만큼 더 큼 — 팻말 크기가 맞도록 123%
+  fevbtntfz: 10, fevbtntX: 0, fevbtntY: 1,                 // '(광고 시청 0/3)'
+})
