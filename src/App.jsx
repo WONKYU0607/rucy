@@ -4230,12 +4230,6 @@ const EDIT_GROUPS = {
   dfusebtn: { label: '융합 버튼', size: ['dfuseh', 'dfusefz'], pos: 'dfusebtn' },
   dstep: { label: '융합 수량조절', size: ['dstepsz', 'dstepfz'], pos: 'dstep' },
 }
-for (const __k of SKILLS) {                                  // 카드 안 스킬 아이콘: 스킬마다 가로·세로·위치 따로
-  EDIT_GROUPS[`cardic${__k.id}`] = { label: `카드아이콘 ${__k.name}`, size: [`cardic${__k.id}w`, `cardic${__k.id}h`], pos: `cardic${__k.id}` }
-  UI_LABELS[`cardic${__k.id}w`] = '아이콘 가로'; UI_LABELS[`cardic${__k.id}h`] = '아이콘 세로'
-  UI_DEFAULT[`cardic${__k.id}w`] = 45; UI_DEFAULT[`cardic${__k.id}h`] = 45
-  UI_DEFAULT[`cardic${__k.id}X`] = 0; UI_DEFAULT[`cardic${__k.id}Y`] = 0
-}
 for (let i = 0; i < 6; i++) EDIT_GROUPS[`evoimg${i}`] = { label: `진화캐릭 ${i + 1}단계`, size: [`evoimg${i}`], pos: `evoimg${i}` }
 for (const k of DINO_KEYS) EDIT_GROUPS[`advico${k}`] = { label: `보스 그림(${DINO_NAME[k]})`, size: [`advico${k}w`, `advico${k}h`], pos: `advico${k}` }
 Object.assign(EDIT_GROUPS, {
@@ -4336,6 +4330,13 @@ const UI_LABELS = {
   pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', skicon: '아이콘 크기%', slicon: '아이콘 크기%', advbw: '버튼 너비', advbh: '버튼 높이', advbfz: '버튼 글자', advww: '창 너비', advwh: '창 높이', adviw: '그림 너비', advih: '그림 높이', advibw: '틀 너비', advibh: '틀 높이', advmbw: '틀 너비', advmbh: '틀 높이', advrbw: '틀 너비', advrbh: '틀 높이', advwbw: '틀 너비', advwbh: '틀 높이', advsw: '표지판 너비', advsh: '표지판 높이', advsfz: '글자 크기', advbarw: '바 너비', advbarh: '바 높이', advmonkfz: '글자 크기', advmonvfz: '글자 크기', advregkfz: '글자 크기', advregvfz: '글자 크기', advrewkfz: '글자 크기', advrewvfz: '숫자 크기', advrewic: '아이콘 크기', advmfz: '글자 크기', advrfz: '글자 크기', advwfz: '글자 크기', advew: '버튼 너비', adveh: '버튼 높이', advefz: '버튼 글자', advcw: '버튼 너비', advch: '버튼 높이', advcfz: '버튼 글자', mailsz: '우편함 크기', questsz: '퀘스트 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
   trsz: '상자 크기', offw: '창 너비', offtfz: '제목 글자', offnfz: '정보 글자', offiw: '항목 너비', offih: '항목 높이', offgap: '항목 간격', offic: '아이콘 크기', offifz: '획득 글자', offrfz: '분당 글자', offbtw: '버튼 너비', offbth: '버튼 높이', offbfz: '버튼 글자', offclw: '버튼 너비', offclh: '버튼 높이', offcfz: '버튼 글자', fuseallw: '융합버튼 너비', fuseallh: '융합버튼 높이', fuseallfz: '융합버튼 글자',
   matchipic: '아이콘 크기', matchipfz: '글자 크기', allychipic: '동료 아이콘', allychipfz: '동료 글자', dtabh: '탭 높이', dtabfz: '탭 글자', dgradefz: '등급 글자', dtitlefz: '이름 글자', darrowfz: '화살표 크기', diconsz: '아이콘틀 크기', dtierfz: '등급표시 글자', dstatfz: '능력치 글자', denhh: '강화버튼 높이', denhfz: '강화버튼 글자', denhic: '강화 재화아이콘', dequiph: '장착버튼 높이', dequipfz: '장착버튼 글자', dfuseh: '융합버튼 높이', dfusefz: '융합버튼 글자', dstepsz: '조절버튼 크기', dstepfz: '수량 글자',
+}
+
+for (const __k of SKILLS) {                                  // 카드 안 스킬 아이콘: 스킬마다 가로·세로·위치 따로
+  EDIT_GROUPS[`cardic${__k.id}`] = { label: `카드아이콘 ${__k.name}`, size: [`cardic${__k.id}w`, `cardic${__k.id}h`], pos: `cardic${__k.id}` }
+  UI_LABELS[`cardic${__k.id}w`] = '아이콘 가로'; UI_LABELS[`cardic${__k.id}h`] = '아이콘 세로'
+  UI_DEFAULT[`cardic${__k.id}w`] = 45; UI_DEFAULT[`cardic${__k.id}h`] = 45
+  UI_DEFAULT[`cardic${__k.id}X`] = 0; UI_DEFAULT[`cardic${__k.id}Y`] = 0
 }
 for (let i = 0; i < 6; i++) UI_LABELS[`evoimg${i}`] = `${i + 1}단계 크기`
 for (const k of DINO_KEYS) { UI_LABELS[`advico${k}w`] = '그림 너비'; UI_LABELS[`advico${k}h`] = '그림 높이' }
