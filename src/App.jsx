@@ -29,7 +29,7 @@ const SPLASH_BG = (() => {
   try { const q = new URLSearchParams(location.search); if (q.get('intro') === 'en') ko = false; if (q.get('intro') === 'ko') ko = true } catch {}
   return ko ? '/startbg/startbg.jpg' : '/startbg/startbg_en.png'
 })()
-const CFG_STAMP = Date.parse('2026-08-03T09:15:00+09:00')
+const CFG_STAMP = Date.parse('2026-08-03T20:07:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -782,6 +782,7 @@ function loadSave() {
       evStage: s.evStage && typeof s.evStage === 'object' ? s.evStage : {},
       gachaLv: s.gachaLv && typeof s.gachaLv === 'object' ? s.gachaLv : { 무기: 1, 방어구: 1, 유물: 1 },
       gachaCnt: s.gachaCnt && typeof s.gachaCnt === 'object' ? s.gachaCnt : { 무기: 0, 방어구: 0, 유물: 0 },
+      gachaRw: s.gachaRw && typeof s.gachaRw === 'object' ? s.gachaRw : {},
       skCard: s.skCard && typeof s.skCard === 'object' ? s.skCard : {},
       skEnh: s.skEnh && typeof s.skEnh === 'object' ? s.skEnh : {},
       gearEq: s.gearEq && typeof s.gearEq === 'object' ? s.gearEq : { 무기: null, 방어구: null, 유물: null },
@@ -791,7 +792,7 @@ function loadSave() {
       pearl: typeof s.pearl === 'number' ? s.pearl : 0, quest: s.quest && typeof s.quest === 'object' && s.quest.ev ? s.quest : questInit(),
     }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, skCfg: {}, cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, nick: 'Slayer_' + Math.floor(Math.random() * 9000000 + 1000000), mats: [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, advStage: {}, pearl: 0, evStage: {}, gachaLv: { 무기: 1, 방어구: 1, 유물: 1 }, gachaCnt: { 무기: 0, 방어구: 0, 유물: 0 }, skCard: {}, skEnh: {}, quest: questInit() }
+  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, skCfg: {}, cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, nick: 'Slayer_' + Math.floor(Math.random() * 9000000 + 1000000), mats: [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, advStage: {}, pearl: 0, evStage: {}, gachaLv: { 무기: 1, 방어구: 1, 유물: 1 }, gachaCnt: { 무기: 0, 방어구: 0, 유물: 0 }, gachaRw: {}, skCard: {}, skEnh: {}, quest: questInit() }
 }
 const fmt = n => n >= 1e8 ? (n/1e8).toFixed(1)+'억' : n >= 1e4 ? (n/1e4).toFixed(1)+'만' : Math.floor(n).toLocaleString()
 const fmtPct = v => v >= 10000 ? fmt(Math.round(v)) : (Math.round(v * 10) / 10).toString()
@@ -847,6 +848,7 @@ export default function App() {
   const [gachaCnt, setGachaCnt] = useState(init.gachaCnt || { 무기: 0, 방어구: 0, 유물: 0 })  // 현재 레벨 구간 누적 뽑기
   const [gShown, setGShown] = useState(0)             // 소환 결과 순차 공개 개수
   const [shopTab, setShopTab] = useState('장비')       // 상점 소환 탭: 장비 / 스킬 카드
+  const [gachaRw, setGachaRw] = useState(init.gachaRw || {})   // 소환 레벨업 대기 보상 { 카테고리: [장비번호…] }
   const [skCard, setSkCard] = useState(init.skCard || {})   // 스킬별 보유 카드 수 { 스킬id: 개수 }
   const [skEnh, setSkEnh] = useState(init.skEnh || {})      // 스킬별 강화 단계 { 스킬id: 단계 }
   const [cardRes, setCardRes] = useState(null)              // 스킬 카드 소환 결과
@@ -1046,8 +1048,8 @@ export default function App() {
   const cloudBusy = useRef(false)   // 어댑트/불러오기 중 로컬 저장 차단
   useEffect(() => {
     if (cloudBusy.current) return
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, skCfg, skCfgV: 2, gem, inv, best, alliesOn, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, gachaLv, gachaCnt, skCard, skEnh, quest, ts: Date.now() }))
-  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, skCfg, gem, inv, best, alliesOn, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, gachaLv, gachaCnt, skCard, skEnh, quest])
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, skCfg, skCfgV: 2, gem, inv, best, alliesOn, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, gachaLv, gachaCnt, gachaRw, skCard, skEnh, quest, ts: Date.now() }))
+  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, skCfg, gem, inv, best, alliesOn, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, gachaLv, gachaCnt, gachaRw, skCard, skEnh, quest])
 
   // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제
   useEffect(() => {
@@ -2310,14 +2312,16 @@ export default function App() {
     const items = Array.from({ length: n }, () => ({ i: rollItem(lv) }))
     // 누적 → 레벨업 (구간 초과분은 다음 레벨로 이월). 오른 레벨마다 장비 1개 확정 지급
     let cur = (gachaCnt[cat] || 0) + n, nl = lv
+    const pend = []
     while (nl < GACHA_MAXLV && cur >= gachaNeed(nl)) {
       cur -= gachaNeed(nl); nl++
       const rw = GACHA_LV_REWARD[nl]
-      if (rw) for (let k = 0; k < rw[1]; k++) items.push({ i: rw[0], lvUp: nl })
+      if (rw) for (let k = 0; k < rw[1]; k++) pend.push(rw[0])   // 선물상자로 받는다
     }
     if (nl >= GACHA_MAXLV) cur = 0
     setGachaCnt(c => ({ ...c, [cat]: cur }))
     if (nl !== lv) setGachaLv(v => ({ ...v, [cat]: nl }))
+    if (pend.length) setGachaRw(v => ({ ...v, [cat]: [...(v[cat] || []), ...pend] }))
     setInv(v => {
       const nv = { ...v }
       for (const it of items) { const key = invKey(cat, it.i); nv[key] = (nv[key] || 0) + 1 }
@@ -2325,6 +2329,18 @@ export default function App() {
     })
     setGacha({ cat, items, roll: Date.now() })
     qEv('summon', n)
+  }
+  // 소환 레벨업 보상 수령 (선물상자)
+  function claimGachaRw(cat) {
+    const list = gachaRw[cat] || []
+    if (!list.length) return
+    setInv(v => {
+      const nv = { ...v }
+      for (const i of list) { const key = invKey(cat, i); nv[key] = (nv[key] || 0) + 1 }
+      return nv
+    })
+    setGachaRw(v => ({ ...v, [cat]: [] }))
+    setGacha({ cat, items: list.map(i => ({ i, lvUp: true })), roll: Date.now() })
   }
   // 스킬 카드 소환: 배운 스킬 중에서만 나온다
   function learnedSkills() {
@@ -2750,7 +2766,7 @@ export default function App() {
                   onClick={() => { if (!uiEdit) enhanceSkill(s.id) }}>
                   <span>강화 {(skEnh[s.id] || 0) > 0 ? `+${skEnh[s.id]}` : ''}</span>
                   <span style={st.skdEnhCost}>
-                    <img src="/ui/skillcard.png" alt="" style={st.skdEnhIc} />{Math.min(CARD_ENH_CARDS, skCard[s.id] || 0)}/{CARD_ENH_CARDS}
+                    {Math.min(CARD_ENH_CARDS, skCard[s.id] || 0)}/{CARD_ENH_CARDS}
                     <img src="/ui/pearl.png" alt="" style={st.skdEnhIc} />{CARD_ENH_PEARL}
                   </span>
                 </button>
@@ -2930,8 +2946,14 @@ export default function App() {
                 return (
                   <div key={id} style={st.cardResCell}>
                     <div data-edit="cardcell" style={st.cardResFrame}>
-                      <img src="/ui/skillcard.png" alt="" style={st.cardResImg} />
-                      {sk && skIcon(sk) && <img data-edit="cardicon" src={skIcon(sk)} alt="" style={st.cardResIcon} />}
+                      <img src="/ui/nav_on.png" alt="" style={st.cardResImg} />
+                      {sk && skIcon(sk) && (
+                        <img data-edit={`cardic${sk.id}`} src={skIcon(sk)} alt="" style={{
+                          ...st.cardResIcon,
+                          width: `var(--pd-cardic${sk.id}w)`, height: `var(--pd-cardic${sk.id}h)`,
+                          transform: `translate(-50%, -50%) translate(var(--pd-cardic${sk.id}-x), var(--pd-cardic${sk.id}-y))`,
+                        }} />
+                      )}
                     </div>
                     <div data-edit="cardname" style={st.cardResName}>{sk ? sk.name : id}</div>
                     <div data-edit="cardcnt" style={st.cardResCnt}>x{cnt}</div>
@@ -3003,7 +3025,7 @@ export default function App() {
                   }}>
                     <span data-edit="ggrade" style={{ ...st.gachaGrade, color: col }}>{gr}</span>
                     <img src={equipImg(gacha.cat, it.i)} alt="" data-edit="gimg" style={st.gachaImg} />
-                    <span data-edit="gtier" style={st.gachaTier}>{it.lvUp ? `Lv${it.lvUp} 보상` : `${tierOf(it.i)}등급`}</span>
+                    <span data-edit="gtier" style={st.gachaTier}>{it.lvUp ? '레벨 보상' : `${tierOf(it.i)}등급`}</span>
                   </div>
                 )
               })}
@@ -3285,7 +3307,7 @@ export default function App() {
                 </div>
                 <div data-edit="skbar" style={st.skCellBarOuter}>
                   <div style={{ ...st.skCellBarFill, width: `${Math.min(100, (skCard[s.id] || 0) / CARD_ENH_CARDS * 100)}%` }} />
-                  <div style={st.skCellBarTxt}>{Math.min(CARD_ENH_CARDS, skCard[s.id] || 0)}/{CARD_ENH_CARDS}{(skEnh[s.id] || 0) > 0 ? ` +${skEnh[s.id]}` : ''}</div>
+                  <div style={st.skCellBarTxt}>{Math.min(CARD_ENH_CARDS, skCard[s.id] || 0)}/{CARD_ENH_CARDS}</div>
                 </div>
                 <div data-edit="skname" style={st.skCellName}>{s.name}</div>
               </div>
@@ -3343,7 +3365,7 @@ export default function App() {
             </div>
             {shopTab === '스킬 카드' && (
               <div data-edit="shoprow" style={{ ...st.row, minHeight: 'var(--pd-shoprowmin)', transform: 'translate(var(--pd-shoprow-x), var(--pd-shoprow-y))' }}>
-                <img src="/ui/skillcard.png" alt="" data-edit="shopic0" style={{ height: 'var(--pd-shopic0)', objectFit: 'contain', transform: 'translate(var(--pd-shopic0-x), var(--pd-shopic0-y))' }} />
+                <img src="/ui/skillcard.png" alt="" data-edit="shopic0" style={{ width: 'var(--pd-shopic0w)', height: 'var(--pd-shopic0)', objectFit: 'fill', transform: 'translate(var(--pd-shopic0-x), var(--pd-shopic0-y))' }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div data-edit="shoptitle" style={{ fontWeight: 700, fontSize: 'var(--pd-shoptfz)', transform: 'translate(var(--pd-shopt-x), var(--pd-shopt-y))' }}>스킬 카드 소환</div>
                   <div data-edit="glv" style={st.gLvTxt}>배운 스킬 중에서 나옵니다 · 카드 {CARD_ENH_CARDS}장 + 진주 {CARD_ENH_PEARL}로 강화</div>
@@ -3364,9 +3386,15 @@ export default function App() {
                     const max = lv >= GACHA_MAXLV
                     return (<>
                       <div data-edit="glv" style={st.gLvTxt}>소환 레벨 {lv}{max ? ' (MAX)' : ''}</div>
-                      <div data-edit="glvbar" style={st.gLvBar}>
-                        <div style={{ ...st.gLvFill, width: max ? '100%' : `${Math.min(100, cur / need * 100)}%` }} />
-                        <span data-edit="glvbart" style={st.gLvBarTxt}>{max ? 'MAX' : `${fmt(cur)}/${fmt(need)}`}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div data-edit="glvbar" style={st.gLvBar}>
+                          <div style={{ ...st.gLvFill, width: max ? '100%' : `${Math.min(100, cur / need * 100)}%` }} />
+                          <span data-edit="glvbart" style={st.gLvBarTxt}>{max ? 'MAX' : `${fmt(cur)}/${fmt(need)}`}</span>
+                        </div>
+                        {((gachaRw[cat] || []).length > 0 || uiEdit) && (
+                          <img data-edit="shopgift" src="/ui/giftbox.png" alt="" style={st.shopGift}
+                            onClick={() => { if (!uiEdit) claimGachaRw(cat) }} />
+                        )}
                       </div>
                     </>)
                   })()}
@@ -3870,7 +3898,7 @@ const UI_DEFAULT = {
   evoimg0X: 0, evoimg0Y: 1, evoimg1X: 0, evoimg1Y: 1, evoimg2X: 0, evoimg2Y: 1,
   evoimg3X: 0, evoimg3Y: 1, evoimg4X: 0, evoimg4Y: 1, evoimg5X: 0, evoimg5Y: 1,
   gachacell: 62, gachafz: 10, gtierfz: 10, gachaimg: 74, gainfz: 10,
-  shoprowmin: 46, shopic: 43, shopic0: 43, shopic1: 57, shopic2: 43, shoptfz: 14, shopsubfz: 11, shopbw: 4, shopbh: 40, shopbbv: 0, shopbbh: 21, shopbfz: 11, shopgem: 12,
+  shoprowmin: 46, shopic: 43, shopic0: 44, shopic1: 57, shopic2: 43, shoptfz: 13, shopsubfz: 11, shopbw: 1, shopbh: 36, shopbbv: 0, shopbbh: 21, shopbfz: 10, shopgem: 12,
   gainic: 14, gainpv: 0, gainph: 6,
   gbtnfz: 13, gbtnpw: 16, gbtnph: 10,
   pbsz: 30, wjfz: 13, caslot: 81, caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 160, bth: 26, bhpw: 159, bhph: 30, pmw: 70, pmh: 23, pmfz: 11, pgw: 70, pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 39, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
@@ -3880,8 +3908,8 @@ const UI_DEFAULT = {
   spX: 0, spY: 0, slotX: 23, slotY: 8, catX: 21, catY: -5, spbarX: 20, spbarY: 1, equipX: -4, equipY: -3, spbarAX: 18, spbarAY: 12,
   spbarBX: 18, spbarBY: 0, spbarCX: 19, spbarCY: -8, nickX: 0, nickY: 0, expX: 0, expY: 0, gainX: 0, gainY: 0,
   hpX: -1, hpY: 1, bossX: 2, bossY: -6, clearX: 0, clearY: 0, waveX: -1, waveY: 0, gachaX: 0, gachaY: 0, eqtierX: -1, eqtierY: 1, eqimgX: 0, eqimgY: 0,
-  shoprowX: 0, shoprowY: 0, shopicX: 0, shopicY: 0, shopic0X: 0, shopic0Y: 0, shopic1X: 0, shopic1Y: 0, shopic2X: 0, shopic2Y: 0, shoptX: 0, shoptY: 0, shopsubX: 0, shopsubY: 0,
-  shopbX: -2, shopbY: 0, shopbtX: 0, shopbtY: 0, shopgemX: 0, shopgemY: 0, gainicX: 0, gainicY: 0, gaintX: 0, gaintY: 0,
+  shoprowX: 0, shoprowY: -11, shopicX: 0, shopicY: 0, shopic0X: -7, shopic0Y: 0, shopic1X: -2, shopic1Y: 0, shopic2X: -2, shopic2Y: 0, shoptX: -5, shoptY: 2, shopsubX: 0, shopsubY: 0,
+  shopbX: 1, shopbY: 1, shopbtX: 0, shopbtY: 1, shopgemX: 0, shopgemY: 0, gainicX: 0, gainicY: 0, gaintX: 0, gaintY: 0,
   gbtnX: 0, gbtnY: 0, gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0, hambX: 1, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: -3, bhpX: -1, bhpY: -7, pbX: 0, pbY: 0, wjX: 0, wjY: 0, caslotX: 3, caslotY: 16, caimgX: 0, caimgY: 0, canameX: 0, canameY: 0, catabX: 15, catabY: 14, cabtnX: 0, cabtnY: 0, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: 0, btextY: 7,
   // 오프라인 보상: 보물상자 + 창(헤더/항목/버튼)
   trsz: 34, offw: 322, offtfz: 14, offnfz: 13, offiw: 56, offih: 50, offgap: 9, offic: 24, offifz: 11, offrfz: 11,
@@ -3951,17 +3979,17 @@ Object.assign(UI_DEFAULT, {
   avatar: 40, slotmax: 50, equipcols: 5, equipgap: 14, slotfz: 23, catfz: 13, spbarfz: 11, equipimg: 60, equiptier: 10, equipcell: 54, nickfz: 15, lvbadgefz: 12,
   exph: 11, pillfz: 72, wavefz: 11, evoimg0: 56, evoimg1: 56, evoimg2: 56, evoimg3: 56, evoimg4: 56, evoimg5: 56, evoimg0X: 0, evoimg0Y: 1, evoimg1X: 0,
   evoimg1Y: 1, evoimg2X: 0, evoimg2Y: 1, evoimg3X: 0, evoimg3Y: 1, evoimg4X: 0, evoimg4Y: 1, evoimg5X: 0, evoimg5Y: 1, gachacell: 62, gachafz: 10, gtierfz: 10,
-  gachaimg: 74, gainfz: 10, shoprowmin: 46, shopic: 43, shopic0: 43, shopic1: 57, shopic2: 43, shoptfz: 14, shopsubfz: 11, shopbw: 4, shopbh: 40, shopbbv: 0,
-  shopbbh: 21, shopbfz: 11, shopgem: 12, gainic: 14, gainpv: 0, gainph: 6, gbtnfz: 13, gbtnpw: 16, gbtnph: 10, pbsz: 30, wjfz: 13, caslot: 81,
+  gachaimg: 74, gainfz: 10, shoprowmin: 46, shopic: 43, shopic0: 44, shopic1: 57, shopic2: 43, shoptfz: 13, shopsubfz: 11, shopbw: 1, shopbh: 36, shopbbv: 0,
+  shopbbh: 21, shopbfz: 10, shopgem: 12, gainic: 14, gainpv: 0, gainph: 6, gbtnfz: 13, gbtnpw: 16, gbtnph: 10, pbsz: 30, wjfz: 13, caslot: 81,
   caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 160, bth: 26, bhpw: 159, bhph: 27, pmw: 70, pmh: 23, pmfz: 11, pgw: 70,
   pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 39, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
   avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: -1, pillY: 2, iconX: -3, iconY: 1,
   panelX: 0, panelY: 0, rowX: 0, rowY: -7, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0, spX: 0, spY: 0,
   slotX: 23, slotY: 8, catX: 21, catY: -5, spbarX: 20, spbarY: 1, equipX: -4, equipY: -3, spbarAX: 18, spbarAY: 12, spbarBX: 18, spbarBY: 0,
   spbarCX: 19, spbarCY: -8, nickX: 0, nickY: 0, expX: 0, expY: 0, gainX: 0, gainY: 0, hpX: -1, hpY: 1, bossX: 2, bossY: -6,
-  clearX: 0, clearY: 0, waveX: -1, waveY: 0, gachaX: 0, gachaY: 0, eqtierX: -1, eqtierY: 1, eqimgX: 0, eqimgY: 0, shoprowX: 0, shoprowY: 0,
-  shopicX: 0, shopicY: 0, shopic0X: 0, shopic0Y: 0, shopic1X: 0, shopic1Y: 0, shopic2X: 0, shopic2Y: 0, shoptX: 0, shoptY: 0, shopsubX: 0, shopsubY: 0,
-  shopbX: -2, shopbY: 0, shopbtX: 0, shopbtY: 0, shopgemX: 0, shopgemY: 0, gainicX: 0, gainicY: 0, gaintX: 0, gaintY: 0, gbtnX: 0, gbtnY: 0,
+  clearX: 0, clearY: 0, waveX: -1, waveY: 0, gachaX: 0, gachaY: 0, eqtierX: -1, eqtierY: 1, eqimgX: 0, eqimgY: 0, shoprowX: 0, shoprowY: -11,
+  shopicX: 0, shopicY: 0, shopic0X: -7, shopic0Y: 0, shopic1X: -2, shopic1Y: 0, shopic2X: -2, shopic2Y: 0, shoptX: -5, shoptY: 2, shopsubX: 0, shopsubY: 0,
+  shopbX: 1, shopbY: 1, shopbtX: 0, shopbtY: 1, shopgemX: 0, shopgemY: 0, gainicX: 0, gainicY: 0, gaintX: 0, gaintY: 0, gbtnX: 0, gbtnY: 0,
   gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0,
   hambX: 1, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: -3, bhpX: -1, bhpY: -7, pbX: 0, pbY: 0, wjX: 0, wjY: 0,
   caslotX: 3, caslotY: 16, caimgX: 0, caimgY: 0, canameX: 0, canameY: 0, catabX: 15, catabY: 14, cabtnX: 0, cabtnY: 0, wtitleX: 0, wtitleY: 1,
@@ -4031,17 +4059,17 @@ Object.assign(UI_DEFAULT, {
   avatar: 40, slotmax: 50, equipcols: 5, equipgap: 14, slotfz: 23, catfz: 13, spbarfz: 11, equipimg: 60, equiptier: 10, equipcell: 54, nickfz: 15, lvbadgefz: 12,
   exph: 11, pillfz: 72, wavefz: 11, evoimg0: 56, evoimg1: 56, evoimg2: 56, evoimg3: 56, evoimg4: 56, evoimg5: 56, evoimg0X: 0, evoimg0Y: 1, evoimg1X: 0,
   evoimg1Y: 1, evoimg2X: 0, evoimg2Y: 1, evoimg3X: 0, evoimg3Y: 1, evoimg4X: 0, evoimg4Y: 1, evoimg5X: 0, evoimg5Y: 1, gachacell: 62, gachafz: 10, gtierfz: 10,
-  gachaimg: 74, gainfz: 10, shoprowmin: 46, shopic: 43, shopic0: 43, shopic1: 57, shopic2: 43, shoptfz: 14, shopsubfz: 11, shopbw: 4, shopbh: 40, shopbbv: 0,
-  shopbbh: 21, shopbfz: 11, shopgem: 12, gainic: 14, gainpv: 0, gainph: 6, gbtnfz: 13, gbtnpw: 16, gbtnph: 10, pbsz: 30, wjfz: 13, caslot: 81,
+  gachaimg: 74, gainfz: 10, shoprowmin: 46, shopic: 43, shopic0: 44, shopic1: 57, shopic2: 43, shoptfz: 13, shopsubfz: 11, shopbw: 1, shopbh: 36, shopbbv: 0,
+  shopbbh: 21, shopbfz: 10, shopgem: 12, gainic: 14, gainpv: 0, gainph: 6, gbtnfz: 13, gbtnpw: 16, gbtnph: 10, pbsz: 30, wjfz: 13, caslot: 81,
   caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 160, bth: 26, bhpw: 159, bhph: 27, pmw: 70, pmh: 23, pmfz: 11, pgw: 70,
   pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 39, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
   avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: -1, pillY: 2, iconX: -3, iconY: 1,
   panelX: 0, panelY: 0, rowX: 0, rowY: -7, nameX: -3, nameY: 1, valX: -2, valY: 0, inputX: 0, inputY: 0, spX: 0, spY: 0,
   slotX: 23, slotY: 8, catX: 21, catY: -5, spbarX: 20, spbarY: 1, equipX: -4, equipY: -3, spbarAX: 18, spbarAY: 12, spbarBX: 18, spbarBY: 0,
   spbarCX: 19, spbarCY: -8, nickX: 0, nickY: 0, expX: 0, expY: 0, gainX: 0, gainY: 0, hpX: -1, hpY: 1, bossX: 2, bossY: -6,
-  clearX: 0, clearY: 0, waveX: -1, waveY: 0, gachaX: 0, gachaY: 0, eqtierX: -1, eqtierY: 1, eqimgX: 0, eqimgY: 0, shoprowX: 0, shoprowY: 0,
-  shopicX: 0, shopicY: 0, shopic0X: 0, shopic0Y: 0, shopic1X: 0, shopic1Y: 0, shopic2X: 0, shopic2Y: 0, shoptX: 0, shoptY: 0, shopsubX: 0, shopsubY: 0,
-  shopbX: -2, shopbY: 0, shopbtX: 0, shopbtY: 0, shopgemX: 0, shopgemY: 0, gainicX: 0, gainicY: 0, gaintX: 0, gaintY: 0, gbtnX: 0, gbtnY: 0,
+  clearX: 0, clearY: 0, waveX: -1, waveY: 0, gachaX: 0, gachaY: 0, eqtierX: -1, eqtierY: 1, eqimgX: 0, eqimgY: 0, shoprowX: 0, shoprowY: -11,
+  shopicX: 0, shopicY: 0, shopic0X: -7, shopic0Y: 0, shopic1X: -2, shopic1Y: 0, shopic2X: -2, shopic2Y: 0, shoptX: -5, shoptY: 2, shopsubX: 0, shopsubY: 0,
+  shopbX: 1, shopbY: 1, shopbtX: 0, shopbtY: 1, shopgemX: 0, shopgemY: 0, gainicX: 0, gainicY: 0, gaintX: 0, gaintY: 0, gbtnX: 0, gbtnY: 0,
   gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0,
   hambX: 1, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: -3, bhpX: -1, bhpY: -7, pbX: 0, pbY: 0, wjX: 0, wjY: 0,
   caslotX: 3, caslotY: 16, caimgX: 0, caimgY: 0, canameX: 0, canameY: 0, catabX: 15, catabY: 14, cabtnX: 0, cabtnY: 0, wtitleX: 0, wtitleY: 1,
@@ -4202,6 +4230,12 @@ const EDIT_GROUPS = {
   dfusebtn: { label: '융합 버튼', size: ['dfuseh', 'dfusefz'], pos: 'dfusebtn' },
   dstep: { label: '융합 수량조절', size: ['dstepsz', 'dstepfz'], pos: 'dstep' },
 }
+for (const __k of SKILLS) {                                  // 카드 안 스킬 아이콘: 스킬마다 가로·세로·위치 따로
+  EDIT_GROUPS[`cardic${__k.id}`] = { label: `카드아이콘 ${__k.name}`, size: [`cardic${__k.id}w`, `cardic${__k.id}h`], pos: `cardic${__k.id}` }
+  UI_LABELS[`cardic${__k.id}w`] = '아이콘 가로'; UI_LABELS[`cardic${__k.id}h`] = '아이콘 세로'
+  UI_DEFAULT[`cardic${__k.id}w`] = 45; UI_DEFAULT[`cardic${__k.id}h`] = 45
+  UI_DEFAULT[`cardic${__k.id}X`] = 0; UI_DEFAULT[`cardic${__k.id}Y`] = 0
+}
 for (let i = 0; i < 6; i++) EDIT_GROUPS[`evoimg${i}`] = { label: `진화캐릭 ${i + 1}단계`, size: [`evoimg${i}`], pos: `evoimg${i}` }
 for (const k of DINO_KEYS) EDIT_GROUPS[`advico${k}`] = { label: `보스 그림(${DINO_NAME[k]})`, size: [`advico${k}w`, `advico${k}h`], pos: `advico${k}` }
 Object.assign(EDIT_GROUPS, {
@@ -4262,11 +4296,11 @@ Object.assign(EDIT_GROUPS, {
   shoptab: { label: '상점 탭', size: ['shoptabw', 'shoptabh', 'shoptabfz'], pos: 'shoptab' },
   shopad: { label: '광고 뽑기 버튼', size: ['shopadw', 'shopadh'], pos: 'shopad' },
   shopadt: { label: '광고 버튼 글씨', size: ['shopadfz'], pos: 'shopadt' },
+  shopgift: { label: '보상 선물상자', size: ['shopgiftw', 'shopgifth'], pos: 'shopgift' },
   shoptabt: { label: '상점 탭 글씨', size: ['shoptabfz'], pos: 'shoptabt' },
   cardwin: { label: '카드결과 창', size: ['cardww', 'cardwh', 'cardgap'], pos: 'cardwin' },
   cardtitle: { label: '카드결과 제목', size: ['cardtfz'], pos: 'cardtitle' },
   cardcell: { label: '카드 그림 틀', size: ['cardcw', 'cardch'], pos: 'cardcell' },
-  cardicon: { label: '카드 안 스킬아이콘', size: ['cardicsz'], pos: 'cardicon' },
   cardname: { label: '카드 스킬이름', size: ['cardnfz'], pos: 'cardname' },
   cardcnt: { label: '카드 개수 글자', size: ['cardcfz'], pos: 'cardcnt' },
   cardclose: { label: '카드결과 확인버튼', size: ['cardclw', 'cardclh', 'cardclfz'], pos: 'cardclose' },
@@ -4316,10 +4350,10 @@ Object.assign(UI_LABELS, {
   evexitw: '버튼 너비', evexith: '버튼 높이', evexitfz: '글씨 크기',
   advexitw: '버튼 너비', advexith: '버튼 높이', advexitfz: '글씨 크기',
   shoptabw: '탭 너비', shoptabh: '탭 높이', shoptabfz: '글씨 크기',
-  shopadt: '글씨 크기',
+  shopadt: '글씨 크기', shopic0w: '아이콘 가로', shopgiftw: '상자 가로', shopgifth: '상자 세로',
   shopadw: '버튼 너비', shopadh: '버튼 높이', shopadfz: '글씨 크기',
   cardww: '창 너비', cardwh: '창 높이', cardgap: '카드 간격', cardtfz: '글자 크기',
-  cardcw: '카드 너비', cardch: '카드 높이', cardicsz: '아이콘 크기', cardnfz: '글자 크기', cardcfz: '글자 크기',
+  cardcw: '카드 너비', cardch: '카드 높이', cardnfz: '글자 크기', cardcfz: '글자 크기',
   cardclw: '버튼 너비', cardclh: '버튼 높이', cardclfz: '글씨 크기',
   glvfz: '글자 크기', glvbarw: '바 너비', glvbarh: '바 높이', glvbtfz: '글자 크기',
   warnfz: '글자 크기', evpww: '창 너비', evpwh: '창 높이', evptitlefz: '글자 크기', evpimgw: '그림 너비', evpimgh: '그림 높이',
@@ -4335,6 +4369,7 @@ Object.assign(UI_LABELS, {
   qreww: '버튼 너비', qrewh: '버튼 높이', qrewisz: '아이콘 크기', qrewvfz: '숫자 크기', qlvfz: '레벨 글자',
 })
 const uiVars = c => `:root{
+${SKILLS.map(k => `--pd-cardic${k.id}w:${c[`cardic${k.id}w`] ?? 45}px;--pd-cardic${k.id}h:${c[`cardic${k.id}h`] ?? 45}px;--pd-cardic${k.id}-x:${c[`cardic${k.id}X`] ?? 0}px;--pd-cardic${k.id}-y:${c[`cardic${k.id}Y`] ?? 0}px;`).join('')}
 --pd-panelbw-v:${c.panelbwV}px;--pd-panelbw-h:${c.panelbwH}px;--pd-rowbw-v:${c.rowbwV}px;--pd-rowbw-h:${c.rowbwH}px;
 --pd-rowmin:${c.rowmin}px;--pd-rowgap:${c.rowgap}px;--pd-icon:${c.icon}px;--pd-name:${c.name}px;--pd-lv:${c.lv}px;--pd-val:${c.val}px;
 --pd-costw:${c.costw}px;--pd-costh:${c.costh}px;--pd-costfz:${c.costfz}px;--pd-inputw:${c.inputw}px;--pd-inputfz:${c.inputfz}px;
@@ -4345,7 +4380,7 @@ const uiVars = c => `:root{
 --pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
 ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg${i}-x:${c['evoimg' + i + 'X']}px;--pd-evoimg${i}-y:${c['evoimg' + i + 'Y']}px;`).join('')}--pd-slotfz:${c.slotfz}px;
---pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdimgsz:${c.skdimgsz}px;--pd-avafacesz:${c.avafacesz}px;--pd-profherow:${c.profherow}px;--pd-profheroh:${c.profheroh}px;--pd-profherozoom:${c.profherozoom};--pd-profstatfz:${c.profstatfz}px;--pd-profcurfz:${c.profcurfz}px;--pd-profcuric:${c.profcuric}px;--pd-profgearsz:${c.profgearsz}px;--pd-profsecfz:${c.profsecfz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;--pd-warnfz:${c.warnfz}px;--pd-evpww:${c.evpww}px;--pd-evpwh:${c.evpwh}px;--pd-evptitlefz:${c.evptitlefz}px;--pd-evpimgw:${c.evpimgw}px;--pd-evpimgh:${c.evpimgh}px;--pd-evpbnfz:${c.evpbnfz}px;--pd-evprewfz:${c.evprewfz}px;--pd-evprewic:${c.evprewic}px;--pd-evpsw:${c.evpsw}px;--pd-evpsh:${c.evpsh}px;--pd-evpsfz:${c.evpsfz}px;--pd-evpbarw:${c.evpbarw}px;--pd-evpbarh:${c.evpbarh}px;--pd-evpew:${c.evpew}px;--pd-evpeh:${c.evpeh}px;--pd-evpefz:${c.evpefz}px;--pd-evpcw:${c.evpcw}px;--pd-evpch:${c.evpch}px;--pd-evpcfz:${c.evpcfz}px;--pd-shoptabw:${c.shoptabw}px;--pd-shoptabh:${c.shoptabh}px;--pd-shoptabfz:${c.shoptabfz}px;--pd-cardww:${c.cardww}px;--pd-cardwh:${c.cardwh}px;--pd-cardgap:${c.cardgap}px;--pd-cardtfz:${c.cardtfz}px;--pd-cardcw:${c.cardcw}px;--pd-cardch:${c.cardch}px;--pd-cardicsz:${c.cardicsz}px;--pd-cardnfz:${c.cardnfz}px;--pd-cardcfz:${c.cardcfz}px;--pd-cardclw:${c.cardclw}px;--pd-cardclh:${c.cardclh}px;--pd-cardclfz:${c.cardclfz}px;--pd-shopadw:${c.shopadw}px;--pd-shopadh:${c.shopadh}px;--pd-shopadfz:${c.shopadfz}px;--pd-glvfz:${c.glvfz}px;--pd-glvbarw:${c.glvbarw}px;--pd-glvbarh:${c.glvbarh}px;--pd-glvbtfz:${c.glvbtfz}px;--pd-advexitw:${c.advexitw}px;--pd-advexith:${c.advexith}px;--pd-advexitfz:${c.advexitfz}px;--pd-evexitw:${c.evexitw}px;--pd-evexith:${c.evexith}px;--pd-evexitfz:${c.evexitfz}px;--pd-fevbtnw:${c.fevbtnw}px;--pd-fevbtnh:${c.fevbtnh}px;--pd-fevonzoom:${c.fevonzoom};--pd-fevbtntfz:${c.fevbtntfz}px;--pd-evbtnw:${c.evbtnw}px;--pd-evbtnh:${c.evbtnh}px;--pd-evbtntfz:${c.evbtntfz}px;--pd-evww:${c.evww}px;--pd-evwh:${c.evwh}px;--pd-evtitlefz:${c.evtitlefz}px;--pd-evclsz:${c.evclsz}px;--pd-evtabw:${c.evtabw}px;--pd-evtabh:${c.evtabh}px;--pd-evtabfz:${c.evtabfz}px;--pd-evprevh:${c.evprevh}px;--pd-evnamefz:${c.evnamefz}px;--pd-evrowh:${c.evrowh}px;--pd-evnosz:${c.evnosz}px;--pd-evbnamefz:${c.evbnamefz}px;--pd-evgow:${c.evgow}px;--pd-evgoh:${c.evgoh}px;--pd-evgofz:${c.evgofz}px;--pd-evprevzoom:${c.evprevzoom};--pd-evnoimgsz:${c.evnoimgsz}px;
+--pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdimgsz:${c.skdimgsz}px;--pd-avafacesz:${c.avafacesz}px;--pd-profherow:${c.profherow}px;--pd-profheroh:${c.profheroh}px;--pd-profherozoom:${c.profherozoom};--pd-profstatfz:${c.profstatfz}px;--pd-profcurfz:${c.profcurfz}px;--pd-profcuric:${c.profcuric}px;--pd-profgearsz:${c.profgearsz}px;--pd-profsecfz:${c.profsecfz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;--pd-warnfz:${c.warnfz}px;--pd-evpww:${c.evpww}px;--pd-evpwh:${c.evpwh}px;--pd-evptitlefz:${c.evptitlefz}px;--pd-evpimgw:${c.evpimgw}px;--pd-evpimgh:${c.evpimgh}px;--pd-evpbnfz:${c.evpbnfz}px;--pd-evprewfz:${c.evprewfz}px;--pd-evprewic:${c.evprewic}px;--pd-evpsw:${c.evpsw}px;--pd-evpsh:${c.evpsh}px;--pd-evpsfz:${c.evpsfz}px;--pd-evpbarw:${c.evpbarw}px;--pd-evpbarh:${c.evpbarh}px;--pd-evpew:${c.evpew}px;--pd-evpeh:${c.evpeh}px;--pd-evpefz:${c.evpefz}px;--pd-evpcw:${c.evpcw}px;--pd-evpch:${c.evpch}px;--pd-evpcfz:${c.evpcfz}px;--pd-shoptabw:${c.shoptabw}px;--pd-shoptabh:${c.shoptabh}px;--pd-shoptabfz:${c.shoptabfz}px;--pd-cardww:${c.cardww}px;--pd-cardwh:${c.cardwh}px;--pd-cardgap:${c.cardgap}px;--pd-cardtfz:${c.cardtfz}px;--pd-cardcw:${c.cardcw}px;--pd-cardch:${c.cardch}px;--pd-cardnfz:${c.cardnfz}px;--pd-cardcfz:${c.cardcfz}px;--pd-cardclw:${c.cardclw}px;--pd-cardclh:${c.cardclh}px;--pd-cardclfz:${c.cardclfz}px;--pd-shopadw:${c.shopadw}px;--pd-shopadh:${c.shopadh}px;--pd-shopadfz:${c.shopadfz}px;--pd-glvfz:${c.glvfz}px;--pd-glvbarw:${c.glvbarw}px;--pd-glvbarh:${c.glvbarh}px;--pd-glvbtfz:${c.glvbtfz}px;--pd-advexitw:${c.advexitw}px;--pd-advexith:${c.advexith}px;--pd-advexitfz:${c.advexitfz}px;--pd-evexitw:${c.evexitw}px;--pd-evexith:${c.evexith}px;--pd-evexitfz:${c.evexitfz}px;--pd-fevbtnw:${c.fevbtnw}px;--pd-fevbtnh:${c.fevbtnh}px;--pd-fevonzoom:${c.fevonzoom};--pd-fevbtntfz:${c.fevbtntfz}px;--pd-evbtnw:${c.evbtnw}px;--pd-evbtnh:${c.evbtnh}px;--pd-evbtntfz:${c.evbtntfz}px;--pd-evww:${c.evww}px;--pd-evwh:${c.evwh}px;--pd-evtitlefz:${c.evtitlefz}px;--pd-evclsz:${c.evclsz}px;--pd-evtabw:${c.evtabw}px;--pd-evtabh:${c.evtabh}px;--pd-evtabfz:${c.evtabfz}px;--pd-evprevh:${c.evprevh}px;--pd-evnamefz:${c.evnamefz}px;--pd-evrowh:${c.evrowh}px;--pd-evnosz:${c.evnosz}px;--pd-evbnamefz:${c.evbnamefz}px;--pd-evgow:${c.evgow}px;--pd-evgoh:${c.evgoh}px;--pd-evgofz:${c.evgofz}px;--pd-evprevzoom:${c.evprevzoom};--pd-evnoimgsz:${c.evnoimgsz}px;
 ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k}h:${c['advico' + k + 'h']}px;--pd-advico${k}-x:${c['advico' + k + 'X']}px;--pd-advico${k}-y:${c['advico' + k + 'Y']}px;`).join('')}
 --pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
 --pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
@@ -4357,7 +4392,7 @@ ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k
 --pd-equipcell:${c.equipcell}px;--pd-nickfz:${c.nickfz}px;--pd-lvbadgefz:${c.lvbadgefz}px;--pd-exph:${c.exph}px;
 --pd-pillfz:${c.pillfz}px;--pd-wavefz:${c.wavefz}px;--pd-gainfz:${c.gainfz}px;
 --pd-hph:${c.hph}px;--pd-hpfz:${c.hpfz}px;--pd-bossfz:${c.bossfz}px;--pd-clearfz:${c.clearfz}px;--pd-navfz:${c.navfz}px;--pd-diasz:${c.diasz}px;--pd-bossh:${c.bossh}px;--pd-wavebh:${c.wavebh}px;--pd-gachacell:${c.gachacell}px;--pd-gachafz:${c.gachafz}px;--pd-gacha-x:${c.gachaX}px;--pd-gacha-y:${c.gachaY}px;
---pd-gtierfz:${c.gtierfz}px;--pd-gachaimg:${c.gachaimg};--pd-shoprowmin:${c.shoprowmin}px;--pd-shopic:${c.shopic}px;--pd-shopic0:${c.shopic0}px;--pd-shopic1:${c.shopic1}px;--pd-shopic2:${c.shopic2}px;
+--pd-gtierfz:${c.gtierfz}px;--pd-gachaimg:${c.gachaimg};--pd-shoprowmin:${c.shoprowmin}px;--pd-shopic:${c.shopic}px;--pd-shopic0:${c.shopic0}px;--pd-shopic0w:${c.shopic0w}px;--pd-shopgiftw:${c.shopgiftw}px;--pd-shopgifth:${c.shopgifth}px;--pd-shopic1:${c.shopic1}px;--pd-shopic2:${c.shopic2}px;
 --pd-shoptfz:${c.shoptfz}px;--pd-shopsubfz:${c.shopsubfz}px;--pd-shopbw:${c.shopbw}px;--pd-shopbh:${c.shopbh}px;--pd-shopbbv:${c.shopbbv}px;--pd-shopbbh:${c.shopbbh}px;--pd-shopbfz:${c.shopbfz}px;
 --pd-gainic:${c.gainic}px;--pd-gainpv:${c.gainpv}px;--pd-gainph:${c.gainph}px;--pd-gainic-x:${c.gainicX}px;--pd-gainic-y:${c.gainicY}px;--pd-gaint-x:${c.gaintX}px;--pd-gaint-y:${c.gaintY}px;--pd-shopgem:${c.shopgem}px;
 --pd-gbtnfz:${c.gbtnfz}px;--pd-gbtnpw:${c.gbtnpw}px;--pd-gbtnph:${c.gbtnph}px;
@@ -4372,7 +4407,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
 --pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evexit', 'advexit', 'shoptab', 'shoptabt', 'shopad', 'shopadt', 'cardwin', 'cardtitle', 'cardcell', 'cardicon', 'cardname', 'cardcnt', 'cardclose', 'glv', 'glvbar', 'glvbart', 'warn', 'evpwin', 'evptitle', 'evpimg', 'evpbn', 'evprew', 'evpsign', 'evpsignt', 'evpbar', 'evpenter', 'evpclose', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evexit', 'advexit', 'shoptab', 'shoptabt', 'shopad', 'shopadt', 'shopgift', 'cardwin', 'cardtitle', 'cardcell', 'cardname', 'cardcnt', 'cardclose', 'glv', 'glvbar', 'glvbart', 'warn', 'evpwin', 'evptitle', 'evpimg', 'evpbn', 'evprew', 'evpsign', 'evpsignt', 'evpbar', 'evpenter', 'evpclose', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -4863,11 +4898,9 @@ const st = {
     transform: 'translate(var(--pd-cardcell-x), var(--pd-cardcell-y))',
   },
   cardResImg: { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', imageRendering: 'pixelated' },
-  cardResIcon: {                                            // 카드 틀 안의 스킬 아이콘
+  cardResIcon: {                                            // 카드 틀 안의 스킬 아이콘 (크기는 스킬별 키)
     position: 'absolute', left: '50%', top: '50%',
-    transform: 'translate(-50%, -50%) translate(var(--pd-cardicon-x), var(--pd-cardicon-y))',
-    width: 'var(--pd-cardicsz)', height: 'var(--pd-cardicsz)', objectFit: 'contain', imageRendering: 'pixelated',
-    borderRadius: 4,
+    objectFit: 'contain', imageRendering: 'pixelated', borderRadius: 4,
   },
   cardResName: {
     fontSize: 'var(--pd-cardnfz)', color: '#e8d5a8', textAlign: 'center', lineHeight: 1.2,
@@ -4882,6 +4915,12 @@ const st = {
     transform: 'translate(var(--pd-cardclose-x), var(--pd-cardclose-y))',
     borderRadius: 8, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)',
     color: '#fff', fontWeight: 800, padding: 0, flexShrink: 0,
+  },
+  shopGift: {                                               // 소환 레벨업 보상 선물상자
+    width: 'var(--pd-shopgiftw)', height: 'var(--pd-shopgifth)', objectFit: 'contain',
+    imageRendering: 'pixelated', cursor: 'pointer', flexShrink: 0,
+    transform: 'translate(var(--pd-shopgift-x), var(--pd-shopgift-y))',
+    filter: 'drop-shadow(0 0 6px rgba(255,210,90,0.8))',
   },
   gLvTxt: {                                                 // 상점 소환 레벨
     fontSize: 'var(--pd-glvfz)', color: GOLD, fontWeight: 700, whiteSpace: 'nowrap',
@@ -5209,15 +5248,14 @@ Object.assign(UI_DEFAULT, {
   evpcw: 80, evpch: 29, evpcfz: 13, evpcloseX: 0, evpcloseY: 0,
   evexitw: 48, evexith: 22, evexitfz: 11, evexitX: 7, evexitY: 70,   // 던전 나가기 버튼
   advexitw: 48, advexith: 22, advexitfz: 11, advexitX: 7, advexitY: 70,  // 모험 나가기 버튼
-  shoptabw: 120, shoptabh: 30, shoptabfz: 14, shoptabX: 0, shoptabY: 0,
-  shopadw: 74, shopadh: 40, shopadfz: 9, shopadX: 0, shopadY: 0, shopadtX: 0, shopadtY: 0,
-  shoptabtX: 0, shoptabtY: 0,
+  shoptabw: 191, shoptabh: 28, shoptabfz: 13, shoptabX: 8, shoptabY: 2,
+  shopadw: 36, shopadh: 34, shopadfz: 8, shopadX: 0, shopadY: 0, shopadtX: 0, shopadtY: 0,
+  shoptabtX: 0, shoptabtY: 0, shopic0w: 43, shopgiftw: 26, shopgifth: 26, shopgiftX: 0, shopgiftY: 0,
   cardww: 300, cardwh: 420, cardgap: 8, cardwinX: 0, cardwinY: 0,       // 스킬 카드 결과창
   cardtfz: 16, cardtitleX: 0, cardtitleY: 0,
   cardcw: 52, cardch: 84, cardcellX: 0, cardcellY: 0,
-  cardicsz: 30, cardiconX: 0, cardiconY: -3,
-  cardnfz: 10, cardnameX: 0, cardnameY: 0,
+  cardnfz: 11, cardnameX: 0, cardnameY: 0,
   cardcfz: 11, cardcntX: 0, cardcntY: 0,
   cardclw: 90, cardclh: 34, cardclfz: 14, cardcloseX: 0, cardcloseY: 0,
-  glvfz: 11, glvX: 0, glvY: 0, glvbarw: 120, glvbarh: 12, glvbarX: 0, glvbarY: 0, glvbtfz: 9, glvbartX: 0, glvbartY: 0,   // 상점 소환 레벨·진행바
+  glvfz: 11, glvX: -4, glvY: 1, glvbarw: 120, glvbarh: 11, glvbarX: -5, glvbarY: 0, glvbtfz: 9, glvbartX: 0, glvbartY: 0,   // 상점 소환 레벨·진행바
 })
