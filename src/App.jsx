@@ -3338,7 +3338,7 @@ export default function App() {
             <div style={st.shopTabRow}>
               {['장비', '스킬 카드'].map(t => (
                 <button key={t} data-edit="shoptab" style={{ ...st.shopTab, ...(shopTab === t ? st.shopTabOn : {}) }}
-                  onClick={() => { if (!uiEdit) setShopTab(t) }}>{t}</button>
+                  onClick={() => { if (!uiEdit) setShopTab(t) }}><span data-edit="shoptabt" style={st.shopTabText}>{t}</span></button>
               ))}
             </div>
             {shopTab === '스킬 카드' && (
@@ -3373,7 +3373,7 @@ export default function App() {
                 </div>
                 <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullGacha(cat, 1) }}><span data-edit="shopbtext" style={st.shopBtnText}>1회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />10</span></span></button>
                 <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullGacha(cat, 10) }}><span data-edit="shopbtext" style={st.shopBtnText}>10회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />100</span></span></button>
-                <button data-edit="shopad" style={st.shopAdBtn}>광고<br />(무료 뽑기 10회)</button>
+                <button data-edit="shopad" style={st.shopAdBtn}><span data-edit="shopadt" style={st.shopAdText}>광고 (10회)</span></button>
               </div>
             ))}
           </div>
@@ -3813,7 +3813,7 @@ export default function App() {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => { setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) })); localStorage.setItem('paleoUiTs', String(Date.now())) }
             const nbtn = { width: 26, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
-            const rng = k => k.startsWith('fev') ? (k.endsWith('fz') ? 40 : k === 'fevonzoom' ? 300 : 300) : k.startsWith('ev') ? (k.endsWith('fz') ? 60 : (k === 'evww' || k === 'evwh' || k === 'evpww' || k === 'evpwh') ? 600 : 300) : k.startsWith('profhero') ? 300 : k.startsWith('prof') ? (k.endsWith('fz') ? 40 : 160) : k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
+            const rng = k => (k.startsWith('shop') || k.startsWith('card')) ? (k.endsWith('fz') ? 60 : (k.endsWith('gap') ? 40 : 400)) : k.startsWith('fev') ? (k.endsWith('fz') ? 40 : k === 'fevonzoom' ? 300 : 300) : k.startsWith('ev') ? (k.endsWith('fz') ? 60 : (k === 'evww' || k === 'evwh' || k === 'evpww' || k === 'evpwh') ? 600 : 300) : k.startsWith('profhero') ? 300 : k.startsWith('prof') ? (k.endsWith('fz') ? 40 : 160) : k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
             const rmin = k => k === 'equipcols' ? 3 : 0
             return <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -4260,7 +4260,9 @@ Object.assign(EDIT_GROUPS, {
   evexit: { label: '던전 나가기 버튼', size: ['evexitw', 'evexith', 'evexitfz'], pos: 'evexit' },
   advexit: { label: '모험 나가기 버튼', size: ['advexitw', 'advexith', 'advexitfz'], pos: 'advexit' },
   shoptab: { label: '상점 탭', size: ['shoptabw', 'shoptabh', 'shoptabfz'], pos: 'shoptab' },
-  shopad: { label: '광고 뽑기 버튼', size: ['shopadw', 'shopadh', 'shopadfz'], pos: 'shopad' },
+  shopad: { label: '광고 뽑기 버튼', size: ['shopadw', 'shopadh'], pos: 'shopad' },
+  shopadt: { label: '광고 버튼 글씨', size: ['shopadfz'], pos: 'shopadt' },
+  shoptabt: { label: '상점 탭 글씨', size: ['shoptabfz'], pos: 'shoptabt' },
   cardwin: { label: '카드결과 창', size: ['cardww', 'cardwh', 'cardgap'], pos: 'cardwin' },
   cardtitle: { label: '카드결과 제목', size: ['cardtfz'], pos: 'cardtitle' },
   cardcell: { label: '카드 그림 틀', size: ['cardcw', 'cardch'], pos: 'cardcell' },
@@ -4314,6 +4316,7 @@ Object.assign(UI_LABELS, {
   evexitw: '버튼 너비', evexith: '버튼 높이', evexitfz: '글씨 크기',
   advexitw: '버튼 너비', advexith: '버튼 높이', advexitfz: '글씨 크기',
   shoptabw: '탭 너비', shoptabh: '탭 높이', shoptabfz: '글씨 크기',
+  shopadt: '글씨 크기',
   shopadw: '버튼 너비', shopadh: '버튼 높이', shopadfz: '글씨 크기',
   cardww: '창 너비', cardwh: '창 높이', cardgap: '카드 간격', cardtfz: '글자 크기',
   cardcw: '카드 너비', cardch: '카드 높이', cardicsz: '아이콘 크기', cardnfz: '글자 크기', cardcfz: '글자 크기',
@@ -4369,7 +4372,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
 --pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evexit', 'advexit', 'shoptab', 'shopad', 'cardwin', 'cardtitle', 'cardcell', 'cardicon', 'cardname', 'cardcnt', 'cardclose', 'glv', 'glvbar', 'glvbart', 'warn', 'evpwin', 'evptitle', 'evpimg', 'evpbn', 'evprew', 'evpsign', 'evpsignt', 'evpbar', 'evpenter', 'evpclose', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evexit', 'advexit', 'shoptab', 'shoptabt', 'shopad', 'shopadt', 'cardwin', 'cardtitle', 'cardcell', 'cardicon', 'cardname', 'cardcnt', 'cardclose', 'glv', 'glvbar', 'glvbart', 'warn', 'evpwin', 'evptitle', 'evpimg', 'evpbn', 'evprew', 'evpsign', 'evpsignt', 'evpbar', 'evpenter', 'evpclose', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -4522,8 +4525,8 @@ const st = {
   shopBtn: {
     flexShrink: 0, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
     width: 'calc(var(--pd-shopbw) + var(--pd-shopbbh) * 2)', height: 'calc(var(--pd-shopbh) + var(--pd-shopbbv) * 2)',
-    border: '1px solid #5a4630', borderRadius: 9,
-    background: 'linear-gradient(180deg,#332415,#211710)', boxShadow: 'inset 0 1px 0 rgba(255,220,150,0.08)',
+    border: 'none', borderRadius: 0,
+    background: 'url(/ui/nav_off.png) center / 100% 100% no-repeat',
     color: '#f3e6d0', lineHeight: 1.35,
     touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none',
     transform: 'translate(var(--pd-shopb-x), var(--pd-shopb-y))',
@@ -4547,10 +4550,10 @@ const st = {
   gachaImg: { width: 'calc(var(--pd-gachaimg) * 1%)', height: 'calc(var(--pd-gachaimg) * 1%)', objectFit: 'contain', imageRendering: 'pixelated', transform: 'translate(var(--pd-gimg-x), var(--pd-gimg-y))' },
   gachaTier: { position: 'absolute', bottom: 2, right: 5, fontSize: 'var(--pd-gtierfz)', color: '#ffd98a', textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-gtier-x), var(--pd-gtier-y))' },
   gachaBtns: { display: 'flex', gap: 8, justifyContent: 'center', paddingTop: 10 },
-  gachaBtn: {
+  gachaBtn: {                                               // 소환 결과창 버튼 — 뽑기 버튼과 같은 틀
     padding: 'calc(var(--pd-gbtnph) + 10px) calc(var(--pd-gbtnpw) + 14px)',
-    border: '1px solid #5a4630', borderRadius: 9,
-    background: 'linear-gradient(180deg,#332415,#211710)', boxShadow: 'inset 0 1px 0 rgba(255,220,150,0.08)',
+    border: 'none', borderRadius: 0,
+    background: 'url(/ui/nav_off.png) center / 100% 100% no-repeat',
     color: '#f3e6d0',
     transform: 'translate(var(--pd-gbtn-x), var(--pd-gbtn-y))',
   },
@@ -4829,12 +4832,18 @@ const st = {
     fontFamily: "'Do Hyeon', sans-serif",
   },
   shopTabOn: { backgroundImage: 'url(/ui/tab_on.png)', color: '#fff4d8', filter: 'none' },
-  shopAdBtn: {                                              // 광고 무료 뽑기 — 받기 버튼과 같은 배경 (광고 미구현)
-    width: 'var(--pd-shopadw)', height: 'var(--pd-shopadh)', fontSize: 'var(--pd-shopadfz)',
+  shopTabText: { display: 'inline-block', whiteSpace: 'nowrap', transform: 'translate(var(--pd-shoptabt-x), var(--pd-shoptabt-y))' },
+  shopAdBtn: {                                              // 광고 무료 뽑기 (광고 미구현) — 뽑기 버튼과 같은 틀
+    width: 'var(--pd-shopadw)', height: 'var(--pd-shopadh)',
     transform: 'translate(var(--pd-shopad-x), var(--pd-shopad-y))',
-    background: 'url(/ui/off_claim.png) center / 100% 100% no-repeat', border: 'none',
-    color: '#f0f0f0', fontWeight: 800, lineHeight: 1.25, padding: 0, flexShrink: 0,
-    textShadow: '0 1px 2px #000', cursor: 'pointer',
+    background: 'url(/ui/nav_off.png) center / 100% 100% no-repeat', border: 'none',
+    padding: 0, flexShrink: 0, cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+  },
+  shopAdText: {
+    fontSize: 'var(--pd-shopadfz)', color: '#f3e6d0', fontWeight: 800, lineHeight: 1.25,
+    textShadow: '0 1px 2px #000', whiteSpace: 'nowrap',
+    transform: 'translate(var(--pd-shopadt-x), var(--pd-shopadt-y))',
   },
   cardResWin: {
     position: 'relative', width: 'var(--pd-cardww)', maxHeight: 'var(--pd-cardwh)',
@@ -5200,8 +5209,9 @@ Object.assign(UI_DEFAULT, {
   evpcw: 80, evpch: 29, evpcfz: 13, evpcloseX: 0, evpcloseY: 0,
   evexitw: 48, evexith: 22, evexitfz: 11, evexitX: 7, evexitY: 70,   // 던전 나가기 버튼
   advexitw: 48, advexith: 22, advexitfz: 11, advexitX: 7, advexitY: 70,  // 모험 나가기 버튼
-  shoptabw: 90, shoptabh: 28, shoptabfz: 13, shoptabX: 0, shoptabY: 0,
-  shopadw: 74, shopadh: 40, shopadfz: 9, shopadX: 0, shopadY: 0,
+  shoptabw: 120, shoptabh: 30, shoptabfz: 14, shoptabX: 0, shoptabY: 0,
+  shopadw: 74, shopadh: 40, shopadfz: 9, shopadX: 0, shopadY: 0, shopadtX: 0, shopadtY: 0,
+  shoptabtX: 0, shoptabtY: 0,
   cardww: 300, cardwh: 420, cardgap: 8, cardwinX: 0, cardwinY: 0,       // 스킬 카드 결과창
   cardtfz: 16, cardtitleX: 0, cardtitleY: 0,
   cardcw: 52, cardch: 84, cardcellX: 0, cardcellY: 0,
