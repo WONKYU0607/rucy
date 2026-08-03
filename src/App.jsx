@@ -29,7 +29,7 @@ const SPLASH_BG = (() => {
   try { const q = new URLSearchParams(location.search); if (q.get('intro') === 'en') ko = false; if (q.get('intro') === 'ko') ko = true } catch {}
   return ko ? '/startbg/startbg.jpg' : '/startbg/startbg_en.png'
 })()
-const CFG_STAMP = Date.parse('2026-08-03T21:48:00+09:00')
+const CFG_STAMP = Date.parse('2026-08-03T22:30:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -201,8 +201,8 @@ const MOTION_DEFAULT = {
   },  // walkSz(걷기)·evoSz(전체)는 진화단계별{0~5}, skillSz=스킬별{id:배율}, hit=모드별 타격 프레임, atkFrSz=공격 프레임별 크기
   ally: { hunter: { sz: 0.85, x: -21, y: -36, atkSz: 1, atkSpd: 1, projSz: 1.25, projX: 0, projY: -40 }, shaman: { sz: 0.85, x: 8, y: 0, atkSz: 1.04, atkSpd: 1, projSz: 0.6, projX: 0, projY: 5 }, healer: { sz: 0.85, x: 12, y: 38, atkSz: 1, atkSpd: 1 }, giant: { sz: 0.85, x: 0, y: -3, atkSz: 1, atkSpd: 1 } },  // 동료 크기·위치·공격프레임 크기·속도
   mob: {   // 일반몹 종별 크기·높이·정지·속도
-    'd:trex': { sz: 1.46, stop: -5, spd: 1.25 }, 'd:spino': { sz: 1.18 }, 'd:trike': { sz: 1.38, stop: -5 }, 'd:stego': { sz: 1.47 },
-    'd:raptor': { sz: 1.17, spd: 1.4 }, 'd:anky': { stop: 25, sz: 1.24 }, 'd:ptera': { sz: 1.3, stop: -14 }, 'd:brachio': { sz: 2 },
+    'd:trex': { sz: 1 }, 'd:spino': { sz: 1 }, 'd:trike': { sz: 1 }, 'd:stego': { sz: 1 },
+    'd:raptor': { sz: 1 }, 'd:anky': { sz: 1 }, 'd:ptera': { sz: 1 }, 'd:brachio': { sz: 1 },
     'hyena': { stop: 30, spd: 1.5, sz: 1.07 }, 'bear': { sz: 1.16, stop: 46, spd: 1.25, y: -7 }, 'rhino': { stop: 43, spd: 1.2, sz: 1.13 }, 'mammoth': { sz: 0.92 }, 'rabbit': { sz: 1.61, stop: 15 },
     'antelope': { sz: 1.28, stop: -20 }, 'deer': { stop: 35, sz: 1 }, 'boar': { stop: 45, sz: 1, spd: 1.4 }, 'wolf': { sz: 1.14, stop: 40, spd: 1.5 },
     'tiger': { sz: 1.09, stop: 15, spd: 1.3 }, 'monkey': { sz: 1.12, stop: -12, spd: 1.5, y: -1 }, 'snake': { sz: 1.08, stop: 6, spd: 1.45 }, 'ostrich': { sz: 0.88, stop: 4 },
@@ -236,12 +236,12 @@ const MOTION_DEFAULT = {
   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값, 종별 아님 / 보스·모험 몹은 미적용): 가로로 눌리고(x) 세로로 늘어나며(y) 발을 축으로 뒤로 젖혀졌다(rot) dur 동안 복귀. 위치는 안 움직임
   hitSq: {"x": 1.1, "y": 1.1, "rot": 10, "dur": 0.15},   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값)
   wave: { gap: 40, dist: 35 },
-  adv: { gap: 100, dist: 60 },    // 모험 일반 몹 1열 대기 간격·히어로와 거리(px) — 웨이브와 분리                                  // 웨이브 몹 일렬 간격(px) / 히어로와의 거리(px) — 종 무관 일괄
+  adv: { gap: 50, dist: 53 },    // 모험 일반 몹 1열 대기 간격·히어로와 거리(px) — 웨이브와 분리                                  // 웨이브 몹 일렬 간격(px) / 히어로와의 거리(px) — 종 무관 일괄
   stone: { spd: 0.6, sz: 13, arc: 0.4 },                           // 직립 돌던지기: 비행속도 배율 / 그림 크기(px) / 포물선 높이 배율
   // 이펙트 프레임별 재생시간(초). 합 = 총 재생시간(전체 '프레임 속도'로 나눔).
   // 길이가 실제 프레임 수와 다르면 무시하고 균등 분할 — 프레임을 지우거나 늘려도 굳지 않음
   fxFrT: {"1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.12, 0.12, 0.15, 0.15], "31": [0.03, 0.03, 0.03, 0.03]},
-  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "31": {"sz": 1.15, "spd": 1, "fly": 0.5, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
+  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
 }
 const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 31]                          // 이펙트 있는 스킬 id
 // 이펙트 프레임 시간(초) 배열 — 넣은 값을 그대로 씀. 프레임을 늘리거나 줄이면 값도 같이 조정할 것.
@@ -1131,7 +1131,10 @@ export default function App() {
       w.bossBattle = false; w.clearedFlag = false; w.bossPending = false
       w.adv = { ...cfg, mult: advMult(cfg.stage), bossOut: false, done: false, win: false }
       w.advTime = ADV_TIME
-      w.spawnLeft = 9999; w.total = ADV_MOBS + 1; w.killed = 0; w.spawnTimer = 200
+      w.total = ADV_MOBS + 1; w.killed = 0; w.spawnTimer = 200
+      // 일반 몹은 제자리 1열이므로 시간차 스폰 없이 **50마리를 한 번에 줄 세운다** (간격이 균일해짐)
+      w.spawnLeft = 0
+      for (let i = 0; i < ADV_MOBS; i++) pushAdvEnemy(false)
     }
 
     function startEvDungeon(cfg) {                    // 이벤트 던전 진입: 경고 → 보스 1마리
@@ -1172,10 +1175,7 @@ export default function App() {
       w.clearedFlag = false
     }
 
-    function spawnAdvEnemy() {
-      if (w.killed >= ADV_MOBS || w.enemies.length >= 8) return   // 보스는 경고 연출 후 별도 소환
-      pushAdvEnemy(false)
-    }
+    function spawnAdvEnemy() { /* 모험 일반몹은 진입 시 50마리를 한 번에 배치 — 추가 스폰 없음 */ }
 
     function pushAdvEnemy(isBoss) {
       const a = w.adv
@@ -1337,6 +1337,13 @@ export default function App() {
         return e.x - w.heroX < atkRange0 + extra || reached    // 근접 + 걸어오는 몹·보스
       }
       w._engaged = engaged
+      // 기본공격 대상은 배열 순서가 아니라 **히어로에서 가장 가까운** 교전 대상
+      const nearestEngaged = (extra = 0) => {
+        let best = null
+        for (const e of w.enemies) if (!e.dead && engaged(e, extra) && (!best || e.x < best.x)) best = e
+        return best
+      }
+      w._nearest = nearestEngaged
       const blocked = w.enemies.some(e => !e.dead && engaged(e))
       w._blocked = blocked
       const moving = (st.phase === 'fighting' || st.phase === 'cleared') && hero.state === 'move' && !blocked
@@ -1558,7 +1565,7 @@ export default function App() {
           // 스킬 시전 중: 상태 유지, 이동/공격 정지
         } else if (hero.state === 'move') {
           if (!blocked) hero.animT += dt * SPEED * st.mspdMult   // 앞이 막히면 걷기 애니 정지
-          const target = w.enemies.find(e => !e.dead && w._engaged(e))
+          const target = w._nearest()
           if (hero.cd <= 0 && target) {
             hero.state = 'attack'; hero.t = 0; hero.did = false
             hero.cd = st.cd
@@ -1578,14 +1585,14 @@ export default function App() {
           if (st.mode === 'quad') {
             if (!hero.did && hero.t >= PUNCH.hitAt) {
               hero.did = true
-              const t = w.enemies.find(e => !e.dead && w._engaged(e, 40))
+              const t = w._nearest(40)
               if (t) dealDamage(t, st)
             }
             if (hero.t >= PUNCH.total) { hero.state = 'move'; hero.t = 0 }
           } else if (MELEE_MODES.includes(st.mode)) {
             const mc = MC(st.mode)
             const prog = hero.t / mc.total
-            const inRange = w.enemies.find(e => !e.dead && w._engaged(e, 40))
+            const inRange = w._nearest(40)
             if (!hero.did && !inRange && prog < 0.35) {
               // 스윙 초반에 대상 소멸 → 취소 + 쿨다운 환불 (헛스윙/헛대기 방지)
               hero.state = 'move'; hero.t = 0; hero.cd = Math.min(hero.cd, 100)
@@ -5219,3 +5226,6 @@ Object.assign(UI_DEFAULT, { shopic0: 40, shopic1: 48, shopic2: 42, shoptfz: 12, 
 
 // 사용자 확정 UI 값 (adas.txt, 2026-08-03)
 Object.assign(UI_DEFAULT, { skhtitleX: 27, skhtitleY: 11, shopt0Y: 1, glv0Y: 0, glvbar0w: 120, glvbar0h: 9, glvbar0X: -8, glvbar0Y: 0, gift0Y: -15, shopt1Y: 1, glv1Y: 0, glvbar1w: 120, glvbar1h: 9, glvbar1X: -5, glvbar1Y: 0, gift1Y: -15, shopt2X: -6, shopt2Y: 1, glv2Y: 0, glvbar2w: 120, glvbar2h: 9, glvbar2X: -8, glvbar2Y: 0, gift2Y: -15, shopic3w: 50, shopic3h: 62, shopic3X: -7, shopic3Y: 0 })
+
+// 사용자 확정 UI 값 (zxz.txt)
+Object.assign(UI_DEFAULT, { shopbX: -2, shopt3fz: 15, shopt3Y: 0, shoptabtY: -1 })
