@@ -2922,21 +2922,24 @@ export default function App() {
 
       {cardRes && (
         <div style={st.evpOverlay} onClick={() => setCardRes(null)}>
-          <div style={st.cardResWin} onClick={e => e.stopPropagation()}>
-            <div style={st.cardResTitle}>스킬 카드 {cardRes.ids.length}장</div>
+          <div data-edit="cardwin" style={st.cardResWin} onClick={e => e.stopPropagation()}>
+            <div data-edit="cardtitle" style={st.cardResTitle}>스킬 카드 {cardRes.ids.length}장</div>
             <div style={st.cardResGrid}>
               {Object.entries(cardRes.ids.reduce((m, id) => ({ ...m, [id]: (m[id] || 0) + 1 }), {})).map(([id, cnt]) => {
                 const sk = SKILLS.find(k => k.id === Number(id))
                 return (
                   <div key={id} style={st.cardResCell}>
-                    <img src="/ui/skillcard.png" alt="" style={st.cardResImg} />
-                    <div style={st.cardResName}>{sk ? sk.name : id}</div>
-                    <div style={st.cardResCnt}>x{cnt}</div>
+                    <div data-edit="cardcell" style={st.cardResFrame}>
+                      <img src="/ui/skillcard.png" alt="" style={st.cardResImg} />
+                      {sk && skIcon(sk) && <img data-edit="cardicon" src={skIcon(sk)} alt="" style={st.cardResIcon} />}
+                    </div>
+                    <div data-edit="cardname" style={st.cardResName}>{sk ? sk.name : id}</div>
+                    <div data-edit="cardcnt" style={st.cardResCnt}>x{cnt}</div>
                   </div>
                 )
               })}
             </div>
-            <button style={st.evpClose} onClick={() => setCardRes(null)}>확인</button>
+            <button data-edit="cardclose" style={st.cardResClose} onClick={() => setCardRes(null)}>확인</button>
           </div>
         </div>
       )}
@@ -4258,6 +4261,13 @@ Object.assign(EDIT_GROUPS, {
   advexit: { label: '모험 나가기 버튼', size: ['advexitw', 'advexith', 'advexitfz'], pos: 'advexit' },
   shoptab: { label: '상점 탭', size: ['shoptabw', 'shoptabh', 'shoptabfz'], pos: 'shoptab' },
   shopad: { label: '광고 뽑기 버튼', size: ['shopadw', 'shopadh', 'shopadfz'], pos: 'shopad' },
+  cardwin: { label: '카드결과 창', size: ['cardww', 'cardwh', 'cardgap'], pos: 'cardwin' },
+  cardtitle: { label: '카드결과 제목', size: ['cardtfz'], pos: 'cardtitle' },
+  cardcell: { label: '카드 그림 틀', size: ['cardcw', 'cardch'], pos: 'cardcell' },
+  cardicon: { label: '카드 안 스킬아이콘', size: ['cardicsz'], pos: 'cardicon' },
+  cardname: { label: '카드 스킬이름', size: ['cardnfz'], pos: 'cardname' },
+  cardcnt: { label: '카드 개수 글자', size: ['cardcfz'], pos: 'cardcnt' },
+  cardclose: { label: '카드결과 확인버튼', size: ['cardclw', 'cardclh', 'cardclfz'], pos: 'cardclose' },
   glv: { label: '소환 레벨 글자', size: ['glvfz'], pos: 'glv' },
   glvbar: { label: '소환 레벨 바', size: ['glvbarw', 'glvbarh'], pos: 'glvbar' },
   glvbart: { label: '소환 레벨 바 글자', size: ['glvbtfz'], pos: 'glvbart' },
@@ -4305,6 +4315,9 @@ Object.assign(UI_LABELS, {
   advexitw: '버튼 너비', advexith: '버튼 높이', advexitfz: '글씨 크기',
   shoptabw: '탭 너비', shoptabh: '탭 높이', shoptabfz: '글씨 크기',
   shopadw: '버튼 너비', shopadh: '버튼 높이', shopadfz: '글씨 크기',
+  cardww: '창 너비', cardwh: '창 높이', cardgap: '카드 간격', cardtfz: '글자 크기',
+  cardcw: '카드 너비', cardch: '카드 높이', cardicsz: '아이콘 크기', cardnfz: '글자 크기', cardcfz: '글자 크기',
+  cardclw: '버튼 너비', cardclh: '버튼 높이', cardclfz: '글씨 크기',
   glvfz: '글자 크기', glvbarw: '바 너비', glvbarh: '바 높이', glvbtfz: '글자 크기',
   warnfz: '글자 크기', evpww: '창 너비', evpwh: '창 높이', evptitlefz: '글자 크기', evpimgw: '그림 너비', evpimgh: '그림 높이',
   evpbnfz: '글자 크기', evprewfz: '글자 크기', evprewic: '아이콘 크기', evpsw: '표지판 너비', evpsh: '표지판 높이', evpsfz: '글자 크기', evpbarw: '바 너비', evpbarh: '바 높이',
@@ -4329,7 +4342,7 @@ const uiVars = c => `:root{
 --pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
 ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg${i}-x:${c['evoimg' + i + 'X']}px;--pd-evoimg${i}-y:${c['evoimg' + i + 'Y']}px;`).join('')}--pd-slotfz:${c.slotfz}px;
---pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdimgsz:${c.skdimgsz}px;--pd-avafacesz:${c.avafacesz}px;--pd-profherow:${c.profherow}px;--pd-profheroh:${c.profheroh}px;--pd-profherozoom:${c.profherozoom};--pd-profstatfz:${c.profstatfz}px;--pd-profcurfz:${c.profcurfz}px;--pd-profcuric:${c.profcuric}px;--pd-profgearsz:${c.profgearsz}px;--pd-profsecfz:${c.profsecfz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;--pd-warnfz:${c.warnfz}px;--pd-evpww:${c.evpww}px;--pd-evpwh:${c.evpwh}px;--pd-evptitlefz:${c.evptitlefz}px;--pd-evpimgw:${c.evpimgw}px;--pd-evpimgh:${c.evpimgh}px;--pd-evpbnfz:${c.evpbnfz}px;--pd-evprewfz:${c.evprewfz}px;--pd-evprewic:${c.evprewic}px;--pd-evpsw:${c.evpsw}px;--pd-evpsh:${c.evpsh}px;--pd-evpsfz:${c.evpsfz}px;--pd-evpbarw:${c.evpbarw}px;--pd-evpbarh:${c.evpbarh}px;--pd-evpew:${c.evpew}px;--pd-evpeh:${c.evpeh}px;--pd-evpefz:${c.evpefz}px;--pd-evpcw:${c.evpcw}px;--pd-evpch:${c.evpch}px;--pd-evpcfz:${c.evpcfz}px;--pd-shoptabw:${c.shoptabw}px;--pd-shoptabh:${c.shoptabh}px;--pd-shoptabfz:${c.shoptabfz}px;--pd-shopadw:${c.shopadw}px;--pd-shopadh:${c.shopadh}px;--pd-shopadfz:${c.shopadfz}px;--pd-glvfz:${c.glvfz}px;--pd-glvbarw:${c.glvbarw}px;--pd-glvbarh:${c.glvbarh}px;--pd-glvbtfz:${c.glvbtfz}px;--pd-advexitw:${c.advexitw}px;--pd-advexith:${c.advexith}px;--pd-advexitfz:${c.advexitfz}px;--pd-evexitw:${c.evexitw}px;--pd-evexith:${c.evexith}px;--pd-evexitfz:${c.evexitfz}px;--pd-fevbtnw:${c.fevbtnw}px;--pd-fevbtnh:${c.fevbtnh}px;--pd-fevonzoom:${c.fevonzoom};--pd-fevbtntfz:${c.fevbtntfz}px;--pd-evbtnw:${c.evbtnw}px;--pd-evbtnh:${c.evbtnh}px;--pd-evbtntfz:${c.evbtntfz}px;--pd-evww:${c.evww}px;--pd-evwh:${c.evwh}px;--pd-evtitlefz:${c.evtitlefz}px;--pd-evclsz:${c.evclsz}px;--pd-evtabw:${c.evtabw}px;--pd-evtabh:${c.evtabh}px;--pd-evtabfz:${c.evtabfz}px;--pd-evprevh:${c.evprevh}px;--pd-evnamefz:${c.evnamefz}px;--pd-evrowh:${c.evrowh}px;--pd-evnosz:${c.evnosz}px;--pd-evbnamefz:${c.evbnamefz}px;--pd-evgow:${c.evgow}px;--pd-evgoh:${c.evgoh}px;--pd-evgofz:${c.evgofz}px;--pd-evprevzoom:${c.evprevzoom};--pd-evnoimgsz:${c.evnoimgsz}px;
+--pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdimgsz:${c.skdimgsz}px;--pd-avafacesz:${c.avafacesz}px;--pd-profherow:${c.profherow}px;--pd-profheroh:${c.profheroh}px;--pd-profherozoom:${c.profherozoom};--pd-profstatfz:${c.profstatfz}px;--pd-profcurfz:${c.profcurfz}px;--pd-profcuric:${c.profcuric}px;--pd-profgearsz:${c.profgearsz}px;--pd-profsecfz:${c.profsecfz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;--pd-warnfz:${c.warnfz}px;--pd-evpww:${c.evpww}px;--pd-evpwh:${c.evpwh}px;--pd-evptitlefz:${c.evptitlefz}px;--pd-evpimgw:${c.evpimgw}px;--pd-evpimgh:${c.evpimgh}px;--pd-evpbnfz:${c.evpbnfz}px;--pd-evprewfz:${c.evprewfz}px;--pd-evprewic:${c.evprewic}px;--pd-evpsw:${c.evpsw}px;--pd-evpsh:${c.evpsh}px;--pd-evpsfz:${c.evpsfz}px;--pd-evpbarw:${c.evpbarw}px;--pd-evpbarh:${c.evpbarh}px;--pd-evpew:${c.evpew}px;--pd-evpeh:${c.evpeh}px;--pd-evpefz:${c.evpefz}px;--pd-evpcw:${c.evpcw}px;--pd-evpch:${c.evpch}px;--pd-evpcfz:${c.evpcfz}px;--pd-shoptabw:${c.shoptabw}px;--pd-shoptabh:${c.shoptabh}px;--pd-shoptabfz:${c.shoptabfz}px;--pd-cardww:${c.cardww}px;--pd-cardwh:${c.cardwh}px;--pd-cardgap:${c.cardgap}px;--pd-cardtfz:${c.cardtfz}px;--pd-cardcw:${c.cardcw}px;--pd-cardch:${c.cardch}px;--pd-cardicsz:${c.cardicsz}px;--pd-cardnfz:${c.cardnfz}px;--pd-cardcfz:${c.cardcfz}px;--pd-cardclw:${c.cardclw}px;--pd-cardclh:${c.cardclh}px;--pd-cardclfz:${c.cardclfz}px;--pd-shopadw:${c.shopadw}px;--pd-shopadh:${c.shopadh}px;--pd-shopadfz:${c.shopadfz}px;--pd-glvfz:${c.glvfz}px;--pd-glvbarw:${c.glvbarw}px;--pd-glvbarh:${c.glvbarh}px;--pd-glvbtfz:${c.glvbtfz}px;--pd-advexitw:${c.advexitw}px;--pd-advexith:${c.advexith}px;--pd-advexitfz:${c.advexitfz}px;--pd-evexitw:${c.evexitw}px;--pd-evexith:${c.evexith}px;--pd-evexitfz:${c.evexitfz}px;--pd-fevbtnw:${c.fevbtnw}px;--pd-fevbtnh:${c.fevbtnh}px;--pd-fevonzoom:${c.fevonzoom};--pd-fevbtntfz:${c.fevbtntfz}px;--pd-evbtnw:${c.evbtnw}px;--pd-evbtnh:${c.evbtnh}px;--pd-evbtntfz:${c.evbtntfz}px;--pd-evww:${c.evww}px;--pd-evwh:${c.evwh}px;--pd-evtitlefz:${c.evtitlefz}px;--pd-evclsz:${c.evclsz}px;--pd-evtabw:${c.evtabw}px;--pd-evtabh:${c.evtabh}px;--pd-evtabfz:${c.evtabfz}px;--pd-evprevh:${c.evprevh}px;--pd-evnamefz:${c.evnamefz}px;--pd-evrowh:${c.evrowh}px;--pd-evnosz:${c.evnosz}px;--pd-evbnamefz:${c.evbnamefz}px;--pd-evgow:${c.evgow}px;--pd-evgoh:${c.evgoh}px;--pd-evgofz:${c.evgofz}px;--pd-evprevzoom:${c.evprevzoom};--pd-evnoimgsz:${c.evnoimgsz}px;
 ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k}h:${c['advico' + k + 'h']}px;--pd-advico${k}-x:${c['advico' + k + 'X']}px;--pd-advico${k}-y:${c['advico' + k + 'Y']}px;`).join('')}
 --pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
 --pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
@@ -4356,7 +4369,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
 --pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evexit', 'advexit', 'shoptab', 'shopad', 'glv', 'glvbar', 'glvbart', 'warn', 'evpwin', 'evptitle', 'evpimg', 'evpbn', 'evprew', 'evpsign', 'evpsignt', 'evpbar', 'evpenter', 'evpclose', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evexit', 'advexit', 'shoptab', 'shopad', 'cardwin', 'cardtitle', 'cardcell', 'cardicon', 'cardname', 'cardcnt', 'cardclose', 'glv', 'glvbar', 'glvbart', 'warn', 'evpwin', 'evptitle', 'evpimg', 'evpbn', 'evprew', 'evpsign', 'evpsignt', 'evpbar', 'evpenter', 'evpclose', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -4806,30 +4819,61 @@ const st = {
     borderRadius: 6, border: '1px solid #7a5a2a', background: 'linear-gradient(180deg,#4a3520,#2c2013)',
     color: '#f0dfae', fontWeight: 700, zIndex: 6, padding: 0,
   },
-  shopTabRow: { display: 'flex', gap: 6, marginBottom: 6, flexShrink: 0 },
-  shopTab: {
+  shopTabRow: { display: 'flex', gap: 5, marginBottom: 6, flexShrink: 0 },
+  shopTab: {                                                // 영웅 탭(강화/성장/진화)과 같은 이미지 탭
     width: 'var(--pd-shoptabw)', height: 'var(--pd-shoptabh)', fontSize: 'var(--pd-shoptabfz)',
     transform: 'translate(var(--pd-shoptab-x), var(--pd-shoptab-y))',
-    borderRadius: 8, border: '1px solid #5a4028', background: '#2c2013', color: '#9c8a6c', fontWeight: 700, padding: 0,
+    border: 'none', background: 'transparent',
+    backgroundImage: 'url(/ui/tab_off.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
+    color: '#b6a488', fontWeight: 700, filter: 'grayscale(0.2)', padding: 0, cursor: 'pointer',
+    fontFamily: "'Do Hyeon', sans-serif",
   },
-  shopTabOn: { background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', border: `1px solid ${GOLD_D}` },
-  shopAdBtn: {                                              // 광고 무료 뽑기 (광고 미구현)
+  shopTabOn: { backgroundImage: 'url(/ui/tab_on.png)', color: '#fff4d8', filter: 'none' },
+  shopAdBtn: {                                              // 광고 무료 뽑기 — 받기 버튼과 같은 배경 (광고 미구현)
     width: 'var(--pd-shopadw)', height: 'var(--pd-shopadh)', fontSize: 'var(--pd-shopadfz)',
     transform: 'translate(var(--pd-shopad-x), var(--pd-shopad-y))',
-    borderRadius: 8, border: '1px solid #3a6a3a', background: 'linear-gradient(180deg,#3f7a3f,#2a5a2a)',
-    color: '#eaf5ea', fontWeight: 700, lineHeight: 1.25, padding: 0, flexShrink: 0,
+    background: 'url(/ui/off_claim.png) center / 100% 100% no-repeat', border: 'none',
+    color: '#f0f0f0', fontWeight: 800, lineHeight: 1.25, padding: 0, flexShrink: 0,
+    textShadow: '0 1px 2px #000', cursor: 'pointer',
   },
   cardResWin: {
-    position: 'relative', width: 300, maxHeight: 420, background: 'linear-gradient(180deg,#2a1d10,#160f07)',
+    position: 'relative', width: 'var(--pd-cardww)', maxHeight: 'var(--pd-cardwh)',
+    transform: 'translate(var(--pd-cardwin-x), var(--pd-cardwin-y))',
+    background: 'linear-gradient(180deg,#2a1d10,#160f07)',
     border: `2px solid ${GOLD_D}`, borderRadius: 12, padding: 12,
     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, overflow: 'hidden',
   },
-  cardResTitle: { fontSize: 16, fontWeight: 800, color: GOLD, flexShrink: 0 },
-  cardResGrid: { display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', overflowY: 'auto' },
-  cardResCell: { width: 72, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 },
-  cardResImg: { width: 52, height: 84, objectFit: 'contain', imageRendering: 'pixelated' },
-  cardResName: { fontSize: 10, color: '#e8d5a8', textAlign: 'center', lineHeight: 1.2 },
-  cardResCnt: { fontSize: 11, color: GOLD, fontWeight: 700 },
+  cardResTitle: {
+    fontSize: 'var(--pd-cardtfz)', fontWeight: 800, color: GOLD, flexShrink: 0,
+    transform: 'translate(var(--pd-cardtitle-x), var(--pd-cardtitle-y))',
+  },
+  cardResGrid: { display: 'flex', flexWrap: 'wrap', gap: 'var(--pd-cardgap)', justifyContent: 'center', overflowY: 'auto' },
+  cardResCell: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 },
+  cardResFrame: {
+    position: 'relative', width: 'var(--pd-cardcw)', height: 'var(--pd-cardch)',
+    transform: 'translate(var(--pd-cardcell-x), var(--pd-cardcell-y))',
+  },
+  cardResImg: { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', imageRendering: 'pixelated' },
+  cardResIcon: {                                            // 카드 틀 안의 스킬 아이콘
+    position: 'absolute', left: '50%', top: '50%',
+    transform: 'translate(-50%, -50%) translate(var(--pd-cardicon-x), var(--pd-cardicon-y))',
+    width: 'var(--pd-cardicsz)', height: 'var(--pd-cardicsz)', objectFit: 'contain', imageRendering: 'pixelated',
+    borderRadius: 4,
+  },
+  cardResName: {
+    fontSize: 'var(--pd-cardnfz)', color: '#e8d5a8', textAlign: 'center', lineHeight: 1.2,
+    transform: 'translate(var(--pd-cardname-x), var(--pd-cardname-y))',
+  },
+  cardResCnt: {
+    fontSize: 'var(--pd-cardcfz)', color: GOLD, fontWeight: 700,
+    transform: 'translate(var(--pd-cardcnt-x), var(--pd-cardcnt-y))',
+  },
+  cardResClose: {
+    width: 'var(--pd-cardclw)', height: 'var(--pd-cardclh)', fontSize: 'var(--pd-cardclfz)',
+    transform: 'translate(var(--pd-cardclose-x), var(--pd-cardclose-y))',
+    borderRadius: 8, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)',
+    color: '#fff', fontWeight: 800, padding: 0, flexShrink: 0,
+  },
   gLvTxt: {                                                 // 상점 소환 레벨
     fontSize: 'var(--pd-glvfz)', color: GOLD, fontWeight: 700, whiteSpace: 'nowrap',
     transform: 'translate(var(--pd-glv-x), var(--pd-glv-y))',
@@ -5158,5 +5202,12 @@ Object.assign(UI_DEFAULT, {
   advexitw: 48, advexith: 22, advexitfz: 11, advexitX: 7, advexitY: 70,  // 모험 나가기 버튼
   shoptabw: 90, shoptabh: 28, shoptabfz: 13, shoptabX: 0, shoptabY: 0,
   shopadw: 74, shopadh: 40, shopadfz: 9, shopadX: 0, shopadY: 0,
+  cardww: 300, cardwh: 420, cardgap: 8, cardwinX: 0, cardwinY: 0,       // 스킬 카드 결과창
+  cardtfz: 16, cardtitleX: 0, cardtitleY: 0,
+  cardcw: 52, cardch: 84, cardcellX: 0, cardcellY: 0,
+  cardicsz: 30, cardiconX: 0, cardiconY: -3,
+  cardnfz: 10, cardnameX: 0, cardnameY: 0,
+  cardcfz: 11, cardcntX: 0, cardcntY: 0,
+  cardclw: 90, cardclh: 34, cardclfz: 14, cardcloseX: 0, cardcloseY: 0,
   glvfz: 11, glvX: 0, glvY: 0, glvbarw: 120, glvbarh: 12, glvbarX: 0, glvbarY: 0, glvbtfz: 9, glvbartX: 0, glvbartY: 0,   // 상점 소환 레벨·진행바
 })
