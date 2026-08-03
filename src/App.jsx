@@ -29,7 +29,7 @@ const SPLASH_BG = (() => {
   try { const q = new URLSearchParams(location.search); if (q.get('intro') === 'en') ko = false; if (q.get('intro') === 'ko') ko = true } catch {}
   return ko ? '/startbg/startbg.jpg' : '/startbg/startbg_en.png'
 })()
-const CFG_STAMP = Date.parse('2026-08-03T20:07:00+09:00')
+const CFG_STAMP = Date.parse('2026-08-03T21:25:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -94,12 +94,11 @@ const SKILL_SHEET = [
   { id: 29, n: 7, h: 200, stage: 2, title: '사이오닉 스톰', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [4, 5, 6, 7], fxH: 240, hitP: 0.6 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 150 },
   { id: 32, n: 5, h: 200, stage: 3, title: '얼음도끼', charSeq: [1, 2, 3, 4, 5], cd: 2, dmgMult: 3, aoe: true, rangePx: 150 },   // 이펙트가 그림에 포함 — 별도 fx 없음
   { id: 31, n: 8, h: 200, stage: 3, title: '회전 도끼', charSeq: [1, 2, 1, 2, 3], fx: { type: 'proj', fly: [5, 6, 7, 8], fxH: 120 }, cd: 2, dmgMult: 3 },   // 관통 투사체
-  { id: 30, n: 7, h: 300, stage: 2, title: '거대 몽둥이', charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5, 6, 7], fxH: 260, hitP: 0.9 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 200 },
   ...PASSIVE_SHEET,   // 진화 단계별 패시브 (오스트랄로~인간)
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
 // 스킬 아이콘: 해당 스킬 시트의 지정 프레임 사용 (없으면 번호 텍스트)
-const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4, 22: 4, 23: 6, 24: 7, 25: 3, 26: 3, 27: 1, 28: 6, 29: 6, 30: 2, 31: 6, 32: 2 }
+const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4, 22: 4, 23: 6, 24: 7, 25: 3, 26: 3, 27: 1, 28: 6, 29: 6, 31: 6, 32: 2 }
 // 스킬 효과(대상/데미지/사거리/쿨타임)를 인게임 상세창에서 조절 — 인덱스가 아닌 **id 기준**이라
 // 스킬을 넣고 빼도 값이 안 밀린다(예전 cdConf는 인덱스 배열이라 매번 리셋됐음).
 const skEff = (sk, cfg) => {
@@ -186,14 +185,14 @@ const MOTION_DEFAULT = {
   hero: {
     sz: 0.85, x: -35, y: 0,
     walkSz: { 0: 0.95, 1: 0.96, 2: 0.94, 3: 0.94, 4: 0.86, 5: 0.9 },
-    skillFront: {"22": 1, "23": 1, "24": 1, "25": 1, "26": 1, "27": 1, "28": 1, "29": 0, "30": 1, "31": 1},   // 1이면 그 스킬 시전 중 히어로를 몬스터 위에 그림
-    skillSz: { 1: 0.85, 2: 0.85, 7: 0.9, 8: 0.95, 13: 0.85, 15: 0.83, 17: 0.88, 18: 1.07, 20: 1.06, 22: 1.03, 23: 0.9, 24: 0.9, 25: 0.8, 26: 0.54, 27: 0.8 },
-    skillPos: { '23': { x: -5 } },   // 스킬별 그림 위치
-    skillFrSz: {"2": {"2": 0.98}, "22": {"4": 0.95}, "23": {"1": 0.97, "2": 0.97, "3": 0.97, "4": 0.97, "5": 0.97}, "25": {"1": 0.98, "2": 1.06, "3": 1.18}, "28": {"1": 2.1, "2": 2.1, "3": 2.1, "4": 1.7, "5": 1.6, "6": 1.91}, "29": {"1": 0.88, "2": 0.87, "3": 0.9}, "30": {"1": 0.72, "2": 0.72}, "31": {"1": 0.6, "2": 0.6, "3": 0.6, "4": 0.6, "5": 0.63}},   // 스킬 프레임별 크기
-    skillFrPos: {"22": {"2": {"x": 20}, "3": {"x": 75}, "4": {"x": 155}}, "23": {"1": {"x": 35}, "2": {"x": 70}, "3": {"x": 105}, "4": {"x": 140}, "5": {"x": 175}}, "24": {"3": {"x": 50, "y": 14}, "4": {"y": 15, "x": 50}}, "25": {"1": {"y": 7}, "2": {"x": 45, "y": 3}, "3": {"x": 86, "y": 5}, "4": {"x": 100, "y": 9}}, "26": {"1": {"x": 20}, "2": {"x": 40}, "3": {"x": 60}, "4": {"x": 80}, "5": {"x": 100}, "6": {"x": 120}}, "27": {"1": {"x": 20}, "2": {"x": 20}, "3": {"x": 25}, "4": {"x": 15}, "5": {"x": 20}}, "28": {"1": {"x": 22, "y": 0}, "2": {"y": 3, "x": 30}, "3": {"x": 50, "y": -45}, "4": {"x": 110, "y": 13}, "5": {"x": 128, "y": 12}, "6": {"x": 132, "y": 16}}, "29": {"1": {"x": 10, "y": 3}, "2": {"x": 10, "y": 5}, "3": {"x": 2}}, "30": {"1": {"x": -13, "y": 2}, "2": {"y": 8, "x": 12}}, "31": {"1": {"y": 2, "x": -4}, "2": {"y": 2}, "3": {"x": -4}, "5": {"x": -21, "y": 2}}},   // 스킬 프레임별 위치
-    skillFrT: {"18": [0.2, 0.25], "22": [0.12, 0.15, 0.18, 0.2], "23": [0.15, 0.15, 0.15, 0.15, 0.25], "24": [0.3, 0.3, 0.2, 0.2], "25": [0.12, 0.12, 0.12, 0.15], "26": [0.15, 0.15, 0.15, 0.15, 0.15, 0.15], "27": [0.1, 0.1, 0.1, 0.25, 0.25], "28": [0.15, 0.15, 0.2, 0.15, 0.2, 0.25], "29": [0.1, 0.15, 0.25], "30": [0.2, 0.2], "31": [0.15, 0.15, 0.15, 0.15, 0.4]},   // 스킬 프레임별 재생시간(초)
+    skillFront: {"22": 1, "23": 1, "24": 1, "25": 1, "26": 1, "27": 1, "28": 1, "29": 0, "31": 1, "32": 1},   // 1이면 그 스킬 시전 중 히어로를 몬스터 위에 그림
+    skillSz: {"1": 0.85, "2": 0.85, "7": 0.9, "8": 0.95, "13": 0.85, "15": 0.83, "17": 0.88, "18": 1.07, "20": 1.06, "22": 1.03, "23": 0.9, "24": 0.9, "25": 0.8, "26": 0.54, "27": 0.8},   // 스킬별 크기
+    skillPos: {"23": {"x": -5}},   // 스킬별 위치
+    skillFrSz: {"2": {"2": 0.98}, "22": {"4": 0.95}, "23": {"1": 0.97, "2": 0.97, "3": 0.97, "4": 0.97, "5": 0.97}, "25": {"1": 0.98, "2": 1.06, "3": 1.18}, "28": {"1": 2.1, "2": 2.1, "3": 2.1, "4": 1.7, "5": 1.6, "6": 1.91}, "29": {"1": 0.88, "2": 0.87, "3": 0.9}, "31": {"1": 0.6, "2": 0.6, "3": 0.6, "4": 0.6, "5": 0.65}, "32": {"1": 0.73, "2": 0.73, "3": 0.75, "4": 0.75, "5": 0.82}},   // 스킬 프레임별 크기
+    skillFrPos: {"22": {"2": {"x": 20}, "3": {"x": 75}, "4": {"x": 155}}, "23": {"1": {"x": 35}, "2": {"x": 70}, "3": {"x": 105}, "4": {"x": 140}, "5": {"x": 175}}, "24": {"3": {"x": 50, "y": 14}, "4": {"y": 15, "x": 50}}, "25": {"1": {"y": 7}, "2": {"x": 45, "y": 3}, "3": {"x": 86, "y": 5}, "4": {"x": 100, "y": 9}}, "26": {"1": {"x": 20}, "2": {"x": 40}, "3": {"x": 60}, "4": {"x": 80}, "5": {"x": 100}, "6": {"x": 120}}, "27": {"1": {"x": 20}, "2": {"x": 20}, "3": {"x": 25}, "4": {"x": 15}, "5": {"x": 20}}, "28": {"1": {"x": 22, "y": 0}, "2": {"y": 3, "x": 30}, "3": {"x": 50, "y": -45}, "4": {"x": 110, "y": 13}, "5": {"x": 128, "y": 12}, "6": {"x": 132, "y": 16}}, "29": {"1": {"x": 10, "y": 3}, "2": {"x": 10, "y": 5}, "3": {"x": 2}}, "31": {"1": {"y": 2, "x": -4}, "2": {"y": 2}, "3": {"x": -4}, "5": {"x": -21, "y": 4}}, "32": {"1": {"y": 3, "x": -28}, "2": {"y": 6, "x": 34}, "3": {"y": 4, "x": 6}, "4": {"x": 37, "y": 3}, "5": {"y": 9, "x": 100}}},   // 스킬 프레임별 위치
+    skillFrT: {"18": [0.2, 0.25], "22": [0.12, 0.15, 0.18, 0.2], "23": [0.15, 0.15, 0.15, 0.15, 0.25], "24": [0.15, 0.15, 0.2, 0.2], "25": [0.12, 0.12, 0.12, 0.15], "26": [0.15, 0.15, 0.15, 0.15, 0.15, 0.15], "27": [0.1, 0.1, 0.1, 0.25, 0.25], "28": [0.15, 0.15, 0.2, 0.15, 0.2, 0.25], "29": [0.1, 0.15, 0.25], "31": [0.15, 0.15, 0.15, 0.15, 0.4], "32": [0.1, 0.17, 0.12, 0.12, 0.33]},   // 스킬 프레임별 재생시간(초)
     evoSz: { 0: 0.95, 1: 0.85, 2: 0.9, 3: 0.88, 4: 0.9, 5: 0.9 },
-    outline: { blur: 6, alpha: 0.85 },   // 히어로 외곽 그림자 — 밝은 배경에서 실루엣이 묻히는 것 방지
+    outline: {"blur": 10, "alpha": 0.8},   // 히어로 외곽 그림자
     range: {"0": 25, "1": 90, "2": 35, "3": 35, "4": 35, "5": 40},   // 진화단계별 기본공격 사거리(px). 히어로 x=200, 화면 폭 420 → 220이면 화면 끝
     hit: { erectus: 3, neander: 2, sapiens: 4, human: 4 },     // 데미지 프레임(1부터). 사피엔스는 1번 삭제로 4프레임
      // 데미지 프레임(1부터, 기본=마지막). 사피엔스는 1번 삭제로 4장이라 4
@@ -222,7 +221,7 @@ const MOTION_DEFAULT = {
     'd:raptor': { spd: 1.8, sz: 1.08 }, 'd:anky': { sz: 0.79, stop: 90, y: -3 }, 'd:ptera': { spd: 1.95, stop: 18, y: -25 }, 'd:brachio': { y: -12, sz: 1.6 },
     'c:rabbit': { sz: 1.3, y: -6, stop: 85, spd: 1.4 }, 'c:antelope': { y: -6, stop: 30, sz: 1.29 }, 'c:deer': { stop: 37, y: -7, sz: 0.85, spd: 1.4 }, 'c:boar': { sz: 1.07, y: -12, stop: 70, spd: 1.3 },
     'c:wolf': { stop: 85, y: -11, spd: 1.5, sz: 1.24 }, 'c:hyena': { stop: 90, y: -12, sz: 0.88, spd: 1.3 }, 'c:bear': { y: -13, stop: 110, sz: 0.8, spd: 1.35 }, 'c:rhino': { stop: 95, sz: 0.75, y: -4, spd: 1.35 },
-    'c:tiger': { spd: 1.3, sz: 0.9, y: -6, stop: 103 }, 'c:mammoth': { spd: 1.3, sz: 0.67, y: -7, stop: 106 }, 'c:monkey': { spd: 1.5, y: -3, stop: 5 }, 'c:snake': { sz: 1.66, spd: 1.6 },
+    'c:tiger': { spd: 1.3, sz: 0.9, y: -6, stop: 103 }, 'c:mammoth': { spd: 1.3, sz: 0.67, y: -7, stop: 106 }, 'c:monkey': { spd: 1.5, y: -3, stop: 186, sz: 0.85 }, 'c:snake': { sz: 1.66, spd: 1.6 },
     'c:ostrich': { sz: 0.65, y: -8, stop: 77 }, 'c:turtle': { stop: 4 }, 'c:croc': { sz: 1.05, y: -3, stop: 46 }, 'c:komodo': { stop: 46, spd: 1.45, y: -2 },
     'c:eagle': { y: 20, sz: 1.04, stop: 7 }, 'c:giraffe': { sz: 0.68, y: -12, stop: -10 }, 'c:lion': { sz: 0.9, y: -6, stop: 37 }, 'c:elephant': { sz: 0.8, y: -9, spd: 1.1, stop: 10 },
     'c:pig': { spd: 1.2, y: -5, stop: 5 }, 'c:chicken': { spd: 1.65, sz: 1.16, y: -6, stop: 2 }, 'c:duck': { spd: 1.2, sz: 1.15, y: -5, stop: -9 }, 'c:frog': { spd: 1.4, sz: 1.18, y: -4, stop: -6 },
@@ -241,10 +240,10 @@ const MOTION_DEFAULT = {
   stone: { spd: 0.6, sz: 13, arc: 0.4 },                           // 직립 돌던지기: 비행속도 배율 / 그림 크기(px) / 포물선 높이 배율
   // 이펙트 프레임별 재생시간(초). 합 = 총 재생시간(전체 '프레임 속도'로 나눔).
   // 길이가 실제 프레임 수와 다르면 무시하고 균등 분할 — 프레임을 지우거나 늘려도 굳지 않음
-  fxFrT: {"1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.12, 0.12, 0.15, 0.15], "30": [0.23, 0.2, 0.12, 0.12, 0.12], "31": [0.03, 0.03, 0.03, 0.03]},
-  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "30": {"startP": 0.45, "anchor": 1, "sz": 0.75, "spd": 1, "fly": 1, "x": -20, "y": 0, "fr": {"1": {"t": 0.5, "x": 12, "sz": 0.95, "y": 2}, "2": {"x": 50, "sz": 0.95, "t": 0.7}, "3": {"x": 90, "sz": 0.95, "t": 0.8}, "4": {"x": 110, "sz": 0.95, "t": 0.9, "y": 3}, "5": {"x": 130, "sz": 0.95, "t": 1, "y": 4}}}, "31": {"sz": 1.15, "spd": 1, "fly": 0.2, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
+  fxFrT: {"1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.12, 0.12, 0.15, 0.15], "31": [0.03, 0.03, 0.03, 0.03]},
+  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "31": {"sz": 1.15, "spd": 1, "fly": 0.2, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
 }
-const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 30, 31]                          // 이펙트 있는 스킬 id
+const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 31]                          // 이펙트 있는 스킬 id
 // 이펙트 프레임 시간(초) 배열 — 넣은 값을 그대로 씀. 프레임을 늘리거나 줄이면 값도 같이 조정할 것.
 // 빈 칸은 0초(그 프레임은 건너뜀)로 두고, 전부 비었을 때만 균등 분할로 떨어져 NaN을 막는다
 const fxT = (mot, id, n) => {
@@ -368,7 +367,6 @@ const SKILL_FRAME_T = {
   27: [0.18, 0.18, 0.18, 0.18, 0.18],                          // 화염 참격 (5, 균등)
   28: [0.18, 0.18, 0.18, 0.18, 0.18, 0.18],                    // 대지 분쇄 (6, 균등)
   29: [0.18, 0.18, 0.24],                                      // 사이오닉 스톰 (3: 번개 충전)
-  30: [0.25, 0.30],                                            // 거대 몽둥이 (2: 치켜들기 → 내려찍기)
   31: [0.15, 0.15, 0.15, 0.15, 0.40],                          // 회전 도끼 (회전 2바퀴 → 던지기)
   32: [0.14, 0.30, 0.14, 0.14, 0.40],                          // 얼음도끼 (베기 → 치켜들기 → 내려찍기)
 }
@@ -388,7 +386,6 @@ const STRIKE_DUR_BY = {
   16: 0.55,   // 낙석
   18: 0.55,   // 점프낙석
   29: 0.70,   // 사이오닉 스톰 (먹구름+낙뢰 4프레임)
-  30: 0.75,   // 거대 몽둥이 (박힌 몽둥이 쓰러짐 5프레임)
 }
 
 // 무기/방어구/유물 각 30개 (6등급대 × 5티어, 1→30 강해짐). /equip/A/w01.png 등
@@ -3372,7 +3369,7 @@ export default function App() {
             </div>
             {shopTab === '스킬 카드' && (
               <div data-edit="shoprow" style={{ ...st.row, minHeight: 'var(--pd-shoprowmin)', transform: 'translate(var(--pd-shoprow-x), var(--pd-shoprow-y))' }}>
-                <img src="/ui/skillcard.png" alt="" data-edit="shopic0" style={{ width: 'var(--pd-shopic0w)', height: 'var(--pd-shopic0)', objectFit: 'fill', transform: 'translate(var(--pd-shopic0-x), var(--pd-shopic0-y))' }} />
+                <img src="/ui/skillcard.png" alt="" data-edit="shopic3" style={{ width: 'var(--pd-shopic3w)', height: 'var(--pd-shopic3h)', objectFit: 'fill', transform: 'translate(var(--pd-shopic3-x), var(--pd-shopic3-y))' }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div data-edit="shopt3" style={{ fontWeight: 700, fontSize: 'var(--pd-shopt3fz)', transform: 'translate(var(--pd-shopt3-x), var(--pd-shopt3-y))' }}>스킬 카드 소환</div>
                   <div data-edit="glv3" style={{ ...st.gLvTxt, fontSize: 'var(--pd-glv3fz)', transform: 'translate(var(--pd-glv3-x), var(--pd-glv3-y))' }}>배운 스킬 중에서 나옵니다 · 카드 {CARD_ENH_CARDS}장 + 진주 {CARD_ENH_PEARL}로 강화</div>
@@ -3394,7 +3391,7 @@ export default function App() {
                     return (<>
                       <div data-edit={`glv${ci}`} style={{ ...st.gLvTxt, fontSize: `var(--pd-glv${ci}fz)`, transform: `translate(var(--pd-glv${ci}-x), var(--pd-glv${ci}-y))` }}>소환 레벨 {lv}{max ? ' (MAX)' : ''}</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div data-edit="glvbar" style={st.gLvBar}>
+                        <div data-edit={`glvbar${ci}`} style={{ ...st.gLvBar, width: `var(--pd-glvbar${ci}w)`, height: `var(--pd-glvbar${ci}h)`, transform: `translate(var(--pd-glvbar${ci}-x), var(--pd-glvbar${ci}-y))` }}>
                           <div style={{ ...st.gLvFill, width: max ? '100%' : `${Math.min(100, cur / need * 100)}%` }} />
                           <span data-edit="glvbart" style={st.gLvBarTxt}>{max ? 'MAX' : `${fmt(cur)}/${fmt(need)}`}</span>
                         </div>
@@ -4254,7 +4251,6 @@ Object.assign(EDIT_GROUPS, {
   cardname: { label: '카드 스킬이름', size: ['cardnfz'], pos: 'cardname' },
   cardcnt: { label: '카드 개수 글자', size: ['cardcfz'], pos: 'cardcnt' },
   cardclose: { label: '카드결과 확인버튼', size: ['cardclw', 'cardclh', 'cardclfz'], pos: 'cardclose' },
-  glvbar: { label: '소환 레벨 바', size: ['glvbarw', 'glvbarh'], pos: 'glvbar' },
   glvbart: { label: '소환 레벨 바 글자', size: ['glvbtfz'], pos: 'glvbart' },
   qwin: { label: '퀘스트 창', size: ['qww', 'qwh'], pos: 'qwin' },
   qtitle: { label: '퀘스트 제목', size: ['qtitlefz'], pos: 'qtitle' },
@@ -4290,12 +4286,21 @@ const UI_LABELS = {
 for (let __i = 0; __i < 4; __i++) {                          // 상점 줄마다 제목·소환레벨 글씨 따로
   const __n = ['무기', '방어구', '유물', '스킬카드'][__i]
   EDIT_GROUPS[`shopt${__i}`] = { label: `${__n} 소환 제목`, size: [`shopt${__i}fz`], pos: `shopt${__i}` }
+  if (__i === 3) {                                          // 스킬 카드 줄 아이콘은 무기 아이콘과 별개
+    EDIT_GROUPS.shopic3 = { label: '스킬카드 아이콘', size: ['shopic3w', 'shopic3h'], pos: 'shopic3' }
+    UI_LABELS.shopic3w = '아이콘 가로'; UI_LABELS.shopic3h = '아이콘 세로'
+    UI_DEFAULT.shopic3w = 43; UI_DEFAULT.shopic3h = 44; UI_DEFAULT.shopic3X = -7; UI_DEFAULT.shopic3Y = 0
+  }
   EDIT_GROUPS[`glv${__i}`] = { label: `${__n} 소환레벨 글씨`, size: [`glv${__i}fz`], pos: `glv${__i}` }
   UI_LABELS[`shopt${__i}fz`] = '글자 크기'; UI_LABELS[`glv${__i}fz`] = '글자 크기'
   UI_DEFAULT[`shopt${__i}fz`] = 13; UI_DEFAULT[`shopt${__i}X`] = -5; UI_DEFAULT[`shopt${__i}Y`] = 2
   UI_DEFAULT[`glv${__i}fz`] = 11; UI_DEFAULT[`glv${__i}X`] = -4; UI_DEFAULT[`glv${__i}Y`] = 1
   if (__i < 3) {                                            // 선물상자는 장비 3줄만
     EDIT_GROUPS[`gift${__i}`] = { label: `${__n} 선물상자`, size: [`gift${__i}w`, `gift${__i}h`], pos: `gift${__i}` }
+    EDIT_GROUPS[`glvbar${__i}`] = { label: `${__n} 진행바`, size: [`glvbar${__i}w`, `glvbar${__i}h`], pos: `glvbar${__i}` }
+    UI_LABELS[`glvbar${__i}w`] = '바 너비'; UI_LABELS[`glvbar${__i}h`] = '바 높이'
+    UI_DEFAULT[`glvbar${__i}w`] = 120; UI_DEFAULT[`glvbar${__i}h`] = 11
+    UI_DEFAULT[`glvbar${__i}X`] = -5; UI_DEFAULT[`glvbar${__i}Y`] = 0
     UI_LABELS[`gift${__i}w`] = '상자 가로'; UI_LABELS[`gift${__i}h`] = '상자 세로'
     UI_DEFAULT[`gift${__i}w`] = 26; UI_DEFAULT[`gift${__i}h`] = 26
     UI_DEFAULT[`gift${__i}X`] = 0; UI_DEFAULT[`gift${__i}Y`] = 0
@@ -4304,7 +4309,7 @@ for (let __i = 0; __i < 4; __i++) {                          // 상점 줄마다
 for (const __k of SKILLS) {                                  // 카드 안 스킬 아이콘: 스킬마다 가로·세로·위치 따로
   EDIT_GROUPS[`cardic${__k.id}`] = { label: `카드아이콘 ${__k.name}`, size: [`cardic${__k.id}w`, `cardic${__k.id}h`], pos: `cardic${__k.id}` }
   UI_LABELS[`cardic${__k.id}w`] = '아이콘 가로'; UI_LABELS[`cardic${__k.id}h`] = '아이콘 세로'
-  UI_DEFAULT[`cardic${__k.id}w`] = 45; UI_DEFAULT[`cardic${__k.id}h`] = 45
+  UI_DEFAULT[`cardic${__k.id}w`] = 46; UI_DEFAULT[`cardic${__k.id}h`] = 46
   UI_DEFAULT[`cardic${__k.id}X`] = 0; UI_DEFAULT[`cardic${__k.id}Y`] = 0
 }
 for (let i = 0; i < 6; i++) UI_LABELS[`evoimg${i}`] = `${i + 1}단계 크기`
@@ -4339,8 +4344,8 @@ Object.assign(UI_LABELS, {
   qreww: '버튼 너비', qrewh: '버튼 높이', qrewisz: '아이콘 크기', qrewvfz: '숫자 크기', qlvfz: '레벨 글자',
 })
 const uiVars = c => `:root{
-${[0, 1, 2, 3].map(i => `--pd-shopt${i}fz:${c[`shopt${i}fz`] ?? 13}px;--pd-shopt${i}-x:${c[`shopt${i}X`] ?? -5}px;--pd-shopt${i}-y:${c[`shopt${i}Y`] ?? 2}px;--pd-glv${i}fz:${c[`glv${i}fz`] ?? 11}px;--pd-glv${i}-x:${c[`glv${i}X`] ?? -4}px;--pd-glv${i}-y:${c[`glv${i}Y`] ?? 1}px;` + (i < 3 ? `--pd-gift${i}w:${c[`gift${i}w`] ?? 26}px;--pd-gift${i}h:${c[`gift${i}h`] ?? 26}px;--pd-gift${i}-x:${c[`gift${i}X`] ?? 0}px;--pd-gift${i}-y:${c[`gift${i}Y`] ?? 0}px;` : '')).join('')}
-${SKILLS.map(k => `--pd-cardic${k.id}w:${c[`cardic${k.id}w`] ?? 45}px;--pd-cardic${k.id}h:${c[`cardic${k.id}h`] ?? 45}px;--pd-cardic${k.id}-x:${c[`cardic${k.id}X`] ?? 0}px;--pd-cardic${k.id}-y:${c[`cardic${k.id}Y`] ?? 0}px;`).join('')}
+${[0, 1, 2, 3].map(i => `--pd-shopt${i}fz:${c[`shopt${i}fz`] ?? 13}px;--pd-shopt${i}-x:${c[`shopt${i}X`] ?? -5}px;--pd-shopt${i}-y:${c[`shopt${i}Y`] ?? 2}px;--pd-glv${i}fz:${c[`glv${i}fz`] ?? 11}px;--pd-glv${i}-x:${c[`glv${i}X`] ?? -4}px;--pd-glv${i}-y:${c[`glv${i}Y`] ?? 1}px;` + (i < 3 ? `--pd-gift${i}w:${c[`gift${i}w`] ?? 26}px;--pd-gift${i}h:${c[`gift${i}h`] ?? 26}px;--pd-gift${i}-x:${c[`gift${i}X`] ?? 0}px;--pd-gift${i}-y:${c[`gift${i}Y`] ?? 0}px;--pd-glvbar${i}w:${c[`glvbar${i}w`] ?? 120}px;--pd-glvbar${i}h:${c[`glvbar${i}h`] ?? 11}px;--pd-glvbar${i}-x:${c[`glvbar${i}X`] ?? -5}px;--pd-glvbar${i}-y:${c[`glvbar${i}Y`] ?? 0}px;` : '')).join('')}
+${SKILLS.map(k => `--pd-cardic${k.id}w:${c[`cardic${k.id}w`] ?? 46}px;--pd-cardic${k.id}h:${c[`cardic${k.id}h`] ?? 46}px;--pd-cardic${k.id}-x:${c[`cardic${k.id}X`] ?? 0}px;--pd-cardic${k.id}-y:${c[`cardic${k.id}Y`] ?? 0}px;`).join('')}
 --pd-panelbw-v:${c.panelbwV}px;--pd-panelbw-h:${c.panelbwH}px;--pd-rowbw-v:${c.rowbwV}px;--pd-rowbw-h:${c.rowbwH}px;
 --pd-rowmin:${c.rowmin}px;--pd-rowgap:${c.rowgap}px;--pd-icon:${c.icon}px;--pd-name:${c.name}px;--pd-lv:${c.lv}px;--pd-val:${c.val}px;
 --pd-costw:${c.costw}px;--pd-costh:${c.costh}px;--pd-costfz:${c.costfz}px;--pd-inputw:${c.inputw}px;--pd-inputfz:${c.inputfz}px;
@@ -4363,7 +4368,7 @@ ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k
 --pd-equipcell:${c.equipcell}px;--pd-nickfz:${c.nickfz}px;--pd-lvbadgefz:${c.lvbadgefz}px;--pd-exph:${c.exph}px;
 --pd-pillfz:${c.pillfz}px;--pd-wavefz:${c.wavefz}px;--pd-gainfz:${c.gainfz}px;
 --pd-hph:${c.hph}px;--pd-hpfz:${c.hpfz}px;--pd-bossfz:${c.bossfz}px;--pd-clearfz:${c.clearfz}px;--pd-navfz:${c.navfz}px;--pd-diasz:${c.diasz}px;--pd-bossh:${c.bossh}px;--pd-wavebh:${c.wavebh}px;--pd-gachacell:${c.gachacell}px;--pd-gachafz:${c.gachafz}px;--pd-gacha-x:${c.gachaX}px;--pd-gacha-y:${c.gachaY}px;
---pd-gtierfz:${c.gtierfz}px;--pd-gachaimg:${c.gachaimg};--pd-shoprowmin:${c.shoprowmin}px;--pd-shopic:${c.shopic}px;--pd-shopic0:${c.shopic0}px;--pd-shopic0w:${c.shopic0w}px;--pd-shopgiftw:${c.shopgiftw}px;--pd-shopgifth:${c.shopgifth}px;--pd-shopic1:${c.shopic1}px;--pd-shopic2:${c.shopic2}px;
+--pd-gtierfz:${c.gtierfz}px;--pd-gachaimg:${c.gachaimg};--pd-shoprowmin:${c.shoprowmin}px;--pd-shopic:${c.shopic}px;--pd-shopic0:${c.shopic0}px;--pd-shopic0w:${c.shopic0w}px;--pd-shopic3w:${c.shopic3w ?? 43}px;--pd-shopic3h:${c.shopic3h ?? 44}px;--pd-shopic3-x:${c.shopic3X ?? -7}px;--pd-shopic3-y:${c.shopic3Y ?? 0}px;--pd-shopgiftw:${c.shopgiftw}px;--pd-shopgifth:${c.shopgifth}px;--pd-shopic1:${c.shopic1}px;--pd-shopic2:${c.shopic2}px;
 --pd-shoptfz:${c.shoptfz}px;--pd-shopsubfz:${c.shopsubfz}px;--pd-shopbw:${c.shopbw}px;--pd-shopbh:${c.shopbh}px;--pd-shopbbv:${c.shopbbv}px;--pd-shopbbh:${c.shopbbh}px;--pd-shopbfz:${c.shopbfz}px;
 --pd-gainic:${c.gainic}px;--pd-gainpv:${c.gainpv}px;--pd-gainph:${c.gainph}px;--pd-gainic-x:${c.gainicX}px;--pd-gainic-y:${c.gainicY}px;--pd-gaint-x:${c.gaintX}px;--pd-gaint-y:${c.gaintY}px;--pd-shopgem:${c.shopgem}px;
 --pd-gbtnfz:${c.gbtnfz}px;--pd-gbtnpw:${c.gbtnpw}px;--pd-gbtnph:${c.gbtnph}px;
@@ -4858,8 +4863,10 @@ const st = {
   },
   cardResImg: { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', imageRendering: 'pixelated' },
   cardResIcon: {                                            // 카드 틀 안의 스킬 아이콘 (크기는 스킬별 키)
+    // cover: 아이콘마다 제각각인 여백·자체 테두리를 잘라내 틀 안을 균일하게 채운다
+    // imageRendering 기본값(부드럽게): 저해상도 아이콘이 픽셀화로 뭉개지는 것 완화
     position: 'absolute', left: '50%', top: '50%',
-    objectFit: 'contain', imageRendering: 'pixelated', borderRadius: 4,
+    objectFit: 'cover', objectPosition: 'center', borderRadius: 6,
   },
   cardResName: {
     fontSize: 'var(--pd-cardnfz)', color: '#e8d5a8', textAlign: 'center', lineHeight: 1.2,
@@ -5206,3 +5213,6 @@ Object.assign(UI_DEFAULT, {
   cardclw: 90, cardclh: 34, cardclfz: 14, cardcloseX: 0, cardcloseY: 0,
   glvfz: 11, glvX: -4, glvY: 1, glvbarw: 120, glvbarh: 11, glvbarX: -5, glvbarY: 0, glvbtfz: 9, glvbartX: 0, glvbartY: 0,   // 상점 소환 레벨·진행바
 })
+
+// 사용자 확정 UI 값 (asd.txt, 2026-08-03)
+Object.assign(UI_DEFAULT, { shopic0: 40, shopic1: 48, shopic2: 42, shoptfz: 12, shopbbv: 1, shopbbh: 22, shopic1X: -5, shopic1Y: 1, shopic2X: -5, shoptY: 8, shopt0fz: 12, shopt0X: -6, shopt0Y: 7, glv0fz: 10, glv0X: -6, glv0Y: 6, gift0w: 30, gift0h: 30, gift0X: 7, gift0Y: -10, shopt1fz: 12, shopt1X: -2, shopt1Y: 8, glv1fz: 10, glv1X: -2, glv1Y: 6, gift1w: 30, gift1h: 30, gift1X: 14, gift1Y: -10, shopt2fz: 12, shopt2X: -7, shopt2Y: 8, glv2fz: 10, glv2X: -6, glv2Y: 6, gift2w: 30, gift2h: 30, gift2X: 9, gift2Y: -10, shopt3fz: 14, shopt3X: -5, shopt3Y: 2, glv3fz: 11, glv3X: -4, glv3Y: 1, cardic1w: 45, cardic1h: 45, cardic1X: 0, cardic1Y: 0, cardic2w: 45, cardic2h: 45, cardic2X: 0, cardic2Y: 0, cardic7w: 45, cardic7h: 45, cardic7X: 0, cardic7Y: 0, cardic8w: 45, cardic8h: 45, cardic8X: 0, cardic8Y: 0, cardic13w: 45, cardic13h: 45, cardic13X: 0, cardic13Y: 0, cardic15w: 45, cardic15h: 45, cardic15X: 0, cardic15Y: 0, cardic16w: 45, cardic16h: 45, cardic16X: 0, cardic16Y: 0, cardic17w: 45, cardic17h: 45, cardic17X: 0, cardic17Y: 0, cardic18w: 45, cardic18h: 45, cardic18X: 0, cardic18Y: 0, cardic20w: 45, cardic20h: 45, cardic20X: 0, cardic20Y: 0, cardic22w: 45, cardic22h: 45, cardic22X: 0, cardic22Y: 0, cardic23w: 45, cardic23h: 45, cardic23X: 0, cardic23Y: 0, cardic24w: 45, cardic24h: 45, cardic24X: 0, cardic24Y: 0, cardic25w: 45, cardic25h: 45, cardic25X: 0, cardic25Y: 0, cardic26w: 45, cardic26h: 45, cardic26X: 0, cardic26Y: 0, cardic27w: 45, cardic27h: 45, cardic27X: 0, cardic27Y: 0, cardic28w: 45, cardic28h: 45, cardic28X: 0, cardic28Y: 0, cardic29w: 45, cardic29h: 45, cardic29X: 0, cardic29Y: 0, cardic32w: 45, cardic32h: 45, cardic32X: 0, cardic32Y: 0, cardic31w: 45, cardic31h: 46, cardic31X: 0, cardic31Y: 0, cardic30w: 45, cardic30h: 45, cardic30X: 0, cardic30Y: 0, cardic101w: 45, cardic101h: 45, cardic101X: 0, cardic101Y: 0, cardic102w: 45, cardic102h: 45, cardic102X: 0, cardic102Y: 0, cardic103w: 45, cardic103h: 45, cardic103X: 0, cardic103Y: 0, cardic104w: 45, cardic104h: 45, cardic104X: 0, cardic104Y: 0, cardic105w: 45, cardic105h: 45, cardic105X: 0, cardic105Y: 0, cardic106w: 45, cardic106h: 45, cardic106X: 0, cardic106Y: 0, cardic107w: 45, cardic107h: 45, cardic107X: 0, cardic107Y: 0, cardic108w: 45, cardic108h: 45, cardic108X: 0, cardic108Y: 0, cardic111w: 45, cardic111h: 45, cardic111X: 0, cardic111Y: 0, cardic112w: 45, cardic112h: 45, cardic112X: 0, cardic112Y: 0, cardic113w: 45, cardic113h: 45, cardic113X: 0, cardic113Y: 0, cardic114w: 45, cardic114h: 45, cardic114X: 0, cardic114Y: 0, cardic115w: 45, cardic115h: 45, cardic115X: 0, cardic115Y: 0, cardic116w: 45, cardic116h: 45, cardic116X: 0, cardic116Y: 0, cardic117w: 45, cardic117h: 45, cardic117X: 0, cardic117Y: 0, cardic118w: 45, cardic118h: 45, cardic118X: 0, cardic118Y: 0, cardic121w: 44, cardic121h: 40, cardic121X: 0, cardic121Y: -1, cardic122w: 44, cardic122h: 42, cardic122X: -1, cardic122Y: 0, cardic123w: 45, cardic123h: 45, cardic123X: 0, cardic123Y: 0, cardic124w: 45, cardic124h: 45, cardic124X: 0, cardic124Y: 0, cardic125w: 45, cardic125h: 45, cardic125X: 0, cardic125Y: 0, cardic126w: 45, cardic126h: 45, cardic126X: 0, cardic126Y: 0, cardic127w: 45, cardic127h: 45, cardic127X: 0, cardic127Y: 0, cardic128w: 45, cardic128h: 45, cardic128X: 0, cardic128Y: 0, cardic131w: 45, cardic131h: 45, cardic131X: 0, cardic131Y: 0, cardic132w: 45, cardic132h: 45, cardic132X: 0, cardic132Y: 0, cardic133w: 45, cardic133h: 45, cardic133X: 0, cardic133Y: 0, cardic134w: 45, cardic134h: 45, cardic134X: 0, cardic134Y: 0, cardic135w: 45, cardic135h: 45, cardic135X: 0, cardic135Y: 0, cardic136w: 45, cardic136h: 45, cardic136X: 0, cardic136Y: 0, cardic137w: 45, cardic137h: 45, cardic137X: 0, cardic137Y: 0, cardic138w: 45, cardic138h: 45, cardic138X: 0, cardic138Y: 0, cardic141w: 45, cardic141h: 45, cardic141X: 0, cardic141Y: 0, cardic142w: 45, cardic142h: 45, cardic142X: 0, cardic142Y: 0, cardic143w: 45, cardic143h: 45, cardic143X: 0, cardic143Y: 0, cardic144w: 45, cardic144h: 45, cardic144X: 0, cardic144Y: 0, cardic145w: 45, cardic145h: 45, cardic145X: 0, cardic145Y: 0, cardic146w: 45, cardic146h: 45, cardic146X: 0, cardic146Y: 0, cardic147w: 45, cardic147h: 45, cardic147X: 0, cardic147Y: 0, cardic148w: 45, cardic148h: 45, cardic148X: 0, cardic148Y: 0, warnfz: 34, warnY: -26, shopadw: 38, shopgiftw: 29, shopgifth: 29, shopgiftX: 6, shopgiftY: -13, cardcw: 54, cardch: 56, glvX: -6, glvY: 5 })
