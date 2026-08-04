@@ -238,7 +238,6 @@ const MOTION_DEFAULT = {
   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값, 종별 아님 / 보스·모험 몹은 미적용): 가로로 눌리고(x) 세로로 늘어나며(y) 발을 축으로 뒤로 젖혀졌다(rot) dur 동안 복귀. 위치는 안 움직임
   hitSq: {"x": 1.1, "y": 1.1, "rot": 10, "dur": 0.15},   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값)
   wave: { gap: 40, dist: 35 },
-  fxRef: 55,                     // 이펙트 자동보정 기준 몹 높이(px) — 이 높이의 몹에서 잡은 값이 원본이 된다
   adv: { gap: 50, dist: 55, lunge: 30 },    // 모험 일반 몹 1열 대기 간격·히어로와 거리(px) — 웨이브와 분리                                  // 웨이브 몹 일렬 간격(px) / 히어로와의 거리(px) — 종 무관 일괄
   stone: { spd: 0.6, sz: 13, arc: 0.4 },                           // 직립 돌던지기: 비행속도 배율 / 그림 크기(px) / 포물선 높이 배율
   // 이펙트 프레임별 재생시간(초). 합 = 총 재생시간(전체 '프레임 속도'로 나눔).
@@ -286,7 +285,7 @@ function mergeMotion(sv) {   // 저장된 모션값 + 기본값 병합 (초기 �
     stop: { ...MOTION_DEFAULT.stop, ...(sv.stop || {}) }, size: { ...MOTION_DEFAULT.size, ...(sv.size || {}) },
     hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}), evoSz: { ...MOTION_DEFAULT.hero.evoSz, ...((sv.hero || {}).evoSz || {}) }, range: { ...MOTION_DEFAULT.hero.range, ...((sv.hero || {}).range || {}) }, outline: { ...MOTION_DEFAULT.hero.outline, ...((sv.hero || {}).outline || {}) }, walkSz: perStage((sv.hero || {}).walkSz, MOTION_DEFAULT.hero.walkSz), skillSz: { ...MOTION_DEFAULT.hero.skillSz, ...((sv.hero || {}).skillSz || {}) }, skillFront: { ...MOTION_DEFAULT.hero.skillFront, ...((sv.hero || {}).skillFront || {}) }, skillPos: { ...MOTION_DEFAULT.hero.skillPos, ...((sv.hero || {}).skillPos || {}) }, skillFrSz: { ...((sv.hero || {}).skillFrSz || {}) }, skillFrPos: { ...((sv.hero || {}).skillFrPos || {}) }, skillFrT: { ...((sv.hero || {}).skillFrT || {}) }, hit: { ...MOTION_DEFAULT.hero.hit, ...((sv.hero || {}).hit || {}) }, atkFrSz: mergeAtkFrSz(sv.hero || {}), atkFrX: { ...MOTION_DEFAULT.hero.atkFrX, ...((sv.hero || {}).atkFrX || {}) } },
     mob: { ...MOTION_DEFAULT.mob, ...(sv.mob || {}) }, boss: { ...MOTION_DEFAULT.boss, ...(sv.boss || {}) },
-    wave: { ...MOTION_DEFAULT.wave, ...(sv.wave || {}) }, adv: { ...MOTION_DEFAULT.adv, ...(sv.adv || {}) }, fxRef: sv.fxRef ?? MOTION_DEFAULT.fxRef, hitSq: { ...MOTION_DEFAULT.hitSq, ...(sv.hitSq || {}) }, stone: { ...MOTION_DEFAULT.stone, ...(sv.stone || {}) },   // 기본값(사용자 확정값) 위에 저장값 덮어쓰기
+    wave: { ...MOTION_DEFAULT.wave, ...(sv.wave || {}) }, adv: { ...MOTION_DEFAULT.adv, ...(sv.adv || {}) }, hitSq: { ...MOTION_DEFAULT.hitSq, ...(sv.hitSq || {}) }, stone: { ...MOTION_DEFAULT.stone, ...(sv.stone || {}) },   // 기본값(사용자 확정값) 위에 저장값 덮어쓰기
     ally: { hunter: { ...MOTION_DEFAULT.ally.hunter, ...((sv.ally || {}).hunter || {}) }, shaman: { ...MOTION_DEFAULT.ally.shaman, ...((sv.ally || {}).shaman || {}) }, healer: { ...MOTION_DEFAULT.ally.healer, ...((sv.ally || {}).healer || {}) }, giant: { ...MOTION_DEFAULT.ally.giant, ...((sv.ally || {}).giant || {}) } },
     fxFrT: { ...MOTION_DEFAULT.fxFrT, ...(sv.fxFrT || {}) },
     skFx: Object.fromEntries(MOT_FX_IDS.map(id => [id, { ...MOTION_DEFAULT.skFx[id], ...((sv.skFx || {})[id] || {}) }])),
@@ -1490,11 +1489,8 @@ export default function App() {
               const rng2 = __e2.rangePx || Infinity
               const inR2 = w.enemies.filter(e => !e.dead && e.x - w.heroX < rng2).sort((a, b) => a.x - b.x)
               const x2 = _fxc.anchor ? w.heroX : (inR2.length ? inR2[0].x : w.heroX + 260)
-              // 대상 크기 보정: 기준 높이 대비 몇 배인지 (히어로 기준일 땐 보정 없음)
-              const _ref = motRef.current.fxRef || 55
-              const _tgt = inR2[0]
-              const _k = (_fxc.anchor || !_tgt) ? 1 : Math.max(0.5, Math.min(3, (_tgt.drawH || _ref) / _ref))
-              w.strikes.push({ id: sk.id, frames: sk.fx.frames, x: x2, anchor: _fxc.anchor ? 1 : 0, k: _k, t: 0,
+              // 크기 보정 없음 — 일반몹이든 보스든 이펙트 크기·오프셋은 동일, 위치(x2)만 대상을 따라간다
+              w.strikes.push({ id: sk.id, frames: sk.fx.frames, x: x2, anchor: _fxc.anchor ? 1 : 0, t: 0,
                 dur: fxTotal(motRef.current, sk.id, sk.fx.frames.length, STRIKE_DUR_BY[sk.id] ?? STRIKE_DUR) / (_fxc.spd || 1),
                 dmg: st.atk * __e2.dmgMult, hitDone: false, h: sk.fx.fxH ?? sk.h, hitP: sk.fx.hitP ?? 0.45,
                 aoe: __e2.aoe, rng: rng2, hx: w.heroX, stun: sk.stun || 0 })
@@ -2187,12 +2183,10 @@ export default function App() {
         const im = SIMG[stk.id][stk.frames[fi] - 1]
         if (im && im.complete && im.naturalWidth > 0) {
           const ffr = (fxc.fr || {})[fi + 1] || {}
-          // 대상 크기 보정 — 크기와 오프셋에 같은 배율을 곱해 비율 유지 (autoFit 0이면 끔)
-          const kk = 1 + ((stk.k || 1) - 1) * (fxc.autoFit ?? 1)
-          const hh = stk.h * (fxc.sz || 1) * (ffr.sz ?? 1) * kk
+          const hh = stk.h * (fxc.sz || 1) * (ffr.sz ?? 1)
           const ww = hh * (im.naturalWidth / im.naturalHeight)
           const bx = stk.anchor ? w.heroX : stk.x   // 히어로 기준이면 히어로를 따라 움직임
-          ctx.drawImage(im, bx - ww / 2 + ((fxc.x || 0) + (ffr.x || 0)) * kk, w.groundY - hh + ((fxc.y || 0) + (ffr.y || 0)) * kk, ww, hh)
+          ctx.drawImage(im, bx - ww / 2 + (fxc.x || 0) + (ffr.x || 0), w.groundY - hh + (fxc.y || 0) + (ffr.y || 0), ww, hh)
         }
       }
       // 스킬 투사체 (몬스터 쪽으로 비행)
@@ -3820,8 +3814,6 @@ export default function App() {
               return (<>
                 {row('이펙트 시작(시전 진행도)', M.skFx[motFx].startP ?? (sk2.hitAt ?? 1), 0, 1, 0.01, v => put2('startP', v))}
                 {row('위치 기준 (0=적 1=히어로)', M.skFx[motFx].anchor ?? 0, 0, 1, 1, v => put2('anchor', v))}
-                {row('대상 크기 보정 (0~1)', M.skFx[motFx].autoFit ?? 1, 0, 1, 0.05, v => put2('autoFit', v))}
-                {row('기준 몹 높이(px)', M.fxRef ?? 55, 20, 200, 1, v => setMotCfg({ ...M, fxRef: v }))}
                 <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>시작 0.5 = 히어로 모션 절반에서 이펙트 등장(겹침). 히어로 기준이면 이펙트가 히어로를 따라 움직입니다</div>
               </>)
             })()}
