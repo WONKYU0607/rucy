@@ -1397,7 +1397,10 @@ export default function App() {
           const emb = (e.boss ? motRef.current.boss[embKey] : motRef.current.mob[embKey]) || {}
           const szm = e.dino ? (emb.sz ?? (motRef.current.size[e.dino] || 1)) : (emb.sz || 1)
           const estop = e.dino ? (emb.stop ?? (motRef.current.stop[e.dino] || 0)) : (emb.stop || 0)   // 좌우 정지 위치(+면 오른쪽/멀리)
-          e.drawH = e.h * szm * (e.scaleV || 1)   // 이펙트 자동보정용 실제 표시 높이
+          // 이펙트 위치 자동보정: 보스는 덩치 때문에 estop 만큼 더 멀리 선다.
+          // 스킬 이펙트 오프셋은 일반 웨이브(정지거리 = wave.dist)에서 잡은 값이므로,
+          // 보스가 추가로 물러난 estop 만큼 되돌려 히어로 기준 같은 자리에 떨어지게 한다.
+          e.fxOff = e.boss ? estop : 0
           const espd = emb.spd || 1                                                       // 달려오는 속도 배율(공룡·웨이브 공통)
           // 제자리 몹은 종·크기와 무관하게 **일괄 거리**로 선다 (편집기 '히어로와 거리')
           // 걸어오는 몹·보스만 예전 종별 계산 유지
@@ -1411,6 +1414,10 @@ export default function App() {
           // 히어로가 때릴 수 있는 거리면 몹도 반격할 수 있어야 한다.
           // (히어로 타격 판정은 사거리+40인데 몹 공격은 정지위치 도달이 조건이라, 그 사이 구간에서 몹이 일방적으로 맞고 죽었음)
           const inHeroReach = w.adv && !e.boss && (e.x - w.heroX) < atkRange + 40   // 모험 몹만 — 웨이브 몹에 걸면 스크롤 흐름에서 빠져 뒤로 밀리고 겹침
+          // engaged()는 stopX+6 에서 교전으로 인정하는데 이동 분기는 e.x > stopX 라, 그 6px 구간에서
+          // scroll=0(교전) + 자기속도 0(제자리) 이 겹치면 좁힐 수단이 없어 공격 분기에 영영 못 들어갔다.
+          // (웨이브 보스가 공격 모션·파고듦을 한 번도 안 하던 원인) → 사거리 안에 들어오면 정지위치로 스냅
+          if (still && e.x > stopX && e.x <= stopX + 6) e.x = stopX
           if (e.x > stopX && !inHeroReach && !(e.atkT > 0)) {
             const near = still ? 1 : Math.min(1, Math.max(0.3, (e.x - stopX) / 55))  // 정지 전 감속
             const own = still ? 0 : e.speed * (e.spdV || 1) * espd * SPEED * 1.3 * e.vt * near
@@ -1488,7 +1495,8 @@ export default function App() {
               const __e2 = skEff(sk, st.skCfg)
               const rng2 = __e2.rangePx || Infinity
               const inR2 = w.enemies.filter(e => !e.dead && e.x - w.heroX < rng2).sort((a, b) => a.x - b.x)
-              const x2 = _fxc.anchor ? w.heroX : (inR2.length ? inR2[0].x : w.heroX + 260)
+              const _t0 = inR2[0]
+              const x2 = _fxc.anchor ? w.heroX : (_t0 ? _t0.x - (_t0.fxOff || 0) : w.heroX + 260)   // 보스는 estop 만큼 되돌려 보정
               // 크기 보정 없음 — 일반몹이든 보스든 이펙트 크기·오프셋은 동일, 위치(x2)만 대상을 따라간다
               w.strikes.push({ id: sk.id, frames: sk.fx.frames, x: x2, anchor: _fxc.anchor ? 1 : 0, t: 0,
                 dur: fxTotal(motRef.current, sk.id, sk.fx.frames.length, STRIKE_DUR_BY[sk.id] ?? STRIKE_DUR) / (_fxc.spd || 1),
@@ -3603,12 +3611,10 @@ export default function App() {
             {row('데미지 프레임', M.hit[motSel] || 3, 1, arr.length, 1, v => setMotCfg({ ...M, hit: { ...M.hit, [motSel]: v } }))}
             <div style={{ fontSize: 10, color: '#8a7758', margin: '4px 0 2px', lineHeight: 1.4 }}>크기·정지·높이·속도는 [일반몹]/[보스] 탭에서 몹·보스 따로 조절</div>
             <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
-            {row('보스 파고듦', M.lunge.boss, 0, 60, 1, v => setMotCfg({ ...M, lunge: { ...M.lunge, boss: v } }))}
             {row('보스 간격(ms)', M.cd.advBoss, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, advBoss: v } }))}
             {row('모험몹 간격', M.cd.advMob, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, advMob: v } }))}
-            {row('웨이브몹 간격', M.cd.wave, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, wave: v } }))}
             {row('모험몹 모션', M.dur.advMob, 0.1, 1, 0.01, v => setMotCfg({ ...M, dur: { ...M.dur, advMob: v } }))}
-            {row('웨이브몹 모션', M.dur.wave, 0.1, 1, 0.01, v => setMotCfg({ ...M, dur: { ...M.dur, wave: v } }))}
+            <div style={{ fontSize: 10, color: '#8a7758', marginBottom: 6 }}>웨이브 보스의 파고듦·공격 간격·모션 시간은 [보스] 탭으로 옮겼습니다</div>
           </>)}
 
           {motCat === 'hero' && (<>
@@ -3779,8 +3785,17 @@ export default function App() {
                 : ('저주받은 ' + ((ENEMY_TYPES[e.type] || {}).name || e.type))
               entries.push({ key, label: lbl, szDef: e.dino ? (M.size[e.dino] ?? 1) : 1, dino: !!e.dino })
             }
-            if (!entries.length) return <div style={{ fontSize: 12, color: '#c9a06a', padding: '8px 0' }}>화면에 보스가 없어요. 보스전/모험 보스에 들어가면 자동으로 잡혀요.</div>
+            const common = (<>
+              <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>웨이브 보스 공격 (종 공통)</div>
+              {row('파고듦(px)', M.lunge.boss, 0, 60, 1, v => setMotCfg({ ...M, lunge: { ...M.lunge, boss: v } }))}
+              {row('공격 간격(ms)', M.cd.wave, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, wave: v } }))}
+              {row('공격 모션(초)', M.dur.wave, 0.1, 1, 0.01, v => setMotCfg({ ...M, dur: { ...M.dur, wave: v } }))}
+              <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>타격은 모션 시간의 절반 지점. 웨이브 일반몹은 공격하지 않으므로 이 값은 웨이브 보스에만 적용됩니다</div>
+              <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
+            </>)
+            if (!entries.length) return (<>{common}<div style={{ fontSize: 12, color: '#c9a06a', padding: '8px 0' }}>화면에 보스가 없어요. 보스전/모험 보스에 들어가면 자동으로 잡혀요.</div></>)
             return (<>
+              {common}
               <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>화면의 보스 (종별)</div>
               {entries.map(({ key, label, szDef, dino }) => { const c = M.boss[key] || {}; return (
                 <div key={key} style={{ borderTop: '1px solid #2a1e10', paddingTop: 5, marginTop: 5 }}>
