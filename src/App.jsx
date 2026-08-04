@@ -29,7 +29,7 @@ const SPLASH_BG = (() => {
   try { const q = new URLSearchParams(location.search); if (q.get('intro') === 'en') ko = false; if (q.get('intro') === 'ko') ko = true } catch {}
   return ko ? '/startbg/startbg.webp' : '/startbg/startbg_en.webp'
 })()
-const CFG_STAMP = Date.parse('2026-08-04T20:50:00+09:00')
+const CFG_STAMP = Date.parse('2026-08-04T21:26:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -187,12 +187,12 @@ const MOTION_DEFAULT = {
   hero: {
     sz: 0.85, x: -35, y: 0,
     walkSz: { 0: 0.95, 1: 0.96, 2: 0.94, 3: 0.94, 4: 0.86, 5: 0.9 },
-    skillFront: {"22": 1, "23": 1, "24": 1, "25": 1, "26": 1, "27": 1, "28": 1, "29": 0, "31": 1, "32": 1, "33": 1},   // 1이면 그 스킬 시전 중 히어로를 몬스터 위에 그림
+    skillFront: {"22": 1, "23": 1, "24": 1, "25": 1, "26": 1, "27": 1, "28": 1, "29": 0, "31": 1, "32": 1, "33": 1, "34": 1},   // 1이면 그 스킬 시전 중 히어로를 몬스터 위에 그림
     skillSz: {"1": 0.85, "2": 0.85, "7": 0.9, "8": 0.95, "13": 0.85, "15": 0.83, "17": 0.88, "18": 1.07, "20": 1.06, "22": 1.03, "23": 0.9, "24": 0.9, "25": 0.8, "26": 0.54, "27": 0.8},   // 스킬별 크기
     skillPos: {"23": {"x": -5}},   // 스킬별 위치
     skillFrSz: {"2": {"2": 0.98}, "22": {"4": 0.95}, "23": {"1": 0.97, "2": 0.97, "3": 0.97, "4": 0.97, "5": 0.97}, "25": {"1": 0.98, "2": 1.06, "3": 1.18}, "28": {"1": 2.1, "2": 2.1, "3": 2.1, "4": 1.7, "5": 1.6, "6": 1.91}, "29": {"1": 0.88, "2": 0.87, "3": 0.9}, "31": {"1": 0.6, "2": 0.6, "3": 0.6, "4": 0.6, "5": 0.65}, "32": {"1": 0.73, "2": 0.73, "3": 0.75, "4": 0.75, "5": 0.82}, "33": {"1": 0.9, "2": 0.98, "3": 0.95, "5": 0.99, "6": 0.99}, "34": {"1": 0.98, "2": 1.02, "3": 1.08}},   // 스킬 프레임별 크기
-    skillFrPos: {"22": {"2": {"x": 20}, "3": {"x": 75}, "4": {"x": 155}}, "23": {"1": {"x": 35}, "2": {"x": 70}, "3": {"x": 105}, "4": {"x": 140}, "5": {"x": 175}}, "24": {"3": {"x": 50, "y": 14}, "4": {"y": 15, "x": 50}}, "25": {"1": {"y": 7}, "2": {"x": 45, "y": 3}, "3": {"x": 86, "y": 5}, "4": {"x": 100, "y": 9}}, "26": {"1": {"x": 20}, "2": {"x": 40}, "3": {"x": 60}, "4": {"x": 80}, "5": {"x": 100}, "6": {"x": 120}}, "27": {"1": {"x": 20}, "2": {"x": 20}, "3": {"x": 25}, "4": {"x": 15}, "5": {"x": 20}}, "28": {"1": {"x": 22, "y": 0}, "2": {"y": 3, "x": 30}, "3": {"x": 50, "y": -45}, "4": {"x": 110, "y": 13}, "5": {"x": 128, "y": 12}, "6": {"x": 132, "y": 16}}, "29": {"1": {"x": 10, "y": 3}, "2": {"x": 10, "y": 5}, "3": {"x": 2}}, "31": {"1": {"y": 2, "x": -4}, "2": {"y": 2}, "3": {"x": -4}, "5": {"x": -21, "y": 4}}, "32": {"1": {"y": 3, "x": -28}, "2": {"y": 6, "x": 34}, "3": {"y": 4, "x": 6}, "4": {"x": 37, "y": 3}, "5": {"y": 9, "x": 100}}, "33": {"1": {"y": 3, "x": -4}, "2": {"x": 10, "y": -14}, "3": {"x": 30, "y": -15}, "4": {"x": 105, "y": 10}, "5": {"x": 82, "y": 21}, "6": {"x": 84, "y": 20}}, "34": {"1": {"y": 3, "x": 3}, "2": {"x": 7, "y": 5}, "3": {"x": 19, "y": 4}}},   // 스킬 프레임별 위치
-    skillFrT: {"18": [0.2, 0.25], "22": [0.12, 0.15, 0.18, 0.2], "23": [0.15, 0.15, 0.15, 0.15, 0.25], "24": [0.15, 0.15, 0.2, 0.2], "25": [0.12, 0.12, 0.12, 0.15], "26": [0.15, 0.15, 0.15, 0.15, 0.15, 0.15], "27": [0.1, 0.1, 0.1, 0.25, 0.25], "28": [0.15, 0.15, 0.2, 0.15, 0.2, 0.25], "29": [0.1, 0.15, 0.25], "31": [0.15, 0.15, 0.15, 0.15, 0.4], "32": [0.1, 0.17, 0.12, 0.12, 0.33], "33": [0.16, 0.15, 0.13, 0.13, 0.15, 0.35], "34": [0.12, 0.12, 0.12]},   // 스킬 프레임별 재생시간(초)
+    skillFrPos: {"22": {"2": {"x": 20}, "3": {"x": 75}, "4": {"x": 155}}, "23": {"1": {"x": 35}, "2": {"x": 70}, "3": {"x": 105}, "4": {"x": 140}, "5": {"x": 175}}, "24": {"3": {"x": 50, "y": 14}, "4": {"y": 15, "x": 50}}, "25": {"1": {"y": 7}, "2": {"x": 45, "y": 3}, "3": {"x": 86, "y": 5}, "4": {"x": 100, "y": 9}}, "26": {"1": {"x": 20}, "2": {"x": 40}, "3": {"x": 60}, "4": {"x": 80}, "5": {"x": 100}, "6": {"x": 120}}, "27": {"1": {"x": 20}, "2": {"x": 20}, "3": {"x": 25}, "4": {"x": 15}, "5": {"x": 20}}, "28": {"1": {"x": 22, "y": 0}, "2": {"y": 3, "x": 30}, "3": {"x": 50, "y": -45}, "4": {"x": 110, "y": 13}, "5": {"x": 128, "y": 12}, "6": {"x": 132, "y": 16}}, "29": {"1": {"x": 10, "y": 3}, "2": {"x": 10, "y": 5}, "3": {"x": 2}}, "31": {"1": {"y": 2, "x": -4}, "2": {"y": 2}, "3": {"x": -4}, "5": {"x": -21, "y": 4}}, "32": {"1": {"y": 3, "x": -28}, "2": {"y": 6, "x": 34}, "3": {"y": 4, "x": 6}, "4": {"x": 37, "y": 3}, "5": {"y": 9, "x": 100}}, "33": {"1": {"y": 3, "x": -4}, "2": {"x": 10, "y": -14}, "3": {"x": 30, "y": -15}, "4": {"x": 105, "y": 10}, "5": {"x": 82, "y": 21}, "6": {"x": 84, "y": 20}}, "34": {"1": {"y": 3, "x": 1}, "2": {"x": 4, "y": 5}, "3": {"x": 10, "y": 4}}},   // 스킬 프레임별 위치
+    skillFrT: {"18": [0.2, 0.25], "22": [0.12, 0.15, 0.18, 0.2], "23": [0.15, 0.15, 0.15, 0.15, 0.25], "24": [0.15, 0.15, 0.2, 0.2], "25": [0.12, 0.12, 0.12, 0.15], "26": [0.15, 0.15, 0.15, 0.15, 0.15, 0.15], "27": [0.1, 0.1, 0.1, 0.25, 0.25], "28": [0.15, 0.15, 0.2, 0.15, 0.2, 0.25], "29": [0.1, 0.15, 0.25], "31": [0.15, 0.15, 0.15, 0.15, 0.4], "32": [0.1, 0.17, 0.12, 0.12, 0.33], "33": [0.16, 0.15, 0.13, 0.13, 0.15, 0.35], "34": [0.12, 0.12, 0.14]},   // 스킬 프레임별 재생시간(초)
     evoSz: { 0: 0.95, 1: 0.85, 2: 0.9, 3: 0.88, 4: 0.9, 5: 0.9 },
     outline: {"blur": 10, "alpha": 0.8},   // 히어로 외곽 그림자
     range: {"0": 25, "1": 90, "2": 35, "3": 35, "4": 35, "5": 40},   // 진화단계별 기본공격 사거리(px). 히어로 x=200, 화면 폭 420 → 220이면 화면 끝
@@ -233,17 +233,18 @@ const MOTION_DEFAULT = {
     'c:zebra': { y: -4, stop: 7, spd: 1.4 }, 'c:cheetah': { sz: 0.9, y: -4, stop: 27, spd: 1.8 }, 'c:koala': { y: -3, stop: 4 }, 'c:kangaroo': { sz: 0.78, y: -6, stop: 4 },
     'c:cat': { sz: 1.15, y: -3, stop: -1, spd: 1.3 }, 'c:dog': { y: -3, stop: 5 }, 'c:hippo': { sz: 0.79, y: -5, stop: 34 }, 'c:gorilla': { y: -6, stop: 10 },
     'c:gator': { sz: 1.13, y: -3, stop: 46, spd: 1.3 }, 'c:squirrel': { stop: 2, spd: 1.6 }, 'c:penguin': { sz: 1.38, y: -2, spd: 1.45, stop: -35 }, 'c:seal': { sz: 1.24, y: -2, stop: 7, spd: 1.3 },
-    'c:cow': { y: -6, spd: 1.45, stop: 10 }, 'e:16': { stop: 105, y: -8 }, 'c:tiger2': { y: -4, stop: 42, spd: 1.65 },
+    'c:cow': { y: -6, spd: 1.45, stop: 10 }, 'e:16': { stop: 105, y: -8 }, 'c:tiger2': { y: -4, stop: 95, spd: 1.6, sz: 0.94 },
   },
   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값, 종별 아님 / 보스·모험 몹은 미적용): 가로로 눌리고(x) 세로로 늘어나며(y) 발을 축으로 뒤로 젖혀졌다(rot) dur 동안 복귀. 위치는 안 움직임
   hitSq: {"x": 1.1, "y": 1.1, "rot": 10, "dur": 0.15},   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값)
   wave: { gap: 40, dist: 35 },
+  fxRef: 55,                     // 이펙트 자동보정 기준 몹 높이(px) — 이 높이의 몹에서 잡은 값이 원본이 된다
   adv: { gap: 50, dist: 55, lunge: 30 },    // 모험 일반 몹 1열 대기 간격·히어로와 거리(px) — 웨이브와 분리                                  // 웨이브 몹 일렬 간격(px) / 히어로와의 거리(px) — 종 무관 일괄
   stone: { spd: 0.6, sz: 13, arc: 0.4 },                           // 직립 돌던지기: 비행속도 배율 / 그림 크기(px) / 포물선 높이 배율
   // 이펙트 프레임별 재생시간(초). 합 = 총 재생시간(전체 '프레임 속도'로 나눔).
   // 길이가 실제 프레임 수와 다르면 무시하고 균등 분할 — 프레임을 지우거나 늘려도 굳지 않음
-  fxFrT: {"1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.12, 0.12, 0.15, 0.15], "31": [0.03, 0.03, 0.03, 0.03], "33": [0.14, 0.17, 0.2, 0.35], "34": [0.66, 0.77, 1.03]},
-  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1.1, "spd": 2.25, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}, "34": {"startP": 0.6, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"sz": 0.87, "y": -87}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
+  fxFrT: {"1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.12, 0.12, 0.15, 0.15], "31": [0.03, 0.03, 0.03, 0.03], "33": [0.14, 0.17, 0.2, 0.35], "34": [0.18, 0.05, 0.18]},
+  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1.1, "spd": 2.25, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}, "34": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"sz": 0.87, "y": -85, "x": 20}, "2": {"sz": 0.77, "x": 73, "y": -37}, "3": {"x": 71, "sz": 0.95, "y": 16}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
 }
 const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 31, 33, 34]                          // 이펙트 있는 스킬 id
 // 이펙트 프레임 시간(초) 배열 — 넣은 값을 그대로 씀. 프레임을 늘리거나 줄이면 값도 같이 조정할 것.
@@ -285,7 +286,7 @@ function mergeMotion(sv) {   // 저장된 모션값 + 기본값 병합 (초기 �
     stop: { ...MOTION_DEFAULT.stop, ...(sv.stop || {}) }, size: { ...MOTION_DEFAULT.size, ...(sv.size || {}) },
     hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}), evoSz: { ...MOTION_DEFAULT.hero.evoSz, ...((sv.hero || {}).evoSz || {}) }, range: { ...MOTION_DEFAULT.hero.range, ...((sv.hero || {}).range || {}) }, outline: { ...MOTION_DEFAULT.hero.outline, ...((sv.hero || {}).outline || {}) }, walkSz: perStage((sv.hero || {}).walkSz, MOTION_DEFAULT.hero.walkSz), skillSz: { ...MOTION_DEFAULT.hero.skillSz, ...((sv.hero || {}).skillSz || {}) }, skillFront: { ...MOTION_DEFAULT.hero.skillFront, ...((sv.hero || {}).skillFront || {}) }, skillPos: { ...MOTION_DEFAULT.hero.skillPos, ...((sv.hero || {}).skillPos || {}) }, skillFrSz: { ...((sv.hero || {}).skillFrSz || {}) }, skillFrPos: { ...((sv.hero || {}).skillFrPos || {}) }, skillFrT: { ...((sv.hero || {}).skillFrT || {}) }, hit: { ...MOTION_DEFAULT.hero.hit, ...((sv.hero || {}).hit || {}) }, atkFrSz: mergeAtkFrSz(sv.hero || {}), atkFrX: { ...MOTION_DEFAULT.hero.atkFrX, ...((sv.hero || {}).atkFrX || {}) } },
     mob: { ...MOTION_DEFAULT.mob, ...(sv.mob || {}) }, boss: { ...MOTION_DEFAULT.boss, ...(sv.boss || {}) },
-    wave: { ...MOTION_DEFAULT.wave, ...(sv.wave || {}) }, adv: { ...MOTION_DEFAULT.adv, ...(sv.adv || {}) }, hitSq: { ...MOTION_DEFAULT.hitSq, ...(sv.hitSq || {}) }, stone: { ...MOTION_DEFAULT.stone, ...(sv.stone || {}) },   // 기본값(사용자 확정값) 위에 저장값 덮어쓰기
+    wave: { ...MOTION_DEFAULT.wave, ...(sv.wave || {}) }, adv: { ...MOTION_DEFAULT.adv, ...(sv.adv || {}) }, fxRef: sv.fxRef ?? MOTION_DEFAULT.fxRef, hitSq: { ...MOTION_DEFAULT.hitSq, ...(sv.hitSq || {}) }, stone: { ...MOTION_DEFAULT.stone, ...(sv.stone || {}) },   // 기본값(사용자 확정값) 위에 저장값 덮어쓰기
     ally: { hunter: { ...MOTION_DEFAULT.ally.hunter, ...((sv.ally || {}).hunter || {}) }, shaman: { ...MOTION_DEFAULT.ally.shaman, ...((sv.ally || {}).shaman || {}) }, healer: { ...MOTION_DEFAULT.ally.healer, ...((sv.ally || {}).healer || {}) }, giant: { ...MOTION_DEFAULT.ally.giant, ...((sv.ally || {}).giant || {}) } },
     fxFrT: { ...MOTION_DEFAULT.fxFrT, ...(sv.fxFrT || {}) },
     skFx: Object.fromEntries(MOT_FX_IDS.map(id => [id, { ...MOTION_DEFAULT.skFx[id], ...((sv.skFx || {})[id] || {}) }])),
@@ -1397,6 +1398,7 @@ export default function App() {
           const emb = (e.boss ? motRef.current.boss[embKey] : motRef.current.mob[embKey]) || {}
           const szm = e.dino ? (emb.sz ?? (motRef.current.size[e.dino] || 1)) : (emb.sz || 1)
           const estop = e.dino ? (emb.stop ?? (motRef.current.stop[e.dino] || 0)) : (emb.stop || 0)   // 좌우 정지 위치(+면 오른쪽/멀리)
+          e.drawH = e.h * szm * (e.scaleV || 1)   // 이펙트 자동보정용 실제 표시 높이
           const espd = emb.spd || 1                                                       // 달려오는 속도 배율(공룡·웨이브 공통)
           // 제자리 몹은 종·크기와 무관하게 **일괄 거리**로 선다 (편집기 '히어로와 거리')
           // 걸어오는 몹·보스만 예전 종별 계산 유지
@@ -1488,7 +1490,11 @@ export default function App() {
               const rng2 = __e2.rangePx || Infinity
               const inR2 = w.enemies.filter(e => !e.dead && e.x - w.heroX < rng2).sort((a, b) => a.x - b.x)
               const x2 = _fxc.anchor ? w.heroX : (inR2.length ? inR2[0].x : w.heroX + 260)
-              w.strikes.push({ id: sk.id, frames: sk.fx.frames, x: x2, anchor: _fxc.anchor ? 1 : 0, t: 0,
+              // 대상 크기 보정: 기준 높이 대비 몇 배인지 (히어로 기준일 땐 보정 없음)
+              const _ref = motRef.current.fxRef || 55
+              const _tgt = inR2[0]
+              const _k = (_fxc.anchor || !_tgt) ? 1 : Math.max(0.5, Math.min(3, (_tgt.drawH || _ref) / _ref))
+              w.strikes.push({ id: sk.id, frames: sk.fx.frames, x: x2, anchor: _fxc.anchor ? 1 : 0, k: _k, t: 0,
                 dur: fxTotal(motRef.current, sk.id, sk.fx.frames.length, STRIKE_DUR_BY[sk.id] ?? STRIKE_DUR) / (_fxc.spd || 1),
                 dmg: st.atk * __e2.dmgMult, hitDone: false, h: sk.fx.fxH ?? sk.h, hitP: sk.fx.hitP ?? 0.45,
                 aoe: __e2.aoe, rng: rng2, hx: w.heroX, stun: sk.stun || 0 })
@@ -1516,7 +1522,15 @@ export default function App() {
             }
             w.shake = 8
           }
-          if (w.skillT >= _skCast) { w.skill = null; w.skillT = 0 }
+          // 시전 종료는 **히어로 모션과 낙하 이펙트가 둘 다 끝났을 때**.
+          // 예전엔 히어로 모션만 보고 끝내서, 이펙트가 아직 떨어지는 중에 기본공격으로 넘어갔음
+          let _castEnd = _skCast
+          if (sk.fx && sk.fx.type === 'strike') {
+            const _fc = motRef.current.skFx[sk.id] || {}
+            const _fxDur = fxTotal(motRef.current, sk.id, sk.fx.frames.length, STRIKE_DUR_BY[sk.id] ?? STRIKE_DUR) / (_fc.spd || 1)
+            _castEnd = Math.max(_skCast, _skCast * (_fc.startP ?? sk.hitAt) + _fxDur)
+          }
+          if (w.skillT >= _castEnd) { w.skill = null; w.skillT = 0 }
         }
         // UI 동기화 (0.2초 간격)
         w.skillUiT = (w.skillUiT || 0) + dt
@@ -1929,8 +1943,9 @@ export default function App() {
       const H = e.h * szm
       const imgs = e.dino ? (e.boss ? (e.atkT > 0 ? DINO_BOSS[e.dino].a : DINO_BOSS[e.dino].w) : DINO_MOB[e.dino]) : (e.evBoss ? BIMG[e.evBoss - 1] : (e.boss ? CIMG[e.type] : EIMG[e.type]))   // 이벤트 던전 보스=BIMG, 저주보스=CIMG
       const stunned = e.stun > 0
-      const still = !e.boss                    // 제자리(웨이브·모험 일반몹)
-      const frozen = still && !w.adv && !w.ev  // 웨이브(일반몹·보스)는 완전 정지 — 모험·던전은 걷기 프레임·들썩임 유지
+      // 갱신 쪽 still 과 같은 기준이어야 함 — 웨이브는 보스도 제자리
+      const still = (!w.adv && !w.ev) ? true : !e.boss
+      const frozen = still && !w.adv && !w.ev  // 웨이브(일반몹·보스)는 완전 정지: 들썩임·기울기·프레임순환 없음, 파고듦만
       const gall = e.animT * 9
       const fi = frozen ? 0                                    // 웨이브(제자리)는 공격 중에도 1번 프레임 — 파고듦으로만 때린다
         : e.atkT > 0
@@ -2172,10 +2187,12 @@ export default function App() {
         const im = SIMG[stk.id][stk.frames[fi] - 1]
         if (im && im.complete && im.naturalWidth > 0) {
           const ffr = (fxc.fr || {})[fi + 1] || {}
-          const hh = stk.h * (fxc.sz || 1) * (ffr.sz ?? 1)
+          // 대상 크기 보정 — 크기와 오프셋에 같은 배율을 곱해 비율 유지 (autoFit 0이면 끔)
+          const kk = 1 + ((stk.k || 1) - 1) * (fxc.autoFit ?? 1)
+          const hh = stk.h * (fxc.sz || 1) * (ffr.sz ?? 1) * kk
           const ww = hh * (im.naturalWidth / im.naturalHeight)
           const bx = stk.anchor ? w.heroX : stk.x   // 히어로 기준이면 히어로를 따라 움직임
-          ctx.drawImage(im, bx - ww / 2 + (fxc.x || 0) + (ffr.x || 0), w.groundY - hh + (fxc.y || 0) + (ffr.y || 0), ww, hh)
+          ctx.drawImage(im, bx - ww / 2 + ((fxc.x || 0) + (ffr.x || 0)) * kk, w.groundY - hh + ((fxc.y || 0) + (ffr.y || 0)) * kk, ww, hh)
         }
       }
       // 스킬 투사체 (몬스터 쪽으로 비행)
@@ -3803,6 +3820,8 @@ export default function App() {
               return (<>
                 {row('이펙트 시작(시전 진행도)', M.skFx[motFx].startP ?? (sk2.hitAt ?? 1), 0, 1, 0.01, v => put2('startP', v))}
                 {row('위치 기준 (0=적 1=히어로)', M.skFx[motFx].anchor ?? 0, 0, 1, 1, v => put2('anchor', v))}
+                {row('대상 크기 보정 (0~1)', M.skFx[motFx].autoFit ?? 1, 0, 1, 0.05, v => put2('autoFit', v))}
+                {row('기준 몹 높이(px)', M.fxRef ?? 55, 20, 200, 1, v => setMotCfg({ ...M, fxRef: v }))}
                 <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>시작 0.5 = 히어로 모션 절반에서 이펙트 등장(겹침). 히어로 기준이면 이펙트가 히어로를 따라 움직입니다</div>
               </>)
             })()}
