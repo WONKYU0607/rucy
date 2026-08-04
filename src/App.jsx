@@ -29,7 +29,7 @@ const SPLASH_BG = (() => {
   try { const q = new URLSearchParams(location.search); if (q.get('intro') === 'en') ko = false; if (q.get('intro') === 'ko') ko = true } catch {}
   return ko ? '/startbg/startbg.jpg' : '/startbg/startbg_en.png'
 })()
-const CFG_STAMP = Date.parse('2026-08-04T12:05:00+09:00')
+const CFG_STAMP = Date.parse('2026-08-04T12:50:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -242,7 +242,7 @@ const MOTION_DEFAULT = {
   // 이펙트 프레임별 재생시간(초). 합 = 총 재생시간(전체 '프레임 속도'로 나눔).
   // 길이가 실제 프레임 수와 다르면 무시하고 균등 분할 — 프레임을 지우거나 늘려도 굳지 않음
   fxFrT: {"1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.12, 0.12, 0.15, 0.15], "31": [0.03, 0.03, 0.03, 0.03], "33": [0.14, 0.17, 0.2, 0.35]},
-  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
+  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1.1, "spd": 2.25, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
 }
 const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 31, 33]                          // 이펙트 있는 스킬 id
 // 이펙트 프레임 시간(초) 배열 — 넣은 값을 그대로 씀. 프레임을 늘리거나 줄이면 값도 같이 조정할 것.
@@ -700,7 +700,7 @@ const QUEST_LIST = [
   ],
   [ // 업적 (계단식 무한 반복: 수령할 때마다 목표 +1, 매 수령 시 진주 지급. base=표시 시작값)
     { ev: 'levelup', name: '캐릭터 레벨업', base: 1, ric: '/ui/pearl.png', rv: 10 },
-    { ev: 'evolve', name: '캐릭터 진화', base: 1, ric: '/ui/pearl.png', rv: 100 },
+    { ev: 'evolve', name: '캐릭터 진화', base: 1, max: 5, ric: '/ui/pearl.png', rv: 100 },   // 진화는 5회가 끝
     { ev: 'skill_enh', name: '스킬 강화', base: 0, ric: '/ui/pearl.png', rv: 10 },
     { ev: 'equip_enh', name: '장비 강화', base: 0, ric: '/ui/pearl.png', rv: 10 },
     { ev: 'adv_clear', name: '모험 클리어', base: 0, ric: '/ui/pearl.png', rv: 10 },
@@ -2307,8 +2307,9 @@ export default function App() {
     // 업적: 계단식 — cur = 누적치 + base, 목표 = 수령횟수 + 1 + base (수령마다 목표 +1)
     const aLv = (quest.aLv && quest.aLv[i]) || 0
     const cur = (quest.ev[item.ev] || 0) + (item.base || 0)
-    const goal = aLv + 1 + (item.base || 0)
-    return { cur: Math.min(cur, goal), goal, lv: aLv, claimed: false, canClaim: cur >= goal }
+    const goal = Math.min(aLv + 1 + (item.base || 0), item.max ?? Infinity)   // max가 있으면 그 값에서 멈춘다
+    const done = item.max != null && aLv >= item.max                          // 상한까지 다 받으면 완료
+    return { cur: Math.min(cur, goal), goal, lv: aLv, claimed: done, canClaim: !done && cur >= goal }
   }
   function qClaim(tab, i) {
     if (uiEdit) return
@@ -2539,8 +2540,8 @@ export default function App() {
   }
   function upSkill(k, delta = 1) {
     if (delta < 0) { setSkill(s => ({ ...s, [k]: Math.max(0, s[k] + delta) })); return }
-    if (!DEBUG && spLive.current <= 0) return
-    if (!DEBUG) setSp(s => s - 1)
+    if (spLive.current <= 0) return          // SP는 DEBUG에서도 정상 소모
+    setSp(s => s - 1)
     if ((skill[k] || 0) === 0) qEv('skill_get')   // 스킬 획득 (0→1)
     qEv('skill_enh')
     setSkill(s => ({ ...s, [k]: s[k] + 1 }))
@@ -2800,7 +2801,7 @@ export default function App() {
                   onClick={() => { if (!uiEdit) enhanceSkill(s.id) }}>
                   <span>강화 {(skEnh[s.id] || 0) > 0 ? `+${skEnh[s.id]}` : ''}</span>
                   <span style={st.skdEnhCost}>
-                    {Math.min(CARD_ENH_CARDS, skCard[s.id] || 0)}/{CARD_ENH_CARDS}
+                    {skCard[s.id] || 0}/{CARD_ENH_CARDS}
                     <img src="/ui/pearl.png" alt="" style={st.skdEnhIc} />{CARD_ENH_PEARL}
                   </span>
                 </button>
@@ -3341,7 +3342,7 @@ export default function App() {
                 </div>
                 <div data-edit="skbar" style={st.skCellBarOuter}>
                   <div style={{ ...st.skCellBarFill, width: `${Math.min(100, (skCard[s.id] || 0) / CARD_ENH_CARDS * 100)}%` }} />
-                  <div style={st.skCellBarTxt}>{Math.min(CARD_ENH_CARDS, skCard[s.id] || 0)}/{CARD_ENH_CARDS}</div>
+                  <div style={st.skCellBarTxt}>{skCard[s.id] || 0}/{CARD_ENH_CARDS}</div>
                 </div>
                 <div data-edit="skname" style={st.skCellName}>{s.name}</div>
               </div>
@@ -4438,7 +4439,7 @@ const st = {
   profNickTxt: { fontSize: 15, fontWeight: 700, color: '#fff5df' },
   profPencil: { padding: '2px 6px', fontSize: 13, color: '#c9b596', border: '1px solid #5a4630', borderRadius: 6, background: 'rgba(0,0,0,0.3)', cursor: 'pointer' },
   profNickInput: { width: 200, height: 28, fontSize: 15, fontWeight: 700, textAlign: 'center', color: '#fff', background: 'rgba(0,0,0,0.5)', border: '1px solid #d09340', borderRadius: 6, outline: 'none' },
-  profHeroWrap: { flexShrink: 0, width: 'var(--pd-profherow)', height: 'var(--pd-profheroh)', margin: '10px auto 0', borderRadius: 10, overflow: 'hidden', transform: 'translate(var(--pd-profhero-x), var(--pd-profhero-y))', border: `3px solid ${GOLD}`, boxShadow: '0 0 0 2px #6b4a24, 0 3px 10px rgba(0,0,0,0.5)', background: '#1a0f06', position: 'relative' },
+  profHeroWrap: { flexShrink: 0, width: 'var(--pd-profherow)', height: 'var(--pd-profheroh)', margin: '10px auto 0', borderRadius: 10, overflow: 'hidden', transform: 'translate(var(--pd-profhero-x), var(--pd-profhero-y))', border: 'none', boxShadow: '0 3px 10px rgba(0,0,0,0.5)', background: '#1a0f06', position: 'relative' },
   profHeroImg: { width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', transform: 'translate(var(--pd-profheroimg-x), var(--pd-profheroimg-y)) scale(calc(var(--pd-profherozoom) / 100))', transformOrigin: 'top center', imageRendering: 'pixelated' },
   profStage: { flexShrink: 0, fontSize: 12, fontWeight: 700, color: '#c9b596', marginTop: 4 },
   profGearRow: { flexShrink: 0, display: 'flex', gap: 8, marginTop: 12, width: '100%', justifyContent: 'center' },
