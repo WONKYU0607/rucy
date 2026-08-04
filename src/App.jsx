@@ -29,7 +29,7 @@ const SPLASH_BG = (() => {
   try { const q = new URLSearchParams(location.search); if (q.get('intro') === 'en') ko = false; if (q.get('intro') === 'ko') ko = true } catch {}
   return ko ? '/startbg/startbg.jpg' : '/startbg/startbg_en.png'
 })()
-const CFG_STAMP = Date.parse('2026-08-04T12:50:00+09:00')
+const CFG_STAMP = Date.parse('2026-08-04T15:55:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -204,7 +204,7 @@ const MOTION_DEFAULT = {
   mob: {   // 일반몹 종별 크기·높이·정지·속도
     'd:trex': { sz: 1 }, 'd:spino': { sz: 1 }, 'd:trike': { sz: 1 }, 'd:stego': { sz: 1 },
     'd:raptor': { sz: 1 }, 'd:anky': { sz: 1 }, 'd:ptera': { sz: 1 }, 'd:brachio': { sz: 1 },
-    'hyena': { stop: 30, spd: 1.5, sz: 1.07 }, 'bear': { sz: 1.16, stop: 46, spd: 1.25, y: -7 }, 'rhino': { stop: 43, spd: 1.2, sz: 1.13 }, 'mammoth': { sz: 0.92 }, 'rabbit': { sz: 1.61, stop: 15 },
+    'hyena': { stop: 30, spd: 1.5, sz: 1.07 }, 'bear': { sz: 1.16, stop: 46, spd: 1.25, y: -7 }, 'rhino': { stop: 43, spd: 1.2, sz: 1.13 }, 'mammoth': { sz: 0.92 }, 'rabbit': { sz: 1.6, stop: 15 },
     'antelope': { sz: 1.28, stop: -20 }, 'deer': { stop: 35, sz: 1 }, 'boar': { stop: 45, sz: 1, spd: 1.4 }, 'wolf': { sz: 1.14, stop: 40, spd: 1.5 },
     'tiger': { sz: 1.09, stop: 15, spd: 1.3 }, 'monkey': { sz: 1.12, stop: -12, spd: 1.5, y: -1 }, 'snake': { sz: 1.08, stop: 6, spd: 1.45 }, 'ostrich': { sz: 0.88, stop: 4 },
     'turtle': { sz: 1.01 }, 'croc': { stop: 5 }, 'komodo': { stop: 4 }, 'eagle': { y: -16, spd: 1.7 },
@@ -220,7 +220,7 @@ const MOTION_DEFAULT = {
   boss: {  // 보스 종별
     'd:trex': { stop: 53 }, 'd:spino': { sz: 1.2, spd: 1.7, stop: 115, y: -8 }, 'd:trike': { sz: 1.08, stop: 110, y: -8, spd: 1.5 }, 'd:stego': { y: -12, stop: -2 },
     'd:raptor': { spd: 1.8, sz: 1.08 }, 'd:anky': { sz: 0.79, stop: 90, y: -3 }, 'd:ptera': { spd: 1.95, stop: 18, y: -25 }, 'd:brachio': { y: -12, sz: 1.6 },
-    'c:rabbit': { sz: 1.3, y: -6, stop: 85, spd: 1.4 }, 'c:antelope': { y: -6, stop: 30, sz: 1.29 }, 'c:deer': { stop: 37, y: -7, sz: 0.85, spd: 1.4 }, 'c:boar': { sz: 1.07, y: -12, stop: 70, spd: 1.3 },
+    'c:rabbit': { sz: 1.3, y: -6, stop: 15, spd: 1.4 }, 'c:antelope': { y: -6, stop: 85, sz: 1.2 }, 'c:deer': { stop: 37, y: -7, sz: 0.85, spd: 1.4 }, 'c:boar': { sz: 1.07, y: -12, stop: 70, spd: 1.3 },
     'c:wolf': { stop: 85, y: -11, spd: 1.5, sz: 1.24 }, 'c:hyena': { stop: 90, y: -12, sz: 0.88, spd: 1.3 }, 'c:bear': { y: -13, stop: 110, sz: 0.8, spd: 1.35 }, 'c:rhino': { stop: 95, sz: 0.75, y: -4, spd: 1.35 },
     'c:tiger': { spd: 1.3, sz: 0.9, y: -6, stop: 103 }, 'c:mammoth': { spd: 1.3, sz: 0.67, y: -7, stop: 106 }, 'c:monkey': { spd: 1.5, y: -3, stop: 186, sz: 0.85 }, 'c:snake': { sz: 1.66, spd: 1.6 },
     'c:ostrich': { sz: 0.65, y: -8, stop: 77 }, 'c:turtle': { stop: 4 }, 'c:croc': { sz: 1.05, y: -3, stop: 46 }, 'c:komodo': { stop: 46, spd: 1.45, y: -2 },
@@ -1335,7 +1335,8 @@ export default function App() {
       const engaged = (e, extra = 0) => {
         const reached = e.stopX != null && e.x <= e.stopX + 6
         // 원거리는 사거리에 닿는 순간 멈춰서 던진다 (가까이 갈 이유가 없음)
-        if (thrower) return e.x - w.heroX < atkRange0 + extra
+        // 직립도 '멈춘 적'은 교전으로 인정 — 안 그러면 적 정지 위치가 사거리 밖일 때 영원히 교전이 안 됨
+        if (thrower) return e.x - w.heroX < atkRange0 + extra || reached
         if (!w.adv && !e.boss) return reached                  // 근접 + 제자리 몹: 정지위치에 닿아야 교전
         return e.x - w.heroX < atkRange0 + extra || reached    // 근접 + 걸어오는 몹·보스
       }
