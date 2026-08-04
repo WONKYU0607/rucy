@@ -180,7 +180,7 @@ const MOTION_DEFAULT = {
   hit: { trex: 3, spino: 3, trike: 2, stego: 2, raptor: 3, anky: 2, ptera: 2, brachio: 2 },  // 데미지 프레임 번호
   cd: { advBoss: 1000, advMob: 1000, wave: 1000 },             // 공격 간격(ms)
   dur: { advMob: 0.30, wave: 0.30 },                           // 공격 프레임 없는 적의 모션 길이(초)
-  lunge: { boss: 25, mob: 15 },                                // 공격 시 파고드는 거리(px)
+  lunge: { boss: 25, mob: 30 },                                // 보스 파고듦(웨이브 일반몹은 공격 안 함)
   stop: { ...DINO_STOP },                                      // 종별 정지 위치 보정(px, +면 멀리)
   size: { trex: 1.08, spino: 1.15, trike: 1.04, stego: 1.20, raptor: 0.90, anky: 1, ptera: 1.05, brachio: 1.73 },  // 종별 크기 배율
   hero: {
@@ -237,7 +237,7 @@ const MOTION_DEFAULT = {
   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값, 종별 아님 / 보스·모험 몹은 미적용): 가로로 눌리고(x) 세로로 늘어나며(y) 발을 축으로 뒤로 젖혀졌다(rot) dur 동안 복귀. 위치는 안 움직임
   hitSq: {"x": 1.1, "y": 1.1, "rot": 10, "dur": 0.15},   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값)
   wave: { gap: 40, dist: 35 },
-  adv: { gap: 50, dist: 55 },    // 모험 일반 몹 1열 대기 간격·히어로와 거리(px) — 웨이브와 분리                                  // 웨이브 몹 일렬 간격(px) / 히어로와의 거리(px) — 종 무관 일괄
+  adv: { gap: 50, dist: 55, lunge: 30 },    // 모험 일반 몹 1열 대기 간격·히어로와 거리(px) — 웨이브와 분리                                  // 웨이브 몹 일렬 간격(px) / 히어로와의 거리(px) — 종 무관 일괄
   stone: { spd: 0.6, sz: 13, arc: 0.4 },                           // 직립 돌던지기: 비행속도 배율 / 그림 크기(px) / 포물선 높이 배율
   // 이펙트 프레임별 재생시간(초). 합 = 총 재생시간(전체 '프레임 속도'로 나눔).
   // 길이가 실제 프레임 수와 다르면 무시하고 균등 분할 — 프레임을 지우거나 늘려도 굳지 않음
@@ -1404,7 +1404,7 @@ export default function App() {
           e.stopX = stopX   // 정지위치 저장 → 멈춘 몬스터는 사거리 밖이어도 기본공격 판정(그림상 코앞인데 안닿는 문제 해결)
           // 히어로가 때릴 수 있는 거리면 몹도 반격할 수 있어야 한다.
           // (히어로 타격 판정은 사거리+40인데 몹 공격은 정지위치 도달이 조건이라, 그 사이 구간에서 몹이 일방적으로 맞고 죽었음)
-          const inHeroReach = !e.boss && (e.x - w.heroX) < atkRange + 40
+          const inHeroReach = w.adv && !e.boss && (e.x - w.heroX) < atkRange + 40   // 모험 몹만 — 웨이브 몹에 걸면 스크롤 흐름에서 빠져 뒤로 밀리고 겹침
           if (e.x > stopX && !inHeroReach && !(e.atkT > 0)) {
             const near = still ? 1 : Math.min(1, Math.max(0.3, (e.x - stopX) / 55))  // 정지 전 감속
             const own = still ? 0 : e.speed * (e.spdV || 1) * espd * SPEED * 1.3 * e.vt * near
@@ -1422,7 +1422,7 @@ export default function App() {
               const hitAt = e.atkHitAt != null ? e.atkHitAt : dur * 0.5
               // 파고듦: 타격 순간에 가장 깊이 들어가고 이후 복귀
               const lp = el < hitAt ? el / Math.max(0.001, hitAt) : Math.max(0, 1 - (el - hitAt) / Math.max(0.001, dur - hitAt))
-              e.lunge = -Math.sin(Math.min(1, lp) * Math.PI / 2) * (e.boss ? motRef.current.lunge.boss : motRef.current.lunge.mob)
+              e.lunge = -Math.sin(Math.min(1, lp) * Math.PI / 2) * (e.boss ? motRef.current.lunge.boss : (motRef.current.adv.lunge ?? 30))   // 일반몹 파고듦은 모험 전용
               if (!e.atkHit && el >= hitAt) {                               // 타격 프레임 진입 = 실제 타격 순간
                 e.atkHit = true
                 // 회피 판정: 적 명중률 − 내 회피 보너스
@@ -3593,6 +3593,7 @@ export default function App() {
             </div>
             {row('모험 히어로와 거리(px)', M.adv.dist ?? 60, 0, 300, 1, v => setMotCfg({ ...M, adv: { ...M.adv, dist: v } }))}
             {row('모험 1열 간격(px)', M.adv.gap ?? 40, 0, 200, 1, v => setMotCfg({ ...M, adv: { ...M.adv, gap: v } }))}
+            {row('모험 파고듦(px)', M.adv.lunge ?? 30, 0, 80, 1, v => setMotCfg({ ...M, adv: { ...M.adv, lunge: v } }))}
             <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>모험 일반 몹은 제자리에 박혀 한 줄로 선다 (웨이브 값과 별개, 공격은 함)</div>
             <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>{DINO_NAME[motSel]} 공격 프레임 {frames.join('·')}번 · 총 {arr.reduce((a, b) => a + b, 0).toFixed(2)}초</div>
             {arr.map((v, i) => row(`${i + 1}번(원본${frames[i]}) 시간`, v, 0.02, 0.6, 0.01, nv => setArr(i, nv)))}
@@ -3600,7 +3601,6 @@ export default function App() {
             <div style={{ fontSize: 10, color: '#8a7758', margin: '4px 0 2px', lineHeight: 1.4 }}>크기·정지·높이·속도는 [일반몹]/[보스] 탭에서 몹·보스 따로 조절</div>
             <div style={{ borderTop: '1px solid #3a2a14', margin: '6px 0' }} />
             {row('보스 파고듦', M.lunge.boss, 0, 60, 1, v => setMotCfg({ ...M, lunge: { ...M.lunge, boss: v } }))}
-            {row('일반 파고듦', M.lunge.mob, 0, 60, 1, v => setMotCfg({ ...M, lunge: { ...M.lunge, mob: v } }))}
             {row('보스 간격(ms)', M.cd.advBoss, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, advBoss: v } }))}
             {row('모험몹 간격', M.cd.advMob, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, advMob: v } }))}
             {row('웨이브몹 간격', M.cd.wave, 300, 3000, 50, v => setMotCfg({ ...M, cd: { ...M.cd, wave: v } }))}
