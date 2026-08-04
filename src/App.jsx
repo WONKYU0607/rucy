@@ -27,26 +27,26 @@ const isKoUser = () => { try { return /^ko/i.test(navigator.language || (navigat
 const SPLASH_BG = (() => {
   let ko = isKoUser()
   try { const q = new URLSearchParams(location.search); if (q.get('intro') === 'en') ko = false; if (q.get('intro') === 'ko') ko = true } catch {}
-  return ko ? '/startbg/startbg.jpg' : '/startbg/startbg_en.png'
+  return ko ? '/startbg/startbg.webp' : '/startbg/startbg_en.webp'
 })()
 const CFG_STAMP = Date.parse('2026-08-04T15:55:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
-  quad:  { srcs: ['/hero/quad/quad_1.png', '/hero/quad/quad_2.png', '/hero/quad/quad_3.png', '/hero/quad/quad_4.png'], h: 75,  flip: false },
-  walk:  { srcs: ['/hero/walk/walk_1.png', '/hero/walk/walk_2.png', '/hero/walk/walk_3.png', '/hero/walk/walk_4.png'], h: 120, flip: false },
-  run:   { srcs: ['/hero/run/run_1.png', '/hero/run/run_2.png', '/hero/run/run_3.png', '/hero/run/run_4.png'], h: 120, flip: false },
-  punch: { srcs: ['/hero/punch/punch_1.png', '/hero/punch/punch_2.png', '/hero/punch/punch_3.png'], h: 100, flip: false },
-  throw: { srcs: ['/hero/throw/hero_windup.png', '/hero/throw/hero_release.png'], h: 120, flip: false },
-  idle:  { srcs: ['/hero/idle/idle_1.png'], h: 120, flip: false },
-  ewalk: { srcs: ['/hero/erectus_walk/ewalk_1.png', '/hero/erectus_walk/ewalk_2.png', '/hero/erectus_walk/ewalk_3.png', '/hero/erectus_walk/ewalk_4.png'], h: 120, flip: false },
-  eatk1: { srcs: ['/hero/erectus_atk1/eatk1_1.png', '/hero/erectus_atk1/eatk1_2.png', '/hero/erectus_atk1/eatk1_3.png'], h: 135, flip: false },
-  nwalk: { srcs: ['/hero/neander_walk/nwalk_1.png', '/hero/neander_walk/nwalk_2.png', '/hero/neander_walk/nwalk_3.png', '/hero/neander_walk/nwalk_4.png'], h: 120, flip: false },
-  natk1: { srcs: ['/hero/neander_atk1/natk1_1.png', '/hero/neander_atk1/natk1_2.png'], h: 130, flip: false },
-  pwalk: { srcs: [1, 2, 3, 4, 5, 6, 7, 8].map(i => `/hero/sapiens_walk/pwalk_${i}.png`), h: 140, flip: false },
-  patk1: { srcs: [2, 3, 4, 5].map(i => `/hero/sapiens_atk1/patk1_${i}.png`), h: 157, flip: false },   // 1번 삭제됨
-  hmwalk: { srcs: [1, 2, 3, 4, 5, 6, 7, 8].map(i => `/hero/human_walk/hmwalk_${i}.png`), h: 140, flip: false },
-  hmatk1: { srcs: [1, 2, 3, 4].map(i => `/hero/human_atk1/hmatk1_${i}.png`), h: 157, flip: false },
+  quad:  { srcs: ['/hero/quad/quad_1.webp', '/hero/quad/quad_2.webp', '/hero/quad/quad_3.webp', '/hero/quad/quad_4.webp'], h: 75,  flip: false },
+  walk:  { srcs: ['/hero/walk/walk_1.webp', '/hero/walk/walk_2.webp', '/hero/walk/walk_3.webp', '/hero/walk/walk_4.webp'], h: 120, flip: false },
+  run:   { srcs: ['/hero/run/run_1.webp', '/hero/run/run_2.webp', '/hero/run/run_3.webp', '/hero/run/run_4.webp'], h: 120, flip: false },
+  punch: { srcs: ['/hero/punch/punch_1.webp', '/hero/punch/punch_2.webp', '/hero/punch/punch_3.webp'], h: 100, flip: false },
+  throw: { srcs: ['/hero/throw/hero_windup.webp', '/hero/throw/hero_release.webp'], h: 120, flip: false },
+  idle:  { srcs: ['/hero/idle/idle_1.webp'], h: 120, flip: false },
+  ewalk: { srcs: ['/hero/erectus_walk/ewalk_1.webp', '/hero/erectus_walk/ewalk_2.webp', '/hero/erectus_walk/ewalk_3.webp', '/hero/erectus_walk/ewalk_4.webp'], h: 120, flip: false },
+  eatk1: { srcs: ['/hero/erectus_atk1/eatk1_1.webp', '/hero/erectus_atk1/eatk1_2.webp', '/hero/erectus_atk1/eatk1_3.webp'], h: 135, flip: false },
+  nwalk: { srcs: ['/hero/neander_walk/nwalk_1.webp', '/hero/neander_walk/nwalk_2.webp', '/hero/neander_walk/nwalk_3.webp', '/hero/neander_walk/nwalk_4.webp'], h: 120, flip: false },
+  natk1: { srcs: ['/hero/neander_atk1/natk1_1.webp', '/hero/neander_atk1/natk1_2.webp'], h: 130, flip: false },
+  pwalk: { srcs: [1, 2, 3, 4, 5, 6, 7, 8].map(i => `/hero/sapiens_walk/pwalk_${i}.webp`), h: 140, flip: false },
+  patk1: { srcs: [2, 3, 4, 5].map(i => `/hero/sapiens_atk1/patk1_${i}.webp`), h: 157, flip: false },   // 1번 삭제됨
+  hmwalk: { srcs: [1, 2, 3, 4, 5, 6, 7, 8].map(i => `/hero/human_walk/hmwalk_${i}.webp`), h: 140, flip: false },
+  hmatk1: { srcs: [1, 2, 3, 4].map(i => `/hero/human_atk1/hmatk1_${i}.webp`), h: 157, flip: false },
 }
 // 스킬 정의 — charSeq: 히어로가 재생할 프레임(1-based, 없으면 전체), fx: 분리 이펙트
 //   fx proj  = 투사체: fly 프레임이 몬스터 쪽으로 날아가 명중 시 데미지(+impact 프레임)
@@ -64,11 +64,11 @@ const PASSIVE_KEYS = [
 ]
 // 진화 단계별 패시브 (아이콘: 단계별 폴더). 이름/능력치 추후 확정 — 지금은 표시·장착만
 const PASSIVE_TIERS = [
-  { base: 101, path: k => `/skill/passive/${k}.png`, stages: [0, 1] },          // 오스트랄로피테쿠스(4족+직립)
-  { base: 111, path: k => `/skill/passive/erectus_${k}.png`, stages: [2] },     // 호모 에렉투스
-  { base: 121, path: k => `/skill/passive/neander_${k}.png`, stages: [3] },     // 호모 네안데르탈인
-  { base: 131, path: k => `/skill/passive/sapiens_${k}.png`, stages: [4] },     // 호모 사피엔스
-  { base: 141, path: k => `/skill/passive/human_${k}.png`, stages: [5] },       // 인간
+  { base: 101, path: k => `/skill/passive/${k}.webp`, stages: [0, 1] },          // 오스트랄로피테쿠스(4족+직립)
+  { base: 111, path: k => `/skill/passive/erectus_${k}.webp`, stages: [2] },     // 호모 에렉투스
+  { base: 121, path: k => `/skill/passive/neander_${k}.webp`, stages: [3] },     // 호모 네안데르탈인
+  { base: 131, path: k => `/skill/passive/sapiens_${k}.webp`, stages: [4] },     // 호모 사피엔스
+  { base: 141, path: k => `/skill/passive/human_${k}.webp`, stages: [5] },       // 인간
 ]
 const PASSIVE_SHEET = PASSIVE_TIERS.flatMap(t => PASSIVE_KEYS.map(([k, nm, ds], i) => ({ id: t.base + i, n: 1, h: 0, stage: -1, stages: t.stages, passive: true, ic: t.path(k), title: nm, desc2: ds })))
 const SKILL_SHEET = [
@@ -92,6 +92,7 @@ const SKILL_SHEET = [
   { id: 28, n: 7, h: 200, stage: 2, title: '피폭', charSeq: [1, 2, 3, 5, 6, 7], cd: 2, dmgMult: 3, aoe: true },
   // 29·30: 히어로 모션(charSeq)과 이펙트(fx)가 각각 다른 시트 → 이펙트가 별도 레이어라 몹에 안 가림
   { id: 29, n: 7, h: 200, stage: 2, title: '사이오닉 스톰', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [4, 5, 6, 7], fxH: 240, hitP: 0.6 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 150 },
+  { id: 34, n: 7, h: 200, stage: 3, title: '엑스밤', charSeq: [1, 2, 3, 4], fx: { type: 'strike', frames: [5, 6, 7], fxH: 260, hitP: 0.8 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 200 },
   { id: 33, n: 10, h: 200, stage: 3, title: '지각변동', charSeq: [1, 2, 3, 4, 5, 6], fx: { type: 'strike', frames: [7, 8, 9, 10], fxH: 200, hitP: 0.7 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 200 },
   { id: 32, n: 5, h: 200, stage: 3, title: '얼음도끼', charSeq: [1, 2, 3, 4, 5], cd: 2, dmgMult: 3, aoe: true, rangePx: 150 },   // 이펙트가 그림에 포함 — 별도 fx 없음
   { id: 31, n: 8, h: 200, stage: 3, title: '회전 도끼', charSeq: [1, 2, 1, 2, 3], fx: { type: 'proj', fly: [5, 6, 7, 8], fxH: 120 }, cd: 2, dmgMult: 3 },   // 관통 투사체
@@ -99,7 +100,7 @@ const SKILL_SHEET = [
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
 // 스킬 아이콘: 해당 스킬 시트의 지정 프레임 사용 (없으면 번호 텍스트)
-const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4, 22: 4, 23: 6, 24: 7, 25: 3, 26: 3, 27: 1, 28: 6, 29: 6, 31: 6, 32: 2, 33: 10 }
+const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4, 22: 4, 23: 6, 24: 7, 25: 3, 26: 3, 27: 1, 28: 6, 29: 6, 31: 6, 32: 2, 33: 10, 34: 7 }
 // 스킬 효과(대상/데미지/사거리/쿨타임)를 인게임 상세창에서 조절 — 인덱스가 아닌 **id 기준**이라
 // 스킬을 넣고 빼도 값이 안 밀린다(예전 cdConf는 인덱스 배열이라 매번 리셋됐음).
 const skEff = (sk, cfg) => {
@@ -111,10 +112,10 @@ const skEff = (sk, cfg) => {
     rangePx: c.range != null ? (c.range > 0 ? c.range : null) : (sk.rangePx ?? null),   // px, 0/null = 화면 전체
   }
 }
-const skillIconSrc = id => SKILL_ICON_FRAME[id] ? `/skill/s${id}/s${id}_${SKILL_ICON_FRAME[id]}.png` : null
+const skillIconSrc = id => SKILL_ICON_FRAME[id] ? `/skill/s${id}/s${id}_${SKILL_ICON_FRAME[id]}.webp` : null
 const skIcon = s => (s ? (skillIconSrc(s.id) || s.icon2 || null) : null)
 // ── 전리품 조각 (사망 드롭 → 상단 재화칸 흡수 연출) ──
-const LOOT_IMG = { meat: '/ui/ic_meat.png', exp: '/ui/ic_exp.png', dia: '/ui/gem.png', mat: '/ui/mat4.png' }
+const LOOT_IMG = { meat: '/ui/ic_meat.webp', exp: '/ui/ic_exp.webp', dia: '/ui/gem.webp', mat: '/ui/mat4.webp' }
 const LOOT_CIMG = {}
 for (const k in LOOT_IMG) { const i = new Image(); i.src = LOOT_IMG[k]; LOOT_CIMG[k] = i }
 const DROP_DIA_P = 0.3, DROP_MAT_P = 0.3   // 임시 확률 — 추후 웨이브 비례 공식으로 교체
@@ -241,10 +242,10 @@ const MOTION_DEFAULT = {
   stone: { spd: 0.6, sz: 13, arc: 0.4 },                           // 직립 돌던지기: 비행속도 배율 / 그림 크기(px) / 포물선 높이 배율
   // 이펙트 프레임별 재생시간(초). 합 = 총 재생시간(전체 '프레임 속도'로 나눔).
   // 길이가 실제 프레임 수와 다르면 무시하고 균등 분할 — 프레임을 지우거나 늘려도 굳지 않음
-  fxFrT: {"1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.12, 0.12, 0.15, 0.15], "31": [0.03, 0.03, 0.03, 0.03], "33": [0.14, 0.17, 0.2, 0.35]},
-  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1.1, "spd": 2.25, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
+  fxFrT: {"1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.12, 0.12, 0.15, 0.15], "31": [0.03, 0.03, 0.03, 0.03], "33": [0.14, 0.17, 0.2, 0.35], "34": [0.16, 0.16, 0.28]},
+  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "34": {"startP": 0.6, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1.1, "spd": 2.25, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
 }
-const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 31, 33]                          // 이펙트 있는 스킬 id
+const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 31, 33, 34]                          // 이펙트 있는 스킬 id
 // 이펙트 프레임 시간(초) 배열 — 넣은 값을 그대로 씀. 프레임을 늘리거나 줄이면 값도 같이 조정할 것.
 // 빈 칸은 0초(그 프레임은 건너뜀)로 두고, 전부 비었을 때만 균등 분할로 떨어져 NaN을 막는다
 const fxT = (mot, id, n) => {
@@ -313,12 +314,12 @@ const advMult = st => 1 + 0.3 * (st - 1)   // 단계 배율 (1단계 1.0 → 10�
 const DINO_MOB = {}, DINO_BOSS = {}, ADV_BG = {}
 for (const c of CONTINENTS) {
   const k = c.boss
-  const mk = (pre, n) => [1, 2, 3, 4].map(i => { const im = new Image(); im.src = `/dino/${pre}/${n}${i}.png`; return im })
+  const mk = (pre, n) => [1, 2, 3, 4].map(i => { const im = new Image(); im.src = `/dino/${pre}/${n}${i}.webp`; return im })
   DINO_MOB[k] = mk(`mob_${k}`, 'w')
   const af = DINO_ATK_FRAMES[k] || [1, 2, 3, 4]
   DINO_BOSS[k] = {
     w: mk(`boss_${k}`, 'w'),
-    a: af.map(i => { const im = new Image(); im.src = `/dino/boss_${k}/a${i}.png`; return im }),
+    a: af.map(i => { const im = new Image(); im.src = `/dino/boss_${k}/a${i}.webp`; return im }),
   }
   const bg = new Image(); bg.src = `/adventure/bg/${c.key}.jpg`; ADV_BG[c.key] = bg
 }
@@ -329,10 +330,10 @@ SKILL_SHEET.forEach(c => {
     ...((c.fx && c.fx.frames) || []), ...((c.fx && c.fx.fly) || []), SKILL_ICON_FRAME[c.id] || 1])
   SIMG[c.id] = Array.from({ length: c.n }, (_, j) => {          // 실제 쓰는 프레임만 로드 (삭제된 번호 404 방지)
     if (!useFr.has(j + 1)) return null                          // 인덱스는 '프레임번호-1' 그대로 — strike/proj 가 그 인덱스로 찾음
-    const im = new Image(); im.src = `/skill/s${c.id}/s${c.id}_${j + 1}.png`; return im
+    const im = new Image(); im.src = `/skill/s${c.id}/s${c.id}_${j + 1}.webp`; return im
   })
   const seq = c.charSeq || Array.from({ length: c.n }, (_, j) => j + 1)
-  ANIM['s_' + c.id] = { srcs: seq.map(j => `/skill/s${c.id}/s${c.id}_${j}.png`), h: c.h, flip: false }
+  ANIM['s_' + c.id] = { srcs: seq.map(j => `/skill/s${c.id}/s${c.id}_${j}.webp`), h: c.h, flip: false }
 })
 const AIMG = {}
 for (const k in ANIM) AIMG[k] = ANIM[k].srcs.map(s => { const i = new Image(); i.src = s; return i })
@@ -340,11 +341,11 @@ const BG_THEMES = ['wasteland', 'forest', 'volcano', 'snow', 'swamp', 'night']
 const BG_NORMAL = BG_THEMES.map(t => { const i = new Image(); i.src = `/bg/n_${t}.jpg`; return i })
 const BG_BOSS = BG_THEMES.map(t => { const i = new Image(); i.src = `/bg/b_${t}.jpg`; return i })
 const bgFor = (wave, boss) => (boss ? BG_BOSS : BG_NORMAL)[Math.floor((wave - 1) / 10) % BG_THEMES.length]
-const STONE = new Image(); STONE.src = '/misc/stone.png'
+const STONE = new Image(); STONE.src = '/misc/stone.webp'
 // 타격 이펙트 (effect/eN_1~8.png · 8프레임, 시트 절반축소본)
 const FXF = 8, FX_DUR = 0.045
 const FX_IMGS = {}
-for (let n = 1; n <= 5; n++) FX_IMGS[n] = Array.from({ length: FXF }, (_, f) => { const i = new Image(); i.src = `/effect/effect_frames/effect${n}/e${n}-${f + 1}.png`; return i })
+for (let n = 1; n <= 5; n++) FX_IMGS[n] = Array.from({ length: FXF }, (_, f) => { const i = new Image(); i.src = `/effect/effect_frames/effect${n}/e${n}-${f + 1}.webp`; return i })
 
 // ── 스킬 프레임 시간 설정 (초, 직접 수정) ─────────────────────────
 // 각 원소 = 그 순서의 히어로 프레임 표시 시간. 배열 길이 = 히어로 프레임 수.
@@ -370,7 +371,8 @@ const SKILL_FRAME_T = {
   29: [0.18, 0.18, 0.24],                                      // 사이오닉 스톰 (3: 번개 충전)
   31: [0.15, 0.15, 0.15, 0.15, 0.40],                          // 회전 도끼 (회전 2바퀴 → 던지기)
   32: [0.14, 0.30, 0.14, 0.14, 0.40],                          // 얼음도끼
-  33: [0.12, 0.14, 0.12, 0.14, 0.16, 0.32],                    // 지각변동 (도약 → 내려찍기 → 융기)                          // 얼음도끼 (베기 → 치켜들기 → 내려찍기)
+  33: [0.12, 0.14, 0.12, 0.14, 0.16, 0.32],                    // 지각변동
+  34: [0.14, 0.14, 0.16, 0.30],                                // 엑스밤 (던지기 → 도끼 이탈 → 소용돌이)                    // 지각변동 (도약 → 내려찍기 → 융기)                          // 얼음도끼 (베기 → 치켜들기 → 내려찍기)
 }
 // 이펙트 타이밍
 const STRIKE_DUR = 0.55   // 낙뢰/낙석 이펙트 재생 시간(초) 기본값
@@ -389,13 +391,14 @@ const STRIKE_DUR_BY = {
   18: 0.55,   // 점프낙석
   29: 0.70,   // 사이오닉 스톰 (먹구름+낙뢰 4프레임)
   33: 0.70,   // 지각변동 (바위 융기 4프레임)
+  34: 0.60,   // 엑스밤 (비행 → 착지 → 폭발 3프레임)
 }
 
-// 무기/방어구/유물 각 30개 (6등급대 × 5티어, 1→30 강해짐). /equip/A/w01.png 등
+// 무기/방어구/유물 각 30개 (6등급대 × 5티어, 1→30 강해짐). /equip/A/w01.webp 등
 const EQUIP_CATS = ['무기', '방어구', '유물']
 const CAT_DIR = { 무기: '/equip/A/w', 방어구: '/equip/B/a', 유물: '/relic/r' }
 const pad2 = i => String(i).padStart(2, '0')
-const equipImg = (cat, i) => `${CAT_DIR[cat]}${pad2(i)}.png`
+const equipImg = (cat, i) => `${CAT_DIR[cat]}${pad2(i)}.webp`
 const GACHA_CATS = { 무기: {}, 방어구: {}, 유물: {} }   // 3 카테고리, 각 30개 동일 규격
 const GACHA_COST = { 1: 10, 10: 100, 30: 300 }
 const CARD_COST = { 1: 300, 10: 3000 }        // 스킬 카드 소환 비용(다이아)
@@ -458,10 +461,10 @@ const gearStats = (cat, i, lv = 0) => {
   return [['회피 증가', i * 0.5 * m], ['명중률 증가', i * m], ['이동속도 증가', i * 0.3 * m]]
 }
 const enhCost = lv => Math.floor(100 * Math.pow(1.5, lv))   // 강화 비용: 100, 150, 225 …
-const MAT_IMG = i => `/ui/mat${i}.png`
+const MAT_IMG = i => `/ui/mat${i}.webp`
 // 프로필/아바타용 진화단계 초상화 (4족·직립은 유인원 공통)
-const heroProfileSrc = m => m === 'erectus' ? '/hero/profile/erectus.png' : m === 'neander' ? '/hero/profile/neander.png' : m === 'sapiens' ? '/hero/profile/sapiens.png' : m === 'human' ? '/hero/profile/human.png' : '/hero/profile/ape.png'
-const gearSrc = (cat, n) => `${CAT_DIR[cat]}${n}.png`
+const heroProfileSrc = m => m === 'erectus' ? '/hero/profile/erectus.webp' : m === 'neander' ? '/hero/profile/neander.webp' : m === 'sapiens' ? '/hero/profile/sapiens.webp' : m === 'human' ? '/hero/profile/human.webp' : '/hero/profile/ape.webp'
+const gearSrc = (cat, n) => `${CAT_DIR[cat]}${n}.webp`
 
 // ── 오프라인 보상 설정 (직접 수정 가능) ─────────────────────────
 const OFFLINE_MIN_SEC = 0           // 부재 시간 조건 없음 (잠깐 나갔다 와도 지급)
@@ -498,29 +501,29 @@ const ALLY_DEFS = {
   hunter: {
     name: '헌터', h: 68, xOff: -75, yOff: 27, atkMult: 0.45, cd: 1.15, range: 450,
     projSpd: 560, projW: 62, projBob: 0, atkDur: 0.42, throwAt: 0.16, projYr: 0.62,
-    walk: [1, 2, 3, 4].map(i => `/ally/hunter/hwalk_${i}.png`),
-    atk: [1, 2].map(i => `/ally/hunter/hatk_${i}.png`),
-    proj: '/ally/hunter/spear.png',
+    walk: [1, 2, 3, 4].map(i => `/ally/hunter/hwalk_${i}.webp`),
+    atk: [1, 2].map(i => `/ally/hunter/hatk_${i}.webp`),
+    proj: '/ally/hunter/spear.webp',
   },
   shaman: {
     name: '주술사', h: 68, xOff: -75, yOff: -34, atkMult: 0.55, cd: 1.6, range: 450,
     projSpd: 400, projW: 26, projBob: 5, atkDur: 0.5, throwAt: 0.2, projYr: 0.75,
-    walk: [1, 2, 3, 4].map(i => `/ally/shaman/swalk_${i}.png`),
-    atk: [1].map(i => `/ally/shaman/satk_${i}.png`),
-    proj: '/ally/shaman/fire.png',
+    walk: [1, 2, 3, 4].map(i => `/ally/shaman/swalk_${i}.webp`),
+    atk: [1].map(i => `/ally/shaman/satk_${i}.webp`),
+    proj: '/ally/shaman/fire.webp',
   },
   healer: {
     // 공격 없음 — 장착 시 히어로+동료 전체에 이동속도·공격속도·공격력 +5% (패시브)
     name: '힐러', kind: 'buff', buff: 0.05, h: 60, xOff: -108, yOff: -5,
-    walk: [1, 2, 3, 4, 5, 6, 7, 8].map(i => `/ally/healer/heal_${i}.png`),
+    walk: [1, 2, 3, 4, 5, 6, 7, 8].map(i => `/ally/healer/heal_${i}.webp`),
     atk: [],
   },
   giant: {
     // 근접 주먹 — 투사체 없이 히어로 타격 순간에 맨 앞 적을 직접 타격
     name: '거인', kind: 'melee', h: 125, xOff: -155, yOff: 3, atkMult: 0.8, range: 360,
     atkDur: 0.5,
-    walk: [1, 2, 3].map(i => `/ally/giant/gwalk_${i}.png`),
-    atk: [1, 2, 3].map(i => `/ally/giant/gatk_${i}.png`),
+    walk: [1, 2, 3].map(i => `/ally/giant/gwalk_${i}.webp`),
+    atk: [1, 2, 3].map(i => `/ally/giant/gatk_${i}.webp`),
   },
 }
 const ALLY_IMG = {}
@@ -569,58 +572,58 @@ const heroHitProg = (m, mot) => {
 // ── 적 정의 ──
 const ENEMY_TYPES = {
   // 일반몹 50종 — 전부 1프레임(/monster/{키}/{키}_1.png), 원본이 왼쪽을 향해 flip 불필요
-  rabbit:   { name: '토끼', hp: 20, speed: 85, dmg: 5,  reward: 4,  h: 30, color: '#a1887f', flip: false, frames: ['/monster/rabbit/rabbit_1.png'] },
-  antelope: { name: '영양', hp: 45, speed: 65, dmg: 10, reward: 8,  h: 55, color: '#c98a4b', flip: false, frames: ['/monster/antelope/antelope_1.png'] },
-  deer:     { name: '사슴', hp: 90, speed: 50, dmg: 16, reward: 14, h: 75, color: '#b5794a', flip: false, frames: ['/monster/deer/deer_1.png'] },
-  boar:     { name: '멧돼지', hp: 70, speed: 60, dmg: 14, reward: 12, h: 65, color: '#7a6a52', flip: false, frames: ['/monster/boar/boar_1.png'] },
-  wolf:     { name: '늑대', hp: 40, speed: 120, dmg: 12, reward: 10, h: 55, color: '#9a8f7a', flip: false, frames: ['/monster/wolf/wolf_1.png'] },
-  hyena:    { name: '하이에나', hp: 110, speed: 55, dmg: 20, reward: 18, h: 55, color: '#b0a15f', flip: false, frames: ['/monster/hyena/hyena_1.png'] },
-  bear:     { name: '동굴곰', hp: 260, speed: 40, dmg: 32, reward: 35, h: 75, color: '#6b4f35', flip: false, frames: ['/monster/bear/bear_1.png'] },
-  rhino:    { name: '털코뿔소', hp: 450, speed: 45, dmg: 40, reward: 55, h: 70, color: '#9c988f', flip: false, frames: ['/monster/rhino/rhino_1.png'] },
-  mammoth:  { name: '매머드', hp: 900, speed: 32, dmg: 55, reward: 110, h: 120, color: '#5f4a34', flip: false, frames: ['/monster/mammoth/mammoth_1.png'] },
-  tiger:    { name: '검치호', hp: 600, speed: 80, dmg: 60, reward: 130, h: 60, color: '#c68a3c', flip: false, frames: ['/monster/tiger/tiger_1.png'] },
+  rabbit:   { name: '토끼', hp: 20, speed: 85, dmg: 5,  reward: 4,  h: 30, color: '#a1887f', flip: false, frames: ['/monster/rabbit/rabbit_1.webp'] },
+  antelope: { name: '영양', hp: 45, speed: 65, dmg: 10, reward: 8,  h: 55, color: '#c98a4b', flip: false, frames: ['/monster/antelope/antelope_1.webp'] },
+  deer:     { name: '사슴', hp: 90, speed: 50, dmg: 16, reward: 14, h: 75, color: '#b5794a', flip: false, frames: ['/monster/deer/deer_1.webp'] },
+  boar:     { name: '멧돼지', hp: 70, speed: 60, dmg: 14, reward: 12, h: 65, color: '#7a6a52', flip: false, frames: ['/monster/boar/boar_1.webp'] },
+  wolf:     { name: '늑대', hp: 40, speed: 120, dmg: 12, reward: 10, h: 55, color: '#9a8f7a', flip: false, frames: ['/monster/wolf/wolf_1.webp'] },
+  hyena:    { name: '하이에나', hp: 110, speed: 55, dmg: 20, reward: 18, h: 55, color: '#b0a15f', flip: false, frames: ['/monster/hyena/hyena_1.webp'] },
+  bear:     { name: '동굴곰', hp: 260, speed: 40, dmg: 32, reward: 35, h: 75, color: '#6b4f35', flip: false, frames: ['/monster/bear/bear_1.webp'] },
+  rhino:    { name: '털코뿔소', hp: 450, speed: 45, dmg: 40, reward: 55, h: 70, color: '#9c988f', flip: false, frames: ['/monster/rhino/rhino_1.webp'] },
+  mammoth:  { name: '매머드', hp: 900, speed: 32, dmg: 55, reward: 110, h: 120, color: '#5f4a34', flip: false, frames: ['/monster/mammoth/mammoth_1.webp'] },
+  tiger:    { name: '검치호', hp: 600, speed: 80, dmg: 60, reward: 130, h: 60, color: '#c68a3c', flip: false, frames: ['/monster/tiger/tiger_1.webp'] },
   // 신규 10종 (스탯 임시값)
-  monkey:   { name: '원숭이', hp: 30, speed: 100, dmg: 8,  reward: 6,  h: 55, color: '#8a6a4a', flip: false, frames: ['/monster/monkey/monkey_1.png'] },
-  croc:     { name: '악어', hp: 200, speed: 45, dmg: 30, reward: 30, h: 40, color: '#5f7a3a', flip: false, frames: ['/monster/croc/croc_1.png'] },
-  elephant: { name: '코끼리', hp: 700, speed: 35, dmg: 50, reward: 90, h: 105, color: '#8d8d94', flip: false, frames: ['/monster/elephant/elephant_1.png'] },
-  giraffe:  { name: '기린', hp: 300, speed: 70, dmg: 25, reward: 45, h: 145, color: '#d0a04a', flip: false, frames: ['/monster/giraffe/giraffe_1.png'] },
-  ostrich:  { name: '타조', hp: 80, speed: 130, dmg: 15, reward: 16, h: 95, color: '#3a3a3a', flip: false, frames: ['/monster/ostrich/ostrich_1.png'] },
-  lion:     { name: '사자', hp: 350, speed: 90, dmg: 45, reward: 60, h: 70, color: '#c68a3c', flip: false, frames: ['/monster/lion/lion_1.png'] },
-  snake:    { name: '뱀', hp: 60, speed: 70, dmg: 18, reward: 14, h: 30, color: '#6a7a4a', flip: false, frames: ['/monster/snake/snake_1.png'] },
-  turtle:   { name: '거북이', hp: 400, speed: 30, dmg: 15, reward: 40, h: 45, color: '#5a6a3a', flip: false, frames: ['/monster/turtle/turtle_1.png'] },
-  komodo:   { name: '코모도 드래곤', hp: 250, speed: 55, dmg: 35, reward: 40, h: 40, color: '#6a5a5a', flip: false, frames: ['/monster/komodo/komodo_1.png'] },
-  eagle:    { name: '독수리', hp: 120, speed: 140, dmg: 22, reward: 28, h: 70, color: '#5a4a3a', flip: false, air: 90, frames: ['/monster/eagle/eagle_1.png'] },
+  monkey:   { name: '원숭이', hp: 30, speed: 100, dmg: 8,  reward: 6,  h: 55, color: '#8a6a4a', flip: false, frames: ['/monster/monkey/monkey_1.webp'] },
+  croc:     { name: '악어', hp: 200, speed: 45, dmg: 30, reward: 30, h: 40, color: '#5f7a3a', flip: false, frames: ['/monster/croc/croc_1.webp'] },
+  elephant: { name: '코끼리', hp: 700, speed: 35, dmg: 50, reward: 90, h: 105, color: '#8d8d94', flip: false, frames: ['/monster/elephant/elephant_1.webp'] },
+  giraffe:  { name: '기린', hp: 300, speed: 70, dmg: 25, reward: 45, h: 145, color: '#d0a04a', flip: false, frames: ['/monster/giraffe/giraffe_1.webp'] },
+  ostrich:  { name: '타조', hp: 80, speed: 130, dmg: 15, reward: 16, h: 95, color: '#3a3a3a', flip: false, frames: ['/monster/ostrich/ostrich_1.webp'] },
+  lion:     { name: '사자', hp: 350, speed: 90, dmg: 45, reward: 60, h: 70, color: '#c68a3c', flip: false, frames: ['/monster/lion/lion_1.webp'] },
+  snake:    { name: '뱀', hp: 60, speed: 70, dmg: 18, reward: 14, h: 30, color: '#6a7a4a', flip: false, frames: ['/monster/snake/snake_1.webp'] },
+  turtle:   { name: '거북이', hp: 400, speed: 30, dmg: 15, reward: 40, h: 45, color: '#5a6a3a', flip: false, frames: ['/monster/turtle/turtle_1.webp'] },
+  komodo:   { name: '코모도 드래곤', hp: 250, speed: 55, dmg: 35, reward: 40, h: 40, color: '#6a5a5a', flip: false, frames: ['/monster/komodo/komodo_1.webp'] },
+  eagle:    { name: '독수리', hp: 120, speed: 140, dmg: 22, reward: 28, h: 70, color: '#5a4a3a', flip: false, air: 90, frames: ['/monster/eagle/eagle_1.webp'] },
   // 신규 30종 (스탯 임시값 — 웨이브 스케일이 주 난이도)
-  pig: { name: '돼지', hp: 60, speed: 60, dmg: 12, reward: 10, h: 50, color: '#e8a8a8', flip: false, frames: ['/monster/pig/pig_1.png'] },
-  chicken: { name: '닭', hp: 25, speed: 75, dmg: 6, reward: 5, h: 45, color: '#e8e0d0', flip: false, frames: ['/monster/chicken/chicken_1.png'] },
-  duck: { name: '오리', hp: 35, speed: 85, dmg: 8, reward: 7, h: 40, color: '#4a6a3a', flip: false, frames: ['/monster/duck/duck_1.png'] },
-  frog: { name: '개구리', hp: 45, speed: 70, dmg: 10, reward: 8, h: 35, color: '#6a9a3a', flip: false, frames: ['/monster/frog/frog_1.png'] },
-  bat: { name: '박쥐', hp: 55, speed: 135, dmg: 14, reward: 12, h: 50, color: '#4a3a4a', flip: false, air: 80, frames: ['/monster/bat/bat_1.png'] },
-  pelican: { name: '펠리컨', hp: 90, speed: 110, dmg: 16, reward: 15, h: 70, color: '#e0d8c8', flip: false, air: 60, frames: ['/monster/pelican/pelican_1.png'] },
-  mantis: { name: '사마귀', hp: 75, speed: 95, dmg: 20, reward: 15, h: 60, color: '#7aa03a', flip: false, frames: ['/monster/mantis/mantis_1.png'] },
-  polarbear: { name: '북극곰', hp: 420, speed: 42, dmg: 38, reward: 52, h: 75, color: '#e8e8e0', flip: false, frames: ['/monster/polarbear/polarbear_1.png'] },
-  alpaca: { name: '알파카', hp: 110, speed: 72, dmg: 15, reward: 18, h: 70, color: '#e8dcc0', flip: false, frames: ['/monster/alpaca/alpaca_1.png'] },
-  buffalo: { name: '버팔로', hp: 520, speed: 45, dmg: 42, reward: 60, h: 80, color: '#5a4028', flip: false, frames: ['/monster/buffalo/buffalo_1.png'] },
-  camel: { name: '낙타', hp: 260, speed: 58, dmg: 24, reward: 34, h: 90, color: '#c89a5a', flip: false, frames: ['/monster/camel/camel_1.png'] },
-  horse: { name: '말', hp: 180, speed: 115, dmg: 22, reward: 28, h: 80, color: '#7a4a2a', flip: false, frames: ['/monster/horse/horse_1.png'] },
-  panda: { name: '판다', hp: 330, speed: 40, dmg: 28, reward: 40, h: 65, color: '#e8e8e8', flip: false, frames: ['/monster/panda/panda_1.png'] },
-  scorpion: { name: '전갈', hp: 150, speed: 60, dmg: 32, reward: 26, h: 40, color: '#5a3a4a', flip: false, frames: ['/monster/scorpion/scorpion_1.png'] },
-  tarantula: { name: '타란툴라', hp: 130, speed: 80, dmg: 28, reward: 22, h: 40, color: '#3a2a2a', flip: false, frames: ['/monster/tarantula/tarantula_1.png'] },
-  cobra: { name: '킹코브라', hp: 100, speed: 65, dmg: 30, reward: 20, h: 50, color: '#8a7a3a', flip: false, frames: ['/monster/cobra/cobra_1.png'] },
-  zebra: { name: '얼룩말', hp: 170, speed: 105, dmg: 20, reward: 26, h: 75, color: '#d8d8d8', flip: false, frames: ['/monster/zebra/zebra_1.png'] },
-  cheetah: { name: '치타', hp: 220, speed: 150, dmg: 35, reward: 38, h: 55, color: '#d0a04a', flip: false, frames: ['/monster/cheetah/cheetah_1.png'] },
-  koala: { name: '코알라', hp: 95, speed: 55, dmg: 12, reward: 14, h: 50, color: '#9a9aa0', flip: false, frames: ['/monster/koala/koala_1.png'] },
-  kangaroo: { name: '캥거루', hp: 240, speed: 100, dmg: 30, reward: 30, h: 90, color: '#b08a5a', flip: false, frames: ['/monster/kangaroo/kangaroo_1.png'] },
-  cat: { name: '고양이', hp: 50, speed: 110, dmg: 10, reward: 9, h: 40, color: '#8a8a8a', flip: false, frames: ['/monster/cat/cat_1.png'] },
-  dog: { name: '개', hp: 85, speed: 95, dmg: 16, reward: 15, h: 50, color: '#c8985a', flip: false, frames: ['/monster/dog/dog_1.png'] },
-  hippo: { name: '하마', hp: 780, speed: 38, dmg: 48, reward: 90, h: 80, color: '#9a7a9a', flip: false, frames: ['/monster/hippo/hippo_1.png'] },
-  gorilla: { name: '고릴라', hp: 560, speed: 55, dmg: 50, reward: 75, h: 75, color: '#3a3a3a', flip: false, frames: ['/monster/gorilla/gorilla_1.png'] },
-  gator: { name: '앨리게이터', hp: 280, speed: 42, dmg: 36, reward: 42, h: 40, color: '#4a6a3a', flip: false, frames: ['/monster/gator/gator_1.png'] },
-  squirrel: { name: '다람쥐', hp: 22, speed: 95, dmg: 5, reward: 4, h: 35, color: '#b06a3a', flip: false, frames: ['/monster/squirrel/squirrel_1.png'] },
-  penguin: { name: '펭귄', hp: 70, speed: 50, dmg: 10, reward: 11, h: 50, color: '#2a2a3a', flip: false, frames: ['/monster/penguin/penguin_1.png'] },
-  seal: { name: '물개', hp: 140, speed: 45, dmg: 18, reward: 20, h: 40, color: '#9a9aa8', flip: false, frames: ['/monster/seal/seal_1.png'] },
-  cow: { name: '소', hp: 300, speed: 50, dmg: 26, reward: 38, h: 70, color: '#e8e8e0', flip: false, frames: ['/monster/cow/cow_1.png'] },
-  tiger2: { name: '호랑이', hp: 380, speed: 125, dmg: 40, reward: 55, h: 55, color: '#d08a3c', flip: false, frames: ['/monster/tiger2/tiger2_1.png'] },
+  pig: { name: '돼지', hp: 60, speed: 60, dmg: 12, reward: 10, h: 50, color: '#e8a8a8', flip: false, frames: ['/monster/pig/pig_1.webp'] },
+  chicken: { name: '닭', hp: 25, speed: 75, dmg: 6, reward: 5, h: 45, color: '#e8e0d0', flip: false, frames: ['/monster/chicken/chicken_1.webp'] },
+  duck: { name: '오리', hp: 35, speed: 85, dmg: 8, reward: 7, h: 40, color: '#4a6a3a', flip: false, frames: ['/monster/duck/duck_1.webp'] },
+  frog: { name: '개구리', hp: 45, speed: 70, dmg: 10, reward: 8, h: 35, color: '#6a9a3a', flip: false, frames: ['/monster/frog/frog_1.webp'] },
+  bat: { name: '박쥐', hp: 55, speed: 135, dmg: 14, reward: 12, h: 50, color: '#4a3a4a', flip: false, air: 80, frames: ['/monster/bat/bat_1.webp'] },
+  pelican: { name: '펠리컨', hp: 90, speed: 110, dmg: 16, reward: 15, h: 70, color: '#e0d8c8', flip: false, air: 60, frames: ['/monster/pelican/pelican_1.webp'] },
+  mantis: { name: '사마귀', hp: 75, speed: 95, dmg: 20, reward: 15, h: 60, color: '#7aa03a', flip: false, frames: ['/monster/mantis/mantis_1.webp'] },
+  polarbear: { name: '북극곰', hp: 420, speed: 42, dmg: 38, reward: 52, h: 75, color: '#e8e8e0', flip: false, frames: ['/monster/polarbear/polarbear_1.webp'] },
+  alpaca: { name: '알파카', hp: 110, speed: 72, dmg: 15, reward: 18, h: 70, color: '#e8dcc0', flip: false, frames: ['/monster/alpaca/alpaca_1.webp'] },
+  buffalo: { name: '버팔로', hp: 520, speed: 45, dmg: 42, reward: 60, h: 80, color: '#5a4028', flip: false, frames: ['/monster/buffalo/buffalo_1.webp'] },
+  camel: { name: '낙타', hp: 260, speed: 58, dmg: 24, reward: 34, h: 90, color: '#c89a5a', flip: false, frames: ['/monster/camel/camel_1.webp'] },
+  horse: { name: '말', hp: 180, speed: 115, dmg: 22, reward: 28, h: 80, color: '#7a4a2a', flip: false, frames: ['/monster/horse/horse_1.webp'] },
+  panda: { name: '판다', hp: 330, speed: 40, dmg: 28, reward: 40, h: 65, color: '#e8e8e8', flip: false, frames: ['/monster/panda/panda_1.webp'] },
+  scorpion: { name: '전갈', hp: 150, speed: 60, dmg: 32, reward: 26, h: 40, color: '#5a3a4a', flip: false, frames: ['/monster/scorpion/scorpion_1.webp'] },
+  tarantula: { name: '타란툴라', hp: 130, speed: 80, dmg: 28, reward: 22, h: 40, color: '#3a2a2a', flip: false, frames: ['/monster/tarantula/tarantula_1.webp'] },
+  cobra: { name: '킹코브라', hp: 100, speed: 65, dmg: 30, reward: 20, h: 50, color: '#8a7a3a', flip: false, frames: ['/monster/cobra/cobra_1.webp'] },
+  zebra: { name: '얼룩말', hp: 170, speed: 105, dmg: 20, reward: 26, h: 75, color: '#d8d8d8', flip: false, frames: ['/monster/zebra/zebra_1.webp'] },
+  cheetah: { name: '치타', hp: 220, speed: 150, dmg: 35, reward: 38, h: 55, color: '#d0a04a', flip: false, frames: ['/monster/cheetah/cheetah_1.webp'] },
+  koala: { name: '코알라', hp: 95, speed: 55, dmg: 12, reward: 14, h: 50, color: '#9a9aa0', flip: false, frames: ['/monster/koala/koala_1.webp'] },
+  kangaroo: { name: '캥거루', hp: 240, speed: 100, dmg: 30, reward: 30, h: 90, color: '#b08a5a', flip: false, frames: ['/monster/kangaroo/kangaroo_1.webp'] },
+  cat: { name: '고양이', hp: 50, speed: 110, dmg: 10, reward: 9, h: 40, color: '#8a8a8a', flip: false, frames: ['/monster/cat/cat_1.webp'] },
+  dog: { name: '개', hp: 85, speed: 95, dmg: 16, reward: 15, h: 50, color: '#c8985a', flip: false, frames: ['/monster/dog/dog_1.webp'] },
+  hippo: { name: '하마', hp: 780, speed: 38, dmg: 48, reward: 90, h: 80, color: '#9a7a9a', flip: false, frames: ['/monster/hippo/hippo_1.webp'] },
+  gorilla: { name: '고릴라', hp: 560, speed: 55, dmg: 50, reward: 75, h: 75, color: '#3a3a3a', flip: false, frames: ['/monster/gorilla/gorilla_1.webp'] },
+  gator: { name: '앨리게이터', hp: 280, speed: 42, dmg: 36, reward: 42, h: 40, color: '#4a6a3a', flip: false, frames: ['/monster/gator/gator_1.webp'] },
+  squirrel: { name: '다람쥐', hp: 22, speed: 95, dmg: 5, reward: 4, h: 35, color: '#b06a3a', flip: false, frames: ['/monster/squirrel/squirrel_1.webp'] },
+  penguin: { name: '펭귄', hp: 70, speed: 50, dmg: 10, reward: 11, h: 50, color: '#2a2a3a', flip: false, frames: ['/monster/penguin/penguin_1.webp'] },
+  seal: { name: '물개', hp: 140, speed: 45, dmg: 18, reward: 20, h: 40, color: '#9a9aa8', flip: false, frames: ['/monster/seal/seal_1.webp'] },
+  cow: { name: '소', hp: 300, speed: 50, dmg: 26, reward: 38, h: 70, color: '#e8e8e0', flip: false, frames: ['/monster/cow/cow_1.webp'] },
+  tiger2: { name: '호랑이', hp: 380, speed: 125, dmg: 40, reward: 55, h: 55, color: '#d08a3c', flip: false, frames: ['/monster/tiger2/tiger2_1.webp'] },
 }
 const EIMG = {}
 for (const k in ENEMY_TYPES) {
@@ -670,7 +673,7 @@ const BOSS_TYPES = [
   { name: '얼음 골렘', h: 150 }, { name: '뇌전 거인', h: 150 },
   { name: '원석 골렘', h: 150 }, { name: '고목 정령', h: 155 }, { name: '화염 골렘', h: 155 },
   { name: '빙정 골렘', h: 150 }, { name: '폭풍 정령', h: 150 },
-].map((b, i) => ({ ...b, frames: [1, 2, 3, 4].map(f => `/boss/boss${i + 1}/boss${i + 1}_${f}.png`) }))
+].map((b, i) => ({ ...b, frames: [1, 2, 3, 4].map(f => `/boss/boss${i + 1}/boss${i + 1}_${f}.webp`) }))
 const BIMG = BOSS_TYPES.map(b => b.frames.map(src => { const im = new Image(); im.src = src; return im }))
 const WAVE_CYCLE = ['rabbit', 'antelope', 'deer', 'boar', 'wolf', 'hyena', 'bear', 'rhino', 'tiger', 'mammoth', 'monkey', 'snake', 'ostrich', 'turtle', 'croc', 'komodo', 'eagle', 'giraffe', 'lion', 'elephant',
   'pig', 'chicken', 'duck', 'frog', 'bat', 'pelican', 'mantis', 'polarbear', 'alpaca', 'buffalo',
@@ -682,28 +685,28 @@ const QUEST_TABS = ['일일 퀘스트', '반복 퀘스트', '업적']
 // ev: 이벤트 키(진행 카운트 소스), ric: 보상 재화 아이콘 (gem=다이아, ruby=루비 수정, pearl=진주)
 const QUEST_LIST = [
   [ // 일일 퀘스트 (자정 리셋, 1회 수령)
-    { ev: 'daily_done', name: '일일 퀘스트 완료', goal: 5, ric: '/ui/gem.png', rv: 3000 },
-    { ev: 'playtime', name: '플레이타임', goal: 1500, ric: '/ui/ruby.png', rv: 1 },
-    { ev: 'ad', name: '광고 보기', goal: 3, ric: '/ui/ruby.png', rv: 1 },
-    { ev: 'summon', name: '장비 소환', goal: 10, ric: '/ui/ruby.png', rv: 1 },
-    { ev: 'fuse', name: '장비 융합', goal: 10, ric: '/ui/ruby.png', rv: 1 },
+    { ev: 'daily_done', name: '일일 퀘스트 완료', goal: 5, ric: '/ui/gem.webp', rv: 3000 },
+    { ev: 'playtime', name: '플레이타임', goal: 1500, ric: '/ui/ruby.webp', rv: 1 },
+    { ev: 'ad', name: '광고 보기', goal: 3, ric: '/ui/ruby.webp', rv: 1 },
+    { ev: 'summon', name: '장비 소환', goal: 10, ric: '/ui/ruby.webp', rv: 1 },
+    { ev: 'fuse', name: '장비 융합', goal: 10, ric: '/ui/ruby.webp', rv: 1 },
   ],
   [ // 반복 퀘스트 (수령 시 레벨↑ + 초과분 이월, 무한 반복)
-    { ev: 'stage', name: '스테이지 클리어', goal: 1, ric: '/ui/gem.png', rv: 100 },
-    { ev: 'kill', name: '몬스터 처치', goal: 500, ric: '/ui/gem.png', rv: 50 },
-    { ev: 'skill_get', name: '스킬 획득', goal: 1, ric: '/ui/gem.png', rv: 100 },
-    { ev: 'summon', name: '장비 소환', goal: 30, ric: '/ui/gem.png', rv: 100 },
-    { ev: 'fuse', name: '장비 융합', goal: 30, ric: '/ui/gem.png', rv: 100 },
-    { ev: 'enh_atk', name: '공격력 강화', goal: 100, ric: '/ui/gem.png', rv: 100 },
-    { ev: 'enh_hp', name: '체력 강화', goal: 100, ric: '/ui/gem.png', rv: 100 },
-    { ev: 'enh_crit', name: '치명타 공격력 강화', goal: 100, ric: '/ui/gem.png', rv: 100 },
+    { ev: 'stage', name: '스테이지 클리어', goal: 1, ric: '/ui/gem.webp', rv: 100 },
+    { ev: 'kill', name: '몬스터 처치', goal: 500, ric: '/ui/gem.webp', rv: 50 },
+    { ev: 'skill_get', name: '스킬 획득', goal: 1, ric: '/ui/gem.webp', rv: 100 },
+    { ev: 'summon', name: '장비 소환', goal: 30, ric: '/ui/gem.webp', rv: 100 },
+    { ev: 'fuse', name: '장비 융합', goal: 30, ric: '/ui/gem.webp', rv: 100 },
+    { ev: 'enh_atk', name: '공격력 강화', goal: 100, ric: '/ui/gem.webp', rv: 100 },
+    { ev: 'enh_hp', name: '체력 강화', goal: 100, ric: '/ui/gem.webp', rv: 100 },
+    { ev: 'enh_crit', name: '치명타 공격력 강화', goal: 100, ric: '/ui/gem.webp', rv: 100 },
   ],
   [ // 업적 (계단식 무한 반복: 수령할 때마다 목표 +1, 매 수령 시 진주 지급. base=표시 시작값)
-    { ev: 'levelup', name: '캐릭터 레벨업', base: 1, ric: '/ui/pearl.png', rv: 10 },
-    { ev: 'evolve', name: '캐릭터 진화', base: 1, max: 5, ric: '/ui/pearl.png', rv: 100 },   // 진화는 5회가 끝
-    { ev: 'skill_enh', name: '스킬 강화', base: 0, ric: '/ui/pearl.png', rv: 10 },
-    { ev: 'equip_enh', name: '장비 강화', base: 0, ric: '/ui/pearl.png', rv: 10 },
-    { ev: 'adv_clear', name: '모험 클리어', base: 0, ric: '/ui/pearl.png', rv: 10 },
+    { ev: 'levelup', name: '캐릭터 레벨업', base: 1, ric: '/ui/pearl.webp', rv: 10 },
+    { ev: 'evolve', name: '캐릭터 진화', base: 1, max: 5, ric: '/ui/pearl.webp', rv: 100 },   // 진화는 5회가 끝
+    { ev: 'skill_enh', name: '스킬 강화', base: 0, ric: '/ui/pearl.webp', rv: 10 },
+    { ev: 'equip_enh', name: '장비 강화', base: 0, ric: '/ui/pearl.webp', rv: 10 },
+    { ev: 'adv_clear', name: '모험 클리어', base: 0, ric: '/ui/pearl.webp', rv: 10 },
   ],
 ]
 const questDayStr = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}` }
@@ -2633,7 +2636,7 @@ export default function App() {
       {menuOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 80 }} onClick={() => setMenuOpen(false)}>
           <div data-edit="menu" style={st.menuPanel} onClick={e => e.stopPropagation()}>
-            <button style={{ ...st.menuItem, opacity: 0.5, display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => {}}><img data-edit="mailbox" src="/ui/mailbox.png" alt="" style={st.mailImg} />우편함 <span style={{ fontSize: 11, opacity: 0.7 }}>준비 중</span></button>
+            <button style={{ ...st.menuItem, opacity: 0.5, display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => {}}><img data-edit="mailbox" src="/ui/mailbox.webp" alt="" style={st.mailImg} />우편함 <span style={{ fontSize: 11, opacity: 0.7 }}>준비 중</span></button>
             <button style={st.menuItem} onClick={() => { setMotEdit(v => !v); setMenuOpen(false) }}>모션 편집 {motEdit ? '끄기' : '켜기'}</button>
             <div style={{ borderTop: '1px solid #3a2a14', margin: '4px 0' }} />
             {FB_ON && (fbUser ? (
@@ -2805,7 +2808,7 @@ export default function App() {
                   <span>강화 {(skEnh[s.id] || 0) > 0 ? `+${skEnh[s.id]}` : ''}</span>
                   <span style={st.skdEnhCost}>
                     {skCard[s.id] || 0}/{CARD_ENH_CARDS}
-                    <img src="/ui/pearl.png" alt="" style={st.skdEnhIc} />{CARD_ENH_PEARL}
+                    <img src="/ui/pearl.webp" alt="" style={st.skdEnhIc} />{CARD_ENH_PEARL}
                   </span>
                 </button>
                 <button data-edit="skdequip" style={{ ...st.skdEquipBtn, ...(isEq ? st.skdEquipOn : {}) }} onClick={() => { if (isEq) unequipSkill(eqSlot); else equipSkill(skillDetail); setSkillDetail(null) }}>{isEq ? '해제' : '장착'}</button>
@@ -2831,11 +2834,11 @@ export default function App() {
           ['이동 속도', '+' + Math.min(200, Math.round(tot('mspd') * STAT_LIST.mspd.per)) + '%'],
         ]
         const curRows = [
-          ['/ui/ic_meat.png', '고기', fmt(meat)],
-          ['/ui/gem.png', '다이아', DEBUG ? '∞' : fmt(gem)],
-          ['/ui/ruby.png', '루비', DEBUG ? '∞' : fmt(ruby)],
-          ['/ui/pearl.png', '진주', DEBUG ? '∞' : fmt(pearl)],
-          ['/ui/mat4.png', '강화 큐브', DEBUG ? '∞' : fmt(mats[4])],
+          ['/ui/ic_meat.webp', '고기', fmt(meat)],
+          ['/ui/gem.webp', '다이아', DEBUG ? '∞' : fmt(gem)],
+          ['/ui/ruby.webp', '루비', DEBUG ? '∞' : fmt(ruby)],
+          ['/ui/pearl.webp', '진주', DEBUG ? '∞' : fmt(pearl)],
+          ['/ui/mat4.webp', '강화 큐브', DEBUG ? '∞' : fmt(mats[4])],
           [MAT_IMG(0), '동료 재료 1', DEBUG ? '∞' : fmt(mats[0])],
           [MAT_IMG(1), '동료 재료 2', DEBUG ? '∞' : fmt(mats[1])],
           [MAT_IMG(2), '동료 재료 3', DEBUG ? '∞' : fmt(mats[2])],
@@ -2909,14 +2912,14 @@ export default function App() {
                 </div>
               </div>
               <div data-edit="adviconb" style={st.advIconBox}>
-                <img data-edit={`advico${advSel.boss}`} src={`/dino/boss_${advSel.boss}/w1.png`} alt="" style={{ ...st.advIcon, width: `var(--pd-advico${advSel.boss}w)`, height: `var(--pd-advico${advSel.boss}h)`, transform: `translate(var(--pd-advico${advSel.boss}-x), var(--pd-advico${advSel.boss}-y))` }} />
+                <img data-edit={`advico${advSel.boss}`} src={`/dino/boss_${advSel.boss}/w1.webp`} alt="" style={{ ...st.advIcon, width: `var(--pd-advico${advSel.boss}w)`, height: `var(--pd-advico${advSel.boss}h)`, transform: `translate(var(--pd-advico${advSel.boss}-x), var(--pd-advico${advSel.boss}-y))` }} />
               </div>
             </div>
 
             <div data-edit="advrewb" style={st.advRewRow}>
               <span data-edit="advrewk" style={st.advRewK}>탐험 보상</span>
-              <span data-edit="advrewd" style={st.advRewD}><img src="/ui/gem.png" alt="" style={st.advRewIc} />{fmt(rw.dia)}</span>
-              <span data-edit="advrewm" style={st.advRewM}><img src="/ui/mat4.png" alt="" style={st.advRewIc} />{fmt(rw.mat)}</span>
+              <span data-edit="advrewd" style={st.advRewD}><img src="/ui/gem.webp" alt="" style={st.advRewIc} />{fmt(rw.dia)}</span>
+              <span data-edit="advrewm" style={st.advRewM}><img src="/ui/mat4.webp" alt="" style={st.advRewIc} />{fmt(rw.mat)}</span>
             </div>
 
             <div data-edit="advsign" style={st.advSign}>
@@ -2930,7 +2933,7 @@ export default function App() {
 
             <div style={st.advWinBtns}>
               <button data-edit="adventer" style={{ ...st.advEnterBtn, ...(!DEBUG && ruby < ADV_COST_RUBY ? st.advBtnOff : null) }} onClick={enterAdventure}>
-                진입 <img src="/ui/ruby.png" alt="" style={st.advRuby} />{DEBUG ? '∞' : fmt(ruby) + '/' + ADV_COST_RUBY}
+                진입 <img src="/ui/ruby.webp" alt="" style={st.advRuby} />{DEBUG ? '∞' : fmt(ruby) + '/' + ADV_COST_RUBY}
               </button>
               <button data-edit="advclose" style={st.advCloseBtn} onClick={() => { if (!uiEdit) setAdvSel(null) }}>닫기</button>
             </div>
@@ -2946,12 +2949,12 @@ export default function App() {
         <div style={st.evpOverlay} onClick={() => { if (!uiEdit) setEvPick(null) }}>
           <div data-edit="evpwin" style={st.evpWin} onClick={e => e.stopPropagation()}>
             <div data-edit="evptitle" style={st.evpTitle}>{evPick.dname}</div>
-            <img data-edit="evpimg" src={`/boss/boss${evPick.no}/boss${evPick.no}_1.png`} alt="" style={st.evpImg} />
+            <img data-edit="evpimg" src={`/boss/boss${evPick.no}/boss${evPick.no}_1.webp`} alt="" style={st.evpImg} />
             <div data-edit="evpbn" style={st.evpBname}>{evPick.name}</div>
             <div data-edit="evprew" style={st.evpRew}>
               <span style={st.evpRewK}>던전 보상</span>
-              <span style={st.evpRewV}><img src="/ui/gem.png" alt="" style={st.evpRewIc} />{fmt(EV_REWARD.dia)}</span>
-              <span style={st.evpRewV}><img src="/ui/pearl.png" alt="" style={st.evpRewIc} />{fmt(EV_REWARD.pearl)}</span>
+              <span style={st.evpRewV}><img src="/ui/gem.webp" alt="" style={st.evpRewIc} />{fmt(EV_REWARD.dia)}</span>
+              <span style={st.evpRewV}><img src="/ui/pearl.webp" alt="" style={st.evpRewIc} />{fmt(EV_REWARD.pearl)}</span>
             </div>
             <div data-edit="evpsign" style={st.evpSign}>
               <div data-edit="evpsignt" style={st.evpSignTxt}>({stage}/{EV_STAGES})</div>
@@ -2984,7 +2987,7 @@ export default function App() {
                 return (
                   <div key={id} style={st.cardResCell}>
                     <div data-edit="cardcell" style={st.cardResFrame}>
-                      <img src="/ui/nav_on.png" alt="" style={st.cardResImg} />
+                      <img src="/ui/nav_on.webp" alt="" style={st.cardResImg} />
                       {sk && skIcon(sk) && (
                         <img data-edit={`cardic${sk.id}`} src={skIcon(sk)} alt="" style={{
                           ...st.cardResIcon,
@@ -3022,7 +3025,7 @@ export default function App() {
                 return (
                 <div key={i} data-edit="qrow" style={{ ...st.qRow, ...(p.claimed ? st.qRowDone : null) }}>
                   <div style={st.qIconWrap}>
-                    <img data-edit="qicon" src="/ui/quest.png" alt="" style={st.qIcon} />
+                    <img data-edit="qicon" src="/ui/quest.webp" alt="" style={st.qIcon} />
                     {questTab === 1 && <div data-edit="qlv" style={st.qLv}>Lv.{p.lv}</div>}
                   </div>
                   <div style={st.qMid}>
@@ -3071,8 +3074,8 @@ export default function App() {
           </div>
           <div style={st.gachaBtns}>
             <button data-edit="gbtn" style={st.gachaBtn} onClick={() => setGacha(null)}><span data-edit="gbtntext" style={st.gachaBtnText}>확인</span></button>
-            <button data-edit="gbtn" style={st.gachaBtn} onClick={() => { if (!uiEdit) pullGacha(gacha.cat, 10) }}><span data-edit="gbtntext" style={st.gachaBtnText}>10회 소환 <span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />100</span></span></button>
-            <button data-edit="gbtn" style={st.gachaBtn} onClick={() => { if (!uiEdit) pullGacha(gacha.cat, 30) }}><span data-edit="gbtntext" style={st.gachaBtnText}>30회 소환 <span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />300</span></span></button>
+            <button data-edit="gbtn" style={st.gachaBtn} onClick={() => { if (!uiEdit) pullGacha(gacha.cat, 10) }}><span data-edit="gbtntext" style={st.gachaBtnText}>10회 소환 <span style={st.shopCost}><img src="/ui/gem.webp" alt="" data-edit="shopgem" style={st.shopGemIc} />100</span></span></button>
+            <button data-edit="gbtn" style={st.gachaBtn} onClick={() => { if (!uiEdit) pullGacha(gacha.cat, 30) }}><span data-edit="gbtntext" style={st.gachaBtnText}>30회 소환 <span style={st.shopCost}><img src="/ui/gem.webp" alt="" data-edit="shopgem" style={st.shopGemIc} />300</span></span></button>
           </div>
         </div>
       )}
@@ -3099,7 +3102,7 @@ export default function App() {
       </div>
       <div style={st.statusBar}>
         <div data-edit="hppill" style={st.hpPill}>
-          <img src="/ui/hp_heart.png" alt="" style={st.hpHeart} />
+          <img src="/ui/hp_heart.webp" alt="" style={st.hpHeart} />
           <div style={st.hpTrack}><div style={{ ...st.hpFill, width: Math.min(100, heroHpUI / maxHp * 100) + '%' }} /></div>
           <span className="pd-num" style={st.hpText}>{fmt(heroHpUI)} / {fmt(maxHp)}</span>
         </div>
@@ -3107,7 +3110,7 @@ export default function App() {
           <div data-edit="wavetitle" style={st.waveTitle}>웨이브 {wave}</div>
           <div data-edit="diarow" style={st.diaRow}>
             {Array.from({ length: 10 }, (_, i) => (
-              <img key={i} src={i < (wave - 1) % 10 + 1 ? '/ui/dia_on.png' : '/ui/dia_off.png'} alt="" style={st.dia} />
+              <img key={i} src={i < (wave - 1) % 10 + 1 ? '/ui/dia_on.webp' : '/ui/dia_off.webp'} alt="" style={st.dia} />
             ))}
           </div>
         </div>
@@ -3144,7 +3147,7 @@ export default function App() {
               {BOSS_TYPES.slice(EV_DUNGEONS[evSel].from - 1, EV_DUNGEONS[evSel].to).map((b, i) => (
                 <div key={i} data-edit="evrow" style={st.evRow}>
                   <div data-edit="evno" style={st.evNo}>
-                    <img src={`/boss/boss${EV_DUNGEONS[evSel].from + i}/boss${EV_DUNGEONS[evSel].from + i}_1.png`} alt="" data-edit="evnoimg" style={st.evNoImg} />
+                    <img src={`/boss/boss${EV_DUNGEONS[evSel].from + i}/boss${EV_DUNGEONS[evSel].from + i}_1.webp`} alt="" data-edit="evnoimg" style={st.evNoImg} />
                   </div>
                   <div data-edit="evbname" style={st.evBossName}>{b.name}</div>
                   <button data-edit="evgo" style={st.evGo} onClick={() => {
@@ -3160,14 +3163,14 @@ export default function App() {
       <div ref={wrapRef} style={{ ...st.canvasWrap, height: Math.round(BASE_H * 0.42) + (view.h - BASE_H), ...(nav === '모험' ? { display: 'none' } : {}) }}>
         <canvas ref={canvasRef} />
         <button data-edit="pausebtn" style={{ ...st.pauseBtn, opacity: paused ? 1 : 0.65 }} onClick={() => { if (!uiEdit) setPaused(p => !p) }}>{paused ? '▶' : 'II'}</button>
-        <button data-edit="quest" style={st.questBtn} onClick={() => { if (!uiEdit) setQuestOpen(true) }}><img src="/ui/quest.png" alt="" style={st.iconImg} /></button>
+        <button data-edit="quest" style={st.questBtn} onClick={() => { if (!uiEdit) setQuestOpen(true) }}><img src="/ui/quest.webp" alt="" style={st.iconImg} /></button>
         <button data-edit="evbtn" style={st.evBtn} onClick={() => { if (!uiEdit) setEvOpen(true) }}>
-          <img src="/ui/evdungeon.png" alt="" style={st.evBtnImg} />
+          <img src="/ui/evdungeon.webp" alt="" style={st.evBtnImg} />
           <span data-edit="evbtnt" style={st.evBtnText}>이벤트 던전</span>
         </button>
         <button data-edit="fevbtn" style={st.fevBtn} onClick={() => { if (!uiEdit && DEBUG) setFeverOn(v => !v) }}>
-          <img src="/ui/fever_off.png" alt="" style={{ ...st.fevBtnImg, ...(feverOn ? { visibility: 'hidden' } : null) }} />
-          {feverOn && <img data-edit="fevon" src="/ui/fever_on.png" alt="" style={st.fevBtnOn} />}
+          <img src="/ui/fever_off.webp" alt="" style={{ ...st.fevBtnImg, ...(feverOn ? { visibility: 'hidden' } : null) }} />
+          {feverOn && <img data-edit="fevon" src="/ui/fever_on.webp" alt="" style={st.fevBtnOn} />}
           <span data-edit="fevbtnt" style={st.fevBtnText}>(광고 시청 {feverAds}/3)</span>
         </button>
         {bossUI && (
@@ -3192,8 +3195,8 @@ export default function App() {
         <div data-edit="gain" style={{ ...st.gainWrap, ...(uiEdit ? { pointerEvents: 'auto' } : {}) }}>
           {(gains.length ? gains : (uiEdit ? [{ id: '__s', exp: 1234, meat: 567 }] : [])).map(g => (
             <div key={g.id} style={st.gainItem}>
-              <span style={st.gainCell}><img data-edit="gainicon" src="/ui/ic_exp.png" alt="" style={st.gainIcon} /><span data-edit="gaintext" style={{ ...st.gainNum, color: '#6ec4ff' }}>+{g.exp}</span></span>
-              <span style={st.gainCell}><img data-edit="gainicon" src="/ui/ic_meat.png" alt="" style={st.gainIcon} /><span data-edit="gaintext" style={{ ...st.gainNum, color: '#ff9d6a' }}>+{g.meat}</span></span>
+              <span style={st.gainCell}><img data-edit="gainicon" src="/ui/ic_exp.webp" alt="" style={st.gainIcon} /><span data-edit="gaintext" style={{ ...st.gainNum, color: '#6ec4ff' }}>+{g.exp}</span></span>
+              <span style={st.gainCell}><img data-edit="gainicon" src="/ui/ic_meat.webp" alt="" style={st.gainIcon} /><span data-edit="gaintext" style={{ ...st.gainNum, color: '#ff9d6a' }}>+{g.meat}</span></span>
             </div>
           ))}
         </div>
@@ -3216,7 +3219,7 @@ export default function App() {
 
       {offData && !offOpen && nav !== '모험' && canvasBox.h > 0 && (
         <button data-edit="treasure" style={{ ...st.treasureBtn, top: canvasBox.top + canvasBox.h - 47, bottom: 'auto' }} onClick={() => { if (!uiEdit) setOffOpen(true) }}>
-          <img src="/ui/treasure.png" alt="" style={st.treasureImg} />
+          <img src="/ui/treasure.webp" alt="" style={st.treasureImg} />
           <span style={st.treasureDot} />
         </button>
       )}
@@ -3266,7 +3269,7 @@ export default function App() {
           const ok = DEBUG || meat >= c
           return (
             <div key={k} data-edit="row" style={st.row}>
-              <div data-edit="icon" style={st.skillIcon}><img src={`/icon/${k}.png`} alt="" style={st.statIconImg} /></div>
+              <div data-edit="icon" style={st.skillIcon}><img src={`/icon/${k}.webp`} alt="" style={st.statIconImg} /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div data-edit="name" style={st.rowName}>{d.name} <span style={st.rowLv}>Lv.{lv[k]}</span></div>
                 <div data-edit="val" style={st.rowVal}>{statText(k, lv[k] + skill[k])} <span style={{ color: '#7cb35c' }}>→ {statText(k, lv[k] + 1 + skill[k])}</span></div>
@@ -3279,7 +3282,7 @@ export default function App() {
         {tab === '진화' && (
           <div data-edit="row" style={st.row}>
             <img
-              src={EVOS[evo].mode === 'quad' ? '/hero/quad/quad_1.png' : EVOS[evo].mode === 'erectus' ? '/hero/erectus_walk/ewalk_1.png' : EVOS[evo].mode === 'neander' ? '/hero/neander_walk/nwalk_1.png' : EVOS[evo].mode === 'sapiens' ? '/hero/sapiens_walk/pwalk_1.png' : EVOS[evo].mode === 'human' ? '/hero/human_walk/hmwalk_1.png' : '/hero/misc/hero_idle.png'}
+              src={EVOS[evo].mode === 'quad' ? '/hero/quad/quad_1.webp' : EVOS[evo].mode === 'erectus' ? '/hero/erectus_walk/ewalk_1.webp' : EVOS[evo].mode === 'neander' ? '/hero/neander_walk/nwalk_1.webp' : EVOS[evo].mode === 'sapiens' ? '/hero/sapiens_walk/pwalk_1.webp' : EVOS[evo].mode === 'human' ? '/hero/human_walk/hmwalk_1.webp' : '/hero/misc/hero_idle.webp'}
               alt=""
               data-edit={`evoimg${evo}`}
               style={{ height: `var(--pd-evoimg${evo})`, transform: `translate(var(--pd-evoimg${evo}-x), var(--pd-evoimg${evo}-y))` }}
@@ -3305,7 +3308,7 @@ export default function App() {
               const ok = DEBUG || sp > 0
               return (
                 <div key={k} data-edit="row" style={st.row}>
-                  <div data-edit="icon" style={st.skillIcon}><img src={`/icon/${k}.png`} alt="" style={st.statIconImg} /></div>
+                  <div data-edit="icon" style={st.skillIcon}><img src={`/icon/${k}.webp`} alt="" style={st.statIconImg} /></div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div data-edit="name" style={st.rowName}>{d.name} <span style={st.rowLv}>Lv.{skill[k]}</span></div>
                     <div data-edit="val" style={st.rowVal}>{statText(k, lv[k] + skill[k])} <span style={{ color: '#7cb35c' }}>→ {statText(k, lv[k] + skill[k] + 1)}</span></div>
@@ -3403,12 +3406,12 @@ export default function App() {
             </div>
             {shopTab === '스킬 카드' && (
               <div data-edit="shoprow" style={{ ...st.row, minHeight: 'var(--pd-shoprowmin)', transform: 'translate(var(--pd-shoprow-x), var(--pd-shoprow-y))' }}>
-                <img src="/ui/skillcard.png" alt="" data-edit="shopic3" style={{ width: 'var(--pd-shopic3w)', height: 'var(--pd-shopic3h)', objectFit: 'fill', transform: 'translate(var(--pd-shopic3-x), var(--pd-shopic3-y))' }} />
+                <img src="/ui/skillcard.webp" alt="" data-edit="shopic3" style={{ width: 'var(--pd-shopic3w)', height: 'var(--pd-shopic3h)', objectFit: 'fill', transform: 'translate(var(--pd-shopic3-x), var(--pd-shopic3-y))' }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div data-edit="shopt3" style={{ fontWeight: 700, fontSize: 'var(--pd-shopt3fz)', transform: 'translate(var(--pd-shopt3-x), var(--pd-shopt3-y))' }}>스킬 카드 소환</div>
                 </div>
-                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullCard(1) }}><span data-edit="shopbtext" style={st.shopBtnText}>1회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />{CARD_COST[1]}</span></span></button>
-                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullCard(10) }}><span data-edit="shopbtext" style={st.shopBtnText}>10회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />{CARD_COST[10]}</span></span></button>
+                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullCard(1) }}><span data-edit="shopbtext" style={st.shopBtnText}>1회<br /><span style={st.shopCost}><img src="/ui/gem.webp" alt="" data-edit="shopgem" style={st.shopGemIc} />{CARD_COST[1]}</span></span></button>
+                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullCard(10) }}><span data-edit="shopbtext" style={st.shopBtnText}>10회<br /><span style={st.shopCost}><img src="/ui/gem.webp" alt="" data-edit="shopgem" style={st.shopGemIc} />{CARD_COST[10]}</span></span></button>
               </div>
             )}
             {shopTab === '장비' && Object.keys(GACHA_CATS).map((cat, ci) => (
@@ -3429,7 +3432,7 @@ export default function App() {
                           <span data-edit="glvbart" style={st.gLvBarTxt}>{max ? 'MAX' : `${fmt(cur)}/${fmt(need)}`}</span>
                         </div>
                         {((gachaRw[cat] || []).length > 0 || uiEdit) && (
-                          <img data-edit={`gift${ci}`} src="/ui/giftbox.png" alt="" style={{
+                          <img data-edit={`gift${ci}`} src="/ui/giftbox.webp" alt="" style={{
                             ...st.shopGift,
                             width: `var(--pd-gift${ci}w)`, height: `var(--pd-gift${ci}h)`,
                             transform: `translate(var(--pd-gift${ci}-x), var(--pd-gift${ci}-y))`,
@@ -3439,8 +3442,8 @@ export default function App() {
                     </>)
                   })()}
                 </div>
-                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullGacha(cat, 1) }}><span data-edit="shopbtext" style={st.shopBtnText}>1회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />10</span></span></button>
-                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullGacha(cat, 10) }}><span data-edit="shopbtext" style={st.shopBtnText}>10회<br /><span style={st.shopCost}><img src="/ui/gem.png" alt="" data-edit="shopgem" style={st.shopGemIc} />100</span></span></button>
+                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullGacha(cat, 1) }}><span data-edit="shopbtext" style={st.shopBtnText}>1회<br /><span style={st.shopCost}><img src="/ui/gem.webp" alt="" data-edit="shopgem" style={st.shopGemIc} />10</span></span></button>
+                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullGacha(cat, 10) }}><span data-edit="shopbtext" style={st.shopBtnText}>10회<br /><span style={st.shopCost}><img src="/ui/gem.webp" alt="" data-edit="shopgem" style={st.shopGemIc} />100</span></span></button>
                 <button data-edit="shopad" style={st.shopAdBtn}><span data-edit="shopadt" style={st.shopAdText}>광고 (10회)</span></button>
               </div>
             ))}
@@ -3525,9 +3528,9 @@ export default function App() {
             <div data-edit="offtitle" style={st.offTitle}>자동 사냥 오프라인 보상</div>
             <div data-edit="offinfo" style={st.offInfo}>{offData.wave}wave · {Math.floor(offData.sec / 3600)}시간 {Math.floor(offData.sec % 3600 / 60)}분 · {fmt(offData.kills)}마리</div>
             <div style={st.offItems}>
-              {[['/ui/ic_meat.png', offData.meat, offData.meatRate, '#ff9d6a'],
-                ['/ui/ic_exp.png', offData.exp, offData.expRate, '#6ec4ff'],
-                ['/ui/gem.png', offData.gem, offData.gemRate, '#cfe8ff']].map(([ic, v, rate, col], i) => (
+              {[['/ui/ic_meat.webp', offData.meat, offData.meatRate, '#ff9d6a'],
+                ['/ui/ic_exp.webp', offData.exp, offData.expRate, '#6ec4ff'],
+                ['/ui/gem.webp', offData.gem, offData.gemRate, '#cfe8ff']].map(([ic, v, rate, col], i) => (
                 <div key={i} data-edit="offitem" style={st.offItem}>
                   <img data-edit="offitemic" src={ic} alt="" style={st.offItemIc} />
                   <span data-edit="offitemval" style={{ ...st.offItemVal, color: col }}>+{fmt(v)}</span>
@@ -3549,7 +3552,7 @@ export default function App() {
       <div data-edit="nav" style={st.bottomNav}>
         {[['영웅', 'nav_hero'], ['스킬', 'nav_skill'], ['장비', 'nav_equip'], ['동료', 'nav_ally'], ['모험', 'nav_adventure'], ['상점', 'nav_shop']].map(([n, ic]) => (
           <button key={n} style={{ ...st.navBtn, ...(nav === n ? st.navActive : {}) }} onClick={() => setNav(n)}>
-            <img src={`/icon/${ic}.png`} alt="" style={st.navIconImg} />
+            <img src={`/icon/${ic}.webp`} alt="" style={st.navIconImg} />
             <div style={{ fontSize: 'var(--pd-navfz)' }}>{n}</div>
           </button>
         ))}
@@ -4461,7 +4464,7 @@ const st = {
   profCurIc: { width: 'var(--pd-profcuric)', height: 'var(--pd-profcuric)', objectFit: 'contain', imageRendering: 'pixelated' },
   avatarWrap: {
     width: 'var(--pd-avatar)', height: 'var(--pd-avatar)', flexShrink: 0, position: 'relative', transform: 'translate(var(--pd-avatar-x), var(--pd-avatar-y))',
-    backgroundImage: 'url(/ui/avatar.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
+    backgroundImage: 'url(/ui/avatar.webp)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
   avatarFace: { width: 'var(--pd-avafacesz)', height: 'var(--pd-avafacesz)', objectFit: 'cover', objectPosition: 'top', borderRadius: '50%', imageRendering: 'pixelated', transform: 'translate(var(--pd-avaface-x), var(--pd-avaface-y))' },
@@ -4476,14 +4479,14 @@ const st = {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end',
     minWidth: 'var(--pd-pmw)', height: 'var(--pd-pmh)', paddingRight: 12, fontSize: 'var(--pd-pmfz)',
     transform: 'translate(var(--pd-pm-x), var(--pd-pm-y))',
-    backgroundImage: 'url(/ui/pill_meat.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
+    backgroundImage: 'url(/ui/pill_meat.webp)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
     textShadow: '0 1px 2px #000',
   },
   pillGem: {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end',
     minWidth: 'var(--pd-pgw)', height: 'var(--pd-pgh)', paddingRight: 12, fontSize: 'var(--pd-pgfz)',
     transform: 'translate(var(--pd-pg-x), var(--pd-pg-y))',
-    backgroundImage: 'url(/ui/pill_gem.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
+    backgroundImage: 'url(/ui/pill_gem.webp)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
     textShadow: '0 1px 2px #000',
   },
   pauseBtn: {
@@ -4501,14 +4504,14 @@ const st = {
   bossBars: { position: 'absolute', left: 0, right: 0, top: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, pointerEvents: 'none' },
   btOuter: {
     position: 'relative', width: 'var(--pd-btw)', height: 'var(--pd-bth)', pointerEvents: 'auto',
-    background: 'url(/ui/bar_timer.png) center / 100% 100% no-repeat',
+    background: 'url(/ui/bar_timer.webp) center / 100% 100% no-repeat',
     transform: 'translate(var(--pd-bt-x), var(--pd-bt-y))',
   },
   btTrack: { position: 'absolute', left: '19%', right: '5.5%', top: '30%', bottom: '30%', borderRadius: 4, overflow: 'hidden' },
   btInner: { height: '100%', background: 'linear-gradient(180deg,#7cc4ff,#1f5fa8)', transition: 'width 0.1s linear' },
   bhOuter: {
     position: 'relative', width: 'var(--pd-bhpw)', height: 'var(--pd-bhph)', pointerEvents: 'auto',
-    background: 'url(/ui/bar_bosshp.png) center / 100% 100% no-repeat',
+    background: 'url(/ui/bar_bosshp.webp) center / 100% 100% no-repeat',
     transform: 'translate(var(--pd-bhp-x), var(--pd-bhp-y))',
   },
   bhTrack: { position: 'absolute', left: '19%', right: '6%', top: '30%', bottom: '30%', borderRadius: 4, overflow: 'hidden' },
@@ -4533,10 +4536,10 @@ const st = {
   navBtn: {
     flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
     padding: 'var(--pd-navpt) 2px var(--pd-navpb)', margin: '0 1px', border: 'none', background: 'transparent',
-    backgroundImage: 'url(/ui/nav_off.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
+    backgroundImage: 'url(/ui/nav_off.webp)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
     color: '#9a8768', position: 'relative',
   },
-  navActive: { backgroundImage: 'url(/ui/nav_on.png)', color: GOLD },
+  navActive: { backgroundImage: 'url(/ui/nav_on.webp)', color: GOLD },
   hambBtn: {
     width: 'var(--pd-hambsz)', height: 'var(--pd-hambsz)', flexShrink: 0, padding: 0,
     border: '1px solid #5a4028', borderRadius: 6, background: '#2c2013', color: GOLD,
@@ -4563,7 +4566,7 @@ const st = {
     flexShrink: 0, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
     width: 'calc(var(--pd-shopbw) + var(--pd-shopbbh) * 2)', height: 'calc(var(--pd-shopbh) + var(--pd-shopbbv) * 2)',
     border: 'none', borderRadius: 0,
-    background: 'url(/ui/nav_off.png) center / 100% 100% no-repeat',
+    background: 'url(/ui/nav_off.webp) center / 100% 100% no-repeat',
     color: '#f3e6d0', lineHeight: 1.35,
     touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none',
     transform: 'translate(var(--pd-shopb-x), var(--pd-shopb-y))',
@@ -4590,7 +4593,7 @@ const st = {
   gachaBtn: {                                               // 소환 결과창 버튼 — 뽑기 버튼과 같은 틀
     padding: 'calc(var(--pd-gbtnph) + 10px) calc(var(--pd-gbtnpw) + 14px)',
     border: 'none', borderRadius: 0,
-    background: 'url(/ui/nav_off.png) center / 100% 100% no-repeat',
+    background: 'url(/ui/nav_off.webp) center / 100% 100% no-repeat',
     color: '#f3e6d0',
     transform: 'translate(var(--pd-gbtn-x), var(--pd-gbtn-y))',
   },
@@ -4630,11 +4633,11 @@ const st = {
   advWrap: { flex: 1, minHeight: 0, background: '#1a1109', display: 'flex', padding: 8 },
   advViewport: { position: 'relative', flex: 1, minHeight: 0, borderRadius: 10, overflow: 'hidden', border: '2px solid #4a3418', background: '#0d0904' },
   advTrack: { position: 'relative', height: '100%', display: 'flex', transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)' },
-  advContBtn: { position: 'absolute', width: 'var(--pd-advbw)', height: 'var(--pd-advbh)', padding: 0, border: 'none', background: 'url(/ui/off_header.png) center / 100% 100% no-repeat', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', boxSizing: 'border-box', paddingRight: '14%', zIndex: 3 },
+  advContBtn: { position: 'absolute', width: 'var(--pd-advbw)', height: 'var(--pd-advbh)', padding: 0, border: 'none', background: 'url(/ui/off_header.webp) center / 100% 100% no-repeat', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', boxSizing: 'border-box', paddingRight: '14%', zIndex: 3 },
   advOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.68)', zIndex: 55, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   advWin: {
     position: 'relative', width: 'var(--pd-advww)', height: 'var(--pd-advwh)',
-    background: 'url(/ui/adv_frame.png) center / 100% 100% no-repeat',
+    background: 'url(/ui/adv_frame.webp) center / 100% 100% no-repeat',
     padding: '9% 8% 8%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
     boxSizing: 'border-box', transform: 'translate(var(--pd-advwin-x), var(--pd-advwin-y))',
   },
@@ -4661,7 +4664,7 @@ const st = {
   advRewIc: { width: 'var(--pd-advrewic)', height: 'var(--pd-advrewic)', objectFit: 'contain' },
   advSign: {
     flexShrink: 0, marginTop: 'auto', width: 'var(--pd-advsw)', height: 'var(--pd-advsh)',
-    background: 'url(/ui/adv_sign.png) center / 100% 100% no-repeat',
+    background: 'url(/ui/adv_sign.webp) center / 100% 100% no-repeat',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5,
     boxSizing: 'border-box', transform: 'translate(var(--pd-advsign-x), var(--pd-advsign-y))',
   },
@@ -4821,7 +4824,7 @@ const st = {
   evpRewIc: { width: 'var(--pd-evprewic)', height: 'var(--pd-evprewic)', objectFit: 'contain' },
   evpSign: {                                                // 모험 진입창과 같은 표지판 배경
     flexShrink: 0, marginTop: 'auto', width: 'var(--pd-evpsw)', height: 'var(--pd-evpsh)',
-    background: 'url(/ui/adv_sign.png) center / 100% 100% no-repeat',
+    background: 'url(/ui/adv_sign.webp) center / 100% 100% no-repeat',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5,
     boxSizing: 'border-box', transform: 'translate(var(--pd-evpsign-x), var(--pd-evpsign-y))',
   },
@@ -4860,16 +4863,16 @@ const st = {
     width: 'var(--pd-shoptabw)', height: 'var(--pd-shoptabh)', fontSize: 'var(--pd-shoptabfz)',
     transform: 'translate(var(--pd-shoptab-x), var(--pd-shoptab-y))',
     border: 'none', background: 'transparent',
-    backgroundImage: 'url(/ui/tab_off.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
+    backgroundImage: 'url(/ui/tab_off.webp)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
     color: '#b6a488', fontWeight: 700, filter: 'grayscale(0.2)', padding: 0, cursor: 'pointer',
     fontFamily: "'Do Hyeon', sans-serif",
   },
-  shopTabOn: { backgroundImage: 'url(/ui/tab_on.png)', color: '#fff4d8', filter: 'none' },
+  shopTabOn: { backgroundImage: 'url(/ui/tab_on.webp)', color: '#fff4d8', filter: 'none' },
   shopTabText: { display: 'inline-block', whiteSpace: 'nowrap', transform: 'translate(var(--pd-shoptabt-x), var(--pd-shoptabt-y))' },
   shopAdBtn: {                                              // 광고 무료 뽑기 (광고 미구현) — 뽑기 버튼과 같은 틀
     width: 'var(--pd-shopadw)', height: 'var(--pd-shopadh)',
     transform: 'translate(var(--pd-shopad-x), var(--pd-shopad-y))',
-    background: 'url(/ui/nav_off.png) center / 100% 100% no-repeat', border: 'none',
+    background: 'url(/ui/nav_off.webp) center / 100% 100% no-repeat', border: 'none',
     padding: 0, flexShrink: 0, cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
@@ -4945,7 +4948,7 @@ const st = {
   },
   evWin: {
     position: 'relative', width: 'var(--pd-evww)', height: 'var(--pd-evwh)',
-    background: 'url(/ui/adv_frame.png) center / 100% 100% no-repeat',
+    background: 'url(/ui/adv_frame.webp) center / 100% 100% no-repeat',
     padding: '8% 8% 9%', display: 'flex', flexDirection: 'column', gap: 8,
     boxSizing: 'border-box', transform: 'translate(var(--pd-evwin-x), var(--pd-evwin-y))',
   },
@@ -5000,7 +5003,7 @@ const st = {
   },
   qWin: {
     position: 'relative', width: 'var(--pd-qww)', height: 'var(--pd-qwh)',
-    background: 'url(/ui/adv_frame.png) center / 100% 100% no-repeat',
+    background: 'url(/ui/adv_frame.webp) center / 100% 100% no-repeat',
     padding: '8% 8% 9%', display: 'flex', flexDirection: 'column', gap: 8,
     boxSizing: 'border-box', transform: 'translate(var(--pd-qwin-x), var(--pd-qwin-y))',
   },
@@ -5084,7 +5087,7 @@ const st = {
   statusBar: { display: 'flex', alignItems: 'center', gap: 6, padding: '3px 8px 2px' },
   hpPill: {
     position: 'relative', flex: 1.1, minWidth: 0, height: 'var(--pd-hph)',
-    background: 'url(/ui/hp_capsule.png) center / 100% 100% no-repeat',
+    background: 'url(/ui/hp_capsule.webp) center / 100% 100% no-repeat',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     transform: 'translate(var(--pd-hp-x), var(--pd-hp-y))',
   },
@@ -5094,7 +5097,7 @@ const st = {
   hpText: { position: 'relative', paddingLeft: '6%', fontSize: 'var(--pd-hpfz)', textShadow: '0 1px 2px #000', whiteSpace: 'nowrap' },
   waveBanner: {
     flex: 1.5, minWidth: 0, height: 'var(--pd-wavebh)', alignSelf: 'center',
-    background: 'url(/ui/wave_banner.png) center / 100% 100% no-repeat',
+    background: 'url(/ui/wave_banner.webp) center / 100% 100% no-repeat',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
     transform: 'translate(var(--pd-wave-x), var(--pd-wave-y))',
   },
@@ -5107,18 +5110,18 @@ const st = {
   retryBtn: { padding: '12px 32px', fontSize: 17, borderRadius: 12, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)' },
   tabBtn: {
     flex: 1, padding: 'var(--pd-tabpt) 0 var(--pd-tabpb)', border: 'none', background: 'transparent',
-    backgroundImage: 'url(/ui/tab_off.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
+    backgroundImage: 'url(/ui/tab_off.webp)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
     color: '#b6a488', fontSize: 'var(--pd-tabfz)', position: 'relative', filter: 'grayscale(0.2)',
   },
   tabActive: {
-    backgroundImage: 'url(/ui/tab_on.png)', backgroundSize: '100% 100%',
+    backgroundImage: 'url(/ui/tab_on.webp)', backgroundSize: '100% 100%',
     color: '#fff4d8', filter: 'none',
   },
   panel: {
     flex: 1, overflow: 'hidden', minHeight: 0,
     background: 'rgba(20,13,7,0.55)',
     borderStyle: 'solid', borderWidth: 'var(--pd-panelbw-v) var(--pd-panelbw-h)',
-    borderImage: 'url(/ui/panel.png) 29 20 26 19 fill / var(--pd-panelbw-v) var(--pd-panelbw-h) stretch',
+    borderImage: 'url(/ui/panel.webp) 29 20 26 19 fill / var(--pd-panelbw-v) var(--pd-panelbw-h) stretch',
     margin: '3px 0 0', padding: '4px 4px 2px', transform: 'translate(var(--pd-panel-x), var(--pd-panel-y))',
     display: 'flex', flexDirection: 'column', gap: 'var(--pd-rowgap)',
   },
@@ -5126,7 +5129,7 @@ const st = {
     flex: 1, minHeight: 0,
     background: 'rgba(20,13,7,0.55)',
     borderStyle: 'solid', borderWidth: 'var(--pd-panelbw-v) var(--pd-panelbw-h)',
-    borderImage: 'url(/ui/panel.png) 29 20 26 19 fill / var(--pd-panelbw-v) var(--pd-panelbw-h) stretch',
+    borderImage: 'url(/ui/panel.webp) 29 20 26 19 fill / var(--pd-panelbw-v) var(--pd-panelbw-h) stretch',
     margin: '3px 0 0', padding: '4px 4px 2px', transform: 'translate(var(--pd-panel-x), var(--pd-panel-y))',
     display: 'flex', flexDirection: 'column',
   },
@@ -5136,7 +5139,7 @@ const st = {
     display: 'flex', alignItems: 'center', gap: 6,
     background: 'transparent',
     borderStyle: 'solid', borderWidth: 'var(--pd-rowbw-v) var(--pd-rowbw-h)',
-    borderImage: 'url(/ui/row.png) 24 23 24 24 fill / var(--pd-rowbw-v) var(--pd-rowbw-h) stretch',
+    borderImage: 'url(/ui/row.webp) 24 23 24 24 fill / var(--pd-rowbw-v) var(--pd-rowbw-h) stretch',
     padding: '2px 3px', minHeight: 'var(--pd-rowmin)', transform: 'translate(var(--pd-row-x), var(--pd-row-y))',
   },
   rowName: { fontSize: 'var(--pd-name)', transform: 'translate(var(--pd-name-x), var(--pd-name-y))' },
@@ -5147,13 +5150,13 @@ const st = {
   costBtn: {
     touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none',
     minWidth: 'var(--pd-costw)', height: 'var(--pd-costh)', padding: '0 8px', border: 'none', background: 'transparent',
-    backgroundImage: 'url(/ui/btn.png)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
+    backgroundImage: 'url(/ui/btn.webp)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
     color: '#fff4d8', fontSize: 'var(--pd-costfz)', flexShrink: 0, textShadow: '0 1px 2px #4a0e0e',
     display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'translate(var(--pd-cost-x), var(--pd-cost-y))',
   },
   bossBtn: {
     border: 'none', height: 'var(--pd-bossh)', alignSelf: 'center', aspectRatio: '300 / 135', padding: '0 0 2px 12%',
-    background: 'transparent url(/ui/boss_btn.png) center / 100% 100% no-repeat',
+    background: 'transparent url(/ui/boss_btn.webp) center / 100% 100% no-repeat',
     color: '#ffe0d0', whiteSpace: 'nowrap', lineHeight: 1,
   },
   bossText: { display: 'inline-block', fontSize: 'var(--pd-bossfz)', textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-btext-x), var(--pd-btext-y))' },
@@ -5162,19 +5165,19 @@ const st = {
   treasureImg: { width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.55))' },
   treasureDot: { position: 'absolute', top: '2%', right: '2%', width: 12, height: 12, borderRadius: '50%', background: '#e23b3b', border: '2px solid #2a1a0c', boxShadow: '0 0 6px #ff5a5a', pointerEvents: 'none' },
   // ── 오프라인 보상: 창 ──
-  offWin: { position: 'relative', width: 'var(--pd-offw)', maxWidth: '94%', aspectRatio: '1024 / 1536', background: 'url(/ui/off_frame.png) center / 100% 100% no-repeat', padding: '9% 9% 8%', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '2.5%', boxSizing: 'border-box' },
+  offWin: { position: 'relative', width: 'var(--pd-offw)', maxWidth: '94%', aspectRatio: '1024 / 1536', background: 'url(/ui/off_frame.webp) center / 100% 100% no-repeat', padding: '9% 9% 8%', display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '2.5%', boxSizing: 'border-box' },
   offClose: { position: 'absolute', top: '2.5%', right: '4%', width: 26, height: 26, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.35)', color: '#f3e6d0', fontSize: 14, lineHeight: 1, cursor: 'pointer', zIndex: 2, padding: 0 },
   offTitle: { flexShrink: 0, textAlign: 'center', fontSize: 'var(--pd-offtfz)', color: '#f3e6d0', fontWeight: 800, textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-offt-x), var(--pd-offt-y))' },
   offInfo: { flexShrink: 0, textAlign: 'center', fontSize: 'var(--pd-offnfz)', color: '#e8d5b0', fontWeight: 700, textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-offn-x), var(--pd-offn-y))' },
   offItems: { flexShrink: 0, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', width: '100%', gap: 'var(--pd-offgap)', marginTop: '2%', transform: 'translate(var(--pd-offit-x), var(--pd-offit-y))' },
-  offItem: { position: 'relative', width: 'var(--pd-offiw)', height: 'var(--pd-offih)', background: 'url(/ui/off_item.png) center / 100% 100% no-repeat', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, flexShrink: 0 },
+  offItem: { position: 'relative', width: 'var(--pd-offiw)', height: 'var(--pd-offih)', background: 'url(/ui/off_item.webp) center / 100% 100% no-repeat', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, flexShrink: 0 },
   offItemIc: { width: 'var(--pd-offic)', height: 'var(--pd-offic)', objectFit: 'contain', transform: 'translate(var(--pd-offiti-x), var(--pd-offiti-y))' },
   offItemVal: { fontSize: 'var(--pd-offifz)', fontWeight: 800, textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-offv-x), var(--pd-offv-y))' },
   offItemRate: { fontSize: 'var(--pd-offrfz)', color: '#c9b596', textShadow: '0 1px 1px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-offr-x), var(--pd-offr-y))' },
   offBtns: { display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4%', marginTop: 'auto' },
-  offBtnAd: { width: 'var(--pd-offbtw)', height: 'var(--pd-offbth)', background: 'url(/ui/off_btn.png) center / 100% 100% no-repeat', border: 'none', color: '#4a2e0e', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0, transform: 'translate(var(--pd-offbt-x), var(--pd-offbt-y))' },
+  offBtnAd: { width: 'var(--pd-offbtw)', height: 'var(--pd-offbth)', background: 'url(/ui/off_btn.webp) center / 100% 100% no-repeat', border: 'none', color: '#4a2e0e', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0, transform: 'translate(var(--pd-offbt-x), var(--pd-offbt-y))' },
   offBtnAdText: { fontSize: 'var(--pd-offbfz)', lineHeight: 1.1, textAlign: 'center', textShadow: '0 1px 1px rgba(255,220,150,0.4)' },
-  offBtnClaim: { width: 'var(--pd-offclw)', height: 'var(--pd-offclh)', background: 'url(/ui/off_claim.png) center / 100% 100% no-repeat', border: 'none', color: '#f0f0f0', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0, transform: 'translate(var(--pd-offcl-x), var(--pd-offcl-y))' },
+  offBtnClaim: { width: 'var(--pd-offclw)', height: 'var(--pd-offclh)', background: 'url(/ui/off_claim.webp) center / 100% 100% no-repeat', border: 'none', color: '#f0f0f0', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0, transform: 'translate(var(--pd-offcl-x), var(--pd-offcl-y))' },
   offBtnClaimText: { fontSize: 'var(--pd-offcfz)', textShadow: '0 1px 2px #000' },
   mailImg: { width: 'var(--pd-mailsz)', height: 'var(--pd-mailsz)', objectFit: 'contain', flexShrink: 0, transform: 'translate(var(--pd-mailbox-x), var(--pd-mailbox-y))' },
   questBtn: { position: 'absolute', top: 8, right: 8, width: 'var(--pd-questsz)', height: 'var(--pd-questsz)', padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', zIndex: 5, transform: 'translate(var(--pd-quest-x), var(--pd-quest-y))' },
