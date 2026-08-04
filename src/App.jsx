@@ -637,7 +637,7 @@ for (const k in ENEMY_TYPES) {
 // 저주받은 동물 보스 스프라이트 (일반몹과 같은 종, /mob/{key}/{key}_1~4.png, 4프레임)
 const CIMG = {}
 for (const k in ENEMY_TYPES) {
-  CIMG[k] = [1, 2, 3, 4].map(nn => { const im = new Image(); im.src = `/mob/${k}/${k}_${nn}.webp`; return im })   // webp 무손실(png 대비 절반 용량, 화질 동일)
+  CIMG[k] = [1].map(nn => { const im = new Image(); im.src = `/mob/${k}/${k}_${nn}.webp`; return im })   // 웨이브 보스는 제자리 + 파고듦만 쓰므로 1프레임만 사용
 }
 // ── 이벤트 던전: 4개 던전, 각 던전에 웨이브 보스 5명씩 배정 ──
 // 배치: 보스1~5=4번던전, 6~10=3번, 11~15=2번, 16~20=1번 (뒤 던전일수록 강한 보스)
@@ -1382,8 +1382,9 @@ export default function App() {
           if (e.stun > 0) { e.stun -= dt; if (!(e.atkT > 0)) continue }  // 기절 중 정지 (진행 중인 공격은 계속)
           // 일반 몹(웨이브·모험 공통)은 제자리에 박혀 있다 — 히어로가 전진할 때만(scroll) 왼쪽으로 흐른다.
           // 교전 중엔 scroll=0 이라 완전히 멈춘다. 보스만 예전처럼 걸어온다.
-          const still = !e.boss
-          const waveMob = still && !w.adv          // 웨이브 일반몹(공격 안 함) / 모험 일반몹은 제자리에서 공격함
+          // 웨이브에서는 보스도 제자리(히어로가 걸어가서 붙는 구조). 모험·이벤트 던전 보스만 걸어온다
+          const still = (!w.adv && !w.ev) ? true : !e.boss
+          const waveMob = still && !w.adv && !e.boss   // 웨이브 일반몹만 공격 안 함 (웨이브 보스는 공격함)
           // 넉백: ease-out 감쇠하며 뒤로 밀림 / 스쿼시 타이머
           // 제자리 몹은 **위치를 밀지 않는다** — 걸어오지 않으니 밀린 만큼 되돌아올 수단이 없어 맞을 때마다 누적되고 뒷줄과 겹침
           if (e.kb > 0.5) { if (!(e.atkT > 0) && !still) e.x += e.kb * dt; e.kb -= e.kb * Math.min(1, dt * 9) } else e.kb = 0  // 공격 중엔 밀리지 않음
@@ -1400,7 +1401,7 @@ export default function App() {
           const stopX = still
             ? (w.adv
                 ? w.heroX + (motRef.current.adv.dist ?? 60) + qi * (motRef.current.adv.gap ?? 40)   // 모험 1열
-                : w.heroX + (motRef.current.wave.dist ?? 95))                                        // 웨이브 일렬
+                : w.heroX + (motRef.current.wave.dist ?? 95) + (e.boss ? estop : 0))                 // 웨이브: 일반몹 일괄 / 보스는 종별 정지값 가산
             : w.heroX + Math.min(atkRange - 15, 60 + e.h * szm * 0.4) + estop
           e.stopX = stopX   // 정지위치 저장 → 멈춘 몬스터는 사거리 밖이어도 기본공격 판정(그림상 코앞인데 안닿는 문제 해결)
           // 히어로가 때릴 수 있는 거리면 몹도 반격할 수 있어야 한다.
@@ -1926,9 +1927,10 @@ export default function App() {
       const imgs = e.dino ? (e.boss ? (e.atkT > 0 ? DINO_BOSS[e.dino].a : DINO_BOSS[e.dino].w) : DINO_MOB[e.dino]) : (e.evBoss ? BIMG[e.evBoss - 1] : (e.boss ? CIMG[e.type] : EIMG[e.type]))   // 이벤트 던전 보스=BIMG, 저주보스=CIMG
       const stunned = e.stun > 0
       const still = !e.boss                    // 제자리(웨이브·모험 일반몹)
-      const frozen = still && !w.adv           // 완전 정지는 **웨이브 일반몹만** — 모험 공룡은 걷기 프레임·들썩임 유지
+      const frozen = still && !w.adv && !w.ev  // 웨이브(일반몹·보스)는 완전 정지 — 모험·던전은 걷기 프레임·들썩임 유지
       const gall = e.animT * 9
-      const fi = e.atkT > 0
+      const fi = frozen ? 0                                    // 웨이브(제자리)는 공격 중에도 1번 프레임 — 파고듦으로만 때린다
+        : e.atkT > 0
         ? (e.dino && e.boss
             ? dinoAtkFrame(e.dino, (e.atkDur || dinoAtkDur(e.dino, motRef.current.atk)) - e.atkT, motRef.current.atk)   // 보스: 종별 프레임 시간표
             : Math.min(imgs.length - 1, Math.floor(((e.atkDur || motRef.current.dur.wave) - e.atkT) / (e.atkDur || motRef.current.dur.wave) * imgs.length)))
