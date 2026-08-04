@@ -2228,21 +2228,6 @@ export default function App() {
         if (im.complete && im.naturalWidth) ctx.drawImage(im, L.x - 4.5, L.y - 9, 9, 9)
       }
 
-      if (DEBUG && w.adv) {                                // 모험 일반몹 진단: 맨 앞 몹의 실제 값
-        const f = w.enemies.filter(e => !e.dead && !e.boss).sort((a, b) => a.x - b.x)[0]
-        ctx.save()
-        ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left'
-        ctx.fillStyle = '#000'; ctx.globalAlpha = 0.55
-        ctx.fillRect(4, 4, 250, f ? 56 : 20)
-        ctx.globalAlpha = 1; ctx.fillStyle = '#7cff9a'
-        if (!f) ctx.fillText('adv mob: 없음', 8, 17)
-        else {
-          ctx.fillText(`dist ${Math.round(f.x - w.heroX)} / stop ${Math.round((f.stopX ?? 0) - w.heroX)}`, 8, 17)
-          ctx.fillText(`atkT ${(f.atkT || 0).toFixed(2)}  cd ${Math.round(f.cd || 0)}  lunge ${Math.round(f.lunge || 0)}`, 8, 32)
-          ctx.fillText(`hp ${Math.round(f.hp)}  alive ${w.enemies.filter(e => !e.dead).length}  blocked ${w._blocked ? 'Y' : 'N'}`, 8, 47)
-        }
-        ctx.restore()
-      }
       const __warnT = (w.adv && w.adv.warnT > 0) ? w.adv.warnT : ((w.ev && !w.ev.bossOut && w.ev.warnT > 0) ? w.ev.warnT : 0)
       if (__warnT > 0) {
         const puls = 0.45 + 0.55 * Math.abs(Math.sin(__warnT * 9))
