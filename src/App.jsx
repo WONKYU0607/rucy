@@ -16,6 +16,14 @@ const fbDb = FB_ON ? getFirestore() : null
 
 // ── 디버그 모드: 업그레이드 비용 무료 + 레벨 직접입력 (출시 전 false로) ──
 const DEBUG = true
+// ── 편집기는 PC 전용: 모바일에선 UI 편집(⚙)·모션 편집 메뉴를 아예 노출하지 않는다 ──
+const IS_PC = (() => {
+  if (typeof navigator === 'undefined') return true
+  const ua = navigator.userAgent || ''
+  if (/Android|iPhone|iPad|iPod|IEMobile|Mobile/i.test(ua)) return false
+  if (/Mac/i.test(ua) && (navigator.maxTouchPoints || 0) > 1) return false   // iPadOS 13+ 는 맥 UA로 위장한다
+  return true
+})()
 // ── 코드에 박아둔 UI·모션 값의 기준 시각 ─────────────────────────────
 // 저장된(브라우저/클라우드) 편집 시각이 이 시각보다 **오래됐으면** 코드값으로 덮는다.
 // · 모바일처럼 편집 안 하는 기기 → 배포만 하면 PC 값이 자동으로 들어옴
@@ -29,7 +37,7 @@ const SPLASH_BG = (() => {
   try { const q = new URLSearchParams(location.search); if (q.get('intro') === 'en') ko = false; if (q.get('intro') === 'ko') ko = true } catch {}
   return ko ? '/startbg/startbg.webp' : '/startbg/startbg_en.webp'
 })()
-const CFG_STAMP = Date.parse('2026-08-04T21:26:00+09:00')
+const CFG_STAMP = Date.parse('2026-08-04T23:09:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -221,7 +229,7 @@ const MOTION_DEFAULT = {
   boss: {  // 보스 종별
     'd:trex': { stop: 53 }, 'd:spino': { sz: 1.2, spd: 1.7, stop: 115, y: -8 }, 'd:trike': { sz: 1.08, stop: 110, y: -8, spd: 1.5 }, 'd:stego': { y: -12, stop: -2 },
     'd:raptor': { spd: 1.8, sz: 1.08 }, 'd:anky': { sz: 0.79, stop: 90, y: -3 }, 'd:ptera': { spd: 1.95, stop: 18, y: -25 }, 'd:brachio': { y: -12, sz: 1.6 },
-    'c:rabbit': { sz: 1.3, y: -6, stop: 15, spd: 1.4 }, 'c:antelope': { y: -6, stop: 55, sz: 1.2 }, 'c:deer': { stop: 40, y: -7, sz: 0.85, spd: 1.4 }, 'c:boar': { sz: 1.07, y: -12, stop: 70, spd: 1.3 },
+    'c:rabbit': { sz: 1.3, y: -6, stop: 15, spd: 1.4 }, 'c:antelope': { y: -6, stop: 132, sz: 1.2 }, 'c:deer': { stop: 40, y: -7, sz: 0.85, spd: 1.4 }, 'c:boar': { sz: 1.07, y: -12, stop: 70, spd: 1.3 },
     'c:wolf': { stop: 85, y: -11, spd: 1.5, sz: 1.24 }, 'c:hyena': { stop: 90, y: -12, sz: 0.88, spd: 1.3 }, 'c:bear': { y: -13, stop: 110, sz: 0.8, spd: 1.35 }, 'c:rhino': { stop: 95, sz: 0.75, y: -4, spd: 1.35 },
     'c:tiger': { spd: 1.3, sz: 0.9, y: -6, stop: 103 }, 'c:mammoth': { spd: 1.3, sz: 0.67, y: -7, stop: 106 }, 'c:monkey': { spd: 1.5, y: -3, stop: 186, sz: 0.85 }, 'c:snake': { sz: 1.66, spd: 1.6 },
     'c:ostrich': { sz: 0.65, y: -8, stop: 77 }, 'c:turtle': { stop: 4 }, 'c:croc': { sz: 1.05, y: -3, stop: 46 }, 'c:komodo': { stop: 46, spd: 1.45, y: -2 },
@@ -233,7 +241,7 @@ const MOTION_DEFAULT = {
     'c:zebra': { y: -4, stop: 7, spd: 1.4 }, 'c:cheetah': { sz: 0.9, y: -4, stop: 27, spd: 1.8 }, 'c:koala': { y: -3, stop: 4 }, 'c:kangaroo': { sz: 0.78, y: -6, stop: 4 },
     'c:cat': { sz: 1.15, y: -3, stop: -1, spd: 1.3 }, 'c:dog': { y: -3, stop: 5 }, 'c:hippo': { sz: 0.79, y: -5, stop: 34 }, 'c:gorilla': { y: -6, stop: 10 },
     'c:gator': { sz: 1.13, y: -3, stop: 46, spd: 1.3 }, 'c:squirrel': { stop: 2, spd: 1.6 }, 'c:penguin': { sz: 1.38, y: -2, spd: 1.45, stop: -35 }, 'c:seal': { sz: 1.24, y: -2, stop: 7, spd: 1.3 },
-    'c:cow': { y: -6, spd: 1.45, stop: 10 }, 'e:16': { stop: 105, y: -8 }, 'c:tiger2': { y: -4, stop: 95, spd: 1.6, sz: 0.94 },
+    'c:cow': { y: -6, spd: 1.45, stop: 10 }, 'e:16': { stop: 105, y: -8 }, 'c:tiger2': { y: -4, stop: 95, spd: 1.6, sz: 0.84 },
   },
   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값, 종별 아님 / 보스·모험 몹은 미적용): 가로로 눌리고(x) 세로로 늘어나며(y) 발을 축으로 뒤로 젖혀졌다(rot) dur 동안 복귀. 위치는 안 움직임
   hitSq: {"x": 1.1, "y": 1.1, "rot": 10, "dur": 0.15},   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값)
@@ -2635,13 +2643,13 @@ export default function App() {
           <div style={st.splashTap}>TAP TO START</div>
         </div>
       )}
-      {uiEdit && <style>{`[data-edit]{outline:1px dashed rgba(232,185,98,0.35);outline-offset:-1px;cursor:pointer}${editSel ? `[data-edit="${editSel}"]{outline:2px solid ${GOLD} !important}` : ''}`}</style>}
-      <button onClick={() => { setUiEdit(v => !v); setEditSel(null) }} style={{ position: 'absolute', top: 4, right: 4, zIndex: 60, padding: '3px 8px', borderRadius: 6, border: '1px solid #6b4a24', background: uiEdit ? GOLD_D : 'rgba(20,13,7,0.8)', color: uiEdit ? '#fff' : GOLD, fontSize: 12 }}>{uiEdit ? '편집중' : '⚙'}</button>
+      {IS_PC && uiEdit && <style>{`[data-edit]{outline:1px dashed rgba(232,185,98,0.35);outline-offset:-1px;cursor:pointer}${editSel ? `[data-edit="${editSel}"]{outline:2px solid ${GOLD} !important}` : ''}`}</style>}
+      {IS_PC && <button onClick={() => { setUiEdit(v => !v); setEditSel(null) }} style={{ position: 'absolute', top: 4, right: 4, zIndex: 60, padding: '3px 8px', borderRadius: 6, border: '1px solid #6b4a24', background: uiEdit ? GOLD_D : 'rgba(20,13,7,0.8)', color: uiEdit ? '#fff' : GOLD, fontSize: 12 }}>{uiEdit ? '편집중' : '⚙'}</button>}
       {menuOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 80 }} onClick={() => setMenuOpen(false)}>
           <div data-edit="menu" style={st.menuPanel} onClick={e => e.stopPropagation()}>
             <button style={{ ...st.menuItem, opacity: 0.5, display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => {}}><img data-edit="mailbox" src="/ui/mailbox.webp" alt="" style={st.mailImg} />우편함 <span style={{ fontSize: 11, opacity: 0.7 }}>준비 중</span></button>
-            <button style={st.menuItem} onClick={() => { setMotEdit(v => !v); setMenuOpen(false) }}>모션 편집 {motEdit ? '끄기' : '켜기'}</button>
+            {IS_PC && <button style={st.menuItem} onClick={() => { setMotEdit(v => !v); setMenuOpen(false) }}>모션 편집 {motEdit ? '끄기' : '켜기'}</button>}
             <div style={{ borderTop: '1px solid #3a2a14', margin: '4px 0' }} />
             {FB_ON && (fbUser ? (
               <>
@@ -3563,7 +3571,7 @@ export default function App() {
       </div>
     </div>
 
-      {motEdit && (() => {
+      {IS_PC && motEdit && (() => {
         const M = motCfg
         const frames = DINO_ATK_FRAMES[motSel] || [1, 2, 3, 4]
         const arr = M.atk[motSel] || DINO_ATK_DEF
@@ -3890,7 +3898,7 @@ export default function App() {
         )
       })()}
 
-      {uiEdit && (
+      {IS_PC && uiEdit && (
         <div style={{ position: 'fixed', left: 0, right: 0, ...(editSel ? { bottom: 0, borderBottom: 'none', borderRadius: '10px 10px 0 0' } : { top: 0, borderTop: 'none', borderRadius: '0 0 10px 10px' }), margin: '0 auto', maxWidth: 420, zIndex: 61, background: 'rgba(16,10,5,0.94)', border: `2px solid ${GOLD_D}`, textShadow: '0 1px 3px rgba(0,0,0,0.9)', padding: '8px 12px calc(8px + env(safe-area-inset-bottom))', maxHeight: '46%', overflowY: 'auto', ...(dockSide ? dockStyle : null) }}>
           {!editSel && <div style={{ fontSize: 13, color: '#c9b596', textAlign: 'center', padding: '4px 0 8px' }}>조정할 요소를 화면에서 탭하세요 (틀·아이콘·글자·숫자·버튼)</div>}
           <div style={{ fontSize: 13, color: '#ffd98a', textAlign: 'center', padding: '0 0 6px', fontWeight: 800 }}>기준 {BASE_W}×{BASE_H} · 화면 {view.sw}×{view.sh} · 배율 {view.s.toFixed(3)}</div>
