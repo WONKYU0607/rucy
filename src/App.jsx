@@ -37,7 +37,7 @@ const SPLASH_BG = (() => {
   try { const q = new URLSearchParams(location.search); if (q.get('intro') === 'en') ko = false; if (q.get('intro') === 'ko') ko = true } catch {}
   return ko ? '/startbg/startbg.webp' : '/startbg/startbg_en.webp'
 })()
-const CFG_STAMP = Date.parse('2026-08-05T14:47:00+09:00')
+const CFG_STAMP = Date.parse('2026-08-05T15:00:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -206,7 +206,7 @@ const MOTION_DEFAULT = {
   atk: DINO_ATK_T,                                            // 보스 종별 프레임 시간(초)
   hit: { trex: 3, spino: 3, trike: 2, stego: 2, raptor: 3, anky: 2, ptera: 2, brachio: 2 },  // 데미지 프레임 번호
   cd: { advBoss: 1000, advMob: 1000, wave: 1000 },             // 공격 간격(ms)
-  dur: { advMob: 0.30, wave: 0.30 },                           // 공격 프레임 없는 적의 모션 길이(초)
+  dur: { advMob: 0.30, wave: 0.20 },                           // 공격 프레임 없는 적의 모션 길이(초)
   lunge: { boss: 25, mob: 30 },                                // 보스 파고듦(웨이브 일반몹은 공격 안 함)
   stop: { ...DINO_STOP },                                      // 종별 정지 위치 보정(px, +면 멀리)
   size: { trex: 1.08, spino: 1.15, trike: 1.04, stego: 1.20, raptor: 0.90, anky: 1, ptera: 1.05, brachio: 1.73 },  // 종별 크기 배율
@@ -260,7 +260,7 @@ const MOTION_DEFAULT = {
     'c:zebra': { y: -4, stop: 7, spd: 1.4 }, 'c:cheetah': { sz: 0.9, y: -4, stop: 27, spd: 1.8 }, 'c:koala': { y: -3, stop: 4 }, 'c:kangaroo': { sz: 0.78, y: -6, stop: 4 },
     'c:cat': { sz: 1.15, y: -3, stop: -1, spd: 1.3 }, 'c:dog': { y: -3, stop: 5 }, 'c:hippo': { sz: 0.79, y: -5, stop: 34 }, 'c:gorilla': { y: -6, stop: 10 },
     'c:gator': { sz: 1.13, y: -3, stop: 46, spd: 1.3 }, 'c:squirrel': { stop: 2, spd: 1.6 }, 'c:penguin': { sz: 1.38, y: -2, spd: 1.45, stop: -35 }, 'c:seal': { sz: 1.24, y: -2, stop: 7, spd: 1.3 },
-    'c:cow': { y: -6, spd: 1.45, stop: 10 }, 'e:16': { stop: 105, y: -8 }, 'c:tiger2': { y: -4, stop: 95, spd: 1.6, sz: 0.84 },
+    'c:cow': { y: -6, spd: 1.45, stop: 10 }, 'e:16': { stop: 105, y: -8 }, 'c:tiger2': { y: -4, stop: 100, spd: 1.6, sz: 0.8 },
   },
   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값, 종별 아님 / 보스·모험 몹은 미적용): 가로로 눌리고(x) 세로로 늘어나며(y) 발을 축으로 뒤로 젖혀졌다(rot) dur 동안 복귀. 위치는 안 움직임
   hitSq: {"x": 1.1, "y": 1.1, "rot": 10, "dur": 0.15},   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값)
@@ -270,7 +270,7 @@ const MOTION_DEFAULT = {
   // 이펙트 프레임별 재생시간(초). 합 = 총 재생시간(전체 '프레임 속도'로 나눔).
   // 길이가 실제 프레임 수와 다르면 무시하고 균등 분할 — 프레임을 지우거나 늘려도 굳지 않음
   fxFrT: {"1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.12, 0.12, 0.15, 0.15], "31": [0.03, 0.03, 0.03, 0.03], "33": [0.14, 0.17, 0.2, 0.35], "34": [0.23, 0.09, 0.18], "35": [0.28, 0.28, 0.28, 0.28, 0.28]},
-  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1.1, "spd": 2.25, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}, "34": {"startP": 0.5, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"sz": 0.87, "y": -85, "x": 20}, "2": {"sz": 0.77, "x": 73, "y": -37}, "3": {"x": 71, "sz": 0.95, "y": 16}}}, "35": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "twGap": 35, "twSpd": 1.7, "fr": {"1": {"x": 53, "sz": 0.47}, "2": {"sz": 0.58, "x": 85, "y": 3}, "3": {"sz": 0.63, "x": 60, "y": 3}, "4": {"sz": 0.69, "x": 102, "y": 5}, "5": {"sz": 0.76, "x": 81, "y": 3}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
+  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1.1, "spd": 2.25, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}, "34": {"startP": 0.5, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"sz": 0.87, "y": -85, "x": 20}, "2": {"sz": 0.77, "x": 73, "y": -37}, "3": {"x": 71, "sz": 0.95, "y": 16}}}, "35": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "twGap": 35, "twSpd": 1.7, "tick": 0.25, "fr": {"1": {"x": 53, "sz": 0.47}, "2": {"sz": 0.58, "x": 85, "y": 3}, "3": {"sz": 0.63, "x": 60, "y": 3}, "4": {"sz": 0.69, "x": 102, "y": 5}, "5": {"sz": 0.76, "x": 81, "y": 3}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
 }
 const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 31, 33, 34, 35]                          // 이펙트 있는 스킬 id
 // 이펙트 프레임 시간(초) 배열 — 넣은 값을 그대로 씀. 프레임을 늘리거나 줄이면 값도 같이 조정할 것.
@@ -1534,7 +1534,7 @@ export default function App() {
             for (const si of slots) {
               if (si != null && SKILLS[si].stage === st.evo && w.skillCd[si] <= 0) { ready = si; break }
             }
-            if (ready >= 0) { w.skill = ready; w.skillT = 0; w.skillDid = false; w.skillFx = false; w.skillCd[ready] = skEff(SKILLS[ready], st.skCfg).cd }
+            if (ready >= 0) { w.skill = ready; w.skillT = 0; w.skillDid = false; w.skillFx = false; w.skillNext = 0; w.skillCd[ready] = skEff(SKILLS[ready], st.skCfg).cd }
           }
         } else {
           const sk = SKILLS[w.skill]
@@ -1559,10 +1559,11 @@ export default function App() {
                 tick: _fxc.tick ?? sk.fx.tick ?? 0, nextHit: 0 })   // tick>0 이면 hitP 단발 대신 그 간격으로 계속 때린다
             }
           }
-          if (!w.skillDid && w.skillT >= _skCast * sk.hitAt) {
-            w.skillDid = true
+          // 한 번 발동할 때 하는 일(투사체 생성 / 광역·단일 데미지). 연타면 이걸 간격마다 반복한다.
+          // noStop=true 면 히트스톱·화면흔들림 생략 — 연타 2타째부터는 걸면 화면이 뚝뚝 끊긴다
+          const _fire = noStop => {
             const __ef = skEff(sk, st.skCfg)
-          const dmg = st.atk * __ef.dmgMult
+            const dmg = st.atk * __ef.dmgMult
             if (sk.fx && sk.fx.type === 'proj') {
               // 투사체: 히어로 앞에서 생성, 명중 시 데미지
               const _spd = (motRef.current.skFx[sk.id] || {}).spd || 1
@@ -1571,15 +1572,28 @@ export default function App() {
               const fe = []; let fa = 0; for (const t of ft) { fa += t; fe.push(fa) }
               w.projs.push({ id: sk.id, fly: sk.fx.fly, impact: sk.fx.impact || null, x: w.heroX + 70, t: 0, dmg, h: sk.fx.fxH ?? sk.h, scale: sk.fx.flyScale || 1, yOff: sk.fx.yOff ?? 40, fe, feTotal: fa })
             } else if (sk.fx && sk.fx.type === 'strike') {
-              // 이펙트는 위 startP 시점에 이미 생성됨(시전당 1개). 데미지도 그 이펙트가 hitP에서 처리
+              // 이펙트는 위 startP 시점에 이미 생성됨(시전당 1개). 데미지도 그 이펙트가 처리(연타 포함)
             } else if (__ef.aoe) {
               const rng = __ef.rangePx || Infinity   // 히어로 기준 px 이내만, 0/null이면 화면 전체(메테오)
-              for (const t of w.enemies) if (!t.dead && t.x - w.heroX < rng) { applySkillDmg(t, dmg); if (sk.stun) t.stun = sk.stun }
+              for (const t of w.enemies) if (!t.dead && t.x - w.heroX < rng) { applySkillDmg(t, dmg, noStop); if (sk.stun) t.stun = sk.stun }
             } else {
               const targets = w.enemies.filter(e => !e.dead).sort((a, b) => a.x - b.x).slice(0, sk.maxTargets || 1)
-              for (const t of targets) applySkillDmg(t, dmg)
+              for (const t of targets) applySkillDmg(t, dmg, noStop)
             }
-            w.shake = 8
+            if (!noStop) w.shake = 8
+          }
+          const _tick = (motRef.current.skFx[sk.id] || {}).tick ?? ((sk.fx && sk.fx.tick) || 0)
+          if (_tick > 0 && !(sk.fx && sk.fx.type === 'strike')) {
+            // 연타: 시전 시작부터 끝까지 간격마다 반복(타격 시점 hitAt 무시). strike 는 이펙트 쪽에서 따로 돈다
+            let guard = 0
+            while (w.skillT >= (w.skillNext || 0) && (w.skillNext || 0) < _skCast && guard++ < 8) {
+              _fire(w.skillDid); w.skillDid = true
+              w.skillNext = (w.skillNext || 0) + _tick
+            }
+            if (guard >= 8) w.skillNext = w.skillT + _tick
+          } else if (!w.skillDid && w.skillT >= _skCast * sk.hitAt) {
+            w.skillDid = true
+            _fire(false)
           }
           // 시전 종료는 **히어로 모션과 낙하 이펙트가 둘 다 끝났을 때**.
           // 예전엔 히어로 모션만 보고 끝내서, 이펙트가 아직 떨어지는 중에 기본공격으로 넘어갔음
@@ -3778,6 +3792,8 @@ export default function App() {
             </div>
             {row('선택 스킬 몹 앞 (0/1)', (M.hero.skillFront || {})[motHeroSk] ?? 0, 0, 1, 1, v => setMotCfg({ ...M, hero: { ...M.hero, skillFront: { ...(M.hero.skillFront || {}), [motHeroSk]: v } } }))}
             {row('모션 후 히어로 숨김 (0/1)', (M.hero.skillHide || {})[motHeroSk] ?? 0, 0, 1, 1, v => setMotCfg({ ...M, hero: { ...M.hero, skillHide: { ...(M.hero.skillHide || {}), [motHeroSk]: v } } }))}
+            {row('연타 간격(초) 0=단발', (M.skFx[motHeroSk] || {}).tick ?? 0, 0, 1, 0.01, v => setMotCfg({ ...M, skFx: { ...M.skFx, [motHeroSk]: { ...(M.skFx[motHeroSk] || {}), tick: v } } }))}
+            <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>0보다 크면 그 간격마다 데미지를 반복합니다(타격 시점 무시). 낙하 이펙트가 있는 스킬은 이펙트가 사는 동안, 없는 스킬은 시전 동안 반복합니다. 한 번에 스킬 데미지 전액이 들어가므로 총합이 횟수만큼 세집니다</div>
             <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>1이면 히어로 모션이 끝나는 순간 히어로가 사라지고 이펙트만 남습니다. 이펙트가 끝나면 다시 나타나 기본공격으로 돌아갑니다 (이펙트 없는 스킬엔 효과 없음)</div>
             <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>1이면 이 스킬 시전 중 히어로가 몬스터에 안 가려집니다 (앞으로 파고드는 스킬만)</div>
             {row('선택 스킬 크기', (M.hero.skillSz || {})[motHeroSk] ?? 1, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, skillSz: { ...(M.hero.skillSz || {}), [motHeroSk]: v } } }))}
@@ -3925,8 +3941,6 @@ export default function App() {
               return (<>
                 {row('이펙트 시작(시전 진행도)', M.skFx[motFx].startP ?? (sk2.hitAt ?? 1), 0, 1, 0.01, v => put2('startP', v))}
                 {row('위치 기준 (0=적 1=히어로)', M.skFx[motFx].anchor ?? 0, 0, 1, 1, v => put2('anchor', v))}
-                {row('연타 간격(초) 0=단발', M.skFx[motFx].tick ?? (sk2.fx.tick ?? 0), 0, 1, 0.01, v => put2('tick', v))}
-                <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>0보다 크면 이펙트가 사는 동안 그 간격마다 광역 타격을 반복합니다(타격 시점은 무시). 한 번에 스킬 데미지 전부가 들어가므로 횟수만큼 세집니다</div>
                 <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>시작 0.5 = 히어로 모션 절반에서 이펙트 등장(겹침). 히어로 기준이면 이펙트가 히어로를 따라 움직입니다</div>
                 {sk2.fx.twin && (<>
                   {row('교차 간격(px)', M.skFx[motFx].twGap ?? sk2.fx.twin.gap, 0, 120, 1, v => put2('twGap', v))}
