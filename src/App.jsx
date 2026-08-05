@@ -37,7 +37,7 @@ const SPLASH_BG = (() => {
   try { const q = new URLSearchParams(location.search); if (q.get('intro') === 'en') ko = false; if (q.get('intro') === 'ko') ko = true } catch {}
   return ko ? '/startbg/startbg.webp' : '/startbg/startbg_en.webp'
 })()
-const CFG_STAMP = Date.parse('2026-08-05T19:10:00+09:00')
+const CFG_STAMP = Date.parse('2026-08-05T20:33:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -247,7 +247,7 @@ const MOTION_DEFAULT = {
     'tiger2': { sz: 1.41, stop: 5, spd: 1.5 }, 'squirrel': { sz: 1.27 },
   },
   boss: {  // 보스 종별
-    'd:trex': { stop: 53 }, 'd:spino': { sz: 1.2, y: -8, stop: 115, spd: 1.7 }, 'd:trike': { sz: 1.08, y: -8, stop: 110, spd: 1.5 }, 'd:stego': { y: -12, stop: -2 },
+    'd:trex': { stop: 53 }, 'd:spino': { sz: 1.2, y: -9, stop: 115, spd: 1.7 }, 'd:trike': { sz: 1.08, y: -8, stop: 110, spd: 1.5 }, 'd:stego': { y: -12, stop: -2 },
     'd:raptor': { sz: 1.08, spd: 1.8 }, 'd:anky': { sz: 0.79, y: -3, stop: 90 }, 'd:ptera': { y: -25, stop: 18, spd: 1.95 }, 'd:brachio': { sz: 1.6, y: -12 },
     'c:rabbit': { sz: 1.3, y: -6, stop: 95, spd: 1.4 }, 'c:antelope': { sz: 1.2, y: -6, stop: 120 }, 'c:deer': { sz: 0.85, y: -7, stop: 95, spd: 1.4 }, 'c:boar': { sz: 1.07, y: -7, stop: 90, spd: 1.3 },
     'c:wolf': { sz: 1.2, y: -9, stop: 104, spd: 1.5 }, 'c:hyena': { sz: 0.88, y: -5, stop: 99, spd: 1.3 }, 'c:bear': { sz: 0.76, y: -5, stop: 107, spd: 1.35 }, 'c:rhino': { sz: 0.75, y: -3, stop: 95, spd: 1.35 },
@@ -261,12 +261,13 @@ const MOTION_DEFAULT = {
     'c:zebra': { sz: 0.97, y: -1, stop: 96, spd: 1.4 }, 'c:cheetah': { sz: 0.85, y: -4, stop: 115, spd: 1.8 }, 'c:koala': { y: -3, stop: 85 }, 'c:kangaroo': { sz: 0.65, y: -3, stop: 84 },
     'c:cat': { sz: 1.1, y: -3, stop: 54, spd: 1.3 }, 'c:dog': { y: -3, stop: 71 }, 'c:hippo': { sz: 0.6, y: -2, stop: 80 }, 'c:gorilla': { sz: 0.95, y: -5, stop: 95 },
     'c:gator': { sz: 1, y: -3, stop: 97, spd: 1.3 }, 'c:squirrel': { stop: 41, spd: 1.6 }, 'c:penguin': { sz: 1.38, y: -2, stop: 55, spd: 1.45 }, 'c:seal': { sz: 1.2, y: -2, stop: 100, spd: 1.3 },
-    'c:cow': { sz: 0.9, y: -6, stop: 106, spd: 1.45 }, 'e:16': { y: -8, stop: 105 }, 'c:tiger2': { sz: 0.93, y: -4, stop: 103, spd: 1.6 },
+    'c:cow': { sz: 0.9, y: -6, stop: 106, spd: 1.45 }, 'e:16': { sz: 1.12, y: -8, stop: 120, spd: 2 },
+    'e:1': { stop: 120 }, 'e:2': { stop: 120 }, 'e:3': { stop: 120 }, 'e:4': { stop: 120 }, 'e:5': { stop: 120 }, 'e:6': { stop: 120 }, 'e:7': { stop: 120 }, 'e:8': { stop: 120 }, 'e:9': { stop: 120 }, 'e:10': { stop: 120 }, 'e:11': { sz: 1.06, y: -4, stop: 120 }, 'e:12': { stop: 120 }, 'e:13': { stop: 120 }, 'e:14': { stop: 120 }, 'e:15': { stop: 120 }, 'e:17': { sz: 1.12, stop: 120, spd: 1.85 }, 'e:18': { sz: 1.12, stop: 120, spd: 2 }, 'e:19': { sz: 1.12, stop: 120, spd: 1.95 }, 'e:20': { sz: 1.12, y: -4, stop: 120 }, 'c:tiger2': { sz: 0.93, y: -4, stop: 103, spd: 1.6 },
   },
   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값, 종별 아님 / 보스·모험 몹은 미적용): 가로로 눌리고(x) 세로로 늘어나며(y) 발을 축으로 뒤로 젖혀졌다(rot) dur 동안 복귀. 위치는 안 움직임
   hitSq: {"x": 1.1, "y": 1.1, "rot": 10, "dur": 0.15},   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값)
   wave: { gap: 40, dist: 35 },
-  adv: { gap: 50, dist: 55, lunge: 30 },    // 모험 일반 몹 1열 대기 간격·히어로와 거리(px) — 웨이브와 분리                                  // 웨이브 몹 일렬 간격(px) / 히어로와의 거리(px) — 종 무관 일괄
+  adv: { gap: 50, dist: 55, lunge: 25 },    // 모험 일반 몹 1열 대기 간격·히어로와 거리(px) — 웨이브와 분리                                  // 웨이브 몹 일렬 간격(px) / 히어로와의 거리(px) — 종 무관 일괄
   stone: { spd: 0.6, sz: 13, arc: 0.4 },                           // 직립 돌던지기: 비행속도 배율 / 그림 크기(px) / 포물선 높이 배율
   // 이펙트 프레임별 재생시간(초). 합 = 총 재생시간(전체 '프레임 속도'로 나눔).
   // 길이가 실제 프레임 수와 다르면 무시하고 균등 분할 — 프레임을 지우거나 늘려도 굳지 않음
@@ -704,7 +705,7 @@ const BOSS_TYPES = [
   { name: '얼음 골렘', h: 150 }, { name: '뇌전 거인', h: 150 },
   { name: '원석 골렘', h: 150 }, { name: '고목 정령', h: 155 }, { name: '화염 골렘', h: 155 },
   { name: '빙정 골렘', h: 150 }, { name: '폭풍 정령', h: 150 },
-].map((b, i) => ({ ...b, frames: [1, 2, 3, 4].map(f => `/boss/boss${i + 1}/boss${i + 1}_${f}.webp`) }))
+].map((b, i) => ({ ...b, frames: [`/boss/boss${i + 1}/boss${i + 1}_1.webp`] }))   // 1번 프레임만 사용 — 제자리 고정 + 파고듦으로만 공격
 const BIMG = BOSS_TYPES.map(b => b.frames.map(src => mkImg(src)))
 const WAVE_CYCLE = ['rabbit', 'antelope', 'deer', 'boar', 'wolf', 'hyena', 'bear', 'rhino', 'tiger', 'mammoth', 'monkey', 'snake', 'ostrich', 'turtle', 'croc', 'komodo', 'eagle', 'giraffe', 'lion', 'elephant',
   'pig', 'chicken', 'duck', 'frog', 'bat', 'pelican', 'mantis', 'polarbear', 'alpaca', 'buffalo',
@@ -1441,8 +1442,8 @@ export default function App() {
           // 일반 몹(웨이브·모험 공통)은 제자리에 박혀 있다 — 히어로가 전진할 때만(scroll) 왼쪽으로 흐른다.
           // 교전 중엔 scroll=0 이라 완전히 멈춘다. 보스만 예전처럼 걸어온다.
           // 웨이브에서는 보스도 제자리(히어로가 걸어가서 붙는 구조). 모험·이벤트 던전 보스만 걸어온다
-          const still = (!w.adv && !w.ev) ? true : !e.boss
-          const waveMob = still && !w.adv && !e.boss   // 웨이브 일반몹만 공격 안 함 (웨이브 보스는 공격함)
+          const still = w.adv ? !e.boss : true        // 모험만 보스가 걸어옴 — 웨이브·이벤트 던전은 보스도 제자리
+          const waveMob = still && !w.adv && !w.ev && !e.boss   // 웨이브 일반몹만 공격 안 함 (웨이브·이벤트 보스는 공격함)
           // 넉백: ease-out 감쇠하며 뒤로 밀림 / 스쿼시 타이머
           // 제자리 몹은 **위치를 밀지 않는다** — 걸어오지 않으니 밀린 만큼 되돌아올 수단이 없어 맞을 때마다 누적되고 뒷줄과 겹침
           if (e.kb > 0.5) { if (!(e.atkT > 0) && !still) e.x += e.kb * dt; e.kb -= e.kb * Math.min(1, dt * 9) } else e.kb = 0  // 공격 중엔 밀리지 않음
@@ -1881,6 +1882,13 @@ export default function App() {
             setGem(g => g + EV_REWARD.dia)
             setPearl(v => v + EV_REWARD.pearl)
             setClearMsg(`${c.name} ${c.stage || 1}단계 격파!`)
+            // 격파하면 방금 잡은 보스의 도전창으로 돌아간다 — 진행바가 한 칸 더 찬 상태로 보인다
+            const di = EV_DUNGEONS.findIndex(d => d.key === c.key)
+            if (di >= 0) {
+              setEvSel(di)
+              setEvOpen(true)
+              setEvPick({ di, no: c.no, name: c.name, dname: c.dname || EV_DUNGEONS[di].name })
+            }
           } else setClearMsg(c.quit ? '던전 포기' : (hero.hp <= 0 ? '던전 실패 — 쓰러짐' : '던전 실패 — 시간 초과'))
           if (c.quit) setEvOpen(true)                          // 포기하면 던전 목록창을 다시 열어둔다(도전 확인창 아님)
           w.needStart = true                                   // 웨이브로 복귀
@@ -2037,8 +2045,8 @@ export default function App() {
       const imgs = e.dino ? (e.boss ? (e.atkT > 0 ? DINO_BOSS[e.dino].a : DINO_BOSS[e.dino].w) : DINO_MOB[e.dino]) : (e.evBoss ? BIMG[e.evBoss - 1] : (e.boss ? CIMG[e.type] : EIMG[e.type]))   // 이벤트 던전 보스=BIMG, 저주보스=CIMG
       const stunned = e.stun > 0
       // 갱신 쪽 still 과 같은 기준이어야 함 — 웨이브는 보스도 제자리
-      const still = (!w.adv && !w.ev) ? true : !e.boss
-      const frozen = still && !w.adv && !w.ev  // 웨이브(일반몹·보스)는 완전 정지: 들썩임·기울기·프레임순환 없음, 파고듦만
+      const still = w.adv ? !e.boss : true     // 갱신 쪽과 같은 기준
+      const frozen = still && !w.adv           // 웨이브·이벤트 던전은 완전 정지: 들썩임·기울기·프레임순환 없음, 파고듦만
       const gall = e.animT * 9
       const fi = frozen ? 0                                    // 웨이브(제자리)는 공격 중에도 1번 프레임 — 파고듦으로만 때린다
         : e.atkT > 0
