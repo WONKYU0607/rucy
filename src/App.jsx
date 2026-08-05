@@ -37,7 +37,7 @@ const SPLASH_BG = (() => {
   try { const q = new URLSearchParams(location.search); if (q.get('intro') === 'en') ko = false; if (q.get('intro') === 'ko') ko = true } catch {}
   return ko ? '/startbg/startbg.webp' : '/startbg/startbg_en.webp'
 })()
-const CFG_STAMP = Date.parse('2026-08-05T15:00:00+09:00')
+const CFG_STAMP = Date.parse('2026-08-05T19:10:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -206,8 +206,8 @@ const MOTION_DEFAULT = {
   atk: DINO_ATK_T,                                            // 보스 종별 프레임 시간(초)
   hit: { trex: 3, spino: 3, trike: 2, stego: 2, raptor: 3, anky: 2, ptera: 2, brachio: 2 },  // 데미지 프레임 번호
   cd: { advBoss: 1000, advMob: 1000, wave: 1000 },             // 공격 간격(ms)
-  dur: { advMob: 0.30, wave: 0.20 },                           // 공격 프레임 없는 적의 모션 길이(초)
-  lunge: { boss: 25, mob: 30 },                                // 보스 파고듦(웨이브 일반몹은 공격 안 함)
+  dur: { advMob: 0.30, wave: 0.30 },                           // 공격 프레임 없는 적의 모션 길이(초)
+  lunge: { boss: 23, mob: 30 },                                // 보스 파고듦(웨이브 일반몹은 공격 안 함)
   stop: { ...DINO_STOP },                                      // 종별 정지 위치 보정(px, +면 멀리)
   size: { trex: 1.08, spino: 1.15, trike: 1.04, stego: 1.20, raptor: 0.90, anky: 1, ptera: 1.05, brachio: 1.73 },  // 종별 크기 배율
   hero: {
@@ -232,35 +232,36 @@ const MOTION_DEFAULT = {
   mob: {   // 일반몹 종별 크기·높이·정지·속도
     'd:trex': { sz: 1 }, 'd:spino': { sz: 1 }, 'd:trike': { sz: 1 }, 'd:stego': { sz: 1 },
     'd:raptor': { sz: 1 }, 'd:anky': { sz: 1 }, 'd:ptera': { sz: 1 }, 'd:brachio': { sz: 1 },
-    'hyena': { stop: 30, spd: 1.5, sz: 1.07 }, 'bear': { sz: 1.16, stop: 46, spd: 1.25, y: -7 }, 'rhino': { stop: 43, spd: 1.2, sz: 1.13 }, 'mammoth': { sz: 0.92 }, 'rabbit': { sz: 1.6, stop: 15 },
-    'antelope': { sz: 1.28, stop: -20 }, 'deer': { stop: 35, sz: 1 }, 'boar': { stop: 45, sz: 1, spd: 1.4 }, 'wolf': { sz: 1.14, stop: 40, spd: 1.5 },
-    'tiger': { sz: 1.09, stop: 15, spd: 1.3 }, 'monkey': { sz: 1.12, stop: -12, spd: 1.5, y: -1 }, 'snake': { sz: 1.08, stop: 6, spd: 1.45 }, 'ostrich': { sz: 0.88, stop: 4 },
-    'turtle': { sz: 1.01 }, 'croc': { stop: 5 }, 'komodo': { stop: 4 }, 'eagle': { y: -16, spd: 1.7 },
-    'giraffe': { sz: 1.1 }, 'lion': { sz: 1.08, spd: 1.5, stop: 30 }, 'elephant': { stop: 40, sz: 0.98 }, 'pig': { sz: 1.08, stop: 5 },
-    'chicken': { sz: 1.2, spd: 1.5 }, 'duck': { sz: 1.15, spd: 1.2 }, 'frog': { spd: 1.3, sz: 1.02 }, 'bat': { y: -12, stop: -4 },
-    'pelican': { y: -42 }, 'mantis': { sz: 1.02, stop: -5 }, 'polarbear': { sz: 1.06, y: -1, stop: 25 }, 'alpaca': { sz: 1.2, stop: 4 },
-    'buffalo': { stop: 8, spd: 1.4 }, 'camel': { stop: 35 }, 'horse': { sz: 1.44, stop: 53 }, 'panda': { sz: 1.24, stop: 55, y: -1 },
-    'scorpion': { sz: 1.28, y: 1, spd: 1.4 }, 'tarantula': { stop: 5 }, 'cobra': { sz: 1.25, stop: 20 }, 'zebra': { sz: 1.06, stop: 19 },
-    'cheetah': { stop: 13, sz: 1.09 }, 'koala': { sz: 1.07, stop: 3 }, 'kangaroo': { stop: 12, spd: 1.25 }, 'cat': { sz: 1.48, stop: 2, spd: 1.5 },
-    'dog': { sz: 1.28, stop: 5 }, 'hippo': { stop: 20 }, 'gorilla': { sz: 1.1, stop: 26 }, 'gator': { sz: 1.24, stop: 33 },
-    'penguin': { sz: 1.3, stop: 2 }, 'seal': { sz: 1.3, stop: 5 }, 'cow': { sz: 1.19, stop: 15 }, 'tiger2': { sz: 1.1, stop: 5, spd: 1.5 },
+    'hyena': { sz: 1.07, stop: 30, spd: 1.5 }, 'bear': { sz: 1.16, y: -7, stop: 46, spd: 1.25 }, 'rhino': { sz: 1.13, stop: 43, spd: 1.2 }, 'mammoth': { sz: 0.92 },
+    'rabbit': { sz: 1.6, stop: 15 }, 'antelope': { sz: 1.28, stop: -20 }, 'deer': { sz: 1, stop: 35 }, 'boar': { sz: 1, stop: 45, spd: 1.4 },
+    'wolf': { sz: 1.14, stop: 40, spd: 1.5 }, 'tiger': { sz: 1.1, stop: 15, spd: 1.3 }, 'monkey': { sz: 1.07, y: -1, stop: -12, spd: 1.5 }, 'snake': { sz: 1.46, stop: 6, spd: 1.45 },
+    'ostrich': { sz: 0.9, stop: 4 }, 'turtle': { sz: 1.11 }, 'croc': { sz: 1.73, stop: 5 }, 'komodo': { sz: 1.42, stop: 4 },
+    'eagle': { sz: 0.91, y: -92, spd: 1.7 }, 'giraffe': { sz: 0.84 }, 'lion': { sz: 1.29, stop: 30, spd: 1.5 }, 'elephant': { sz: 1, stop: 40 },
+    'pig': { sz: 1.25, stop: 5 }, 'chicken': { sz: 1.43, spd: 1.5 }, 'duck': { sz: 1.21, spd: 1.2 }, 'frog': { sz: 1.38, spd: 1.3 },
+    'bat': { sz: 1.1, y: -57, stop: -4 }, 'pelican': { y: -62 }, 'mantis': { sz: 1.05, stop: -5 }, 'polarbear': { sz: 1.23, y: -1, stop: 25 },
+    'alpaca': { sz: 1.18, stop: 4 }, 'buffalo': { sz: 1.22, stop: 8, spd: 1.4 }, 'camel': { sz: 1.05, stop: 35 }, 'horse': { sz: 1.35, stop: 53 },
+    'panda': { sz: 1.52, y: -1, stop: 55 }, 'scorpion': { sz: 1.82, y: 1, spd: 1.4 }, 'tarantula': { sz: 1.63, stop: 5 }, 'cobra': { sz: 1.34, stop: 20 },
+    'zebra': { sz: 1.17, stop: 19 }, 'cheetah': { sz: 1.46, stop: 13 }, 'koala': { sz: 1.17, stop: 3 }, 'kangaroo': { stop: 12, spd: 1.25 },
+    'cat': { sz: 1.49, stop: 2, spd: 1.5 }, 'dog': { sz: 1.3, stop: 5 }, 'hippo': { sz: 1.2, stop: 20 }, 'gorilla': { sz: 1.27, stop: 26 },
+    'gator': { sz: 2.1, stop: 33 }, 'penguin': { sz: 1.3, stop: 2 }, 'seal': { sz: 1.58, stop: 5 }, 'cow': { sz: 1.27, stop: 15 },
+    'tiger2': { sz: 1.41, stop: 5, spd: 1.5 }, 'squirrel': { sz: 1.27 },
   },
   boss: {  // 보스 종별
-    'd:trex': { stop: 53 }, 'd:spino': { sz: 1.2, spd: 1.7, stop: 115, y: -8 }, 'd:trike': { sz: 1.08, stop: 110, y: -8, spd: 1.5 }, 'd:stego': { y: -12, stop: -2 },
-    'd:raptor': { spd: 1.8, sz: 1.08 }, 'd:anky': { sz: 0.79, stop: 90, y: -3 }, 'd:ptera': { spd: 1.95, stop: 18, y: -25 }, 'd:brachio': { y: -12, sz: 1.6 },
-    'c:rabbit': { sz: 1.3, y: -6, stop: 15, spd: 1.4 }, 'c:antelope': { y: -6, stop: 132, sz: 1.2 }, 'c:deer': { stop: 40, y: -7, sz: 0.85, spd: 1.4 }, 'c:boar': { sz: 1.07, y: -12, stop: 70, spd: 1.3 },
-    'c:wolf': { stop: 85, y: -11, spd: 1.5, sz: 1.24 }, 'c:hyena': { stop: 90, y: -12, sz: 0.88, spd: 1.3 }, 'c:bear': { y: -13, stop: 110, sz: 0.8, spd: 1.35 }, 'c:rhino': { stop: 95, sz: 0.75, y: -4, spd: 1.35 },
-    'c:tiger': { spd: 1.3, sz: 0.9, y: -6, stop: 103 }, 'c:mammoth': { spd: 1.3, sz: 0.67, y: -7, stop: 106 }, 'c:monkey': { spd: 1.5, y: -3, stop: 186, sz: 0.85 }, 'c:snake': { sz: 1.66, spd: 1.6 },
-    'c:ostrich': { sz: 0.65, y: -8, stop: 77 }, 'c:turtle': { stop: 4 }, 'c:croc': { sz: 1.05, y: -3, stop: 46 }, 'c:komodo': { stop: 46, spd: 1.45, y: -2 },
-    'c:eagle': { y: 20, sz: 1.04, stop: 7 }, 'c:giraffe': { sz: 0.68, y: -12, stop: -10 }, 'c:lion': { sz: 0.9, y: -6, stop: 37 }, 'c:elephant': { sz: 0.8, y: -9, spd: 1.1, stop: 10 },
-    'c:pig': { spd: 1.2, y: -5, stop: 5 }, 'c:chicken': { spd: 1.65, sz: 1.16, y: -6, stop: 2 }, 'c:duck': { spd: 1.2, sz: 1.15, y: -5, stop: -9 }, 'c:frog': { spd: 1.4, sz: 1.18, y: -4, stop: -6 },
-    'c:bat': { y: 37, sz: 1.27, stop: -5 }, 'c:pelican': { spd: 1.2, sz: 0.98, y: -6, stop: 2 }, 'c:mantis': { y: -4, stop: 5 }, 'c:polarbear': { sz: 0.89, y: -3, spd: 1.3, stop: 5 },
-    'c:alpaca': { spd: 1.45, sz: 1.04, stop: -10, y: -6 }, 'c:buffalo': { sz: 0.84, y: -7, stop: 18, spd: 1.5 }, 'c:camel': { sz: 0.85, y: -5, stop: -1 }, 'c:horse': { sz: 0.93, y: -8, stop: 0 },
-    'c:panda': { sz: 0.97, y: -6, stop: 45, spd: 1.4 }, 'c:scorpion': { sz: 1.41, y: -3, stop: 12, spd: 1.2 }, 'c:tarantula': { sz: 1.27, y: -3, stop: 33, spd: 1.45 }, 'c:cobra': { sz: 1.29, y: -1, stop: 14, spd: 1.6 },
-    'c:zebra': { y: -4, stop: 7, spd: 1.4 }, 'c:cheetah': { sz: 0.9, y: -4, stop: 27, spd: 1.8 }, 'c:koala': { y: -3, stop: 4 }, 'c:kangaroo': { sz: 0.78, y: -6, stop: 4 },
-    'c:cat': { sz: 1.15, y: -3, stop: -1, spd: 1.3 }, 'c:dog': { y: -3, stop: 5 }, 'c:hippo': { sz: 0.79, y: -5, stop: 34 }, 'c:gorilla': { y: -6, stop: 10 },
-    'c:gator': { sz: 1.13, y: -3, stop: 46, spd: 1.3 }, 'c:squirrel': { stop: 2, spd: 1.6 }, 'c:penguin': { sz: 1.38, y: -2, spd: 1.45, stop: -35 }, 'c:seal': { sz: 1.24, y: -2, stop: 7, spd: 1.3 },
-    'c:cow': { y: -6, spd: 1.45, stop: 10 }, 'e:16': { stop: 105, y: -8 }, 'c:tiger2': { y: -4, stop: 100, spd: 1.6, sz: 0.8 },
+    'd:trex': { stop: 53 }, 'd:spino': { sz: 1.2, y: -8, stop: 115, spd: 1.7 }, 'd:trike': { sz: 1.08, y: -8, stop: 110, spd: 1.5 }, 'd:stego': { y: -12, stop: -2 },
+    'd:raptor': { sz: 1.08, spd: 1.8 }, 'd:anky': { sz: 0.79, y: -3, stop: 90 }, 'd:ptera': { y: -25, stop: 18, spd: 1.95 }, 'd:brachio': { sz: 1.6, y: -12 },
+    'c:rabbit': { sz: 1.3, y: -6, stop: 95, spd: 1.4 }, 'c:antelope': { sz: 1.2, y: -6, stop: 120 }, 'c:deer': { sz: 0.85, y: -7, stop: 95, spd: 1.4 }, 'c:boar': { sz: 1.07, y: -7, stop: 90, spd: 1.3 },
+    'c:wolf': { sz: 1.2, y: -9, stop: 104, spd: 1.5 }, 'c:hyena': { sz: 0.88, y: -5, stop: 99, spd: 1.3 }, 'c:bear': { sz: 0.76, y: -5, stop: 107, spd: 1.35 }, 'c:rhino': { sz: 0.75, y: -3, stop: 95, spd: 1.35 },
+    'c:tiger': { sz: 0.86, y: -6, stop: 108, spd: 1.3 }, 'c:mammoth': { sz: 0.58, y: -5, stop: 106, spd: 1.3 }, 'c:monkey': { sz: 0.85, y: -3, stop: 97, spd: 1.5 }, 'c:snake': { sz: 1.6, stop: 100, spd: 1.6 },
+    'c:ostrich': { sz: 0.65, y: -8, stop: 79 }, 'c:turtle': { y: -2, stop: 90 }, 'c:croc': { sz: 0.95, y: -4, stop: 120 }, 'c:komodo': { sz: 0.8, y: -2, stop: 115, spd: 1.45 },
+    'c:eagle': { sz: 1, y: -7, stop: 85 }, 'c:giraffe': { sz: 0.64, y: -5, stop: 90 }, 'c:lion': { sz: 0.83, y: -6, stop: 122 }, 'c:elephant': { sz: 0.7, y: -4, stop: 120, spd: 1.1 },
+    'c:pig': { sz: 0.94, y: -7, stop: 115, spd: 1.2 }, 'c:chicken': { sz: 1.15, y: -6, stop: 70, spd: 1.65 }, 'c:duck': { sz: 1.15, y: -4, stop: 70, spd: 1.2 }, 'c:frog': { sz: 1.2, y: -6, stop: 56, spd: 1.4 },
+    'c:bat': { sz: 1.2, y: 10, stop: 70 }, 'c:pelican': { sz: 0.91, y: -2, stop: 85, spd: 1.2 }, 'c:mantis': { sz: 1.02, y: 0, stop: 90 }, 'c:polarbear': { sz: 0.8, y: -3, stop: 105, spd: 1.3 },
+    'c:alpaca': { sz: 0.95, y: -1, stop: 76, spd: 1.45 }, 'c:buffalo': { sz: 0.78, y: -7, stop: 114, spd: 1.5 }, 'c:camel': { sz: 0.79, y: -5, stop: 105 }, 'c:horse': { sz: 0.9, y: -8, stop: 94 },
+    'c:panda': { sz: 0.9, y: -6, stop: 116, spd: 1.4 }, 'c:scorpion': { sz: 1.41, y: -3, stop: 90, spd: 1.2 }, 'c:tarantula': { sz: 1.2, y: -7, stop: 98, spd: 1.45 }, 'c:cobra': { sz: 1.26, y: -4, stop: 110, spd: 1.6 },
+    'c:zebra': { sz: 0.97, y: -1, stop: 96, spd: 1.4 }, 'c:cheetah': { sz: 0.85, y: -4, stop: 115, spd: 1.8 }, 'c:koala': { y: -3, stop: 85 }, 'c:kangaroo': { sz: 0.65, y: -3, stop: 84 },
+    'c:cat': { sz: 1.1, y: -3, stop: 54, spd: 1.3 }, 'c:dog': { y: -3, stop: 71 }, 'c:hippo': { sz: 0.6, y: -2, stop: 80 }, 'c:gorilla': { sz: 0.95, y: -5, stop: 95 },
+    'c:gator': { sz: 1, y: -3, stop: 97, spd: 1.3 }, 'c:squirrel': { stop: 41, spd: 1.6 }, 'c:penguin': { sz: 1.38, y: -2, stop: 55, spd: 1.45 }, 'c:seal': { sz: 1.2, y: -2, stop: 100, spd: 1.3 },
+    'c:cow': { sz: 0.9, y: -6, stop: 106, spd: 1.45 }, 'e:16': { y: -8, stop: 105 }, 'c:tiger2': { sz: 0.93, y: -4, stop: 103, spd: 1.6 },
   },
   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값, 종별 아님 / 보스·모험 몹은 미적용): 가로로 눌리고(x) 세로로 늘어나며(y) 발을 축으로 뒤로 젖혀졌다(rot) dur 동안 복귀. 위치는 안 움직임
   hitSq: {"x": 1.1, "y": 1.1, "rot": 10, "dur": 0.15},   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값)
@@ -270,7 +271,7 @@ const MOTION_DEFAULT = {
   // 이펙트 프레임별 재생시간(초). 합 = 총 재생시간(전체 '프레임 속도'로 나눔).
   // 길이가 실제 프레임 수와 다르면 무시하고 균등 분할 — 프레임을 지우거나 늘려도 굳지 않음
   fxFrT: {"1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.12, 0.12, 0.15, 0.15], "31": [0.03, 0.03, 0.03, 0.03], "33": [0.14, 0.17, 0.2, 0.35], "34": [0.23, 0.09, 0.18], "35": [0.28, 0.28, 0.28, 0.28, 0.28]},
-  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1.1, "spd": 2.25, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}, "34": {"startP": 0.5, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"sz": 0.87, "y": -85, "x": 20}, "2": {"sz": 0.77, "x": 73, "y": -37}, "3": {"x": 71, "sz": 0.95, "y": 16}}}, "35": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "twGap": 35, "twSpd": 1.7, "tick": 0.25, "fr": {"1": {"x": 53, "sz": 0.47}, "2": {"sz": 0.58, "x": 85, "y": 3}, "3": {"sz": 0.63, "x": 60, "y": 3}, "4": {"sz": 0.69, "x": 102, "y": 5}, "5": {"sz": 0.76, "x": 81, "y": 3}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
+  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "tick": 0.2, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "26": {"tick": 0.35}, "27": {"tick": 0.35}, "28": {"tick": 0}, "32": {"tick": 0.45}, "36": {"tick": 0.3}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1.1, "spd": 2.25, "fly": 1, "x": 0, "y": 0, "tick": 0.3, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}, "34": {"startP": 0.5, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"sz": 0.87, "y": -85, "x": 20}, "2": {"sz": 0.77, "x": 73, "y": -37}, "3": {"x": 71, "sz": 0.95, "y": 16}}}, "35": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "twGap": 35, "twSpd": 1.7, "tick": 0.25, "fr": {"1": {"x": 53, "sz": 0.47}, "2": {"sz": 0.58, "x": 85, "y": 3}, "3": {"sz": 0.63, "x": 60, "y": 3}, "4": {"sz": 0.69, "x": 102, "y": 5}, "5": {"sz": 0.76, "x": 81, "y": 3}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
 }
 const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 31, 33, 34, 35]                          // 이펙트 있는 스킬 id
 // 이펙트 프레임 시간(초) 배열 — 넣은 값을 그대로 씀. 프레임을 늘리거나 줄이면 값도 같이 조정할 것.
@@ -1229,6 +1230,7 @@ export default function App() {
       w.total = 1
       w.killed = 0
       w.bossPending = true
+      w.bossGiveUp = false
       w.spawnTimer = 200
       w.spawnIdx = 0                 // 보스전은 한 마리뿐 — 화면 끝에서 걸어 나오게 0부터
       w.clearedFlag = false
@@ -1479,6 +1481,11 @@ export default function App() {
             if (!waveMob) e.animT += dt * SPEED * (0.4 + 0.6 * e.vt * near) * (1 + scroll / SCROLL * 0.4) * Math.min(1.5, Math.max(0.6, 0.55 + e.speed / 160))   // 웨이브 제자리몹만 완전 정지
           } else if (waveMob) {                            // 웨이브 일반몹만 히어로를 공격하지 않는다 — 맞아주는 역할만
             e.lunge = 0; e.atkT = 0; e.atkHit = false
+          } else if (w.adv && !e.boss && qi !== 0) {
+            // 모험 일반몹은 1열 맨 앞(qi 0)만 공격한다. 뒤에 선 몹까지 때리면 전부 같이 파고들어
+            // 줄 전체가 앞뒤로 출렁인다. 맨 앞이 죽으면 advRank 가 매 프레임 다시 매겨져 다음 몹이 이어받는다.
+            e.lunge = 0; e.atkT = 0; e.atkHit = false
+            e.animT += dt * SPEED * 0.9                    // 멈춰 있어도 걷기 프레임은 계속 돈다
           } else {
             if (w.adv && !e.boss) e.animT += dt * SPEED * 0.9   // 모험 몹: 멈춰 있어도 걷기 프레임은 계속 돈다
             if (e.atkT > 0) {
@@ -1785,7 +1792,7 @@ export default function App() {
           const hh = bEn ? Math.ceil(bEn.hp) : -1
           if (tt !== w._btShown || hh !== w._bhShown) {
             w._btShown = tt; w._bhShown = hh
-            setBossUI({ t: Math.max(0, w.bossTimer), hp: bEn ? Math.max(0, bEn.hp) : 0, maxHp: bEn ? bEn.maxHp : 1, has: !!bEn })
+            setBossUI({ t: Math.max(0, w.bossTimer), hp: bEn ? Math.max(0, bEn.hp) : 0, maxHp: bEn ? bEn.maxHp : 1, has: !!bEn, wave: true })   // wave:true → 나가기 버튼 표시
           }
         } else if (w._btShown !== -1) { w._btShown = -1; w._bhShown = -1; setBossUI(null) }
 
@@ -1843,13 +1850,14 @@ export default function App() {
         // 보스 제한시간: 초과 시 실패 처리 후 같은 웨이브 재개 (재도전 가능)
         if (w.bossBattle) {
           w.bossTimer -= dt
-          if (w.bossTimer <= 0 && !w.clearedFlag) {
+          if ((w.bossTimer <= 0 || w.bossGiveUp) && !w.clearedFlag) {
             w.clearedFlag = true
             w.enemies = []; w.stones = []; w.rocks = []
             w.bossBattle = false
-            setClearMsg('시간 초과 — 보스 실패')
-            setBossReady(true)
-            w.needStart = true
+            setClearMsg(w.bossGiveUp ? '보스전 나가기' : '시간 초과 — 보스 실패')
+            setBossReady(true)                                  // 보스 도전 버튼 다시 활성 — 재도전 가능
+            w.needStart = true                                  // 같은 웨이브의 일반 웨이브로 복귀
+            w.bossGiveUp = false
           }
         }
 
@@ -3304,6 +3312,9 @@ export default function App() {
         {(advUI || uiEdit) && (
           <button data-edit="advexit" style={st.advExitBtn} onClick={() => { if (!uiEdit) world.current.advGiveUp = true }}>나가기</button>
         )}
+        {((bossUI && bossUI.wave) || uiEdit) && (
+          <button data-edit="wbexit" style={st.wbExitBtn} onClick={() => { if (!uiEdit) world.current.bossGiveUp = true }}>나가기</button>
+        )}
         <div data-edit="gain" style={{ ...st.gainWrap, ...(uiEdit ? { pointerEvents: 'auto' } : {}) }}>
           {(gains.length ? gains : (uiEdit ? [{ id: '__s', exp: 1234, meat: 567 }] : [])).map(g => (
             <div key={g.id} style={st.gainItem}>
@@ -4015,7 +4026,7 @@ export default function App() {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => { setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) })); localStorage.setItem('paleoUiTs', String(Date.now())) }
             const nbtn = { width: 26, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
-            const rng = k => (k.startsWith('shop') || k.startsWith('card')) ? (k.endsWith('fz') ? 60 : (k.endsWith('gap') ? 40 : 400)) : k.startsWith('fev') ? (k.endsWith('fz') ? 40 : k === 'fevonzoom' ? 300 : 300) : k.startsWith('ev') ? (k.endsWith('fz') ? 60 : (k === 'evww' || k === 'evwh' || k === 'evpww' || k === 'evpwh') ? 600 : 300) : k.startsWith('profhero') ? 300 : k.startsWith('prof') ? (k.endsWith('fz') ? 40 : 160) : k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
+            const rng = k => k.startsWith('wbexit') ? (k.endsWith('fz') ? 60 : 300) : (k.startsWith('shop') || k.startsWith('card')) ? (k.endsWith('fz') ? 60 : (k.endsWith('gap') ? 40 : 400)) : k.startsWith('fev') ? (k.endsWith('fz') ? 40 : k === 'fevonzoom' ? 300 : 300) : k.startsWith('ev') ? (k.endsWith('fz') ? 60 : (k === 'evww' || k === 'evwh' || k === 'evpww' || k === 'evpwh') ? 600 : 300) : k.startsWith('profhero') ? 300 : k.startsWith('prof') ? (k.endsWith('fz') ? 40 : 160) : k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
             const rmin = k => k === 'equipcols' ? 3 : 0
             return <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -4405,6 +4416,7 @@ Object.assign(EDIT_GROUPS, {
   evpclose: { label: '도전창 닫기 버튼', size: ['evpcw', 'evpch', 'evpcfz'], pos: 'evpclose' },
   evexit: { label: '던전 나가기 버튼', size: ['evexitw', 'evexith', 'evexitfz'], pos: 'evexit' },
   advexit: { label: '모험 나가기 버튼', size: ['advexitw', 'advexith', 'advexitfz'], pos: 'advexit' },
+  wbexit: { label: '보스전 나가기 버튼', size: ['wbexitw', 'wbexith', 'wbexitfz'], pos: 'wbexit' },
   shoptab: { label: '상점 탭', size: ['shoptabw', 'shoptabh', 'shoptabfz'], pos: 'shoptab' },
   shopad: { label: '광고 뽑기 버튼', size: ['shopadw', 'shopadh'], pos: 'shopad' },
   shopadt: { label: '광고 버튼 글씨', size: ['shopadfz'], pos: 'shopadt' },
@@ -4488,6 +4500,7 @@ Object.assign(UI_LABELS, {
   skdefffz: '효과 글자', skdstatfz: '스탯 글자', skdautofz: 'AUTO 글자', skdbtnh: '버튼 높이', skdbtnfz: '버튼 글자',
   evexitw: '버튼 너비', evexith: '버튼 높이', evexitfz: '글씨 크기',
   advexitw: '버튼 너비', advexith: '버튼 높이', advexitfz: '글씨 크기',
+  wbexitw: '버튼 너비', wbexith: '버튼 높이', wbexitfz: '글씨 크기',
   shoptabw: '탭 너비', shoptabh: '탭 높이', shoptabfz: '글씨 크기',
   shopadt: '글씨 크기', shopic0w: '아이콘 가로',
   shopadw: '버튼 너비', shopadh: '버튼 높이', shopadfz: '글씨 크기',
@@ -4520,7 +4533,7 @@ ${SKILLS.map(k => `--pd-cardic${k.id}w:${c[`cardic${k.id}w`] ?? 46}px;--pd-cardi
 --pd-nav-x:${c.navX}px;--pd-nav-y:${c.navY}px;--pd-cost-x:${c.costX}px;--pd-cost-y:${c.costY}px;
 --pd-pill-x:${c.pillX}px;--pd-pill-y:${c.pillY}px;--pd-icon-x:${c.iconX}px;--pd-icon-y:${c.iconY}px;
 ${[0, 1, 2, 3, 4, 5].map(i => `--pd-evoimg${i}:${c['evoimg' + i]}px;--pd-evoimg${i}-x:${c['evoimg' + i + 'X']}px;--pd-evoimg${i}-y:${c['evoimg' + i + 'Y']}px;`).join('')}--pd-slotfz:${c.slotfz}px;
---pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdimgsz:${c.skdimgsz}px;--pd-avafacesz:${c.avafacesz}px;--pd-profherow:${c.profherow}px;--pd-profheroh:${c.profheroh}px;--pd-profherozoom:${c.profherozoom};--pd-profstatfz:${c.profstatfz}px;--pd-profcurfz:${c.profcurfz}px;--pd-profcuric:${c.profcuric}px;--pd-profgearsz:${c.profgearsz}px;--pd-profsecfz:${c.profsecfz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;--pd-warnfz:${c.warnfz}px;--pd-evpww:${c.evpww}px;--pd-evpwh:${c.evpwh}px;--pd-evptitlefz:${c.evptitlefz}px;--pd-evpimgw:${c.evpimgw}px;--pd-evpimgh:${c.evpimgh}px;--pd-evpbnfz:${c.evpbnfz}px;--pd-evprewfz:${c.evprewfz}px;--pd-evprewic:${c.evprewic}px;--pd-evpsw:${c.evpsw}px;--pd-evpsh:${c.evpsh}px;--pd-evpsfz:${c.evpsfz}px;--pd-evpbarw:${c.evpbarw}px;--pd-evpbarh:${c.evpbarh}px;--pd-evpew:${c.evpew}px;--pd-evpeh:${c.evpeh}px;--pd-evpefz:${c.evpefz}px;--pd-evpcw:${c.evpcw}px;--pd-evpch:${c.evpch}px;--pd-evpcfz:${c.evpcfz}px;--pd-shoptabw:${c.shoptabw}px;--pd-shoptabh:${c.shoptabh}px;--pd-shoptabfz:${c.shoptabfz}px;--pd-cardww:${c.cardww}px;--pd-cardwh:${c.cardwh}px;--pd-cardgap:${c.cardgap}px;--pd-cardtfz:${c.cardtfz}px;--pd-cardcw:${c.cardcw}px;--pd-cardch:${c.cardch}px;--pd-cardnfz:${c.cardnfz}px;--pd-cardcfz:${c.cardcfz}px;--pd-cardclw:${c.cardclw}px;--pd-cardclh:${c.cardclh}px;--pd-cardclfz:${c.cardclfz}px;--pd-shopadw:${c.shopadw}px;--pd-shopadh:${c.shopadh}px;--pd-shopadfz:${c.shopadfz}px;--pd-glvfz:${c.glvfz}px;--pd-glvbarw:${c.glvbarw}px;--pd-glvbarh:${c.glvbarh}px;--pd-glvbtfz:${c.glvbtfz}px;--pd-advexitw:${c.advexitw}px;--pd-advexith:${c.advexith}px;--pd-advexitfz:${c.advexitfz}px;--pd-evexitw:${c.evexitw}px;--pd-evexith:${c.evexith}px;--pd-evexitfz:${c.evexitfz}px;--pd-fevbtnw:${c.fevbtnw}px;--pd-fevbtnh:${c.fevbtnh}px;--pd-fevonzoom:${c.fevonzoom};--pd-fevbtntfz:${c.fevbtntfz}px;--pd-evbtnw:${c.evbtnw}px;--pd-evbtnh:${c.evbtnh}px;--pd-evbtntfz:${c.evbtntfz}px;--pd-evww:${c.evww}px;--pd-evwh:${c.evwh}px;--pd-evtitlefz:${c.evtitlefz}px;--pd-evclsz:${c.evclsz}px;--pd-evtabw:${c.evtabw}px;--pd-evtabh:${c.evtabh}px;--pd-evtabfz:${c.evtabfz}px;--pd-evprevh:${c.evprevh}px;--pd-evnamefz:${c.evnamefz}px;--pd-evrowh:${c.evrowh}px;--pd-evnosz:${c.evnosz}px;--pd-evbnamefz:${c.evbnamefz}px;--pd-evgow:${c.evgow}px;--pd-evgoh:${c.evgoh}px;--pd-evgofz:${c.evgofz}px;--pd-evprevzoom:${c.evprevzoom};--pd-evnoimgsz:${c.evnoimgsz}px;
+--pd-skqbarw:${c.skqbarw}px;--pd-skqslotsz:${c.skqslotsz}px;--pd-skqsetw:${c.skqsetw}px;--pd-skqseth:${c.skqseth}px;--pd-skqsetfz:${c.skqsetfz}px;--pd-skhtfz:${c.skhtfz}px;--pd-skfusew:${c.skfusew}px;--pd-skfuseh:${c.skfuseh}px;--pd-skfusefz:${c.skfusefz}px;--pd-sklearnw:${c.sklearnw}px;--pd-sklearnh:${c.sklearnh}px;--pd-sklearnfz:${c.sklearnfz}px;--pd-skmasth:${c.skmasth}px;--pd-skmastfz:${c.skmastfz}px;--pd-skcellsz:${c.skcellsz}px;--pd-skcellgap:${c.skcellgap}px;--pd-skcellrgap:${c.skcellrgap}px;--pd-skimgsz:${c.skimgsz}px;--pd-sknamefz:${c.sknamefz}px;--pd-skplusfz:${c.skplusfz}px;--pd-skdiconsz:${c.skdiconsz}px;--pd-skdimgsz:${c.skdimgsz}px;--pd-avafacesz:${c.avafacesz}px;--pd-profherow:${c.profherow}px;--pd-profheroh:${c.profheroh}px;--pd-profherozoom:${c.profherozoom};--pd-profstatfz:${c.profstatfz}px;--pd-profcurfz:${c.profcurfz}px;--pd-profcuric:${c.profcuric}px;--pd-profgearsz:${c.profgearsz}px;--pd-profsecfz:${c.profsecfz}px;--pd-skdtitlefz:${c.skdtitlefz}px;--pd-skddescfz:${c.skddescfz}px;--pd-skdefffz:${c.skdefffz}px;--pd-skdstatfz:${c.skdstatfz}px;--pd-skdautofz:${c.skdautofz}px;--pd-skdbtnh:${c.skdbtnh}px;--pd-skdbtnfz:${c.skdbtnfz}px;--pd-qww:${c.qww}px;--pd-qwh:${c.qwh}px;--pd-qtitlefz:${c.qtitlefz}px;--pd-qclsz:${c.qclsz}px;--pd-qtabw:${c.qtabw}px;--pd-qtabh:${c.qtabh}px;--pd-qtabfz:${c.qtabfz}px;--pd-qrowh:${c.qrowh}px;--pd-qiconsz:${c.qiconsz}px;--pd-qnamefz:${c.qnamefz}px;--pd-qbarw:${c.qbarw}px;--pd-qbarh:${c.qbarh}px;--pd-qbarfz:${c.qbarfz}px;--pd-qreww:${c.qreww}px;--pd-qrewh:${c.qrewh}px;--pd-qrewisz:${c.qrewisz}px;--pd-qrewvfz:${c.qrewvfz}px;--pd-qlvfz:${c.qlvfz}px;--pd-warnfz:${c.warnfz}px;--pd-evpww:${c.evpww}px;--pd-evpwh:${c.evpwh}px;--pd-evptitlefz:${c.evptitlefz}px;--pd-evpimgw:${c.evpimgw}px;--pd-evpimgh:${c.evpimgh}px;--pd-evpbnfz:${c.evpbnfz}px;--pd-evprewfz:${c.evprewfz}px;--pd-evprewic:${c.evprewic}px;--pd-evpsw:${c.evpsw}px;--pd-evpsh:${c.evpsh}px;--pd-evpsfz:${c.evpsfz}px;--pd-evpbarw:${c.evpbarw}px;--pd-evpbarh:${c.evpbarh}px;--pd-evpew:${c.evpew}px;--pd-evpeh:${c.evpeh}px;--pd-evpefz:${c.evpefz}px;--pd-evpcw:${c.evpcw}px;--pd-evpch:${c.evpch}px;--pd-evpcfz:${c.evpcfz}px;--pd-shoptabw:${c.shoptabw}px;--pd-shoptabh:${c.shoptabh}px;--pd-shoptabfz:${c.shoptabfz}px;--pd-cardww:${c.cardww}px;--pd-cardwh:${c.cardwh}px;--pd-cardgap:${c.cardgap}px;--pd-cardtfz:${c.cardtfz}px;--pd-cardcw:${c.cardcw}px;--pd-cardch:${c.cardch}px;--pd-cardnfz:${c.cardnfz}px;--pd-cardcfz:${c.cardcfz}px;--pd-cardclw:${c.cardclw}px;--pd-cardclh:${c.cardclh}px;--pd-cardclfz:${c.cardclfz}px;--pd-shopadw:${c.shopadw}px;--pd-shopadh:${c.shopadh}px;--pd-shopadfz:${c.shopadfz}px;--pd-glvfz:${c.glvfz}px;--pd-glvbarw:${c.glvbarw}px;--pd-glvbarh:${c.glvbarh}px;--pd-glvbtfz:${c.glvbtfz}px;--pd-advexitw:${c.advexitw}px;--pd-advexith:${c.advexith}px;--pd-advexitfz:${c.advexitfz}px;--pd-wbexitw:${c.wbexitw}px;--pd-wbexith:${c.wbexith}px;--pd-wbexitfz:${c.wbexitfz}px;--pd-evexitw:${c.evexitw}px;--pd-evexith:${c.evexith}px;--pd-evexitfz:${c.evexitfz}px;--pd-fevbtnw:${c.fevbtnw}px;--pd-fevbtnh:${c.fevbtnh}px;--pd-fevonzoom:${c.fevonzoom};--pd-fevbtntfz:${c.fevbtntfz}px;--pd-evbtnw:${c.evbtnw}px;--pd-evbtnh:${c.evbtnh}px;--pd-evbtntfz:${c.evbtntfz}px;--pd-evww:${c.evww}px;--pd-evwh:${c.evwh}px;--pd-evtitlefz:${c.evtitlefz}px;--pd-evclsz:${c.evclsz}px;--pd-evtabw:${c.evtabw}px;--pd-evtabh:${c.evtabh}px;--pd-evtabfz:${c.evtabfz}px;--pd-evprevh:${c.evprevh}px;--pd-evnamefz:${c.evnamefz}px;--pd-evrowh:${c.evrowh}px;--pd-evnosz:${c.evnosz}px;--pd-evbnamefz:${c.evbnamefz}px;--pd-evgow:${c.evgow}px;--pd-evgoh:${c.evgoh}px;--pd-evgofz:${c.evgofz}px;--pd-evprevzoom:${c.evprevzoom};--pd-evnoimgsz:${c.evnoimgsz}px;
 ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k}h:${c['advico' + k + 'h']}px;--pd-advico${k}-x:${c['advico' + k + 'X']}px;--pd-advico${k}-y:${c['advico' + k + 'Y']}px;`).join('')}
 --pd-catfz:${c.catfz}px;--pd-spbarfz:${c.spbarfz}px;--pd-equipimg:${c.equipimg}%;--pd-equiptier:${c.equiptier}px;
 --pd-panel-x:${c.panelX}px;--pd-panel-y:${c.panelY}px;--pd-row-x:${c.rowX}px;--pd-row-y:${c.rowY}px;
@@ -4547,7 +4560,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
 --pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evexit', 'advexit', 'shoptab', 'shoptabt', 'shopad', 'shopadt', 'shopgift', 'cardwin', 'cardtitle', 'cardcell', 'cardname', 'cardcnt', 'cardclose', 'glv', 'glvbar', 'glvbart', 'warn', 'evpwin', 'evptitle', 'evpimg', 'evpbn', 'evprew', 'evpsign', 'evpsignt', 'evpbar', 'evpenter', 'evpclose', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evexit', 'advexit', 'wbexit', 'shoptab', 'shoptabt', 'shopad', 'shopadt', 'shopgift', 'cardwin', 'cardtitle', 'cardcell', 'cardname', 'cardcnt', 'cardclose', 'glv', 'glvbar', 'glvbart', 'warn', 'evpwin', 'evptitle', 'evpimg', 'evpbn', 'evprew', 'evpsign', 'evpsignt', 'evpbar', 'evpenter', 'evpclose', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -5089,6 +5102,13 @@ const st = {
     borderRadius: 6, border: '1px solid #7a5a2a', background: 'linear-gradient(180deg,#4a3520,#2c2013)',
     color: '#f0dfae', fontWeight: 700, zIndex: 6, padding: 0,
   },
+  wbExitBtn: {                                              // 웨이브 보스전 나가기 (누르면 같은 웨이브의 일반 웨이브로 복귀)
+    position: 'absolute', left: 0, top: 0,
+    transform: 'translate(var(--pd-wbexit-x), var(--pd-wbexit-y))',
+    width: 'var(--pd-wbexitw)', height: 'var(--pd-wbexith)', fontSize: 'var(--pd-wbexitfz)',
+    borderRadius: 6, border: '1px solid #7a5a2a', background: 'linear-gradient(180deg,#4a3520,#2c2013)',
+    color: '#f0dfae', fontWeight: 700, zIndex: 6, padding: 0,
+  },
   evWin: {
     position: 'relative', width: 'var(--pd-evww)', height: 'var(--pd-evwh)',
     background: 'url(/ui/adv_frame.webp) center / 100% 100% no-repeat',
@@ -5382,6 +5402,7 @@ Object.assign(UI_DEFAULT, {
   evpcw: 80, evpch: 29, evpcfz: 13, evpcloseX: 0, evpcloseY: 0,
   evexitw: 48, evexith: 22, evexitfz: 11, evexitX: 7, evexitY: 70,   // 던전 나가기 버튼
   advexitw: 48, advexith: 22, advexitfz: 11, advexitX: 7, advexitY: 70,  // 모험 나가기 버튼
+  wbexitw: 48, wbexith: 22, wbexitfz: 11, wbexitX: 7, wbexitY: 96,   // 웨이브 보스전 나가기 버튼 (편집 중 모험 나가기와 겹치지 않게 아래로)
   shoptabw: 191, shoptabh: 28, shoptabfz: 13, shoptabX: 8, shoptabY: 2,
   shopadw: 36, shopadh: 34, shopadfz: 8, shopadX: 0, shopadY: 0, shopadtX: 0, shopadtY: 0,
   shoptabtX: 0, shoptabtY: 0, shopic0w: 43, shopgiftw: 26, shopgifth: 26, shopgiftX: 0, shopgiftY: 0,
