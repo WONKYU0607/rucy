@@ -127,7 +127,23 @@ const skIcon = s => (s ? (skillIconSrc(s.id) || s.icon2 || null) : null)
 // ── 전리품 조각 (사망 드롭 → 상단 재화칸 흡수 연출) ──
 const LOOT_IMG = { meat: '/ui/ic_meat.webp', exp: '/ui/ic_exp.webp', dia: '/ui/gem.webp', mat: '/ui/mat4.webp' }
 const LOOT_CIMG = {}
-for (const k in LOOT_IMG) { const i = new Image(); i.src = LOOT_IMG[k]; LOOT_CIMG[k] = i }
+// ── 초기 로딩 진행률 ──
+// 프리로드 이미지를 세어 스플래시에서 "게임 로드중"으로 대기시킨다.
+// 에러(404)도 완료로 세지 않으면 한 장 때문에 영영 안 끝나므로 load·error 둘 다 완료 처리한다.
+// 캐시 히트면 핸들러를 걸기 전에 이미 끝나 있을 수 있어 src 지정 뒤 complete 를 한 번 확인한다.
+const PRE = { total: 0, done: 0 }
+const track = im => {
+  PRE.total++
+  let counted = false
+  const fin = () => { if (!counted) { counted = true; PRE.done++ } }
+  im.addEventListener('load', fin, { once: true })
+  im.addEventListener('error', fin, { once: true })
+  if (im.complete) fin()
+  return im
+}
+const mkImg = src => { const i = new Image(); i.src = src; return track(i) }
+
+for (const k in LOOT_IMG) { LOOT_CIMG[k] = mkImg(LOOT_IMG[k]) }
 const DROP_DIA_P = 0.3, DROP_MAT_P = 0.3   // 임시 확률 — 추후 웨이브 비례 공식으로 교체
 function LootPiece({ p, done }) {
   const r = useRef(null)
@@ -324,14 +340,14 @@ const advMult = st => 1 + 0.3 * (st - 1)   // 단계 배율 (1단계 1.0 → 10�
 const DINO_MOB = {}, DINO_BOSS = {}, ADV_BG = {}
 for (const c of CONTINENTS) {
   const k = c.boss
-  const mk = (pre, n) => [1, 2, 3, 4].map(i => { const im = new Image(); im.src = `/dino/${pre}/${n}${i}.webp`; return im })
+  const mk = (pre, n) => [1, 2, 3, 4].map(i => mkImg(`/dino/${pre}/${n}${i}.webp`))
   DINO_MOB[k] = mk(`mob_${k}`, 'w')
   const af = DINO_ATK_FRAMES[k] || [1, 2, 3, 4]
   DINO_BOSS[k] = {
     w: mk(`boss_${k}`, 'w'),
-    a: af.map(i => { const im = new Image(); im.src = `/dino/boss_${k}/a${i}.webp`; return im }),
+    a: af.map(i => mkImg(`/dino/boss_${k}/a${i}.webp`)),
   }
-  const bg = new Image(); bg.src = `/adventure/bg/${c.key}.jpg`; ADV_BG[c.key] = bg
+  ADV_BG[c.key] = mkImg(`/adventure/bg/${c.key}.jpg`)
 }
 const BASE_W = 420, BASE_H = 695
 const SIMG = {}
@@ -340,22 +356,22 @@ SKILL_SHEET.forEach(c => {
     ...((c.fx && c.fx.frames) || []), ...((c.fx && c.fx.fly) || []), SKILL_ICON_FRAME[c.id] || 1])
   SIMG[c.id] = Array.from({ length: c.n }, (_, j) => {          // 실제 쓰는 프레임만 로드 (삭제된 번호 404 방지)
     if (!useFr.has(j + 1)) return null                          // 인덱스는 '프레임번호-1' 그대로 — strike/proj 가 그 인덱스로 찾음
-    const im = new Image(); im.src = `/skill/s${c.id}/s${c.id}_${j + 1}.webp`; return im
+    return mkImg(`/skill/s${c.id}/s${c.id}_${j + 1}.webp`)
   })
   const seq = c.charSeq || Array.from({ length: c.n }, (_, j) => j + 1)
   ANIM['s_' + c.id] = { srcs: seq.map(j => `/skill/s${c.id}/s${c.id}_${j}.webp`), h: c.h, flip: false }
 })
 const AIMG = {}
-for (const k in ANIM) AIMG[k] = ANIM[k].srcs.map(s => { const i = new Image(); i.src = s; return i })
+for (const k in ANIM) AIMG[k] = ANIM[k].srcs.map(s => mkImg(s))
 const BG_THEMES = ['wasteland', 'forest', 'volcano', 'snow', 'swamp', 'night']
-const BG_NORMAL = BG_THEMES.map(t => { const i = new Image(); i.src = `/bg/n_${t}.jpg`; return i })
-const BG_BOSS = BG_THEMES.map(t => { const i = new Image(); i.src = `/bg/b_${t}.jpg`; return i })
+const BG_NORMAL = BG_THEMES.map(t => mkImg(`/bg/n_${t}.jpg`))
+const BG_BOSS = BG_THEMES.map(t => mkImg(`/bg/b_${t}.jpg`))
 const bgFor = (wave, boss) => (boss ? BG_BOSS : BG_NORMAL)[Math.floor((wave - 1) / 10) % BG_THEMES.length]
-const STONE = new Image(); STONE.src = '/misc/stone.webp'
+const STONE = mkImg('/misc/stone.webp')
 // 타격 이펙트 (effect/eN_1~8.png · 8프레임, 시트 절반축소본)
 const FXF = 8, FX_DUR = 0.045
 const FX_IMGS = {}
-for (let n = 1; n <= 5; n++) FX_IMGS[n] = Array.from({ length: FXF }, (_, f) => { const i = new Image(); i.src = `/effect/effect_frames/effect${n}/e${n}-${f + 1}.webp`; return i })
+for (let n = 1; n <= 5; n++) FX_IMGS[n] = Array.from({ length: FXF }, (_, f) => mkImg(`/effect/effect_frames/effect${n}/e${n}-${f + 1}.webp`))
 
 // ── 스킬 프레임 시간 설정 (초, 직접 수정) ─────────────────────────
 // 각 원소 = 그 순서의 히어로 프레임 표시 시간. 배열 길이 = 히어로 프레임 수.
@@ -542,7 +558,7 @@ const ALLY_DEFS = {
 const ALLY_IMG = {}
 for (const k in ALLY_DEFS) {
   const d = ALLY_DEFS[k]
-  const mk = s => { const i = new Image(); i.onerror = () => console.warn('[ally] 로드 실패:', s); i.src = s; return i }
+  const mk = s => { const i = new Image(); i.addEventListener('error', () => console.warn('[ally] 로드 실패:', s)); i.src = s; return track(i) }
   ALLY_IMG[k] = {
     walk: d.walk.map(mk),
     atk: (d.atk || []).map(mk),
@@ -641,7 +657,7 @@ const ENEMY_TYPES = {
 const EIMG = {}
 for (const k in ENEMY_TYPES) {
   const e = ENEMY_TYPES[k]
-  EIMG[k] = e.frames.map(src => { const i = new Image(); i.src = src; return i })
+  EIMG[k] = e.frames.map(src => mkImg(src))
   // reward를 고기 획득량으로, 경험치는 reward의 1.5배로 파생
   e.meat = e.reward
   e.exp = Math.round(e.reward * 1.5)
@@ -653,7 +669,7 @@ for (const k in ENEMY_TYPES) {
 // 저주받은 동물 보스 스프라이트 (일반몹과 같은 종, /mob/{key}/{key}_1~4.png, 4프레임)
 const CIMG = {}
 for (const k in ENEMY_TYPES) {
-  CIMG[k] = [1].map(nn => { const im = new Image(); im.src = `/mob/${k}/${k}_${nn}.webp`; return im })   // 웨이브 보스는 제자리 + 파고듦만 쓰므로 1프레임만 사용
+  CIMG[k] = [1].map(nn => mkImg(`/mob/${k}/${k}_${nn}.webp`))   // 웨이브 보스는 제자리 + 파고듦만 쓰므로 1프레임만 사용
 }
 // ── 이벤트 던전: 4개 던전, 각 던전에 웨이브 보스 5명씩 배정 ──
 // 배치: 보스1~5=4번던전, 6~10=3번, 11~15=2번, 16~20=1번 (뒤 던전일수록 강한 보스)
@@ -687,7 +703,7 @@ const BOSS_TYPES = [
   { name: '원석 골렘', h: 150 }, { name: '고목 정령', h: 155 }, { name: '화염 골렘', h: 155 },
   { name: '빙정 골렘', h: 150 }, { name: '폭풍 정령', h: 150 },
 ].map((b, i) => ({ ...b, frames: [1, 2, 3, 4].map(f => `/boss/boss${i + 1}/boss${i + 1}_${f}.webp`) }))
-const BIMG = BOSS_TYPES.map(b => b.frames.map(src => { const im = new Image(); im.src = src; return im }))
+const BIMG = BOSS_TYPES.map(b => b.frames.map(src => mkImg(src)))
 const WAVE_CYCLE = ['rabbit', 'antelope', 'deer', 'boar', 'wolf', 'hyena', 'bear', 'rhino', 'tiger', 'mammoth', 'monkey', 'snake', 'ostrich', 'turtle', 'croc', 'komodo', 'eagle', 'giraffe', 'lion', 'elephant',
   'pig', 'chicken', 'duck', 'frog', 'bat', 'pelican', 'mantis', 'polarbear', 'alpaca', 'buffalo',
   'camel', 'horse', 'panda', 'scorpion', 'tarantula', 'cobra', 'zebra', 'cheetah', 'koala', 'kangaroo',
@@ -869,6 +885,17 @@ export default function App() {
   const [skCard, setSkCard] = useState(init.skCard || {})   // 스킬별 보유 카드 수 { 스킬id: 개수 }
   const [skEnh, setSkEnh] = useState(init.skEnh || {})      // 스킬별 강화 단계 { 스킬id: 단계 }
   const [cardRes, setCardRes] = useState(null)              // 스킬 카드 소환 결과
+  // 카드 결과는 같은 스킬끼리 묶어 한 칸으로 보여준다(x2, x3) — 공개 단위도 이 묶음 기준
+  const cardCells = cardRes ? Object.entries(cardRes.ids.reduce((m, id) => ({ ...m, [id]: (m[id] || 0) + 1 }), {})) : []
+  const [cShown, setCShown] = useState(0)
+  // 장비 소환처럼 한 칸씩 쭈르륵 공개 (90ms 간격)
+  useEffect(() => {
+    if (!cardRes) { setCShown(0); return }
+    setCShown(0)
+    const n = new Set(cardRes.ids).size
+    const timers = Array.from({ length: n }, (_, i) => setTimeout(() => setCShown(i + 1), (i + 1) * 90))
+    return () => timers.forEach(clearTimeout)
+  }, [cardRes])
   // 한 장씩 공개하다가 전설·신화가 나오면 번쩍임(2초) 동안 멈췄다가 다음 장으로 넘어간다
   useEffect(() => {
     if (!gacha) { setGShown(0); return }
@@ -885,6 +912,18 @@ export default function App() {
   }, [gacha])
   const [menuOpen, setMenuOpen] = useState(false)
   const [splash, setSplash] = useState(true)
+  // 스플래시에서 프리로드가 끝날 때까지 잡아둔다. 12초 안전장치 — 어떤 이유로든 끝나지 않아도 시작은 되게
+  const [preP, setPreP] = useState(0)
+  useEffect(() => {
+    if (!splash) return
+    const t0 = Date.now()
+    const iv = setInterval(() => {
+      const p = PRE.total ? PRE.done / PRE.total : 1
+      setPreP(Date.now() - t0 > 12000 ? 1 : p)
+    }, 100)
+    return () => clearInterval(iv)
+  }, [splash])
+  const preReady = preP >= 0.98
   const [alliesOn, setAlliesOn] = useState(init.alliesOn || {})  // 장착된 동료 (보유/성장 시스템은 추후)
   const [allySub, setAllySub] = useState('동료')
   useEffect(() => {
@@ -2656,8 +2695,14 @@ export default function App() {
       if (t) { const de = t.dataset.edit; setEditSel(de); if (de === 'treasure') setOffOpen(true); const mAdv = /^adv(btn|txt)(\d)$/.exec(de); if (mAdv) setAdvSel(CONTINENTS[+mAdv[2]]); if (!['skcell', 'avatar', 'avaface', 'evtab'].includes(de)) { e.stopPropagation(); e.preventDefault() } }   // skimg/skname/skbar 는 선택만(상세창 안 열림)
     }}>
       {splash && (
-        <div style={{ ...st.splashWrap, backgroundImage: `url(${SPLASH_BG})` }} onClick={() => setSplash(false)}>
-          <div style={st.splashTap}>TAP TO START</div>
+        <div style={{ ...st.splashWrap, backgroundImage: `url(${SPLASH_BG})`, cursor: preReady ? 'pointer' : 'default' }}
+          onClick={() => { if (preReady) setSplash(false) }}>
+          {preReady ? <div style={st.splashTap}>TAP TO START</div> : (
+            <div style={st.splashLoadWrap}>
+              <div style={st.splashLoadText}>게임 로드중… {Math.floor(preP * 100)}%</div>
+              <div style={st.splashBarOuter}><div style={{ ...st.splashBarInner, width: (preP * 100) + '%' }} /></div>
+            </div>
+          )}
         </div>
       )}
       {IS_PC && uiEdit && <style>{`[data-edit]{outline:1px dashed rgba(232,185,98,0.35);outline-offset:-1px;cursor:pointer}${editSel ? `[data-edit="${editSel}"]{outline:2px solid ${GOLD} !important}` : ''}`}</style>}
@@ -3007,14 +3052,14 @@ export default function App() {
       })()}
 
       {cardRes && (
-        <div style={st.evpOverlay} onClick={() => setCardRes(null)}>
-          <div data-edit="cardwin" style={st.cardResWin} onClick={e => e.stopPropagation()}>
+        <div style={st.evpOverlay} onClick={() => { if (cShown < cardCells.length) setCShown(cardCells.length); else setCardRes(null) }}>
+          <div data-edit="cardwin" style={st.cardResWin} onClick={e => { e.stopPropagation(); if (cShown < cardCells.length) setCShown(cardCells.length) }}>
             <div data-edit="cardtitle" style={st.cardResTitle}>스킬 카드 {cardRes.ids.length}장</div>
             <div style={st.cardResGrid}>
-              {Object.entries(cardRes.ids.reduce((m, id) => ({ ...m, [id]: (m[id] || 0) + 1 }), {})).map(([id, cnt]) => {
+              {cardCells.slice(0, cShown).map(([id, cnt]) => {
                 const sk = SKILLS.find(k => k.id === Number(id))
                 return (
-                  <div key={id} style={st.cardResCell}>
+                  <div key={`${cardRes.roll}_${id}`} className="pd-gacha-pop" style={st.cardResCell}>
                     <div data-edit="cardcell" style={st.cardResFrame}>
                       <img src="/ui/nav_on.webp" alt="" style={st.cardResImg} />
                       {sk && skIcon(sk) && (
@@ -4664,6 +4709,21 @@ const st = {
     background: '#0a0603 url(/startbg/startbg.jpg) center / cover no-repeat',
     display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
     cursor: 'pointer',
+  },
+  splashLoadWrap: {
+    position: 'absolute', left: 0, right: 0, bottom: '18%', display: 'flex', flexDirection: 'column',
+    alignItems: 'center', gap: 10, pointerEvents: 'none',
+  },
+  splashLoadText: {
+    color: '#f0dfae', fontSize: 16, fontWeight: 700, letterSpacing: '0.05em',
+    textShadow: '0 2px 10px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.9)',
+  },
+  splashBarOuter: {
+    width: 200, height: 8, borderRadius: 5, border: '1px solid #6b4a24',
+    background: 'rgba(12,8,4,0.75)', overflow: 'hidden',
+  },
+  splashBarInner: {
+    height: '100%', background: 'linear-gradient(180deg,#e8b962,#a85f1f)', transition: 'width 0.2s linear',
   },
   splashTap: {
     position: 'absolute', left: 0, right: 0, bottom: '18%', textAlign: 'center',
