@@ -2142,10 +2142,11 @@ export default function App() {
       const im = safeImg(key, fi)
       // 히어로 모션이 끝났는데 이펙트가 아직 남은 구간 — skillHide=1 인 스킬만 히어로를 지운다.
       // (시전 종료는 이펙트 끝까지 기다리므로, 그동안 히어로가 마지막 프레임으로 굳어 이펙트와 겹쳐 있었다)
-      const __heroHide = !__heroPv && w.skill != null
+      // 편집기 히어로탭에서도 그대로 적용한다 — 조절하면서 결과를 봐야 하는 값이라 미리보기에서 빼면 안 된다.
+      const __heroHide = w.skill != null
         && !!((motRef.current.hero.skillHide || {})[SKILLS[w.skill].id])
         && w.skillT > skEnds(skFrT(SKILLS[w.skill], motRef.current)).slice(-1)[0]
-      if (!__heroHide && im.complete && im.naturalWidth > 0) {
+      if (im.complete && im.naturalWidth > 0) {
         const hcfg = motRef.current.hero
         const __skId = w.skill != null ? SKILLS[w.skill].id : null
         const __skp = __skId != null ? ((motRef.current.hero.skillPos || {})[__skId] || {}) : {}   // 스킬별 그림 위치 오프셋
@@ -2203,17 +2204,21 @@ export default function App() {
         }
         // 동료·동료 투사체까지 그린 뒤, 시전 중이면 여기서 몬스터를 먼저 깔고 히어로를 그 위에 올린다
         if (__heroFront) for (const e of w.enemies) drawEnemy(ctx, e, now)
-        const lunge = hero.state === 'attack' ? Math.sin(Math.min(1, hero.t / 0.4) * Math.PI) * 12 : 0
-        ctx.translate(w.heroX + lunge - (w.heroKb || 0) + (motRef.current.hero.x || 0) + __frX + (__skp.x || 0) + (__skfp.x || 0), w.groundY + (motRef.current.hero.y || 0) + (__skp.y || 0) + (__skfp.y || 0))
-        if (hero.flash > 0) ctx.filter = 'brightness(2.5)'
-        if (a.flip) ctx.scale(-1, 1)
-        {                                                  // 밝은 배경에서 실루엣이 묻히지 않게 외곽 그림자
-          const __ol = motRef.current.hero.outline || {}
-          const __b = __ol.blur ?? 6
-          if (__b > 0) { ctx.shadowColor = `rgba(0,0,0,${__ol.alpha ?? 0.85})`; ctx.shadowBlur = __b }
+        // 히어로 그림만 건너뛴다. 이 블록에는 동료·동료 투사체·(몹 앞 스킬일 때) 몬스터 그리기가 같이 들어 있어서
+        // 블록 전체를 건너뛰면 그것들까지 사라진다.
+        if (!__heroHide) {
+          const lunge = hero.state === 'attack' ? Math.sin(Math.min(1, hero.t / 0.4) * Math.PI) * 12 : 0
+          ctx.translate(w.heroX + lunge - (w.heroKb || 0) + (motRef.current.hero.x || 0) + __frX + (__skp.x || 0) + (__skfp.x || 0), w.groundY + (motRef.current.hero.y || 0) + (__skp.y || 0) + (__skfp.y || 0))
+          if (hero.flash > 0) ctx.filter = 'brightness(2.5)'
+          if (a.flip) ctx.scale(-1, 1)
+          {                                                // 밝은 배경에서 실루엣이 묻히지 않게 외곽 그림자
+            const __ol = motRef.current.hero.outline || {}
+            const __b = __ol.blur ?? 6
+            if (__b > 0) { ctx.shadowColor = `rgba(0,0,0,${__ol.alpha ?? 0.85})`; ctx.shadowBlur = __b }
+          }
+          ctx.drawImage(im, -hw / 2, -hh, hw, hh)
+          ctx.shadowBlur = 0
         }
-        ctx.drawImage(im, -hw / 2, -hh, hw, hh)
-        ctx.shadowBlur = 0
         ctx.restore()
       }
 
