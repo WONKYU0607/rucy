@@ -100,6 +100,8 @@ const SKILL_SHEET = [
   { id: 28, n: 7, h: 200, stage: 2, title: '피폭', charSeq: [1, 2, 3, 5, 6, 7], cd: 2, dmgMult: 3, aoe: true },
   // 29·30: 히어로 모션(charSeq)과 이펙트(fx)가 각각 다른 시트 → 이펙트가 별도 레이어라 몹에 안 가림
   { id: 29, n: 7, h: 200, stage: 2, title: '사이오닉 스톰', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [4, 5, 6, 7], fxH: 240, hitP: 0.6 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 150 },
+  { id: 36, n: 9, h: 200, stage: 3, title: '불놀이야', charSeq: [1, 2, 3, 4, 5, 6, 7, 8, 9], cd: 2, dmgMult: 3, aoe: true, rangePx: 150 },   // 9프레임 전부 히어로 모션 — 이펙트가 그림에 포함(별도 fx 없음)
+  { id: 35, n: 7, h: 200, stage: 3, title: '토네이도', charSeq: [1, 2, 3, 4], fx: { type: 'strike', frames: [5, 6, 5, 6, 7], fxH: 260, hitP: 0.65, twin: { gap: 30, spd: 1.2 } }, cd: 2, dmgMult: 3, aoe: true, rangePx: 200 },   // 5·6 왕복 2바퀴 → 7 소멸, 같은 프레임 2장 교차
   { id: 34, n: 7, h: 200, stage: 3, title: '엑스밤', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [5, 6, 7], fxH: 260, hitP: 0.8 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 200 },
   { id: 33, n: 10, h: 200, stage: 3, title: '지각변동', charSeq: [1, 2, 3, 4, 5, 6], fx: { type: 'strike', frames: [7, 8, 9, 10], fxH: 200, hitP: 0.7 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 200 },
   { id: 32, n: 5, h: 200, stage: 3, title: '얼음도끼', charSeq: [1, 2, 3, 4, 5], cd: 2, dmgMult: 3, aoe: true, rangePx: 150 },   // 이펙트가 그림에 포함 — 별도 fx 없음
@@ -108,7 +110,7 @@ const SKILL_SHEET = [
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
 // 스킬 아이콘: 해당 스킬 시트의 지정 프레임 사용 (없으면 번호 텍스트)
-const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4, 22: 4, 23: 6, 24: 7, 25: 3, 26: 3, 27: 1, 28: 6, 29: 6, 31: 6, 32: 2, 33: 10, 34: 7 }
+const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4, 22: 4, 23: 6, 24: 7, 25: 3, 26: 3, 27: 1, 28: 6, 29: 6, 31: 6, 32: 2, 33: 10, 34: 7, 35: 5, 36: 2 }
 // 스킬 효과(대상/데미지/사거리/쿨타임)를 인게임 상세창에서 조절 — 인덱스가 아닌 **id 기준**이라
 // 스킬을 넣고 빼도 값이 안 밀린다(예전 cdConf는 인덱스 배열이라 매번 리셋됐음).
 const skEff = (sk, cfg) => {
@@ -250,10 +252,10 @@ const MOTION_DEFAULT = {
   stone: { spd: 0.6, sz: 13, arc: 0.4 },                           // 직립 돌던지기: 비행속도 배율 / 그림 크기(px) / 포물선 높이 배율
   // 이펙트 프레임별 재생시간(초). 합 = 총 재생시간(전체 '프레임 속도'로 나눔).
   // 길이가 실제 프레임 수와 다르면 무시하고 균등 분할 — 프레임을 지우거나 늘려도 굳지 않음
-  fxFrT: {"1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.12, 0.12, 0.15, 0.15], "31": [0.03, 0.03, 0.03, 0.03], "33": [0.14, 0.17, 0.2, 0.35], "34": [0.18, 0.05, 0.18]},
-  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1.1, "spd": 2.25, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}, "34": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"sz": 0.87, "y": -85, "x": 20}, "2": {"sz": 0.77, "x": 73, "y": -37}, "3": {"x": 71, "sz": 0.95, "y": 16}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
+  fxFrT: {"1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.12, 0.12, 0.15, 0.15], "31": [0.03, 0.03, 0.03, 0.03], "33": [0.14, 0.17, 0.2, 0.35], "34": [0.18, 0.05, 0.18], "35": [0.15, 0.15, 0.15, 0.15, 0.15]},
+  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1.1, "spd": 2.25, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}, "34": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"sz": 0.87, "y": -85, "x": 20}, "2": {"sz": 0.77, "x": 73, "y": -37}, "3": {"x": 71, "sz": 0.95, "y": 16}}}, "35": {"startP": 0.7, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "twGap": 30, "twSpd": 1.2, "fr": {}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
 }
-const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 31, 33, 34]                          // 이펙트 있는 스킬 id
+const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 31, 33, 34, 35]                          // 이펙트 있는 스킬 id
 // 이펙트 프레임 시간(초) 배열 — 넣은 값을 그대로 씀. 프레임을 늘리거나 줄이면 값도 같이 조정할 것.
 // 빈 칸은 0초(그 프레임은 건너뜀)로 두고, 전부 비었을 때만 균등 분할로 떨어져 NaN을 막는다
 const fxT = (mot, id, n) => {
@@ -359,6 +361,8 @@ for (let n = 1; n <= 5; n++) FX_IMGS[n] = Array.from({ length: FXF }, (_, f) => 
 // 각 원소 = 그 순서의 히어로 프레임 표시 시간. 배열 길이 = 히어로 프레임 수.
 // 시전 총 시간 = 합계. 없는 스킬은 프레임당 0.15초.
 const SKILL_FRAME_T = {
+  36: [0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09],   // 불놀이야 (히어로 9프레임)
+  35: [0.12, 0.12, 0.12, 0.12],             // 토네이도 (히어로 4프레임)
   1:  [0.15, 0.15, 0.15, 0.15],           // 몽둥이번개 (4프레임)
   2:  [0.20, 0.20],                        // 창던지기 (2)
   7:  [0.15, 0.15, 0.15, 0.15, 0.15, 0.15],       // (6)
@@ -400,6 +404,7 @@ const STRIKE_DUR_BY = {
   29: 0.70,   // 사이오닉 스톰 (먹구름+낙뢰 4프레임)
   33: 0.70,   // 지각변동 (바위 융기 4프레임)
   34: 0.60,   // 엑스밤 (비행 → 착지 → 폭발 3프레임)
+  35: 0.75,   // 토네이도 (5,6,5,6,7)
 }
 
 // 무기/방어구/유물 각 30개 (6등급대 × 5티어, 1→30 강해짐). /equip/A/w01.webp 등
@@ -1504,9 +1509,10 @@ export default function App() {
               const rng2 = __e2.rangePx || Infinity
               const inR2 = w.enemies.filter(e => !e.dead && e.x - w.heroX < rng2).sort((a, b) => a.x - b.x)
               const _t0 = inR2[0]
+              const _tw = sk.fx.twin || null                                   // 교차 2장 연출(토네이도)
               const x2 = _fxc.anchor ? w.heroX : (_t0 ? _t0.x - (_t0.fxOff || 0) : w.heroX + 260)   // 보스는 estop 만큼 되돌려 보정
               // 크기 보정 없음 — 일반몹이든 보스든 이펙트 크기·오프셋은 동일, 위치(x2)만 대상을 따라간다
-              w.strikes.push({ id: sk.id, frames: sk.fx.frames, x: x2, anchor: _fxc.anchor ? 1 : 0, t: 0,
+              w.strikes.push({ id: sk.id, frames: sk.fx.frames, x: x2, anchor: _fxc.anchor ? 1 : 0, twin: _tw, t: 0,
                 dur: fxTotal(motRef.current, sk.id, sk.fx.frames.length, STRIKE_DUR_BY[sk.id] ?? STRIKE_DUR) / (_fxc.spd || 1),
                 dmg: st.atk * __e2.dmgMult, hitDone: false, h: sk.fx.fxH ?? sk.h, hitP: sk.fx.hitP ?? 0.45,
                 aoe: __e2.aoe, rng: rng2, hx: w.heroX, stun: sk.stun || 0 })
@@ -2202,7 +2208,18 @@ export default function App() {
           const hh = stk.h * (fxc.sz || 1) * (ffr.sz ?? 1)
           const ww = hh * (im.naturalWidth / im.naturalHeight)
           const bx = stk.anchor ? w.heroX : stk.x   // 히어로 기준이면 히어로를 따라 움직임
-          ctx.drawImage(im, bx - ww / 2 + (fxc.x || 0) + (ffr.x || 0), w.groundY - hh + (fxc.y || 0) + (ffr.y || 0), ww, hh)
+          const ox = bx + (fxc.x || 0) + (ffr.x || 0), oy = w.groundY + (fxc.y || 0) + (ffr.y || 0)
+          const put = (dx, s2) => { const h2 = hh * s2, w2 = ww * s2; ctx.drawImage(im, ox - w2 / 2 + dx, oy - h2, w2, h2) }
+          if (stk.twin) {
+            // 같은 그림 2장을 위상 반대(sin)로 좌우 왕복 → 서로 스쳐 지나가며 꼬이는 것처럼 보인다.
+            // cos 부호가 앞뒤(그리는 순서), 앞쪽은 살짝 크게 그려 깊이감을 준다.
+            const gap = fxc.twGap ?? stk.twin.gap ?? 30
+            const spd = fxc.twSpd ?? stk.twin.spd ?? 1.2
+            const ph = (stk.t / Math.max(0.001, stk.dur)) * spd * Math.PI * 2
+            const pair = [0, Math.PI].map(o => ({ dx: Math.sin(ph + o) * gap, dep: Math.cos(ph + o) }))
+            pair.sort((q, r) => q.dep - r.dep)                                // 뒤쪽(dep 작은 것)부터
+            for (const q of pair) put(q.dx, 1 + q.dep * 0.08)
+          } else put(0, 1)
         }
       }
       // 스킬 투사체 (몬스터 쪽으로 비행)
@@ -3838,6 +3855,11 @@ export default function App() {
                 {row('이펙트 시작(시전 진행도)', M.skFx[motFx].startP ?? (sk2.hitAt ?? 1), 0, 1, 0.01, v => put2('startP', v))}
                 {row('위치 기준 (0=적 1=히어로)', M.skFx[motFx].anchor ?? 0, 0, 1, 1, v => put2('anchor', v))}
                 <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>시작 0.5 = 히어로 모션 절반에서 이펙트 등장(겹침). 히어로 기준이면 이펙트가 히어로를 따라 움직입니다</div>
+                {sk2.fx.twin && (<>
+                  {row('교차 간격(px)', M.skFx[motFx].twGap ?? sk2.fx.twin.gap, 0, 120, 1, v => put2('twGap', v))}
+                  {row('교차 속도(바퀴)', M.skFx[motFx].twSpd ?? sk2.fx.twin.spd, 0.2, 4, 0.1, v => put2('twSpd', v))}
+                  <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>이펙트 2장을 반대 위상으로 좌우 왕복시켜 교차시킵니다. 간격 0이면 겹쳐서 1장처럼 보입니다</div>
+                </>)}
               </>)
             })()}
             {row('이펙트 좌우', M.skFx[motFx].x ?? 0, -250, 250, 1, v => setMotCfg({ ...M, skFx: { ...M.skFx, [motFx]: { ...M.skFx[motFx], x: v } } }))}
