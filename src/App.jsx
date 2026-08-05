@@ -213,6 +213,7 @@ const MOTION_DEFAULT = {
   hero: {
     sz: 0.85, x: -35, y: 0,
     walkSz: { 0: 0.95, 1: 0.96, 2: 0.94, 3: 0.94, 4: 0.86, 5: 0.9 },
+    skillHide: {},                  // 1이면 히어로 모션이 끝나는 순간부터 이펙트가 끝날 때까지 히어로를 안 그림 (토네이도처럼 이펙트만 남겨야 하는 스킬)
     skillFront: {"22": 1, "23": 1, "24": 1, "25": 1, "26": 1, "27": 1, "28": 1, "29": 0, "31": 1, "32": 1, "33": 1, "34": 1, "36": 1},   // 1이면 그 스킬 시전 중 히어로를 몬스터 위에 그림
     skillSz: {"1": 0.85, "2": 0.85, "7": 0.9, "8": 0.95, "13": 0.85, "15": 0.83, "17": 0.88, "18": 1.07, "20": 1.06, "22": 1.03, "23": 0.9, "24": 0.9, "25": 0.8, "26": 0.54, "27": 0.8},   // 스킬별 크기
     skillPos: {"23": {"x": -5}},   // 스킬별 위치
@@ -309,7 +310,7 @@ function mergeMotion(sv) {   // 저장된 모션값 + 기본값 병합 (초기 �
     cd: { ...MOTION_DEFAULT.cd, ...(sv.cd || {}) }, dur: { ...MOTION_DEFAULT.dur, ...(sv.dur || {}) },
     lunge: { ...MOTION_DEFAULT.lunge, ...(sv.lunge || {}) },
     stop: { ...MOTION_DEFAULT.stop, ...(sv.stop || {}) }, size: { ...MOTION_DEFAULT.size, ...(sv.size || {}) },
-    hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}), evoSz: { ...MOTION_DEFAULT.hero.evoSz, ...((sv.hero || {}).evoSz || {}) }, range: { ...MOTION_DEFAULT.hero.range, ...((sv.hero || {}).range || {}) }, outline: { ...MOTION_DEFAULT.hero.outline, ...((sv.hero || {}).outline || {}) }, walkSz: perStage((sv.hero || {}).walkSz, MOTION_DEFAULT.hero.walkSz), skillSz: { ...MOTION_DEFAULT.hero.skillSz, ...((sv.hero || {}).skillSz || {}) }, skillFront: { ...MOTION_DEFAULT.hero.skillFront, ...((sv.hero || {}).skillFront || {}) }, skillPos: { ...MOTION_DEFAULT.hero.skillPos, ...((sv.hero || {}).skillPos || {}) }, skillFrSz: { ...((sv.hero || {}).skillFrSz || {}) }, skillFrPos: { ...((sv.hero || {}).skillFrPos || {}) }, skillFrT: { ...((sv.hero || {}).skillFrT || {}) }, hit: { ...MOTION_DEFAULT.hero.hit, ...((sv.hero || {}).hit || {}) }, atkFrSz: mergeAtkFrSz(sv.hero || {}), atkFrX: { ...MOTION_DEFAULT.hero.atkFrX, ...((sv.hero || {}).atkFrX || {}) } },
+    hero: { ...MOTION_DEFAULT.hero, ...(sv.hero || {}), evoSz: { ...MOTION_DEFAULT.hero.evoSz, ...((sv.hero || {}).evoSz || {}) }, range: { ...MOTION_DEFAULT.hero.range, ...((sv.hero || {}).range || {}) }, outline: { ...MOTION_DEFAULT.hero.outline, ...((sv.hero || {}).outline || {}) }, walkSz: perStage((sv.hero || {}).walkSz, MOTION_DEFAULT.hero.walkSz), skillSz: { ...MOTION_DEFAULT.hero.skillSz, ...((sv.hero || {}).skillSz || {}) }, skillFront: { ...MOTION_DEFAULT.hero.skillFront, ...((sv.hero || {}).skillFront || {}) }, skillHide: { ...MOTION_DEFAULT.hero.skillHide, ...((sv.hero || {}).skillHide || {}) }, skillPos: { ...MOTION_DEFAULT.hero.skillPos, ...((sv.hero || {}).skillPos || {}) }, skillFrSz: { ...((sv.hero || {}).skillFrSz || {}) }, skillFrPos: { ...((sv.hero || {}).skillFrPos || {}) }, skillFrT: { ...((sv.hero || {}).skillFrT || {}) }, hit: { ...MOTION_DEFAULT.hero.hit, ...((sv.hero || {}).hit || {}) }, atkFrSz: mergeAtkFrSz(sv.hero || {}), atkFrX: { ...MOTION_DEFAULT.hero.atkFrX, ...((sv.hero || {}).atkFrX || {}) } },
     mob: { ...MOTION_DEFAULT.mob, ...(sv.mob || {}) }, boss: { ...MOTION_DEFAULT.boss, ...(sv.boss || {}) },
     wave: { ...MOTION_DEFAULT.wave, ...(sv.wave || {}) }, adv: { ...MOTION_DEFAULT.adv, ...(sv.adv || {}) }, hitSq: { ...MOTION_DEFAULT.hitSq, ...(sv.hitSq || {}) }, stone: { ...MOTION_DEFAULT.stone, ...(sv.stone || {}) },   // 기본값(사용자 확정값) 위에 저장값 덮어쓰기
     ally: { hunter: { ...MOTION_DEFAULT.ally.hunter, ...((sv.ally || {}).hunter || {}) }, shaman: { ...MOTION_DEFAULT.ally.shaman, ...((sv.ally || {}).shaman || {}) }, healer: { ...MOTION_DEFAULT.ally.healer, ...((sv.ally || {}).healer || {}) }, giant: { ...MOTION_DEFAULT.ally.giant, ...((sv.ally || {}).giant || {}) } },
@@ -2139,7 +2140,12 @@ export default function App() {
       const [key, fi] = heroAnim(hero, __Sp)
       const a = ANIM[key]
       const im = safeImg(key, fi)
-      if (im.complete && im.naturalWidth > 0) {
+      // 히어로 모션이 끝났는데 이펙트가 아직 남은 구간 — skillHide=1 인 스킬만 히어로를 지운다.
+      // (시전 종료는 이펙트 끝까지 기다리므로, 그동안 히어로가 마지막 프레임으로 굳어 이펙트와 겹쳐 있었다)
+      const __heroHide = !__heroPv && w.skill != null
+        && !!((motRef.current.hero.skillHide || {})[SKILLS[w.skill].id])
+        && w.skillT > skEnds(skFrT(SKILLS[w.skill], motRef.current)).slice(-1)[0]
+      if (!__heroHide && im.complete && im.naturalWidth > 0) {
         const hcfg = motRef.current.hero
         const __skId = w.skill != null ? SKILLS[w.skill].id : null
         const __skp = __skId != null ? ((motRef.current.hero.skillPos || {})[__skId] || {}) : {}   // 스킬별 그림 위치 오프셋
@@ -3753,6 +3759,8 @@ export default function App() {
               ))}
             </div>
             {row('선택 스킬 몹 앞 (0/1)', (M.hero.skillFront || {})[motHeroSk] ?? 0, 0, 1, 1, v => setMotCfg({ ...M, hero: { ...M.hero, skillFront: { ...(M.hero.skillFront || {}), [motHeroSk]: v } } }))}
+            {row('모션 후 히어로 숨김 (0/1)', (M.hero.skillHide || {})[motHeroSk] ?? 0, 0, 1, 1, v => setMotCfg({ ...M, hero: { ...M.hero, skillHide: { ...(M.hero.skillHide || {}), [motHeroSk]: v } } }))}
+            <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>1이면 히어로 모션이 끝나는 순간 히어로가 사라지고 이펙트만 남습니다. 이펙트가 끝나면 다시 나타나 기본공격으로 돌아갑니다 (이펙트 없는 스킬엔 효과 없음)</div>
             <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>1이면 이 스킬 시전 중 히어로가 몬스터에 안 가려집니다 (앞으로 파고드는 스킬만)</div>
             {row('선택 스킬 크기', (M.hero.skillSz || {})[motHeroSk] ?? 1, 0.4, 2.5, 0.01, v => setMotCfg({ ...M, hero: { ...M.hero, skillSz: { ...(M.hero.skillSz || {}), [motHeroSk]: v } } }))}
             {row('선택 스킬 좌우', ((M.hero.skillPos || {})[motHeroSk] || {}).x ?? 0, -250, 250, 1, v => setMotCfg({ ...M, hero: { ...M.hero, skillPos: { ...(M.hero.skillPos || {}), [motHeroSk]: { ...((M.hero.skillPos || {})[motHeroSk] || {}), x: v } } } }))}
