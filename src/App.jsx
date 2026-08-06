@@ -4392,11 +4392,6 @@ const EDIT_GROUPS = {
   dstep: { label: '융합 수량조절', size: ['dstepsz', 'dstepfz'], pos: 'dstep' },
 }
 for (let i = 0; i < 6; i++) EDIT_GROUPS[`evoimg${i}`] = { label: `진화캐릭 ${i + 1}단계`, size: [`evoimg${i}`], pos: `evoimg${i}` }
-for (const __ak of ALLY_EVO_KEYS) {                          // 전직 캐릭터: 동료별로 따로, 1~5단계는 같은 값을 공유
-  EDIT_GROUPS[`evochr${__ak}`] = { label: `전직 캐릭터 ${ALLY_DEFS[__ak].name}`, size: [`evochr${__ak}`], pos: `evochr${__ak}` }
-  UI_LABELS[`evochr${__ak}`] = '캐릭 크기'
-  UI_DEFAULT[`evochr${__ak}`] = 50; UI_DEFAULT[`evochr${__ak}X`] = 0; UI_DEFAULT[`evochr${__ak}Y`] = 0
-}
 for (const k of DINO_KEYS) EDIT_GROUPS[`advico${k}`] = { label: `보스 그림(${DINO_NAME[k]})`, size: [`advico${k}w`, `advico${k}h`], pos: `advico${k}` }
 Object.assign(EDIT_GROUPS, {
   skqbar: { label: '스킬 퀵바(위치)', size: [], pos: 'skqbar' },
@@ -4518,6 +4513,11 @@ for (let __i = 0; __i < 4; __i++) {                          // 상점 줄마다
     UI_DEFAULT[`gift${__i}w`] = 26; UI_DEFAULT[`gift${__i}h`] = 26
     UI_DEFAULT[`gift${__i}X`] = 0; UI_DEFAULT[`gift${__i}Y`] = 0
   }
+}
+for (const __ak of ALLY_EVO_KEYS) {                          // 전직 캐릭터: 동료별로 따로, 1~5단계는 같은 값을 공유
+  EDIT_GROUPS[`evochr${__ak}`] = { label: `전직 캐릭터 ${ALLY_DEFS[__ak].name}`, size: [`evochr${__ak}`], pos: `evochr${__ak}` }
+  UI_LABELS[`evochr${__ak}`] = '캐릭 크기'
+  UI_DEFAULT[`evochr${__ak}`] = 50; UI_DEFAULT[`evochr${__ak}X`] = 0; UI_DEFAULT[`evochr${__ak}Y`] = 0
 }
 for (const __k of SKILLS) {                                  // 카드 안 스킬 아이콘: 스킬마다 가로·세로·위치 따로
   EDIT_GROUPS[`cardic${__k.id}`] = { label: `카드아이콘 ${__k.name}`, size: [`cardic${__k.id}w`, `cardic${__k.id}h`], pos: `cardic${__k.id}` }
