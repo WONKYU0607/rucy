@@ -3626,9 +3626,9 @@ export default function App() {
                 const st2 = r + 1
                 const cur = (allyEvo[ak] || 1) >= st2                  // 도달한 단계는 밝게, 나머지는 어둡게
                 return (
-                  <div key={ak + st2} data-edit="evocell" style={{ ...st.evoCell, borderColor: cur ? GOLD : '#4a3a22', opacity: cur ? 1 : 0.42 }}>
-                    <img data-edit="evoimg" src={ALLY_EVO_IMG(ak, st2)} alt="" style={{ ...st.evoImg, filter: cur ? 'none' : 'grayscale(0.85) brightness(0.7)' }} />
+                  <div key={ak + st2} data-edit="evocell" style={{ ...st.evoCell, opacity: cur ? 1 : 0.45, borderColor: cur ? GOLD : '#5a4028' }}>
                     <div data-edit="evoname" style={st.evoName}>{ALLY_DEFS[ak].name} {st2}단계</div>
+                    <img data-edit="evoimg" src={ALLY_EVO_IMG(ak, st2)} alt="" style={{ ...st.evoImg, filter: cur ? 'none' : 'grayscale(0.85) brightness(0.7)' }} />
                   </div>
                 )
               }))}
@@ -4052,7 +4052,7 @@ export default function App() {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => { setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) })); localStorage.setItem('paleoUiTs', String(Date.now())) }
             const nbtn = { width: 26, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
-            const rng = k => k.startsWith('evo') ? (k === 'evonamefz' ? 40 : 200) : k.startsWith('wbexit') ? (k.endsWith('fz') ? 60 : 300) : (k.startsWith('shop') || k.startsWith('card')) ? (k.endsWith('fz') ? 60 : (k.endsWith('gap') ? 40 : 400)) : k.startsWith('fev') ? (k.endsWith('fz') ? 40 : k === 'fevonzoom' ? 300 : 300) : k.startsWith('ev') ? (k.endsWith('fz') ? 60 : (k === 'evww' || k === 'evwh' || k === 'evpww' || k === 'evpwh') ? 600 : 300) : k.startsWith('profhero') ? 300 : k.startsWith('prof') ? (k.endsWith('fz') ? 40 : 160) : k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
+            const rng = k => k.startsWith('evo') ? (k === 'evonamefz' ? 40 : 120) : k.startsWith('wbexit') ? (k.endsWith('fz') ? 60 : 300) : (k.startsWith('shop') || k.startsWith('card')) ? (k.endsWith('fz') ? 60 : (k.endsWith('gap') ? 40 : 400)) : k.startsWith('fev') ? (k.endsWith('fz') ? 40 : k === 'fevonzoom' ? 300 : 300) : k.startsWith('ev') ? (k.endsWith('fz') ? 60 : (k === 'evww' || k === 'evwh' || k === 'evpww' || k === 'evpwh') ? 600 : 300) : k.startsWith('profhero') ? 300 : k.startsWith('prof') ? (k.endsWith('fz') ? 40 : 160) : k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
             const rmin = k => k === 'equipcols' ? 3 : 0
             return <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -4111,7 +4111,7 @@ const UI_DEFAULT = {
   shoprowmin: 46, shopic: 43, shopic0: 44, shopic1: 57, shopic2: 43, shoptfz: 13, shopsubfz: 11, shopbw: 1, shopbh: 36, shopbbv: 0, shopbbh: 21, shopbfz: 10, shopgem: 12,
   gainic: 14, gainpv: 0, gainph: 6,
   gbtnfz: 13, gbtnpw: 16, gbtnph: 10,
-  evocell: 78, evoimg: 52, evonamefz: 10,
+  evocell: 81, evoimg: 50, evonamefz: 12,   // 동료 탭(caslot/caimg/canamefz)과 같은 시작값
   evocellX: 0, evocellY: 0, evoimgX: 0, evoimgY: 0, evonameX: 0, evonameY: 0,
   pbsz: 30, wjfz: 13, caslot: 81, caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 160, bth: 26, bhpw: 159, bhph: 30, pmw: 70, pmh: 23, pmfz: 11, pgw: 70, pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 39, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
   // 위치 이동(px): 요소별 X/Y
@@ -4776,25 +4776,15 @@ const st = {
     color: '#b8a888', fontSize: 'var(--pd-catabfz)', transform: 'translate(var(--pd-catab-x), var(--pd-catab-y))',
   },
   allySubOn: { background: '#2c2013', color: GOLD, borderColor: '#5a4028' },
-  evoGrid: {
-    display: 'grid', gridTemplateColumns: 'repeat(4, var(--pd-evocell))', gap: 6,
-    justifyContent: 'center', padding: 8, overflowY: 'auto',
-  },
+  evoGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, var(--pd-evocell))', gap: 8, justifyContent: 'center', padding: 10, overflowY: 'auto' },
   evoCell: {
-    width: 'var(--pd-evocell)', aspectRatio: '0.78', borderRadius: 9,
-    border: '1px solid #4a3a22', background: 'linear-gradient(180deg,#22180d,#120b05)',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: 2,
-    padding: '4px 0 5px', overflow: 'hidden',
+    width: 'var(--pd-evocell)', aspectRatio: '0.82', borderRadius: 10,
+    border: '1px solid #5a4028', background: 'linear-gradient(180deg,#22180d,#120b05)',
+    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4,
     transform: 'translate(var(--pd-evocell-x), var(--pd-evocell-y))',
   },
-  evoImg: {
-    height: 'var(--pd-evoimg)', objectFit: 'contain', imageRendering: 'pixelated',
-    transform: 'translate(var(--pd-evoimg-x), var(--pd-evoimg-y))',
-  },
-  evoName: {
-    fontSize: 'var(--pd-evonamefz)', color: GOLD, whiteSpace: 'nowrap',
-    transform: 'translate(var(--pd-evoname-x), var(--pd-evoname-y))',
-  },
+  evoName: { fontSize: 'var(--pd-evonamefz)', color: GOLD, transform: 'translate(var(--pd-evoname-x), var(--pd-evoname-y))' },
+  evoImg: { height: 'var(--pd-evoimg)', objectFit: 'contain', imageRendering: 'pixelated', transform: 'translate(var(--pd-evoimg-x), var(--pd-evoimg-y))' },
   allyGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, var(--pd-caslot))', gap: 8, justifyContent: 'center', padding: 10 },
   allySlot: {
     width: 'var(--pd-caslot)', aspectRatio: '0.82', borderRadius: 10,
