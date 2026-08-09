@@ -100,6 +100,8 @@ const SKILL_SHEET = [
   { id: 28, n: 7, h: 200, stage: 2, title: '피폭', charSeq: [1, 2, 3, 5, 6, 7], cd: 2, dmgMult: 3, aoe: true },
   // 29·30: 히어로 모션(charSeq)과 이펙트(fx)가 각각 다른 시트 → 이펙트가 별도 레이어라 몹에 안 가림
   { id: 29, n: 7, h: 200, stage: 2, title: '사이오닉 스톰', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [4, 5, 6, 7], fxH: 240, hitP: 0.6 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 150 },
+  { id: 38, n: 6, h: 200, stage: 4, title: '난도질', charSeq: [1, 2, 3, 4, 5, 6], cd: 2, dmgMult: 3, aoe: true, rangePx: 150, hitAt: 0.6 },   // 쌍칼 회전 베기 — 이펙트가 그림에 포함
+  { id: 37, n: 8, h: 200, stage: 4, title: '순보', charSeq: [1, 2, 3, 4, 5, 6, 7, 8, 2, 3, 4], cd: 2, dmgMult: 3, aoe: true, rangePx: 200, hitAt: 0.55 },   // 대시 — 오른쪽 1~5 + 왼쪽 2~4, 끝에 2·3·4 재생
   { id: 36, n: 9, h: 200, stage: 3, title: '불놀이야', charSeq: [1, 2, 3, 4, 5, 6, 7, 8, 9], cd: 2, dmgMult: 3, aoe: true, rangePx: 150 },   // 9프레임 전부 히어로 모션 — 이펙트가 그림에 포함(별도 fx 없음)
   { id: 35, n: 7, h: 200, stage: 3, title: '토네이도', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [5, 6, 5, 6, 7], fxH: 260, hitP: 0.65, twin: { gap: 30, spd: 1.2 } }, cd: 2, dmgMult: 3, aoe: true, rangePx: 200 },   // 5·6 왕복 2바퀴 → 7 소멸, 같은 프레임 2장 교차
   { id: 34, n: 7, h: 200, stage: 3, title: '엑스밤', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [5, 6, 7], fxH: 260, hitP: 0.8 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 200 },
@@ -110,7 +112,7 @@ const SKILL_SHEET = [
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
 // 스킬 아이콘: 해당 스킬 시트의 지정 프레임 사용 (없으면 번호 텍스트)
-const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4, 22: 4, 23: 6, 24: 7, 25: 3, 26: 3, 27: 1, 28: 6, 29: 6, 31: 6, 32: 2, 33: 10, 34: 7, 35: 5, 36: 2 }
+const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4, 22: 4, 23: 6, 24: 7, 25: 3, 26: 3, 27: 1, 28: 6, 29: 6, 31: 6, 32: 2, 33: 10, 34: 7, 35: 5, 36: 2, 37: 2, 38: 4 }
 // 스킬 효과(대상/데미지/사거리/쿨타임)를 인게임 상세창에서 조절 — 인덱스가 아닌 **id 기준**이라
 // 스킬을 넣고 빼도 값이 안 밀린다(예전 cdConf는 인덱스 배열이라 매번 리셋됐음).
 const skEff = (sk, cfg) => {
@@ -381,6 +383,8 @@ for (let n = 1; n <= 5; n++) FX_IMGS[n] = Array.from({ length: FXF }, (_, f) => 
 // 각 원소 = 그 순서의 히어로 프레임 표시 시간. 배열 길이 = 히어로 프레임 수.
 // 시전 총 시간 = 합계. 없는 스킬은 프레임당 0.15초.
 const SKILL_FRAME_T = {
+  37: [0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07],   // 순보 (11프레임 — 2·3·4 재생 포함)
+  38: [0.09, 0.09, 0.09, 0.09, 0.09, 0.09],                                 // 난도질 (6프레임)
   36: [0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09],   // 불놀이야 (히어로 9프레임)
   35: [0.12, 0.12, 0.12],                   // 토네이도 (히어로 3프레임 — 4번 제거)
   1:  [0.15, 0.15, 0.15, 0.15],           // 몽둥이번개 (4프레임)
@@ -534,6 +538,22 @@ const skCast = t => t.reduce((a, b) => a + b, 0)
 const ALLY_EVO_KEYS = ['hunter', 'shaman', 'healer', 'giant']
 const ALLY_EVO_IMG = (k, n) => `/ally/evo/${k}_${n}.webp`
 const ALLY_EVO_MAX = 5
+
+// ── 동료 성장·전직 (임시 밸런싱 — 나중에 통째로 교체) ──
+const ALLY_LV_MAX = 100                    // 이 레벨을 찍으면 다음 단계로 전직
+const ALLY_STAGE_MULT = [1, 1.6, 2.5, 3.8, 5.6]   // 전직 단계별 능력치 배수 (1~5단계)
+// [표시명, 1레벨 기준값, 레벨당 증가율(%)] — self=동료 본인, give=히어로에게 부여
+const ALLY_STAT = {
+  hunter: { self: [['공격력', 120, 4], ['공격 주기', 1.15, 0], ['사거리', 450, 0]],
+            give: [['히어로 공격력', 3, 2], ['치명타 확률', 1, 1.5]] },
+  shaman: { self: [['공격력', 150, 4], ['공격 주기', 1.6, 0], ['사거리', 450, 0]],
+            give: [['히어로 공격력', 4, 2], ['스킬 피해', 2, 2]] },
+  healer: { self: [['전체 버프', 5, 3]],
+            give: [['히어로 체력', 4, 2], ['체력 회복', 3, 2]] },
+  giant:  { self: [['공격력', 200, 4], ['공격 주기', 1.8, 0]],
+            give: [['히어로 체력', 5, 2], ['받는 피해 감소', 1, 1.5]] },
+}
+const allyStatVal = (base, per, lv, stage) => base * (1 + per / 100 * (lv - 1)) * (ALLY_STAGE_MULT[stage - 1] || 1)
 
 const ALLY_DEFS = {
   hunter: {
@@ -820,6 +840,8 @@ function loadSave() {
       })(),
       // 장착·재화·기록: 저장된 값 그대로 복원 (누락 시 기본값)
       alliesOn: s.alliesOn && typeof s.alliesOn === 'object' ? s.alliesOn : {},
+      allyEvo: s.allyEvo && typeof s.allyEvo === 'object' ? s.allyEvo : { hunter: 1, shaman: 1, healer: 1, giant: 1 },
+      allyLv: s.allyLv && typeof s.allyLv === 'object' ? s.allyLv : { hunter: 1, shaman: 1, healer: 1, giant: 1 },
       gem: s.gem ?? 0, inv: s.inv && typeof s.inv === 'object' ? s.inv : {}, best: s.best ?? s.wave ?? 1,
       evStage: s.evStage && typeof s.evStage === 'object' ? s.evStage : {},
       gachaLv: s.gachaLv && typeof s.gachaLv === 'object' ? s.gachaLv : { 무기: 1, 방어구: 1, 유물: 1 },
@@ -834,7 +856,7 @@ function loadSave() {
       pearl: typeof s.pearl === 'number' ? s.pearl : 0, quest: s.quest && typeof s.quest === 'object' && s.quest.ev ? s.quest : questInit(),
     }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, skCfg: {}, cdConf: SKILLS.map(k => k.cd), alliesOn: {}, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, nick: 'Slayer_' + Math.floor(Math.random() * 9000000 + 1000000), mats: [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, advStage: {}, pearl: 0, evStage: {}, gachaLv: { 무기: 1, 방어구: 1, 유물: 1 }, gachaCnt: { 무기: 0, 방어구: 0, 유물: 0 }, gachaRw: {}, skCard: {}, skEnh: {}, quest: questInit() }
+  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, skCfg: {}, cdConf: SKILLS.map(k => k.cd), alliesOn: {}, allyEvo: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, allyLv: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, nick: 'Slayer_' + Math.floor(Math.random() * 9000000 + 1000000), mats: [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, advStage: {}, pearl: 0, evStage: {}, gachaLv: { 무기: 1, 방어구: 1, 유물: 1 }, gachaCnt: { 무기: 0, 방어구: 0, 유물: 0 }, gachaRw: {}, skCard: {}, skEnh: {}, quest: questInit() }
 }
 const fmt = n => n >= 1e8 ? (n/1e8).toFixed(1)+'억' : n >= 1e4 ? (n/1e4).toFixed(1)+'만' : Math.floor(n).toLocaleString()
 const fmtPct = v => v >= 10000 ? fmt(Math.round(v)) : (Math.round(v * 10) / 10).toString()
@@ -935,7 +957,9 @@ export default function App() {
   const preReady = preP >= 0.98
   const [alliesOn, setAlliesOn] = useState(init.alliesOn || {})  // 장착된 동료 (보유/성장 시스템은 추후)
   const [allySub, setAllySub] = useState('동료')
-  const [allyEvo, setAllyEvo] = useState({ hunter: 1, shaman: 1, healer: 1, giant: 1 })   // 동료별 전직 단계(1~5)
+  const [allyEvo, setAllyEvo] = useState(init.allyEvo || { hunter: 1, shaman: 1, healer: 1, giant: 1 })   // 동료별 전직 단계(1~5)
+  const [allyLv, setAllyLv] = useState(init.allyLv || { hunter: 1, shaman: 1, healer: 1, giant: 1 })
+  const [allyPick, setAllyPick] = useState(null)          // 전직 칸을 누르면 열리는 동료 상세창
   useEffect(() => {
     const upd = () => {
       const sw = window.innerWidth, sh = window.innerHeight
@@ -1114,8 +1138,8 @@ export default function App() {
   const cloudBusy = useRef(false)   // 어댑트/불러오기 중 로컬 저장 차단
   useEffect(() => {
     if (cloudBusy.current) return
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, skCfg, skCfgV: 2, gem, inv, best, alliesOn, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, gachaLv, gachaCnt, gachaRw, skCard, skEnh, quest, ts: Date.now() }))
-  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, skCfg, gem, inv, best, alliesOn, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, gachaLv, gachaCnt, gachaRw, skCard, skEnh, quest])
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, skCfg, skCfgV: 2, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, gachaLv, gachaCnt, gachaRw, skCard, skEnh, quest, ts: Date.now() }))
+  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, cdConf, skCfg, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, gachaLv, gachaCnt, gachaRw, skCard, skEnh, quest])
 
   // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제
   useEffect(() => {
@@ -3077,6 +3101,41 @@ export default function App() {
         )
       })()}
 
+      {allyPick && (() => {
+        const d = ALLY_DEFS[allyPick], cfg = ALLY_STAT[allyPick]
+        const lv = allyLv[allyPick] || 1, stg = allyEvo[allyPick] || 1
+        const canEvo = lv >= ALLY_LV_MAX && stg < ALLY_EVO_MAX
+        const fmt = v => v >= 100 ? Math.round(v).toLocaleString() : (Math.round(v * 100) / 100)
+        const rows = (list, pct) => list.map(([nm, base, per]) => (
+          <div key={nm} data-edit="alstat" style={st.alRow}>
+            <span style={st.alRowK}>{nm}</span>
+            <span style={st.alRowV}>{fmt(allyStatVal(base, per, lv, stg))}{pct ? '%' : ''}</span>
+          </div>
+        ))
+        return (
+        <div style={st.evpOverlay} onClick={() => { if (!uiEdit) setAllyPick(null) }}>
+          <div data-edit="alwin" style={st.alWin} onClick={e => e.stopPropagation()}>
+            <div data-edit="alname" style={st.alName}>{d.name} <span style={{ color: GOLD_D }}>{stg}단계</span></div>
+            <img data-edit="alimg" src={ALLY_EVO_IMG(allyPick, stg)} alt="" style={st.alImg} />
+            <div style={st.alLv}>Lv.{lv} / {ALLY_LV_MAX}</div>
+            <div style={st.alBarOuter}><div style={{ ...st.alBarInner, width: (lv / ALLY_LV_MAX * 100) + '%' }} /></div>
+
+            <div style={st.alSecT}>동료 능력치</div>
+            {rows(cfg.self, false)}
+            <div style={st.alSecT}>히어로에게 부여</div>
+            {rows(cfg.give, true)}
+
+            <div style={st.alBtns}>
+              <button data-edit="albtn" style={st.alBtn}
+                onClick={() => { if (!uiEdit) setAllyLv(v => ({ ...v, [allyPick]: Math.min(ALLY_LV_MAX, (v[allyPick] || 1) + 1) })) }}>레벨 +1</button>
+              <button data-edit="albtn" style={{ ...st.alBtn, opacity: canEvo ? 1 : 0.4 }}
+                onClick={() => { if (!uiEdit && canEvo) { setAllyEvo(v => ({ ...v, [allyPick]: stg + 1 })); setAllyLv(v => ({ ...v, [allyPick]: 1 })) } }}>전직</button>
+            </div>
+            <div style={st.alHint}>레벨 {ALLY_LV_MAX} 달성 시 다음 단계로 전직합니다 (비용·재화는 추후)</div>
+          </div>
+        </div>
+        )
+      })()}
       {evPick && (() => {
         const cleared = evStage[evPick.no] || 0
         const stage = Math.min(EV_STAGES, cleared + 1)
@@ -3626,11 +3685,11 @@ export default function App() {
                 const st2 = r + 1
                 const cur = (allyEvo[ak] || 1) >= st2                  // 도달한 단계는 밝게, 나머지는 어둡게
                 return (
-                  <div key={ak + st2} data-edit="evocell" style={{ ...st.evoCell, opacity: cur ? 1 : 0.45, borderColor: cur ? GOLD : '#5a4028' }}>
+                  <div key={ak + st2} data-edit="evocell" onClick={() => { if (!uiEdit) setAllyPick(ak) }} style={{ ...st.evoCell, cursor: 'pointer', opacity: cur ? 1 : 0.78, borderColor: cur ? GOLD : '#5a4028' }}>
                     <div data-edit="evoname" style={st.evoName}>{ALLY_DEFS[ak].name} {st2}단계</div>
-                    <img data-edit={`evochr${ak}`} src={ALLY_EVO_IMG(ak, st2)} alt=""
-                      style={{ ...st.evoImg, height: `var(--pd-evochr${ak})`, transform: `translate(var(--pd-evochr${ak}-x), var(--pd-evochr${ak}-y))`,
-                        filter: cur ? 'none' : 'grayscale(0.85) brightness(0.7)' }} />
+                    <img data-edit={`evochr${ak}${st2}`} src={ALLY_EVO_IMG(ak, st2)} alt=""
+                      style={{ ...st.evoImg, height: `var(--pd-evochr${ak}${st2})`, transform: `translate(var(--pd-evochr${ak}${st2}-x), var(--pd-evochr${ak}${st2}-y))`,
+                        filter: cur ? 'none' : 'brightness(0.82)' }} />
                   </div>
                 )
               }))}
@@ -4054,7 +4113,7 @@ export default function App() {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => { setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) })); localStorage.setItem('paleoUiTs', String(Date.now())) }
             const nbtn = { width: 26, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
-            const rng = k => k.startsWith('evo') ? (k === 'evonamefz' ? 40 : 120) : k.startsWith('wbexit') ? (k.endsWith('fz') ? 60 : 300) : (k.startsWith('shop') || k.startsWith('card')) ? (k.endsWith('fz') ? 60 : (k.endsWith('gap') ? 40 : 400)) : k.startsWith('fev') ? (k.endsWith('fz') ? 40 : k === 'fevonzoom' ? 300 : 300) : k.startsWith('ev') ? (k.endsWith('fz') ? 60 : (k === 'evww' || k === 'evwh' || k === 'evpww' || k === 'evpwh') ? 600 : 300) : k.startsWith('profhero') ? 300 : k.startsWith('prof') ? (k.endsWith('fz') ? 40 : 160) : k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
+            const rng = k => k.startsWith('alwin') ? 420 : k.startsWith('al') ? (k.endsWith('fz') ? 40 : 220) : k.startsWith('evo') ? (k === 'evonamefz' ? 40 : 120) : k.startsWith('wbexit') ? (k.endsWith('fz') ? 60 : 300) : (k.startsWith('shop') || k.startsWith('card')) ? (k.endsWith('fz') ? 60 : (k.endsWith('gap') ? 40 : 400)) : k.startsWith('fev') ? (k.endsWith('fz') ? 40 : k === 'fevonzoom' ? 300 : 300) : k.startsWith('ev') ? (k.endsWith('fz') ? 60 : (k === 'evww' || k === 'evwh' || k === 'evpww' || k === 'evpwh') ? 600 : 300) : k.startsWith('profhero') ? 300 : k.startsWith('prof') ? (k.endsWith('fz') ? 40 : 160) : k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
             const rmin = k => k === 'equipcols' ? 3 : 0
             return <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -4113,6 +4172,8 @@ const UI_DEFAULT = {
   shoprowmin: 46, shopic: 43, shopic0: 44, shopic1: 57, shopic2: 43, shoptfz: 13, shopsubfz: 11, shopbw: 1, shopbh: 36, shopbbv: 0, shopbbh: 21, shopbfz: 10, shopgem: 12,
   gainic: 14, gainpv: 0, gainph: 6,
   gbtnfz: 13, gbtnpw: 16, gbtnph: 10,
+  alwinw: 300, alnamefz: 16, alimg: 120, alstatfz: 12, albtnw: 92, albtnh: 30, albtnfz: 13,
+  alwinX: 0, alwinY: 0, alnameX: 0, alnameY: 0, alimgX: 0, alimgY: 0, alstatX: 0, alstatY: 0, albtnX: 0, albtnY: 0,
   evocell: 81, evonamefz: 12,               // 동료 탭(caslot/canamefz)과 같은 시작값
   evocellX: 0, evocellY: 0, evonameX: 0, evonameY: 0,
   pbsz: 30, wjfz: 13, caslot: 81, caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 160, bth: 26, bhpw: 159, bhph: 30, pmw: 70, pmh: 23, pmfz: 11, pgw: 70, pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 39, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
@@ -4356,6 +4417,11 @@ const EDIT_GROUPS = {
   quest: { label: '퀘스트 아이콘', size: ['questsz'], pos: 'quest' },
   pausebtn: { label: '일시정지 버튼', size: ['pbsz'], pos: 'pb' },
   allytab: { label: '동료 서브탭', size: ['catabfz'], pos: 'catab' },
+  alwin: { label: '동료 상세창', size: ['alwinw'], pos: 'alwin' },
+  alname: { label: '동료 상세 이름', size: ['alnamefz'], pos: 'alname' },
+  alimg: { label: '동료 상세 그림', size: ['alimg'], pos: 'alimg' },
+  alstat: { label: '동료 능력치 줄', size: ['alstatfz'], pos: 'alstat' },
+  albtn: { label: '동료 상세 버튼', size: ['albtnw', 'albtnh', 'albtnfz'], pos: 'albtn' },
   evocell: { label: '전직 칸', size: ['evocell'], pos: 'evocell' },
   evoname: { label: '전직 이름', size: ['evonamefz'], pos: 'evoname' },
   allyslot: { label: '동료 칸', size: ['caslot'], pos: 'caslot' },
@@ -4486,7 +4552,8 @@ const UI_LABELS = {
   shoprowmin: '박스 높이', shopic0: '무기 아이콘', shopic1: '방어구 아이콘', shopic2: '유물 아이콘', shoptfz: '제목 글자', shopsubfz: '부제 글자',
   shopbw: '버튼 너비', shopbh: '버튼 높이', shopbbv: '프레임 두께↕', shopbbh: '프레임 두께↔', shopbfz: '버튼 글자',
   gainic: '아이콘 크기', gainpv: '판 두께↕', gainph: '판 두께↔', shopgem: '다이아 크기', gbtnfz: '버튼 글자', gbtnpw: '판 가로', gbtnph: '판 세로',
-  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', skicon: '아이콘 크기%', slicon: '아이콘 크기%', advbw: '버튼 너비', advbh: '버튼 높이', advbfz: '버튼 글자', advww: '창 너비', advwh: '창 높이', adviw: '그림 너비', advih: '그림 높이', advibw: '틀 너비', advibh: '틀 높이', advmbw: '틀 너비', advmbh: '틀 높이', advrbw: '틀 너비', advrbh: '틀 높이', advwbw: '틀 너비', advwbh: '틀 높이', advsw: '표지판 너비', advsh: '표지판 높이', advsfz: '글자 크기', advbarw: '바 너비', advbarh: '바 높이', advmonkfz: '글자 크기', advmonvfz: '글자 크기', advregkfz: '글자 크기', advregvfz: '글자 크기', advrewkfz: '글자 크기', advrewvfz: '숫자 크기', advrewic: '아이콘 크기', advmfz: '글자 크기', advrfz: '글자 크기', advwfz: '글자 크기', advew: '버튼 너비', adveh: '버튼 높이', advefz: '버튼 글자', advcw: '버튼 너비', advch: '버튼 높이', advcfz: '버튼 글자', mailsz: '우편함 크기', questsz: '퀘스트 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', evocell: '칸 크기', evonamefz: '이름 글자', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
+  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', skicon: '아이콘 크기%', slicon: '아이콘 크기%', advbw: '버튼 너비', advbh: '버튼 높이', advbfz: '버튼 글자', advww: '창 너비', advwh: '창 높이', adviw: '그림 너비', advih: '그림 높이', advibw: '틀 너비', advibh: '틀 높이', advmbw: '틀 너비', advmbh: '틀 높이', advrbw: '틀 너비', advrbh: '틀 높이', advwbw: '틀 너비', advwbh: '틀 높이', advsw: '표지판 너비', advsh: '표지판 높이', advsfz: '글자 크기', advbarw: '바 너비', advbarh: '바 높이', advmonkfz: '글자 크기', advmonvfz: '글자 크기', advregkfz: '글자 크기', advregvfz: '글자 크기', advrewkfz: '글자 크기', advrewvfz: '숫자 크기', advrewic: '아이콘 크기', advmfz: '글자 크기', advrfz: '글자 크기', advwfz: '글자 크기', advew: '버튼 너비', adveh: '버튼 높이', advefz: '버튼 글자', advcw: '버튼 너비', advch: '버튼 높이', advcfz: '버튼 글자', mailsz: '우편함 크기', questsz: '퀘스트 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', evocell: '칸 크기', evonamefz: '이름 글자',
+  alwinw: '창 너비', alnamefz: '이름 글자', alimg: '그림 크기', alstatfz: '글자 크기', albtnw: '버튼 너비', albtnh: '버튼 높이', albtnfz: '버튼 글자', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
   trsz: '상자 크기', offw: '창 너비', offtfz: '제목 글자', offnfz: '정보 글자', offiw: '항목 너비', offih: '항목 높이', offgap: '항목 간격', offic: '아이콘 크기', offifz: '획득 글자', offrfz: '분당 글자', offbtw: '버튼 너비', offbth: '버튼 높이', offbfz: '버튼 글자', offclw: '버튼 너비', offclh: '버튼 높이', offcfz: '버튼 글자', fuseallw: '융합버튼 너비', fuseallh: '융합버튼 높이', fuseallfz: '융합버튼 글자',
   matchipic: '아이콘 크기', matchipfz: '글자 크기', allychipic: '동료 아이콘', allychipfz: '동료 글자', dtabh: '탭 높이', dtabfz: '탭 글자', dgradefz: '등급 글자', dtitlefz: '이름 글자', darrowfz: '화살표 크기', diconsz: '아이콘틀 크기', dtierfz: '등급표시 글자', dstatfz: '능력치 글자', denhh: '강화버튼 높이', denhfz: '강화버튼 글자', denhic: '강화 재화아이콘', dequiph: '장착버튼 높이', dequipfz: '장착버튼 글자', dfuseh: '융합버튼 높이', dfusefz: '융합버튼 글자', dstepsz: '조절버튼 크기', dstepfz: '수량 글자',
 }
@@ -4514,10 +4581,11 @@ for (let __i = 0; __i < 4; __i++) {                          // 상점 줄마다
     UI_DEFAULT[`gift${__i}X`] = 0; UI_DEFAULT[`gift${__i}Y`] = 0
   }
 }
-for (const __ak of ALLY_EVO_KEYS) {                          // 전직 캐릭터: 동료별로 따로, 1~5단계는 같은 값을 공유
-  EDIT_GROUPS[`evochr${__ak}`] = { label: `전직 캐릭터 ${ALLY_DEFS[__ak].name}`, size: [`evochr${__ak}`], pos: `evochr${__ak}` }
-  UI_LABELS[`evochr${__ak}`] = '캐릭 크기'
-  UI_DEFAULT[`evochr${__ak}`] = 50; UI_DEFAULT[`evochr${__ak}X`] = 0; UI_DEFAULT[`evochr${__ak}Y`] = 0
+for (const __ak of ALLY_EVO_KEYS) for (let __s = 1; __s <= ALLY_EVO_MAX; __s++) {   // 전직 캐릭터: 동료×단계 20칸 각각 따로
+  const __k2 = `evochr${__ak}${__s}`
+  EDIT_GROUPS[__k2] = { label: `전직 ${ALLY_DEFS[__ak].name} ${__s}단계`, size: [__k2], pos: __k2 }
+  UI_LABELS[__k2] = '캐릭 크기'
+  UI_DEFAULT[__k2] = 50; UI_DEFAULT[`${__k2}X`] = 0; UI_DEFAULT[`${__k2}Y`] = 0
 }
 for (const __k of SKILLS) {                                  // 카드 안 스킬 아이콘: 스킬마다 가로·세로·위치 따로
   EDIT_GROUPS[`cardic${__k.id}`] = { label: `카드아이콘 ${__k.name}`, size: [`cardic${__k.id}w`, `cardic${__k.id}h`], pos: `cardic${__k.id}` }
@@ -4586,7 +4654,7 @@ ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k
 --pd-shoptfz:${c.shoptfz}px;--pd-shopsubfz:${c.shopsubfz}px;--pd-shopbw:${c.shopbw}px;--pd-shopbh:${c.shopbh}px;--pd-shopbbv:${c.shopbbv}px;--pd-shopbbh:${c.shopbbh}px;--pd-shopbfz:${c.shopbfz}px;
 --pd-gainic:${c.gainic}px;--pd-gainpv:${c.gainpv}px;--pd-gainph:${c.gainph}px;--pd-gainic-x:${c.gainicX}px;--pd-gainic-y:${c.gainicY}px;--pd-gaint-x:${c.gaintX}px;--pd-gaint-y:${c.gaintY}px;--pd-shopgem:${c.shopgem}px;
 --pd-gbtnfz:${c.gbtnfz}px;--pd-gbtnpw:${c.gbtnpw}px;--pd-gbtnph:${c.gbtnph}px;
---pd-pmw:${c.pmw}px;--pd-pmh:${c.pmh}px;--pd-pmfz:${c.pmfz}px;--pd-pgw:${c.pgw}px;--pd-pgh:${c.pgh}px;--pd-pgfz:${c.pgfz}px;--pd-hambsz:${c.hambsz}px;--pd-menufz:${c.menufz}px;--pd-pbsz:${c.pbsz}px;--pd-wjfz:${c.wjfz}px;--pd-caslot:${c.caslot}px;--pd-caimg:${c.caimg}px;--pd-canamefz:${c.canamefz}px;--pd-evocell:${c.evocell}px;--pd-evonamefz:${c.evonamefz}px;${ALLY_EVO_KEYS.map(k => `--pd-evochr${k}:${c['evochr' + k]}px;--pd-evochr${k}-x:${c['evochr' + k + 'X']}px;--pd-evochr${k}-y:${c['evochr' + k + 'Y']}px;`).join('')}--pd-catabfz:${c.catabfz}px;
+--pd-pmw:${c.pmw}px;--pd-pmh:${c.pmh}px;--pd-pmfz:${c.pmfz}px;--pd-pgw:${c.pgw}px;--pd-pgh:${c.pgh}px;--pd-pgfz:${c.pgfz}px;--pd-hambsz:${c.hambsz}px;--pd-menufz:${c.menufz}px;--pd-pbsz:${c.pbsz}px;--pd-wjfz:${c.wjfz}px;--pd-caslot:${c.caslot}px;--pd-caimg:${c.caimg}px;--pd-canamefz:${c.canamefz}px;--pd-evocell:${c.evocell}px;--pd-evonamefz:${c.evonamefz}px;--pd-alwinw:${c.alwinw}px;--pd-alnamefz:${c.alnamefz}px;--pd-alimg:${c.alimg}px;--pd-alstatfz:${c.alstatfz}px;--pd-albtnw:${c.albtnw}px;--pd-albtnh:${c.albtnh}px;--pd-albtnfz:${c.albtnfz}px;${ALLY_EVO_KEYS.flatMap(k => [1, 2, 3, 4, 5].map(n => `--pd-evochr${k}${n}:${c[`evochr${k}${n}`]}px;--pd-evochr${k}${n}-x:${c[`evochr${k}${n}X`]}px;--pd-evochr${k}${n}-y:${c[`evochr${k}${n}Y`]}px;`)).join('')}--pd-catabfz:${c.catabfz}px;
 --pd-cabtnfz:${c.cabtnfz}px;
 ${['caslot', 'caimg', 'caname', 'catab', 'cabtn'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}--pd-pb-x:${c.pbX}px;--pd-pb-y:${c.pbY}px;--pd-wj-x:${c.wjX}px;--pd-wj-y:${c.wjY}px;--pd-btw:${c.btw}px;--pd-bth:${c.bth}px;--pd-bhpw:${c.bhpw}px;--pd-bhph:${c.bhph}px;
 ${['bt', 'bhp'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
@@ -4597,7 +4665,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
 --pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evexit', 'advexit', 'wbexit', 'evocell', 'evoname', 'shoptab', 'shoptabt', 'shopad', 'shopadt', 'shopgift', 'cardwin', 'cardtitle', 'cardcell', 'cardname', 'cardcnt', 'cardclose', 'glv', 'glvbar', 'glvbart', 'warn', 'evpwin', 'evptitle', 'evpimg', 'evpbn', 'evprew', 'evpsign', 'evpsignt', 'evpbar', 'evpenter', 'evpclose', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evexit', 'advexit', 'wbexit', 'evocell', 'evoname', 'alwin', 'alname', 'alimg', 'alstat', 'albtn', 'shoptab', 'shoptabt', 'shopad', 'shopadt', 'shopgift', 'cardwin', 'cardtitle', 'cardcell', 'cardname', 'cardcnt', 'cardclose', 'glv', 'glvbar', 'glvbart', 'warn', 'evpwin', 'evptitle', 'evpimg', 'evpbn', 'evprew', 'evpsign', 'evpsignt', 'evpbar', 'evpenter', 'evpclose', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -4782,6 +4850,34 @@ const st = {
     color: '#b8a888', fontSize: 'var(--pd-catabfz)', transform: 'translate(var(--pd-catab-x), var(--pd-catab-y))',
   },
   allySubOn: { background: '#2c2013', color: GOLD, borderColor: '#5a4028' },
+  alWin: {
+    position: 'relative', width: 'var(--pd-alwinw)', maxHeight: '86%', overflowY: 'auto',
+    transform: 'translate(var(--pd-alwin-x), var(--pd-alwin-y))',
+    borderRadius: 14, border: `2px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#2a1d10,#160e06)',
+    padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+    boxShadow: '0 10px 40px rgba(0,0,0,0.7)',
+  },
+  alName: { fontSize: 'var(--pd-alnamefz)', fontWeight: 800, color: GOLD, transform: 'translate(var(--pd-alname-x), var(--pd-alname-y))' },
+  alImg: { height: 'var(--pd-alimg)', objectFit: 'contain', imageRendering: 'pixelated', transform: 'translate(var(--pd-alimg-x), var(--pd-alimg-y))' },
+  alLv: { fontSize: 12, color: '#e8d7a8' },
+  alBarOuter: { width: '82%', height: 7, borderRadius: 4, border: '1px solid #6b4a24', background: 'rgba(12,8,4,0.8)', overflow: 'hidden' },
+  alBarInner: { height: '100%', background: 'linear-gradient(180deg,#e8b962,#a85f1f)' },
+  alSecT: { alignSelf: 'flex-start', marginTop: 8, fontSize: 12, fontWeight: 700, color: GOLD_D },
+  alRow: {
+    width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    padding: '3px 6px', borderBottom: '1px solid #3a2a14',
+    fontSize: 'var(--pd-alstatfz)', transform: 'translate(var(--pd-alstat-x), var(--pd-alstat-y))',
+  },
+  alRowK: { color: '#cbb89a' },
+  alRowV: { color: '#fff', fontWeight: 700 },
+  alBtns: { display: 'flex', gap: 8, marginTop: 12 },
+  alBtn: {
+    width: 'var(--pd-albtnw)', height: 'var(--pd-albtnh)', fontSize: 'var(--pd-albtnfz)',
+    transform: 'translate(var(--pd-albtn-x), var(--pd-albtn-y))',
+    borderRadius: 8, border: '1px solid #7a5a2a', background: 'linear-gradient(180deg,#4a3520,#2c2013)',
+    color: '#f0dfae', fontWeight: 700, padding: 0,
+  },
+  alHint: { fontSize: 10, color: '#8a7758', marginTop: 6, textAlign: 'center' },
   evoGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, var(--pd-evocell))', gap: 8, justifyContent: 'center', padding: 10, overflowY: 'auto' },
   evoCell: {
     width: 'var(--pd-evocell)', aspectRatio: '0.82', borderRadius: 10,
