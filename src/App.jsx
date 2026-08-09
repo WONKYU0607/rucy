@@ -37,7 +37,7 @@ const SPLASH_BG = (() => {
   try { const q = new URLSearchParams(location.search); if (q.get('intro') === 'en') ko = false; if (q.get('intro') === 'ko') ko = true } catch {}
   return ko ? '/startbg/startbg.webp' : '/startbg/startbg_en.webp'
 })()
-const CFG_STAMP = Date.parse('2026-08-09T19:20:00+09:00')
+const CFG_STAMP = Date.parse('2026-08-09T20:05:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -275,7 +275,7 @@ const MOTION_DEFAULT = {
   // 이펙트 프레임별 재생시간(초). 합 = 총 재생시간(전체 '프레임 속도'로 나눔).
   // 길이가 실제 프레임 수와 다르면 무시하고 균등 분할 — 프레임을 지우거나 늘려도 굳지 않음
   fxFrT: {"1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.12, 0.12, 0.15, 0.15], "31": [0.03, 0.03, 0.03, 0.03], "33": [0.14, 0.17, 0.2, 0.35], "34": [0.23, 0.09, 0.18], "35": [0.28, 0.28, 0.28, 0.28, 0.28]},
-  skFx: {"1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "tick": 0.2, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "26": {"tick": 0.35}, "27": {"tick": 0.35}, "28": {"tick": 0}, "32": {"tick": 0.45}, "36": {"tick": 0.3}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1.1, "spd": 2.25, "fly": 1, "x": 0, "y": 0, "tick": 0.3, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}, "34": {"startP": 0.5, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"sz": 0.87, "y": -85, "x": 20}, "2": {"sz": 0.77, "x": 73, "y": -37}, "3": {"x": 71, "sz": 0.95, "y": 16}}}, "35": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "twGap": 35, "twSpd": 1.7, "tick": 0.25, "fr": {"1": {"x": 53, "sz": 0.47}, "2": {"sz": 0.58, "x": 85, "y": 3}, "3": {"sz": 0.63, "x": 60, "y": 3}, "4": {"sz": 0.69, "x": 102, "y": 5}, "5": {"sz": 0.76, "x": 81, "y": 3}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
+  skFx: {"38": {"tick": 0.22}, "1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "tick": 0.2, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "26": {"tick": 0.35}, "27": {"tick": 0.35}, "28": {"tick": 0}, "32": {"tick": 0.45}, "36": {"tick": 0.3}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1.1, "spd": 2.25, "fly": 1, "x": 0, "y": 0, "tick": 0.3, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}, "34": {"startP": 0.5, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"sz": 0.87, "y": -85, "x": 20}, "2": {"sz": 0.77, "x": 73, "y": -37}, "3": {"x": 71, "sz": 0.95, "y": 16}}}, "35": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "twGap": 35, "twSpd": 1.7, "tick": 0.25, "fr": {"1": {"x": 53, "sz": 0.47}, "2": {"sz": 0.58, "x": 85, "y": 3}, "3": {"sz": 0.63, "x": 60, "y": 3}, "4": {"sz": 0.69, "x": 102, "y": 5}, "5": {"sz": 0.76, "x": 81, "y": 3}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
 }
 const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 31, 33, 34, 35]                          // 이펙트 있는 스킬 id
 // 이펙트 프레임 시간(초) 배열 — 넣은 값을 그대로 씀. 프레임을 늘리거나 줄이면 값도 같이 조정할 것.
@@ -4194,8 +4194,8 @@ const UI_DEFAULT = {
   evochrgiant3: 92, evochrgiant3X: 6, evochrgiant3Y: -5,
   evochrgiant4: 92, evochrgiant4X: 6, evochrgiant4Y: -5,
   evochrgiant5: 92, evochrgiant5X: 6, evochrgiant5Y: -5,
-  evocell: 81, evonamefz: 12,               // 동료 탭(caslot/canamefz)과 같은 시작값
-  evocellX: 0, evocellY: 0, evonameX: 0, evonameY: 0,
+  evocell: 78, evonamefz: 11, evofade: 56,               // 동료 탭(caslot/canamefz)과 같은 시작값
+  evocellX: -5, evocellY: 17, evonameX: 0, evonameY: 0,
   pbsz: 30, wjfz: 13, caslot: 81, caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 160, bth: 26, bhpw: 159, bhph: 30, pmw: 70, pmh: 23, pmfz: 11, pgw: 70, pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 39, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
   // 위치 이동(px): 요소별 X/Y
   avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: -1, pillY: 2, iconX: -3, iconY: 1,
@@ -4443,6 +4443,7 @@ const EDIT_GROUPS = {
   alstat: { label: '동료 능력치 줄', size: ['alstatfz'], pos: 'alstat' },
   albtn: { label: '동료 상세 버튼', size: ['albtnw', 'albtnh', 'albtnfz'], pos: 'albtn' },
   evocell: { label: '전직 칸', size: ['evocell'], pos: 'evocell' },
+  evofade: { label: '전직 아래 흐림', size: ['evofade'] },
   evoname: { label: '전직 이름', size: ['evonamefz'], pos: 'evoname' },
   allyslot: { label: '동료 칸', size: ['caslot'], pos: 'caslot' },
   allyimg: { label: '동료 캐릭터', size: ['caimg'], pos: 'caimg' },
@@ -4572,7 +4573,7 @@ const UI_LABELS = {
   shoprowmin: '박스 높이', shopic0: '무기 아이콘', shopic1: '방어구 아이콘', shopic2: '유물 아이콘', shoptfz: '제목 글자', shopsubfz: '부제 글자',
   shopbw: '버튼 너비', shopbh: '버튼 높이', shopbbv: '프레임 두께↕', shopbbh: '프레임 두께↔', shopbfz: '버튼 글자',
   gainic: '아이콘 크기', gainpv: '판 두께↕', gainph: '판 두께↔', shopgem: '다이아 크기', gbtnfz: '버튼 글자', gbtnpw: '판 가로', gbtnph: '판 세로',
-  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', skicon: '아이콘 크기%', slicon: '아이콘 크기%', advbw: '버튼 너비', advbh: '버튼 높이', advbfz: '버튼 글자', advww: '창 너비', advwh: '창 높이', adviw: '그림 너비', advih: '그림 높이', advibw: '틀 너비', advibh: '틀 높이', advmbw: '틀 너비', advmbh: '틀 높이', advrbw: '틀 너비', advrbh: '틀 높이', advwbw: '틀 너비', advwbh: '틀 높이', advsw: '표지판 너비', advsh: '표지판 높이', advsfz: '글자 크기', advbarw: '바 너비', advbarh: '바 높이', advmonkfz: '글자 크기', advmonvfz: '글자 크기', advregkfz: '글자 크기', advregvfz: '글자 크기', advrewkfz: '글자 크기', advrewvfz: '숫자 크기', advrewic: '아이콘 크기', advmfz: '글자 크기', advrfz: '글자 크기', advwfz: '글자 크기', advew: '버튼 너비', adveh: '버튼 높이', advefz: '버튼 글자', advcw: '버튼 너비', advch: '버튼 높이', advcfz: '버튼 글자', mailsz: '우편함 크기', questsz: '퀘스트 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', evocell: '칸 크기', evonamefz: '이름 글자',
+  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', skicon: '아이콘 크기%', slicon: '아이콘 크기%', advbw: '버튼 너비', advbh: '버튼 높이', advbfz: '버튼 글자', advww: '창 너비', advwh: '창 높이', adviw: '그림 너비', advih: '그림 높이', advibw: '틀 너비', advibh: '틀 높이', advmbw: '틀 너비', advmbh: '틀 높이', advrbw: '틀 너비', advrbh: '틀 높이', advwbw: '틀 너비', advwbh: '틀 높이', advsw: '표지판 너비', advsh: '표지판 높이', advsfz: '글자 크기', advbarw: '바 너비', advbarh: '바 높이', advmonkfz: '글자 크기', advmonvfz: '글자 크기', advregkfz: '글자 크기', advregvfz: '글자 크기', advrewkfz: '글자 크기', advrewvfz: '숫자 크기', advrewic: '아이콘 크기', advmfz: '글자 크기', advrfz: '글자 크기', advwfz: '글자 크기', advew: '버튼 너비', adveh: '버튼 높이', advefz: '버튼 글자', advcw: '버튼 너비', advch: '버튼 높이', advcfz: '버튼 글자', mailsz: '우편함 크기', questsz: '퀘스트 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', evocell: '칸 크기', evonamefz: '이름 글자', evofade: '흐려지는 높이',
   alwinw: '창 너비', alnamefz: '이름 글자', alimg: '그림 크기', alstatfz: '글자 크기', albtnw: '버튼 너비', albtnh: '버튼 높이', albtnfz: '버튼 글자', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
   trsz: '상자 크기', offw: '창 너비', offtfz: '제목 글자', offnfz: '정보 글자', offiw: '항목 너비', offih: '항목 높이', offgap: '항목 간격', offic: '아이콘 크기', offifz: '획득 글자', offrfz: '분당 글자', offbtw: '버튼 너비', offbth: '버튼 높이', offbfz: '버튼 글자', offclw: '버튼 너비', offclh: '버튼 높이', offcfz: '버튼 글자', fuseallw: '융합버튼 너비', fuseallh: '융합버튼 높이', fuseallfz: '융합버튼 글자',
   matchipic: '아이콘 크기', matchipfz: '글자 크기', allychipic: '동료 아이콘', allychipfz: '동료 글자', dtabh: '탭 높이', dtabfz: '탭 글자', dgradefz: '등급 글자', dtitlefz: '이름 글자', darrowfz: '화살표 크기', diconsz: '아이콘틀 크기', dtierfz: '등급표시 글자', dstatfz: '능력치 글자', denhh: '강화버튼 높이', denhfz: '강화버튼 글자', denhic: '강화 재화아이콘', dequiph: '장착버튼 높이', dequipfz: '장착버튼 글자', dfuseh: '융합버튼 높이', dfusefz: '융합버튼 글자', dstepsz: '조절버튼 크기', dstepfz: '수량 글자',
@@ -4674,7 +4675,7 @@ ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k
 --pd-shoptfz:${c.shoptfz}px;--pd-shopsubfz:${c.shopsubfz}px;--pd-shopbw:${c.shopbw}px;--pd-shopbh:${c.shopbh}px;--pd-shopbbv:${c.shopbbv}px;--pd-shopbbh:${c.shopbbh}px;--pd-shopbfz:${c.shopbfz}px;
 --pd-gainic:${c.gainic}px;--pd-gainpv:${c.gainpv}px;--pd-gainph:${c.gainph}px;--pd-gainic-x:${c.gainicX}px;--pd-gainic-y:${c.gainicY}px;--pd-gaint-x:${c.gaintX}px;--pd-gaint-y:${c.gaintY}px;--pd-shopgem:${c.shopgem}px;
 --pd-gbtnfz:${c.gbtnfz}px;--pd-gbtnpw:${c.gbtnpw}px;--pd-gbtnph:${c.gbtnph}px;
---pd-pmw:${c.pmw}px;--pd-pmh:${c.pmh}px;--pd-pmfz:${c.pmfz}px;--pd-pgw:${c.pgw}px;--pd-pgh:${c.pgh}px;--pd-pgfz:${c.pgfz}px;--pd-hambsz:${c.hambsz}px;--pd-menufz:${c.menufz}px;--pd-pbsz:${c.pbsz}px;--pd-wjfz:${c.wjfz}px;--pd-caslot:${c.caslot}px;--pd-caimg:${c.caimg}px;--pd-canamefz:${c.canamefz}px;--pd-evocell:${c.evocell}px;--pd-evonamefz:${c.evonamefz}px;--pd-alwinw:${c.alwinw}px;--pd-alnamefz:${c.alnamefz}px;--pd-alimg:${c.alimg}px;--pd-alstatfz:${c.alstatfz}px;--pd-albtnw:${c.albtnw}px;--pd-albtnh:${c.albtnh}px;--pd-albtnfz:${c.albtnfz}px;${ALLY_EVO_KEYS.flatMap(k => [1, 2, 3, 4, 5].map(n => `--pd-evochr${k}${n}:${c[`evochr${k}${n}`]}px;--pd-evochr${k}${n}-x:${c[`evochr${k}${n}X`]}px;--pd-evochr${k}${n}-y:${c[`evochr${k}${n}Y`]}px;`)).join('')}--pd-catabfz:${c.catabfz}px;
+--pd-pmw:${c.pmw}px;--pd-pmh:${c.pmh}px;--pd-pmfz:${c.pmfz}px;--pd-pgw:${c.pgw}px;--pd-pgh:${c.pgh}px;--pd-pgfz:${c.pgfz}px;--pd-hambsz:${c.hambsz}px;--pd-menufz:${c.menufz}px;--pd-pbsz:${c.pbsz}px;--pd-wjfz:${c.wjfz}px;--pd-caslot:${c.caslot}px;--pd-caimg:${c.caimg}px;--pd-canamefz:${c.canamefz}px;--pd-evocell:${c.evocell}px;--pd-evonamefz:${c.evonamefz}px;--pd-evofade:${c.evofade}px;--pd-alwinw:${c.alwinw}px;--pd-alnamefz:${c.alnamefz}px;--pd-alimg:${c.alimg}px;--pd-alstatfz:${c.alstatfz}px;--pd-albtnw:${c.albtnw}px;--pd-albtnh:${c.albtnh}px;--pd-albtnfz:${c.albtnfz}px;${ALLY_EVO_KEYS.flatMap(k => [1, 2, 3, 4, 5].map(n => `--pd-evochr${k}${n}:${c[`evochr${k}${n}`]}px;--pd-evochr${k}${n}-x:${c[`evochr${k}${n}X`]}px;--pd-evochr${k}${n}-y:${c[`evochr${k}${n}Y`]}px;`)).join('')}--pd-catabfz:${c.catabfz}px;
 --pd-cabtnfz:${c.cabtnfz}px;
 ${['caslot', 'caimg', 'caname', 'catab', 'cabtn'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}--pd-pb-x:${c.pbX}px;--pd-pb-y:${c.pbY}px;--pd-wj-x:${c.wjX}px;--pd-wj-y:${c.wjY}px;--pd-btw:${c.btw}px;--pd-bth:${c.bth}px;--pd-bhpw:${c.bhpw}px;--pd-bhph:${c.bhph}px;
 ${['bt', 'bhp'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
@@ -4898,7 +4899,13 @@ const st = {
     color: '#f0dfae', fontWeight: 700, padding: 0,
   },
   alHint: { fontSize: 10, color: '#8a7758', marginTop: 6, textAlign: 'center' },
-  evoGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, var(--pd-evocell))', gap: 8, justifyContent: 'center', padding: 10, overflowY: 'auto' },
+  evoGrid: {
+    display: 'grid', gridTemplateColumns: 'repeat(4, var(--pd-evocell))', gap: 8,
+    justifyContent: 'center', padding: 10, overflowY: 'auto',
+    // 아래쪽이 잘려 보이지 않게 끝을 흐리게 — 스크롤 컨테이너라 마스크는 화면 가장자리 기준으로 걸린다
+    maskImage: `linear-gradient(180deg, #000 calc(100% - var(--pd-evofade)), transparent 100%)`,
+    WebkitMaskImage: `linear-gradient(180deg, #000 calc(100% - var(--pd-evofade)), transparent 100%)`,
+  },
   evoCell: {
     width: 'var(--pd-evocell)', aspectRatio: '0.82', borderRadius: 10,
     border: '1px solid #5a4028', background: 'linear-gradient(180deg,#22180d,#120b05)',
