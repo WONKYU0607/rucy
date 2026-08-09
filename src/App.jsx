@@ -37,7 +37,7 @@ const SPLASH_BG = (() => {
   try { const q = new URLSearchParams(location.search); if (q.get('intro') === 'en') ko = false; if (q.get('intro') === 'ko') ko = true } catch {}
   return ko ? '/startbg/startbg.webp' : '/startbg/startbg_en.webp'
 })()
-const CFG_STAMP = Date.parse('2026-08-09T20:05:00+09:00')
+const CFG_STAMP = Date.parse('2026-08-09T20:20:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -4181,25 +4181,25 @@ const UI_DEFAULT = {
   evochrhunter1: 89, evochrhunter1X: 8, evochrhunter1Y: -8,
   evochrhunter2: 89, evochrhunter2X: 8, evochrhunter2Y: -8,
   evochrhunter3: 89, evochrhunter3X: 8, evochrhunter3Y: -8,
-  evochrhunter4: 89, evochrhunter4X: 8, evochrhunter4Y: -8,
-  evochrhunter5: 89, evochrhunter5X: 8, evochrhunter5Y: -8,
-  evochrshaman1: 89, evochrshaman1X: 10, evochrshaman1Y: -4,
-  evochrshaman2: 89, evochrshaman2X: 10, evochrshaman2Y: -4,
+  evochrhunter4: 89, evochrhunter4X: 6, evochrhunter4Y: -8,
+  evochrhunter5: 87, evochrhunter5X: 2, evochrhunter5Y: -8,
+  evochrshaman1: 87, evochrshaman1X: 8, evochrshaman1Y: -2,
+  evochrshaman2: 87, evochrshaman2X: 10, evochrshaman2Y: -2,
   evochrshaman3: 89, evochrshaman3X: 10, evochrshaman3Y: -4,
-  evochrshaman4: 89, evochrshaman4X: 10, evochrshaman4Y: -4,
-  evochrshaman5: 89, evochrshaman5X: 10, evochrshaman5Y: -4,
-  evochrhealer1: 89, evochrhealer1X: -6, evochrhealer1Y: -3,
+  evochrshaman4: 89, evochrshaman4X: -2, evochrshaman4Y: -4,
+  evochrshaman5: 86, evochrshaman5X: -2, evochrshaman5Y: -4,
+  evochrhealer1: 89, evochrhealer1X: -6, evochrhealer1Y: -5,
   evochrhealer2: 89, evochrhealer2X: -6, evochrhealer2Y: -3,
   evochrhealer3: 89, evochrhealer3X: -6, evochrhealer3Y: -3,
-  evochrhealer4: 89, evochrhealer4X: -6, evochrhealer4Y: -3,
-  evochrhealer5: 89, evochrhealer5X: -6, evochrhealer5Y: -3,
-  evochrgiant1: 92, evochrgiant1X: 6, evochrgiant1Y: -5,
+  evochrhealer4: 89, evochrhealer4X: -7, evochrhealer4Y: -3,
+  evochrhealer5: 84, evochrhealer5X: -4, evochrhealer5Y: -3,
+  evochrgiant1: 89, evochrgiant1X: 6, evochrgiant1Y: -7,
   evochrgiant2: 92, evochrgiant2X: 6, evochrgiant2Y: -5,
   evochrgiant3: 92, evochrgiant3X: 6, evochrgiant3Y: -5,
-  evochrgiant4: 92, evochrgiant4X: 6, evochrgiant4Y: -5,
-  evochrgiant5: 92, evochrgiant5X: 6, evochrgiant5Y: -5,
+  evochrgiant4: 92, evochrgiant4X: 4, evochrgiant4Y: -5,
+  evochrgiant5: 84, evochrgiant5X: 1, evochrgiant5Y: -3,
   evocell: 78, evonamefz: 11, evofade: 56,               // 동료 탭(caslot/canamefz)과 같은 시작값
-  evocellX: -5, evocellY: 17, evonameX: 0, evonameY: 0,
+  evocellX: -5, evocellY: 17, evonameX: 0, evonameY: 6,
   pbsz: 30, wjfz: 13, caslot: 81, caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 160, bth: 26, bhpw: 159, bhph: 30, pmw: 70, pmh: 23, pmfz: 11, pgw: 70, pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 39, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
   // 위치 이동(px): 요소별 X/Y
   avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: -1, pillY: 2, iconX: -3, iconY: 1,
@@ -4871,7 +4871,7 @@ const st = {
     transform: 'translate(var(--pd-gbtn-x), var(--pd-gbtn-y))',
   },
   gachaBtnText: { display: 'inline-block', fontSize: 'var(--pd-gbtnfz)', transform: 'translate(var(--pd-gbtnt-x), var(--pd-gbtnt-y))' },
-  allySubRow: { display: 'flex', gap: 6, padding: '6px 8px 2px' },
+  allySubRow: { display: 'flex', gap: 6, padding: '6px 8px 2px', flexShrink: 0, position: 'relative', zIndex: 2 },   // 목록이 길어져도 안 눌리고 위에 고정
   allySubTab: {
     padding: '5px 16px', borderRadius: 7, border: '1px solid #3a2a14', background: 'transparent',
     color: '#b8a888', fontSize: 'var(--pd-catabfz)', transform: 'translate(var(--pd-catab-x), var(--pd-catab-y))',
@@ -4906,7 +4906,9 @@ const st = {
   },
   alHint: { fontSize: 10, color: '#8a7758', marginTop: 6, textAlign: 'center' },
   evoGrid: {
+    flex: 1, minHeight: 0,                                   // 남은 높이만 차지 → 목록만 스크롤되고 탭 줄은 그대로
     display: 'grid', gridTemplateColumns: 'repeat(4, var(--pd-evocell))', gap: 8,
+    alignContent: 'start',
     justifyContent: 'center', padding: 10, overflowY: 'auto',
     // 아래쪽이 잘려 보이지 않게 끝을 흐리게 — 스크롤 컨테이너라 마스크는 화면 가장자리 기준으로 걸린다
     maskImage: `linear-gradient(180deg, #000 calc(100% - var(--pd-evofade)), transparent 100%)`,
