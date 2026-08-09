@@ -960,6 +960,7 @@ export default function App() {
   const [allyEvo, setAllyEvo] = useState(init.allyEvo || { hunter: 1, shaman: 1, healer: 1, giant: 1 })   // 동료별 전직 단계(1~5)
   const [allyLv, setAllyLv] = useState(init.allyLv || { hunter: 1, shaman: 1, healer: 1, giant: 1 })
   const [allyPick, setAllyPick] = useState(null)          // 전직 칸을 누르면 열리는 동료 상세창
+  const [evoBot, setEvoBot] = useState(false)             // 전직 목록을 끝까지 내렸나 — 끝이면 아래 흐림을 끈다
   useEffect(() => {
     const upd = () => {
       const sw = window.innerWidth, sh = window.innerHeight
@@ -3680,7 +3681,10 @@ export default function App() {
               })}
             </div>
           ) : (
-            <div style={st.evoGrid}>
+            <div
+              ref={el => { if (el) { const b = el.scrollTop + el.clientHeight >= el.scrollHeight - 2; if (b !== evoBot) setEvoBot(b) } }}
+              onScroll={e => { const el = e.currentTarget; setEvoBot(el.scrollTop + el.clientHeight >= el.scrollHeight - 2) }}
+              style={{ ...st.evoGrid, ...(evoBot ? { maskImage: 'none', WebkitMaskImage: 'none' } : null) }}>
               {Array.from({ length: ALLY_EVO_MAX }, (_, r) => ALLY_EVO_KEYS.map(ak => {
                 const st2 = r + 1
                 const cur = (allyEvo[ak] || 1) >= st2                  // 도달한 단계는 밝게, 나머지는 어둡게
@@ -4606,7 +4610,9 @@ for (const __ak of ALLY_EVO_KEYS) for (let __s = 1; __s <= ALLY_EVO_MAX; __s++) 
   const __k2 = `evochr${__ak}${__s}`
   EDIT_GROUPS[__k2] = { label: `전직 ${ALLY_DEFS[__ak].name} ${__s}단계`, size: [__k2], pos: __k2 }
   UI_LABELS[__k2] = '캐릭 크기'
-  UI_DEFAULT[__k2] = 50; UI_DEFAULT[`${__k2}X`] = 0; UI_DEFAULT[`${__k2}Y`] = 0
+  // 이 루프는 UI_DEFAULT 선언(4103)보다 뒤에서 돌기 때문에 `=`로 쓰면 위에 박아둔 확정값을 덮어쓴다.
+  // 위에 값이 있으면 그대로 두고, 없는 키만 기본값을 채운다.
+  UI_DEFAULT[__k2] ??= 50; UI_DEFAULT[`${__k2}X`] ??= 0; UI_DEFAULT[`${__k2}Y`] ??= 0
 }
 for (const __k of SKILLS) {                                  // 카드 안 스킬 아이콘: 스킬마다 가로·세로·위치 따로
   EDIT_GROUPS[`cardic${__k.id}`] = { label: `카드아이콘 ${__k.name}`, size: [`cardic${__k.id}w`, `cardic${__k.id}h`], pos: `cardic${__k.id}` }
