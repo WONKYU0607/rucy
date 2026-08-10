@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { initializeApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut } from 'firebase/auth'
-import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore'
+import { getFirestore, doc, getDoc, setDoc, collection, query, where, getCountFromServer } from 'firebase/firestore'
 
 // ── Firebase 클라우드 세이브 설정: 콘솔 웹앱 구성값 붙여넣기 ──
 const FIREBASE_CONFIG = {
@@ -37,7 +37,7 @@ const SPLASH_BG = (() => {
   try { const q = new URLSearchParams(location.search); if (q.get('intro') === 'en') ko = false; if (q.get('intro') === 'ko') ko = true } catch {}
   return ko ? '/startbg/startbg.webp' : '/startbg/startbg_en.webp'
 })()
-const CFG_STAMP = Date.parse('2026-08-09T21:20:00+09:00')
+const CFG_STAMP = Date.parse('2026-08-09T21:40:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -100,6 +100,10 @@ const SKILL_SHEET = [
   { id: 28, n: 7, h: 200, stage: 2, title: '피폭', charSeq: [1, 2, 3, 5, 6, 7], cd: 2, dmgMult: 3, aoe: true },
   // 29·30: 히어로 모션(charSeq)과 이펙트(fx)가 각각 다른 시트 → 이펙트가 별도 레이어라 몹에 안 가림
   { id: 29, n: 7, h: 200, stage: 2, title: '사이오닉 스톰', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [4, 5, 6, 7], fxH: 240, hitP: 0.6 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 150 },
+  { id: 42, n: 8, h: 200, stage: 4, title: '환영', charSeq: [1, 2, 3, 4, 5, 6, 7, 8], cd: 2, dmgMult: 3, aoe: true, rangePx: 180, hitAt: 0.7 },   // 분신 난무 — 이펙트가 그림에 포함
+  { id: 41, n: 5, h: 200, stage: 4, title: '연속 달빛베기', charSeq: [1, 2, 3, 4, 5, 3, 4, 5, 3, 4, 5], cd: 2, dmgMult: 3, aoe: true, rangePx: 200, hitAt: 0.6 },   // 3·4·5번을 3바퀴
+  { id: 40, n: 10, h: 200, stage: 4, title: '단검비', charSeq: [1, 2, 3, 4, 5], fx: { type: 'strike', frames: [6, 7, 8, 9, 10], fxH: 260, hitP: 0.7 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 200 },   // 1~5 히어로, 6~10 낙하 이펙트
+  { id: 39, n: 8, h: 200, stage: 4, title: '독검', charSeq: [1, 2, 3, 4, 5, 6, 8], cd: 2, dmgMult: 3, aoe: true, rangePx: 180, hitAt: 0.85 },   // 시트에 7번이 없어 번호를 그대로 씀(7은 미사용)
   { id: 38, n: 6, h: 200, stage: 4, title: '난도질', charSeq: [1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6], cd: 2, dmgMult: 3, aoe: true, rangePx: 150, hitAt: 0.6 },   // 쌍칼 회전 베기 — 이펙트가 그림에 포함
   { id: 37, n: 8, h: 200, stage: 4, title: '순보', charSeq: [1, 2, 3, 4, 5, 6, 7, 8, 2, 3, 4], cd: 2, dmgMult: 3, aoe: true, rangePx: 200, hitAt: 0.55 },   // 대시 — 오른쪽 1~5 + 왼쪽 2~4, 끝에 2·3·4 재생
   { id: 36, n: 9, h: 200, stage: 3, title: '불놀이야', charSeq: [1, 2, 3, 4, 5, 6, 7, 8, 9], cd: 2, dmgMult: 3, aoe: true, rangePx: 150 },   // 9프레임 전부 히어로 모션 — 이펙트가 그림에 포함(별도 fx 없음)
@@ -112,7 +116,7 @@ const SKILL_SHEET = [
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
 // 스킬 아이콘: 해당 스킬 시트의 지정 프레임 사용 (없으면 번호 텍스트)
-const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4, 22: 4, 23: 6, 24: 7, 25: 3, 26: 3, 27: 1, 28: 6, 29: 6, 31: 6, 32: 2, 33: 10, 34: 7, 35: 5, 36: 2, 37: 2, 38: 4 }
+const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4, 22: 4, 23: 6, 24: 7, 25: 3, 26: 3, 27: 1, 28: 6, 29: 6, 31: 6, 32: 2, 33: 10, 34: 7, 35: 5, 36: 2, 37: 2, 38: 4, 39: 8, 40: 4, 41: 2, 42: 6 }
 // 스킬 효과(대상/데미지/사거리/쿨타임)를 인게임 상세창에서 조절 — 인덱스가 아닌 **id 기준**이라
 // 스킬을 넣고 빼도 값이 안 밀린다(예전 cdConf는 인덱스 배열이라 매번 리셋됐음).
 const skEff = (sk, cfg) => {
@@ -216,12 +220,12 @@ const MOTION_DEFAULT = {
     sz: 0.85, x: -35, y: 0,
     walkSz: { 0: 0.95, 1: 0.96, 2: 0.94, 3: 0.94, 4: 0.86, 5: 0.9 },
     skillHide: {"35": 1},                  // 1이면 히어로 모션이 끝나는 순간부터 이펙트가 끝날 때까지 히어로를 안 그림 (토네이도처럼 이펙트만 남겨야 하는 스킬)
-    skillFront: {"22": 1, "23": 1, "24": 1, "25": 1, "26": 1, "27": 1, "28": 1, "29": 0, "31": 1, "32": 1, "33": 1, "34": 1, "35": 0, "36": 1},   // 1이면 그 스킬 시전 중 히어로를 몬스터 위에 그림
+    skillFront: {"37": 1, "22": 1, "23": 1, "24": 1, "25": 1, "26": 1, "27": 1, "28": 1, "29": 0, "31": 1, "32": 1, "33": 1, "34": 1, "35": 0, "36": 1},   // 1이면 그 스킬 시전 중 히어로를 몬스터 위에 그림
     skillSz: {"1": 0.85, "2": 0.85, "7": 0.9, "8": 0.95, "13": 0.85, "15": 0.83, "17": 0.88, "18": 1.07, "20": 1.06, "22": 1.03, "23": 0.9, "24": 0.9, "25": 0.8, "26": 0.54, "27": 0.8},   // 스킬별 크기
     skillPos: {"23": {"x": -5}},   // 스킬별 위치
-    skillFrSz: {"37": {"1": 0.5, "2": 0.5, "3": 0.5, "4": 0.5, "5": 0.5, "6": 0.5, "7": 0.5, "8": 0.5, "9": 0.5, "10": 0.5, "11": 0.5}, "38": {"1": 0.55, "2": 0.55, "3": 0.55, "4": 0.55, "5": 0.55, "6": 0.55, "7": 0.55, "8": 0.55, "9": 0.55, "10": 0.55, "11": 0.55, "12": 0.55}, "2": {"2": 0.98}, "22": {"4": 0.95}, "23": {"1": 0.97, "2": 0.97, "3": 0.97, "4": 0.97, "5": 0.97}, "25": {"1": 0.98, "2": 1.06, "3": 1.18}, "28": {"1": 2.1, "2": 2.1, "3": 2.1, "4": 1.7, "5": 1.6, "6": 1.91}, "29": {"1": 0.88, "2": 0.87, "3": 0.9}, "31": {"1": 0.6, "2": 0.6, "3": 0.6, "4": 0.6, "5": 0.65}, "32": {"1": 0.73, "2": 0.73, "3": 0.75, "4": 0.75, "5": 0.82}, "33": {"1": 0.9, "2": 0.98, "3": 0.95, "5": 0.99, "6": 0.99}, "34": {"1": 0.98, "2": 1.02, "3": 1.08}, "35": {"1": 0.85, "2": 0.88, "3": 0.86}, "36": {"1": 0.78, "2": 0.75, "3": 0.77, "4": 0.81, "5": 0.79, "6": 0.77, "7": 0.81, "8": 0.77, "9": 0.8}},   // 스킬 프레임별 크기
-    skillFrPos: {"38": {"2": {"x": 5}, "3": {"x": 10}, "4": {"x": 15}, "5": {"x": 20}, "6": {"x": 25}, "8": {"x": 5}, "9": {"x": 10}, "10": {"x": 15}, "11": {"x": 20}, "12": {"x": 25}}, "22": {"2": {"x": 20}, "3": {"x": 75}, "4": {"x": 155}}, "23": {"1": {"x": 35}, "2": {"x": 70}, "3": {"x": 105}, "4": {"x": 140}, "5": {"x": 175}}, "24": {"3": {"x": 50, "y": 14}, "4": {"y": 15, "x": 50}}, "25": {"1": {"y": 7}, "2": {"x": 45, "y": 3}, "3": {"x": 86, "y": 5}, "4": {"x": 100, "y": 9}}, "26": {"1": {"x": 20}, "2": {"x": 40}, "3": {"x": 60}, "4": {"x": 80}, "5": {"x": 100}, "6": {"x": 120}}, "27": {"1": {"x": 20}, "2": {"x": 20}, "3": {"x": 25}, "4": {"x": 15}, "5": {"x": 20}}, "28": {"1": {"x": 22, "y": 0}, "2": {"y": 3, "x": 30}, "3": {"x": 50, "y": -45}, "4": {"x": 110, "y": 13}, "5": {"x": 128, "y": 12}, "6": {"x": 132, "y": 16}}, "29": {"1": {"x": 10, "y": 3}, "2": {"x": 10, "y": 5}, "3": {"x": 2}}, "31": {"1": {"y": 2, "x": -4}, "2": {"y": 2}, "3": {"x": -4}, "5": {"x": -21, "y": 4}}, "32": {"1": {"y": 3, "x": -28}, "2": {"y": 6, "x": 34}, "3": {"y": 4, "x": 6}, "4": {"x": 37, "y": 3}, "5": {"y": 9, "x": 100}}, "33": {"1": {"y": 3, "x": -4}, "2": {"x": 10, "y": -14}, "3": {"x": 30, "y": -15}, "4": {"x": 105, "y": 10}, "5": {"x": 82, "y": 21}, "6": {"x": 84, "y": 20}}, "34": {"1": {"y": 3, "x": 1}, "2": {"x": 4, "y": 5}, "3": {"x": 10, "y": 4}}, "35": {"1": {"y": 4, "x": 5}, "2": {"y": 2, "x": 20}, "3": {"x": 30, "y": 1}}, "36": {"1": {"y": 4}, "3": {"y": 2}, "4": {"x": 18}, "5": {"x": 32, "y": 1}, "6": {"x": 62}, "7": {"y": 4, "x": 67}, "8": {"y": 3, "x": 73}, "9": {"y": 2, "x": 134}}},   // 스킬 프레임별 위치
-    skillFrT: {"37": [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5], "38": [0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12], "18": [0.2, 0.25], "22": [0.12, 0.15, 0.18, 0.2], "23": [0.15, 0.15, 0.15, 0.15, 0.25], "24": [0.15, 0.15, 0.2, 0.2], "25": [0.12, 0.12, 0.12, 0.15], "26": [0.15, 0.15, 0.15, 0.15, 0.15, 0.15], "27": [0.1, 0.1, 0.1, 0.25, 0.25], "28": [0.15, 0.15, 0.2, 0.15, 0.2, 0.25], "29": [0.1, 0.15, 0.25], "31": [0.15, 0.15, 0.15, 0.15, 0.4], "32": [0.1, 0.17, 0.12, 0.12, 0.33], "33": [0.16, 0.15, 0.13, 0.13, 0.15, 0.35], "34": [0.2, 0.15, 0.25], "35": [0.15, 0.15, 0.15], "36": [0.12, 0.12, 0.05, 0.05, 0.1, 0.07, 0.07, 0.12, 0.2]},   // 스킬 프레임별 재생시간(초)
+    skillFrSz: {"37": {"1": 0.48, "2": 0.48, "3": 0.48, "4": 0.48, "5": 0.48, "6": 0.48, "7": 0.48, "8": 0.48, "9": 0.48, "10": 0.48, "11": 0.48}, "38": {"1": 0.55, "2": 0.55, "3": 0.55, "4": 0.55, "5": 0.55, "6": 0.55, "7": 0.55, "8": 0.55, "9": 0.55, "10": 0.55, "11": 0.55, "12": 0.55}, "2": {"2": 0.98}, "22": {"4": 0.95}, "23": {"1": 0.97, "2": 0.97, "3": 0.97, "4": 0.97, "5": 0.97}, "25": {"1": 0.98, "2": 1.06, "3": 1.18}, "28": {"1": 2.1, "2": 2.1, "3": 2.1, "4": 1.7, "5": 1.6, "6": 1.91}, "29": {"1": 0.88, "2": 0.87, "3": 0.9}, "31": {"1": 0.6, "2": 0.6, "3": 0.6, "4": 0.6, "5": 0.65}, "32": {"1": 0.73, "2": 0.73, "3": 0.75, "4": 0.75, "5": 0.82}, "33": {"1": 0.9, "2": 0.98, "3": 0.95, "5": 0.99, "6": 0.99}, "34": {"1": 0.98, "2": 1.02, "3": 1.08}, "35": {"1": 0.85, "2": 0.88, "3": 0.86}, "36": {"1": 0.78, "2": 0.75, "3": 0.77, "4": 0.81, "5": 0.79, "6": 0.77, "7": 0.81, "8": 0.77, "9": 0.8}},   // 스킬 프레임별 크기
+    skillFrPos: {"37": {"2": {"x": 55}, "3": {"x": 120}, "4": {"x": 179}, "5": {"x": 193}, "6": {"x": 185}, "7": {"x": 133}, "8": {"x": 90}, "10": {"x": 97}, "11": {"x": 168}}, "38": {"2": {"x": 5}, "3": {"x": 10}, "4": {"x": 15}, "5": {"x": 20}, "6": {"x": 25}, "8": {"x": 5}, "9": {"x": 10}, "10": {"x": 15}, "11": {"x": 20}, "12": {"x": 25}}, "22": {"2": {"x": 20}, "3": {"x": 75}, "4": {"x": 155}}, "23": {"1": {"x": 35}, "2": {"x": 70}, "3": {"x": 105}, "4": {"x": 140}, "5": {"x": 175}}, "24": {"3": {"x": 50, "y": 14}, "4": {"y": 15, "x": 50}}, "25": {"1": {"y": 7}, "2": {"x": 45, "y": 3}, "3": {"x": 86, "y": 5}, "4": {"x": 100, "y": 9}}, "26": {"1": {"x": 20}, "2": {"x": 40}, "3": {"x": 60}, "4": {"x": 80}, "5": {"x": 100}, "6": {"x": 120}}, "27": {"1": {"x": 20}, "2": {"x": 20}, "3": {"x": 25}, "4": {"x": 15}, "5": {"x": 20}}, "28": {"1": {"x": 22, "y": 0}, "2": {"y": 3, "x": 30}, "3": {"x": 50, "y": -45}, "4": {"x": 110, "y": 13}, "5": {"x": 128, "y": 12}, "6": {"x": 132, "y": 16}}, "29": {"1": {"x": 10, "y": 3}, "2": {"x": 10, "y": 5}, "3": {"x": 2}}, "31": {"1": {"y": 2, "x": -4}, "2": {"y": 2}, "3": {"x": -4}, "5": {"x": -21, "y": 4}}, "32": {"1": {"y": 3, "x": -28}, "2": {"y": 6, "x": 34}, "3": {"y": 4, "x": 6}, "4": {"x": 37, "y": 3}, "5": {"y": 9, "x": 100}}, "33": {"1": {"y": 3, "x": -4}, "2": {"x": 10, "y": -14}, "3": {"x": 30, "y": -15}, "4": {"x": 105, "y": 10}, "5": {"x": 82, "y": 21}, "6": {"x": 84, "y": 20}}, "34": {"1": {"y": 3, "x": 1}, "2": {"x": 4, "y": 5}, "3": {"x": 10, "y": 4}}, "35": {"1": {"y": 4, "x": 5}, "2": {"y": 2, "x": 20}, "3": {"x": 30, "y": 1}}, "36": {"1": {"y": 4}, "3": {"y": 2}, "4": {"x": 18}, "5": {"x": 32, "y": 1}, "6": {"x": 62}, "7": {"y": 4, "x": 67}, "8": {"y": 3, "x": 73}, "9": {"y": 2, "x": 134}}},   // 스킬 프레임별 위치
+    skillFrT: {"37": [0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07], "38": [0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12], "18": [0.2, 0.25], "22": [0.12, 0.15, 0.18, 0.2], "23": [0.15, 0.15, 0.15, 0.15, 0.25], "24": [0.15, 0.15, 0.2, 0.2], "25": [0.12, 0.12, 0.12, 0.15], "26": [0.15, 0.15, 0.15, 0.15, 0.15, 0.15], "27": [0.1, 0.1, 0.1, 0.25, 0.25], "28": [0.15, 0.15, 0.2, 0.15, 0.2, 0.25], "29": [0.1, 0.15, 0.25], "31": [0.15, 0.15, 0.15, 0.15, 0.4], "32": [0.1, 0.17, 0.12, 0.12, 0.33], "33": [0.16, 0.15, 0.13, 0.13, 0.15, 0.35], "34": [0.2, 0.15, 0.25], "35": [0.15, 0.15, 0.15], "36": [0.12, 0.12, 0.05, 0.05, 0.1, 0.07, 0.07, 0.12, 0.2]},   // 스킬 프레임별 재생시간(초)
     evoSz: { 0: 0.95, 1: 0.85, 2: 0.9, 3: 0.88, 4: 0.9, 5: 0.9 },
     outline: {"blur": 10, "alpha": 0.8},   // 히어로 외곽 그림자
     range: {"0": 25, "1": 90, "2": 35, "3": 35, "4": 35, "5": 40},   // 진화단계별 기본공격 사거리(px). 히어로 x=200, 화면 폭 420 → 220이면 화면 끝
@@ -275,9 +279,9 @@ const MOTION_DEFAULT = {
   // 이펙트 프레임별 재생시간(초). 합 = 총 재생시간(전체 '프레임 속도'로 나눔).
   // 길이가 실제 프레임 수와 다르면 무시하고 균등 분할 — 프레임을 지우거나 늘려도 굳지 않음
   fxFrT: {"1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.12, 0.12, 0.15, 0.15], "31": [0.03, 0.03, 0.03, 0.03], "33": [0.14, 0.17, 0.2, 0.35], "34": [0.23, 0.09, 0.18], "35": [0.28, 0.28, 0.28, 0.28, 0.28]},
-  skFx: {"38": {"tick": 0.22}, "1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "tick": 0.2, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "26": {"tick": 0.35}, "27": {"tick": 0.35}, "28": {"tick": 0}, "32": {"tick": 0.45}, "36": {"tick": 0.3}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1.1, "spd": 2.25, "fly": 1, "x": 0, "y": 0, "tick": 0.3, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}, "34": {"startP": 0.5, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"sz": 0.87, "y": -85, "x": 20}, "2": {"sz": 0.77, "x": 73, "y": -37}, "3": {"x": 71, "sz": 0.95, "y": 16}}}, "35": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "twGap": 35, "twSpd": 1.7, "tick": 0.25, "fr": {"1": {"x": 53, "sz": 0.47}, "2": {"sz": 0.58, "x": 85, "y": 3}, "3": {"sz": 0.63, "x": 60, "y": 3}, "4": {"sz": 0.69, "x": 102, "y": 5}, "5": {"sz": 0.76, "x": 81, "y": 3}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
+  skFx: {"37": {"tick": 0.25}, "38": {"tick": 0.22}, "1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "tick": 0.2, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "26": {"tick": 0.35}, "27": {"tick": 0.35}, "28": {"tick": 0}, "32": {"tick": 0.45}, "36": {"tick": 0.3}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1.1, "spd": 2.25, "fly": 1, "x": 0, "y": 0, "tick": 0.3, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}, "34": {"startP": 0.5, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"sz": 0.87, "y": -85, "x": 20}, "2": {"sz": 0.77, "x": 73, "y": -37}, "3": {"x": 71, "sz": 0.95, "y": 16}}}, "40": {"startP": 0.8, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {}}, "35": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "twGap": 35, "twSpd": 1.7, "tick": 0.25, "fr": {"1": {"x": 53, "sz": 0.47}, "2": {"sz": 0.58, "x": 85, "y": 3}, "3": {"sz": 0.63, "x": 60, "y": 3}, "4": {"sz": 0.69, "x": 102, "y": 5}, "5": {"sz": 0.76, "x": 81, "y": 3}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
 }
-const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 31, 33, 34, 35]                          // 이펙트 있는 스킬 id
+const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 31, 33, 34, 35, 40]                          // 이펙트 있는 스킬 id
 // 이펙트 프레임 시간(초) 배열 — 넣은 값을 그대로 씀. 프레임을 늘리거나 줄이면 값도 같이 조정할 것.
 // 빈 칸은 0초(그 프레임은 건너뜀)로 두고, 전부 비었을 때만 균등 분할로 떨어져 NaN을 막는다
 const fxT = (mot, id, n) => {
@@ -383,7 +387,11 @@ for (let n = 1; n <= 5; n++) FX_IMGS[n] = Array.from({ length: FXF }, (_, f) => 
 // 각 원소 = 그 순서의 히어로 프레임 표시 시간. 배열 길이 = 히어로 프레임 수.
 // 시전 총 시간 = 합계. 없는 스킬은 프레임당 0.15초.
 const SKILL_FRAME_T = {
-  37: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],   // 순보 (11프레임 × 0.5초)
+  41: [0.09, 0.09, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.12],   // 연속 달빛베기 (11프레임)
+  42: [0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.14],                     // 환영 (8프레임)
+  40: [0.09, 0.09, 0.09, 0.09, 0.14],                // 단검비 (히어로 5프레임)
+  39: [0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.25],   // 독검 (마지막 해골 폭발만 길게)
+  37: [0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07],   // 순보 (11프레임)
   38: [0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12],   // 난도질 (6프레임 × 2바퀴)
   36: [0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09],   // 불놀이야 (히어로 9프레임)
   35: [0.12, 0.12, 0.12],                   // 토네이도 (히어로 3프레임 — 4번 제거)
@@ -429,6 +437,7 @@ const STRIKE_DUR_BY = {
   33: 0.70,   // 지각변동 (바위 융기 4프레임)
   34: 0.60,   // 엑스밤 (비행 → 착지 → 폭발 3프레임)
   35: 0.75,   // 토네이도 (5,6,5,6,7)
+  40: 0.85,   // 단검비 (낙하 이펙트 5프레임)
 }
 
 // 무기/방어구/유물 각 30개 (6등급대 × 5티어, 1→30 강해짐). /equip/A/w01.webp 등
@@ -1097,6 +1106,7 @@ export default function App() {
   const [paused, setPaused] = useState(false)  // 디버그 일시정지
   const [waveJump, setWaveJump] = useState(null) // 웨이브 이동 모달 입력값(null=닫힘)
   const [best, setBest] = useState(init.best || init.wave || 1) // 도달 최고 웨이브(이동 상한)
+  const bestRef = useRef(best); bestRef.current = best          // 랭킹 조회에서 최신값을 쓰기 위해
   const [progress, setProgress] = useState(0)
   const [gains, setGains] = useState([])       // 획득 팝업 리스트
   const [skillCdUI, setSkillCdUI] = useState(SKILLS.map(() => 0))  // 스킬 남은 쿨타임(초)
@@ -2611,6 +2621,19 @@ export default function App() {
   // ── 클라우드 세이브: 로그인 시 웨이브 높은 쪽 채택, 이후 60초/백그라운드 전환 시 업로드 ──
   const [fbUser, setFbUser] = useState(null)
   const [cloudMsg, setCloudMsg] = useState('')
+  const [rankInfo, setRankInfo] = useState(null)          // { me, total } — 최고 웨이브 기준 순위
+  const refreshRank = async myBest => {
+    if (!FB_ON || !fbAuth.currentUser) return
+    try {
+      // 문서를 받지 않고 개수만 센다(쿼리 2번). 내 등수 = 나보다 높은 사람 수 + 1
+      const col = collection(fbDb, 'paleoSaves')
+      const [tot, above] = await Promise.all([
+        getCountFromServer(col),
+        getCountFromServer(query(col, where('best', '>', myBest))),
+      ])
+      setRankInfo({ me: above.data().count + 1, total: tot.data().count })
+    } catch (e) { setRankInfo(null); console.warn('[rank]', e.code || e.message) }
+  }
   async function pushCloud() {
     if (!FB_ON || !fbAuth.currentUser) return
     try {
@@ -2622,16 +2645,19 @@ export default function App() {
         data: raw,
         ts: sv.ts || 0,
         wave: sv.wave || 0,
+        best: sv.best || sv.wave || 0,   // 랭킹 기준 — 문서 내용을 받지 않고 이 필드로 개수만 센다
       }
       await setDoc(doc(fbDb, 'paleoSaves', fbAuth.currentUser.uid), payload)
       setCloudMsg('저장됨 ' + new Date().toLocaleTimeString())
+      refreshRank(sv.best || sv.wave || 0)
     } catch (e) { setCloudMsg('저장 실패: ' + (e.code || e.message)) }
   }
   useEffect(() => {
     if (!FB_ON) return
     return onAuthStateChanged(fbAuth, async u => {
       setFbUser(u)
-      if (!u) return
+      if (!u) { setRankInfo(null); return }
+      refreshRank(bestRef.current || 0)
       try {
         const snap = await getDoc(doc(fbDb, 'paleoSaves', u.uid))
         const cloud = snap.exists() ? snap.data() : null
@@ -3310,6 +3336,12 @@ export default function App() {
             ))}
           </div>
         </div>
+        {(rankInfo || uiEdit) && (
+          <div data-edit="rankpill" style={st.rankPill}>
+            <span style={st.rankK}>랭킹</span>
+            <span className="pd-num" style={st.rankV}>{rankInfo ? `${rankInfo.me} / ${rankInfo.total}` : '– / –'}</span>
+          </div>
+        )}
         <div data-edit="bossbtn" style={st.bossWrap}>
           <button style={{ ...st.bossBtn, opacity: bossReady && phase === 'fighting' ? 1 : 0.45, animation: bossReady && phase === 'fighting' ? 'pdPulse 1.2s ease-in-out infinite' : 'none' }} disabled={!uiEdit && !(bossReady && phase === 'fighting')} onClick={() => { if (!uiEdit) challengeBoss() }}>
             <span data-edit="bosstext" style={st.bossText}>보스 도전</span>
@@ -4199,6 +4231,7 @@ const UI_DEFAULT = {
   evochrgiant3: 92, evochrgiant3X: 6, evochrgiant3Y: -5,
   evochrgiant4: 92, evochrgiant4X: 4, evochrgiant4Y: -5,
   evochrgiant5: 84, evochrgiant5X: 1, evochrgiant5Y: -3,
+  rankh: 18, rankfz: 11, rankX: 8, rankY: 44,
   evocell: 78, evonamefz: 11, evofade: 56, evopadb: 0,   // 0이면 마지막 줄이 틀 안쪽 끝에 딱 붙는다 (flex:1+minHeight:0 로 이미 영역이 맞음)               // 동료 탭(caslot/canamefz)과 같은 시작값
   evocellX: -5, evocellY: 17, evonameX: 0, evonameY: 6,
   pbsz: 30, wjfz: 13, caslot: 81, caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 160, bth: 26, bhpw: 159, bhph: 30, pmw: 70, pmh: 23, pmfz: 11, pgw: 70, pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 39, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
@@ -4448,6 +4481,7 @@ const EDIT_GROUPS = {
   alstat: { label: '동료 능력치 줄', size: ['alstatfz'], pos: 'alstat' },
   albtn: { label: '동료 상세 버튼', size: ['albtnw', 'albtnh', 'albtnfz'], pos: 'albtn' },
   alclose: { label: '동료 상세 닫기', size: ['alclosesz', 'alclosefz'], pos: 'alclose' },
+  rankpill: { label: '랭킹 표시', size: ['rankh', 'rankfz'], pos: 'rank' },
   evocell: { label: '전직 칸', size: ['evocell'], pos: 'evocell' },
   evofade: { label: '전직 아래 흐림', size: ['evofade'] },
   evopadb: { label: '전직 아래 여백', size: ['evopadb'] },
@@ -4580,7 +4614,8 @@ const UI_LABELS = {
   shoprowmin: '박스 높이', shopic0: '무기 아이콘', shopic1: '방어구 아이콘', shopic2: '유물 아이콘', shoptfz: '제목 글자', shopsubfz: '부제 글자',
   shopbw: '버튼 너비', shopbh: '버튼 높이', shopbbv: '프레임 두께↕', shopbbh: '프레임 두께↔', shopbfz: '버튼 글자',
   gainic: '아이콘 크기', gainpv: '판 두께↕', gainph: '판 두께↔', shopgem: '다이아 크기', gbtnfz: '버튼 글자', gbtnpw: '판 가로', gbtnph: '판 세로',
-  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', skicon: '아이콘 크기%', slicon: '아이콘 크기%', advbw: '버튼 너비', advbh: '버튼 높이', advbfz: '버튼 글자', advww: '창 너비', advwh: '창 높이', adviw: '그림 너비', advih: '그림 높이', advibw: '틀 너비', advibh: '틀 높이', advmbw: '틀 너비', advmbh: '틀 높이', advrbw: '틀 너비', advrbh: '틀 높이', advwbw: '틀 너비', advwbh: '틀 높이', advsw: '표지판 너비', advsh: '표지판 높이', advsfz: '글자 크기', advbarw: '바 너비', advbarh: '바 높이', advmonkfz: '글자 크기', advmonvfz: '글자 크기', advregkfz: '글자 크기', advregvfz: '글자 크기', advrewkfz: '글자 크기', advrewvfz: '숫자 크기', advrewic: '아이콘 크기', advmfz: '글자 크기', advrfz: '글자 크기', advwfz: '글자 크기', advew: '버튼 너비', adveh: '버튼 높이', advefz: '버튼 글자', advcw: '버튼 너비', advch: '버튼 높이', advcfz: '버튼 글자', mailsz: '우편함 크기', questsz: '퀘스트 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', evocell: '칸 크기', evonamefz: '이름 글자', evofade: '흐려지는 높이', evopadb: '아래 여백',
+  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', skicon: '아이콘 크기%', slicon: '아이콘 크기%', advbw: '버튼 너비', advbh: '버튼 높이', advbfz: '버튼 글자', advww: '창 너비', advwh: '창 높이', adviw: '그림 너비', advih: '그림 높이', advibw: '틀 너비', advibh: '틀 높이', advmbw: '틀 너비', advmbh: '틀 높이', advrbw: '틀 너비', advrbh: '틀 높이', advwbw: '틀 너비', advwbh: '틀 높이', advsw: '표지판 너비', advsh: '표지판 높이', advsfz: '글자 크기', advbarw: '바 너비', advbarh: '바 높이', advmonkfz: '글자 크기', advmonvfz: '글자 크기', advregkfz: '글자 크기', advregvfz: '글자 크기', advrewkfz: '글자 크기', advrewvfz: '숫자 크기', advrewic: '아이콘 크기', advmfz: '글자 크기', advrfz: '글자 크기', advwfz: '글자 크기', advew: '버튼 너비', adveh: '버튼 높이', advefz: '버튼 글자', advcw: '버튼 너비', advch: '버튼 높이', advcfz: '버튼 글자', mailsz: '우편함 크기', questsz: '퀘스트 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', rankh: '높이', rankfz: '글자 크기',
+  evocell: '칸 크기', evonamefz: '이름 글자', evofade: '흐려지는 높이', evopadb: '아래 여백',
   alwinw: '창 너비', alnamefz: '이름 글자', alimg: '그림 크기', alstatfz: '글자 크기', albtnw: '버튼 너비', albtnh: '버튼 높이', albtnfz: '버튼 글자', alclosesz: '버튼 크기', alclosefz: '글자 크기', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
   trsz: '상자 크기', offw: '창 너비', offtfz: '제목 글자', offnfz: '정보 글자', offiw: '항목 너비', offih: '항목 높이', offgap: '항목 간격', offic: '아이콘 크기', offifz: '획득 글자', offrfz: '분당 글자', offbtw: '버튼 너비', offbth: '버튼 높이', offbfz: '버튼 글자', offclw: '버튼 너비', offclh: '버튼 높이', offcfz: '버튼 글자', fuseallw: '융합버튼 너비', fuseallh: '융합버튼 높이', fuseallfz: '융합버튼 글자',
   matchipic: '아이콘 크기', matchipfz: '글자 크기', allychipic: '동료 아이콘', allychipfz: '동료 글자', dtabh: '탭 높이', dtabfz: '탭 글자', dgradefz: '등급 글자', dtitlefz: '이름 글자', darrowfz: '화살표 크기', diconsz: '아이콘틀 크기', dtierfz: '등급표시 글자', dstatfz: '능력치 글자', denhh: '강화버튼 높이', denhfz: '강화버튼 글자', denhic: '강화 재화아이콘', dequiph: '장착버튼 높이', dequipfz: '장착버튼 글자', dfuseh: '융합버튼 높이', dfusefz: '융합버튼 글자', dstepsz: '조절버튼 크기', dstepfz: '수량 글자',
@@ -4684,7 +4719,7 @@ ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k
 --pd-shoptfz:${c.shoptfz}px;--pd-shopsubfz:${c.shopsubfz}px;--pd-shopbw:${c.shopbw}px;--pd-shopbh:${c.shopbh}px;--pd-shopbbv:${c.shopbbv}px;--pd-shopbbh:${c.shopbbh}px;--pd-shopbfz:${c.shopbfz}px;
 --pd-gainic:${c.gainic}px;--pd-gainpv:${c.gainpv}px;--pd-gainph:${c.gainph}px;--pd-gainic-x:${c.gainicX}px;--pd-gainic-y:${c.gainicY}px;--pd-gaint-x:${c.gaintX}px;--pd-gaint-y:${c.gaintY}px;--pd-shopgem:${c.shopgem}px;
 --pd-gbtnfz:${c.gbtnfz}px;--pd-gbtnpw:${c.gbtnpw}px;--pd-gbtnph:${c.gbtnph}px;
---pd-pmw:${c.pmw}px;--pd-pmh:${c.pmh}px;--pd-pmfz:${c.pmfz}px;--pd-pgw:${c.pgw}px;--pd-pgh:${c.pgh}px;--pd-pgfz:${c.pgfz}px;--pd-hambsz:${c.hambsz}px;--pd-menufz:${c.menufz}px;--pd-pbsz:${c.pbsz}px;--pd-wjfz:${c.wjfz}px;--pd-caslot:${c.caslot}px;--pd-caimg:${c.caimg}px;--pd-canamefz:${c.canamefz}px;--pd-evocell:${c.evocell}px;--pd-evonamefz:${c.evonamefz}px;--pd-evofade:${c.evofade}px;--pd-evopadb:${c.evopadb}px;--pd-alwinw:${c.alwinw}px;--pd-alnamefz:${c.alnamefz}px;--pd-alimg:${c.alimg}px;--pd-alstatfz:${c.alstatfz}px;--pd-albtnw:${c.albtnw}px;--pd-albtnh:${c.albtnh}px;--pd-albtnfz:${c.albtnfz}px;--pd-alclosesz:${c.alclosesz}px;--pd-alclosefz:${c.alclosefz}px;${ALLY_EVO_KEYS.flatMap(k => [1, 2, 3, 4, 5].map(n => `--pd-evochr${k}${n}:${c[`evochr${k}${n}`]}px;--pd-evochr${k}${n}-x:${c[`evochr${k}${n}X`]}px;--pd-evochr${k}${n}-y:${c[`evochr${k}${n}Y`]}px;`)).join('')}--pd-catabfz:${c.catabfz}px;
+--pd-pmw:${c.pmw}px;--pd-pmh:${c.pmh}px;--pd-pmfz:${c.pmfz}px;--pd-pgw:${c.pgw}px;--pd-pgh:${c.pgh}px;--pd-pgfz:${c.pgfz}px;--pd-hambsz:${c.hambsz}px;--pd-menufz:${c.menufz}px;--pd-pbsz:${c.pbsz}px;--pd-wjfz:${c.wjfz}px;--pd-caslot:${c.caslot}px;--pd-caimg:${c.caimg}px;--pd-canamefz:${c.canamefz}px;--pd-rankh:${c.rankh}px;--pd-rankfz:${c.rankfz}px;--pd-evocell:${c.evocell}px;--pd-evonamefz:${c.evonamefz}px;--pd-evofade:${c.evofade}px;--pd-evopadb:${c.evopadb}px;--pd-alwinw:${c.alwinw}px;--pd-alnamefz:${c.alnamefz}px;--pd-alimg:${c.alimg}px;--pd-alstatfz:${c.alstatfz}px;--pd-albtnw:${c.albtnw}px;--pd-albtnh:${c.albtnh}px;--pd-albtnfz:${c.albtnfz}px;--pd-alclosesz:${c.alclosesz}px;--pd-alclosefz:${c.alclosefz}px;${ALLY_EVO_KEYS.flatMap(k => [1, 2, 3, 4, 5].map(n => `--pd-evochr${k}${n}:${c[`evochr${k}${n}`]}px;--pd-evochr${k}${n}-x:${c[`evochr${k}${n}X`]}px;--pd-evochr${k}${n}-y:${c[`evochr${k}${n}Y`]}px;`)).join('')}--pd-catabfz:${c.catabfz}px;
 --pd-cabtnfz:${c.cabtnfz}px;
 ${['caslot', 'caimg', 'caname', 'catab', 'cabtn'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}--pd-pb-x:${c.pbX}px;--pd-pb-y:${c.pbY}px;--pd-wj-x:${c.wjX}px;--pd-wj-y:${c.wjY}px;--pd-btw:${c.btw}px;--pd-bth:${c.bth}px;--pd-bhpw:${c.bhpw}px;--pd-bhph:${c.bhph}px;
 ${['bt', 'bhp'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
@@ -4695,7 +4730,7 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
 --pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evexit', 'advexit', 'wbexit', 'evocell', 'evoname', 'alwin', 'alname', 'alimg', 'alstat', 'albtn', 'alclose', 'shoptab', 'shoptabt', 'shopad', 'shopadt', 'shopgift', 'cardwin', 'cardtitle', 'cardcell', 'cardname', 'cardcnt', 'cardclose', 'glv', 'glvbar', 'glvbart', 'warn', 'evpwin', 'evptitle', 'evpimg', 'evpbn', 'evprew', 'evpsign', 'evpsignt', 'evpbar', 'evpenter', 'evpclose', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evexit', 'advexit', 'wbexit', 'rank', 'evocell', 'evoname', 'alwin', 'alname', 'alimg', 'alstat', 'albtn', 'alclose', 'shoptab', 'shoptabt', 'shopad', 'shopadt', 'shopgift', 'cardwin', 'cardtitle', 'cardcell', 'cardname', 'cardcnt', 'cardclose', 'glv', 'glvbar', 'glvbart', 'warn', 'evpwin', 'evptitle', 'evpimg', 'evpbn', 'evprew', 'evpsign', 'evpsignt', 'evpbar', 'evpenter', 'evpclose', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -5435,6 +5470,16 @@ const st = {
   skillIcon: { width: 'var(--pd-icon)', height: 'var(--pd-icon)', transform: 'translate(var(--pd-icon-x), var(--pd-icon-y))', borderRadius: 8, background: 'linear-gradient(180deg,#2c2013,#1a1208)', border: '1px solid #5a4028', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 },
   canvasWrap: { height: '42%', position: 'relative', minHeight: 220, overflow: 'hidden' },
   statusBar: { display: 'flex', alignItems: 'center', gap: 6, padding: '3px 8px 2px' },
+  rankPill: {
+    position: 'absolute', left: 0, top: 0,
+    transform: 'translate(var(--pd-rank-x), var(--pd-rank-y))',
+    display: 'flex', alignItems: 'center', gap: 4, padding: '2px 7px',
+    height: 'var(--pd-rankh)', fontSize: 'var(--pd-rankfz)',
+    borderRadius: 7, border: '1px solid #6b4a24', background: 'rgba(20,13,7,0.82)',
+    whiteSpace: 'nowrap', zIndex: 5,
+  },
+  rankK: { color: '#9c8a6c' },
+  rankV: { color: GOLD, fontWeight: 700 },
   hpPill: {
     position: 'relative', flex: 1.1, minWidth: 0, height: 'var(--pd-hph)',
     background: 'url(/ui/hp_capsule.webp) center / 100% 100% no-repeat',
