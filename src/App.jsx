@@ -3379,12 +3379,6 @@ export default function App() {
             ))}
           </div>
         </div>
-        {(rankInfo || uiEdit) && (
-          <div data-edit="rankpill" style={st.rankPill}>
-            <span style={st.rankK}>랭킹</span>
-            <span className="pd-num" style={st.rankV}>{rankInfo ? `${rankInfo.me} / ${rankInfo.total}` : '– / –'}</span>
-          </div>
-        )}
         <div data-edit="bossbtn" style={st.bossWrap}>
           <button style={{ ...st.bossBtn, opacity: bossReady && phase === 'fighting' ? 1 : 0.45, animation: bossReady && phase === 'fighting' ? 'pdPulse 1.2s ease-in-out infinite' : 'none' }} disabled={!uiEdit && !(bossReady && phase === 'fighting')} onClick={() => { if (!uiEdit) challengeBoss() }}>
             <span data-edit="bosstext" style={st.bossText}>보스 도전</span>
@@ -3439,6 +3433,12 @@ export default function App() {
           <img src="/ui/evdungeon.webp" alt="" style={st.evBtnImg} />
           <span data-edit="evbtnt" style={st.evBtnText}>이벤트 던전</span>
         </button>
+        {(rankInfo || uiEdit) && (
+          <div data-edit="rankpill" style={st.rankPill}>
+            <span style={st.rankK}>랭킹</span>
+            <span className="pd-num" style={st.rankV}>{rankInfo ? `${rankInfo.me} / ${rankInfo.total}` : '– / –'}</span>
+          </div>
+        )}
         <button data-edit="fevbtn" style={st.fevBtn} onClick={() => { if (!uiEdit && DEBUG) setFeverOn(v => !v) }}>
           <img src="/ui/fever_off.webp" alt="" style={{ ...st.fevBtnImg, ...(feverOn ? { visibility: 'hidden' } : null) }} />
           {feverOn && <img data-edit="fevon" src="/ui/fever_on.webp" alt="" style={st.fevBtnOn} />}
@@ -4284,7 +4284,7 @@ const UI_DEFAULT = {
   evochrgiant3: 92, evochrgiant3X: 6, evochrgiant3Y: -5,
   evochrgiant4: 92, evochrgiant4X: 4, evochrgiant4Y: -5,
   evochrgiant5: 84, evochrgiant5X: 1, evochrgiant5Y: -3,
-  rankh: 18, rankfz: 11, rankX: 8, rankY: 44,
+  rankh: 18, rankfz: 11, rankX: 0, rankY: 0,
   evocell: 78, evonamefz: 11, evofade: 56, evopadb: 0,   // 0이면 마지막 줄이 틀 안쪽 끝에 딱 붙는다 (flex:1+minHeight:0 로 이미 영역이 맞음)               // 동료 탭(caslot/canamefz)과 같은 시작값
   evocellX: -5, evocellY: 17, evonameX: 0, evonameY: 6,
   pbsz: 30, wjfz: 13, caslot: 81, caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 160, bth: 26, bhpw: 159, bhph: 30, pmw: 70, pmh: 23, pmfz: 11, pgw: 70, pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 39, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
@@ -4362,7 +4362,7 @@ Object.assign(UI_DEFAULT, {
 
 // 이벤트 던전 (버튼 + 창)
 Object.assign(UI_DEFAULT, {
-  evbtnw: 45, evbtnh: 48, evbtnX: 0, evbtnY: 90,         // 던전 버튼 틀 (아래로 내림 — 위치는 편집기에서 조절)
+  evbtnw: 45, evbtnh: 48, evbtnX: 0, evbtnY: 0,          // 던전 버튼 틀
   evbtntfz: 9, evbtntX: 1, evbtntY: 0,                  // 팻말 글씨 '이벤트 던전'
   evww: 340, evwh: 540, evwinX: 0, evwinY: 0,            // 던전 창
   evtitlefz: 20, evtitleX: 0, evtitleY: 0,
@@ -5523,8 +5523,9 @@ const st = {
   skillIcon: { width: 'var(--pd-icon)', height: 'var(--pd-icon)', transform: 'translate(var(--pd-icon-x), var(--pd-icon-y))', borderRadius: 8, background: 'linear-gradient(180deg,#2c2013,#1a1208)', border: '1px solid #5a4028', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 },
   canvasWrap: { height: '42%', position: 'relative', minHeight: 220, overflow: 'hidden' },
   statusBar: { display: 'flex', alignItems: 'center', gap: 6, padding: '3px 8px 2px' },
-  rankPill: {
-    position: 'absolute', left: 0, top: 0,
+  rankPill: {                                               // 이벤트 던전 버튼 바로 아래 (우측 정렬)
+    position: 'absolute', top: 8, right: 8,
+    marginTop: 'calc(var(--pd-questsz) + var(--pd-evbtnh) + 4px)',
     transform: 'translate(var(--pd-rank-x), var(--pd-rank-y))',
     display: 'flex', alignItems: 'center', gap: 4, padding: '2px 7px',
     height: 'var(--pd-rankh)', fontSize: 'var(--pd-rankfz)',
