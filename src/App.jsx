@@ -100,6 +100,7 @@ const SKILL_SHEET = [
   { id: 28, n: 7, h: 200, stage: 2, title: '피폭', charSeq: [1, 2, 3, 5, 6, 7], cd: 2, dmgMult: 3, aoe: true },
   // 29·30: 히어로 모션(charSeq)과 이펙트(fx)가 각각 다른 시트 → 이펙트가 별도 레이어라 몹에 안 가림
   { id: 29, n: 7, h: 200, stage: 2, title: '사이오닉 스톰', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [4, 5, 6, 7], fxH: 240, hitP: 0.6 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 150 },
+  { id: 43, n: 4, h: 200, stage: 5, title: '피의 십자가', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [4], fxH: 280, hitP: 0.3 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 200 },   // 인간 단계 — 1 찌르기 · 2 치켜듦 · 3 내려베기 + 십자 폭발
   { id: 42, n: 8, h: 200, stage: 4, title: '환영', charSeq: [1, 2, 3, 4, 5, 6, 7, 8], cd: 2, dmgMult: 3, aoe: true, rangePx: 180, hitAt: 0.7 },   // 분신 난무 — 이펙트가 그림에 포함
   { id: 41, n: 5, h: 200, stage: 4, title: '연속 달빛베기', charSeq: [1, 2, 3, 4, 5, 3, 4, 5, 3, 4, 5], cd: 2, dmgMult: 3, aoe: true, rangePx: 200, hitAt: 0.6 },   // 3·4·5번을 3바퀴
   { id: 40, n: 10, h: 200, stage: 4, title: '단검비', charSeq: [1, 2, 3, 4, 5], fx: { type: 'strike', frames: [6, 7, 8, 9, 10], fxH: 260, hitP: 0.7 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 200 },   // 1~5 히어로, 6~10 낙하 이펙트
@@ -116,7 +117,7 @@ const SKILL_SHEET = [
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
 // 스킬 아이콘: 해당 스킬 시트의 지정 프레임 사용 (없으면 번호 텍스트)
-const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4, 22: 4, 23: 6, 24: 7, 25: 3, 26: 3, 27: 1, 28: 6, 29: 6, 31: 6, 32: 2, 33: 10, 34: 7, 35: 5, 36: 2, 37: 2, 38: 4, 39: 8, 40: 4, 41: 2, 42: 6 }
+const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 18: 4, 20: 4, 22: 4, 23: 6, 24: 7, 25: 3, 26: 3, 27: 1, 28: 6, 29: 6, 31: 6, 32: 2, 33: 10, 34: 7, 35: 5, 36: 2, 37: 2, 38: 4, 39: 8, 40: 4, 41: 2, 42: 6, 43: 4 }
 // 스킬 효과(대상/데미지/사거리/쿨타임)를 인게임 상세창에서 조절 — 인덱스가 아닌 **id 기준**이라
 // 스킬을 넣고 빼도 값이 안 밀린다(예전 cdConf는 인덱스 배열이라 매번 리셋됐음).
 const skEff = (sk, cfg) => {
@@ -272,16 +273,16 @@ const MOTION_DEFAULT = {
     'e:16': { sz: 1, y: -8, stop: 110, spd: 2 }, 'e:17': { sz: 1.12, stop: 120, spd: 1.85 }, 'e:18': { sz: 1.12, stop: 120, spd: 2 }, 'e:19': { sz: 1.12, stop: 120, spd: 1.95 }, 'e:20': { sz: 1.12, y: -4, stop: 120 }, 'c:tiger2': { sz: 0.93, y: -4, stop: 103, spd: 1.6 },
   },
   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값, 종별 아님 / 보스·모험 몹은 미적용): 가로로 눌리고(x) 세로로 늘어나며(y) 발을 축으로 뒤로 젖혀졌다(rot) dur 동안 복귀. 위치는 안 움직임
-  hitSq: {"x": 1.1, "y": 1.1, "rot": 10, "dur": 0.15},   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값)
+  hitSq: {"x": 1.1, "y": 1.1, "rot": 10, "dur": 0.15, "bossRot": 0.7},   // 피격 반응(웨이브 일반몹 전체 공통 하나의 값)
   wave: { gap: 40, dist: 35 },
   adv: { gap: 50, dist: 55, lunge: 25 },    // 모험 일반 몹 1열 대기 간격·히어로와 거리(px) — 웨이브와 분리                                  // 웨이브 몹 일렬 간격(px) / 히어로와의 거리(px) — 종 무관 일괄
   stone: { spd: 0.6, sz: 13, arc: 0.4 },                           // 직립 돌던지기: 비행속도 배율 / 그림 크기(px) / 포물선 높이 배율
   // 이펙트 프레임별 재생시간(초). 합 = 총 재생시간(전체 '프레임 속도'로 나눔).
   // 길이가 실제 프레임 수와 다르면 무시하고 균등 분할 — 프레임을 지우거나 늘려도 굳지 않음
   fxFrT: {"40": [0.08, 0.08, 0.08, 0.08, 0.3], "1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.12, 0.12, 0.15, 0.15], "31": [0.03, 0.03, 0.03, 0.03], "33": [0.14, 0.17, 0.2, 0.35], "34": [0.23, 0.09, 0.18], "35": [0.28, 0.28, 0.28, 0.28, 0.28]},
-  skFx: {"39": {"tick": 0.25, "dotP": 8, "dotIv": 0.5, "dotDur": 6}, "41": {"tick": 0.1}, "42": {"tick": 0.32}, "37": {"tick": 0.25}, "38": {"tick": 0.22}, "1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "tick": 0.2, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "26": {"tick": 0.35}, "27": {"tick": 0.35}, "28": {"tick": 0}, "32": {"tick": 0.45}, "36": {"tick": 0.3}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1.1, "spd": 2.25, "fly": 1, "x": 0, "y": 0, "tick": 0.3, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}, "34": {"startP": 0.5, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"sz": 0.87, "y": -85, "x": 20}, "2": {"sz": 0.77, "x": 73, "y": -37}, "3": {"x": 71, "sz": 0.95, "y": 16}}}, "40": {"startP": 0.8, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"x": 105, "y": -101}, "2": {"x": 65, "y": -63}, "3": {"x": 77, "y": 3, "sz": 0.95}, "4": {"y": 13, "x": 77, "sz": 1.02}, "5": {"x": 79, "y": 17, "sz": 0.82}}}, "35": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "twGap": 35, "twSpd": 1.7, "tick": 0.25, "fr": {"1": {"x": 53, "sz": 0.47}, "2": {"sz": 0.58, "x": 85, "y": 3}, "3": {"sz": 0.63, "x": 60, "y": 3}, "4": {"sz": 0.69, "x": 102, "y": 5}, "5": {"sz": 0.76, "x": 81, "y": 3}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
+  skFx: {"39": {"tick": 0.25, "dotP": 8, "dotIv": 0.5, "dotDur": 5}, "41": {"tick": 0.1}, "42": {"tick": 0.32}, "37": {"tick": 0.25}, "38": {"tick": 0.22}, "1": {"sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "tick": 0.2, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "26": {"tick": 0.35}, "27": {"tick": 0.35}, "28": {"tick": 0}, "32": {"tick": 0.45}, "36": {"tick": 0.3}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1.1, "spd": 2.25, "fly": 1, "x": 0, "y": 0, "tick": 0.3, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}, "34": {"startP": 0.5, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"sz": 0.87, "y": -85, "x": 20}, "2": {"sz": 0.77, "x": 73, "y": -37}, "3": {"x": 71, "sz": 0.95, "y": 16}}}, "43": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {}}, "40": {"startP": 0.8, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"x": 105, "y": -101}, "2": {"x": 65, "y": -63}, "3": {"x": 77, "y": 3, "sz": 0.95}, "4": {"y": 13, "x": 77, "sz": 1.02}, "5": {"x": 79, "y": 17, "sz": 0.82}}}, "35": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "twGap": 35, "twSpd": 1.7, "tick": 0.25, "fr": {"1": {"x": 53, "sz": 0.47}, "2": {"sz": 0.58, "x": 85, "y": 3}, "3": {"sz": 0.63, "x": 60, "y": 3}, "4": {"sz": 0.69, "x": 102, "y": 5}, "5": {"sz": 0.76, "x": 81, "y": 3}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
 }
-const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 31, 33, 34, 35, 40]                          // 이펙트 있는 스킬 id
+const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 31, 33, 34, 35, 40, 43]                          // 이펙트 있는 스킬 id
 // 이펙트 프레임 시간(초) 배열 — 넣은 값을 그대로 씀. 프레임을 늘리거나 줄이면 값도 같이 조정할 것.
 // 빈 칸은 0초(그 프레임은 건너뜀)로 두고, 전부 비었을 때만 균등 분할로 떨어져 NaN을 막는다
 const fxT = (mot, id, n) => {
@@ -393,6 +394,7 @@ for (let n = 1; n <= 5; n++) FX_IMGS[n] = Array.from({ length: FXF }, (_, f) => 
 // 각 원소 = 그 순서의 히어로 프레임 표시 시간. 배열 길이 = 히어로 프레임 수.
 // 시전 총 시간 = 합계. 없는 스킬은 프레임당 0.15초.
 const SKILL_FRAME_T = {
+  43: [0.12, 0.12, 0.18],                            // 피의 십자가 (히어로 3프레임)
   41: [0.09, 0.09, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.08, 0.12],   // 연속 달빛베기 (11프레임)
   42: [0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.14],                     // 환영 (8프레임)
   40: [0.09, 0.09, 0.09, 0.09, 0.14],                // 단검비 (히어로 5프레임)
@@ -444,6 +446,7 @@ const STRIKE_DUR_BY = {
   34: 0.60,   // 엑스밤 (비행 → 착지 → 폭발 3프레임)
   35: 0.75,   // 토네이도 (5,6,5,6,7)
   40: 0.85,   // 단검비 (낙하 이펙트 5프레임)
+  43: 0.5,    // 피의 십자가 (십자 폭발 1프레임)
 }
 
 // 무기/방어구/유물 각 30개 (6등급대 × 5티어, 1→30 강해짐). /equip/A/w01.webp 등
@@ -1329,7 +1332,7 @@ export default function App() {
       })
     }
 
-    function addDmg(x, y, val, crit, miss) { w.dmgTexts.push({ x, y, val: typeof val === 'number' ? Math.round(val).toLocaleString('en-US') : val, life: 0.8, crit, miss }) }
+    function addDmg(x, y, val, crit, miss, poison) { w.dmgTexts.push({ x, y, val: typeof val === 'number' ? Math.round(val).toLocaleString('en-US') : val, life: 0.8, crit, miss, poison }) }
     function burst(x, y, color, n = 10, blood = false) {
       for (let i = 0; i < n; i++) {
         const a = blood ? -Math.PI / 2 + (Math.random() - 0.5) * 2.2 : Math.random() * Math.PI * 2
@@ -1499,7 +1502,7 @@ export default function App() {
             while (e.dot.t >= e.dot.iv && _g++ < 8) {
               e.dot.t -= e.dot.iv
               e.hp -= e.dot.d
-              addDmg(e.x, w.groundY - e.h * 1.05 - 12, Math.round(e.dot.d), false)
+              addDmg(e.x, w.groundY - e.h * 1.05 - 12, Math.round(e.dot.d), false, false, true)   // 독은 초록
               if (e.hp <= 0 && !e.dead) { killEnemy(e, S.current); break }
             }
             if (e.dot.left <= 0) e.dot = null
@@ -2140,7 +2143,8 @@ export default function App() {
         else {                                           // 웨이브 일반몹 전체 = 편집기 값 하나로 일괄
           const hs = motRef.current.hitSq
           const q = e.sq / (e.sqD || hs.dur || 0.18)     // 1 → 0 으로 감쇠
-          if (hs.rot) ctx.rotate((t.flip ? -1 : 1) * hs.rot * Math.PI / 180 * q)
+          const _rm = e.boss ? (hs.bossRot ?? 0.7) : 1   // 보스는 젖힘 각도를 그만큼만 (기본 70% = 30% 차감)
+          if (hs.rot) ctx.rotate((t.flip ? -1 : 1) * hs.rot * _rm * Math.PI / 180 * q)
           ctx.scale(1 + (hs.x - 1) * q, 1 + (hs.y - 1) * q)
         }
       }
@@ -2460,7 +2464,7 @@ export default function App() {
       for (const d of w.dmgTexts) {
         ctx.globalAlpha = Math.min(1, d.life * 2.5)
         ctx.font = (d.crit ? '900 22px' : d.miss ? '800 14px' : '800 16px') + ' sans-serif'
-        ctx.fillStyle = d.miss ? '#8ab4ff' : d.crit ? '#e01414' : '#ffffff'
+        ctx.fillStyle = d.poison ? '#4ce04c' : d.miss ? '#8ab4ff' : d.crit ? '#e01414' : '#ffffff'
         ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 3
         ctx.strokeText(d.val, d.x, d.y)
         ctx.fillText(d.val, d.x, d.y)
@@ -4042,6 +4046,7 @@ export default function App() {
               {row('피격 가로 배율', M.hitSq.x, 0.6, 1.4, 0.01, v => setMotCfg({ ...M, hitSq: { ...M.hitSq, x: v } }))}
               {row('피격 세로 배율', M.hitSq.y, 0.6, 1.4, 0.01, v => setMotCfg({ ...M, hitSq: { ...M.hitSq, y: v } }))}
               {row('피격 젖힘(도)', M.hitSq.rot, 0, 20, 0.5, v => setMotCfg({ ...M, hitSq: { ...M.hitSq, rot: v } }))}
+              {row('보스 젖힘 배율', M.hitSq.bossRot ?? 0.7, 0, 1, 0.05, v => setMotCfg({ ...M, hitSq: { ...M.hitSq, bossRot: v } }))}
               {row('피격 지속(초)', M.hitSq.dur, 0.05, 0.6, 0.01, v => setMotCfg({ ...M, hitSq: { ...M.hitSq, dur: v } }))}
               <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>둘 다 종 무관 일괄 적용. 간격은 다음 웨이브부터 (이미 깔린 몹은 그대로)</div>
               <div style={{ fontSize: 11, color: '#9c8a6c', marginBottom: 4 }}>화면의 일반몹 (종별)</div>
