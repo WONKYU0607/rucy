@@ -362,6 +362,9 @@ for (const c of CONTINENTS) {
 const BASE_W = 420, BASE_H = 695
 const SIMG = {}
 SKILL_SHEET.forEach(c => {
+  // 패시브(id 101~148)는 프레임 그림이 없다(아이콘만 c.ic = /skill/passive/*.webp).
+  // 여기서 걸러내지 않으면 /skill/s102/s102_1.webp 같은 없는 경로를 40건 요청해 전부 404가 난다.
+  if (c.passive) return
   const useFr = new Set([...(c.charSeq || Array.from({ length: c.n }, (_, j) => j + 1)),
     ...((c.fx && c.fx.frames) || []), ...((c.fx && c.fx.fly) || []), SKILL_ICON_FRAME[c.id] || 1])
   SIMG[c.id] = Array.from({ length: c.n }, (_, j) => {          // 실제 쓰는 프레임만 로드 (삭제된 번호 404 방지)
@@ -1195,7 +1198,8 @@ export default function App() {
   useEffect(() => {
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
-    ctx.imageSmoothingEnabled = false
+    // 원본이 큰 그림을 줄여 그리는 에셋이라 보간을 켠다(픽셀아트였다면 반대).
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'
     const w = world.current
     let raf = 0, last = performance.now()
 
@@ -1203,11 +1207,16 @@ export default function App() {
       const el = wrapRef.current; if (!el) return
       const cw = el.clientWidth, ch = el.clientHeight   // 레이아웃 px (transform 영향 없음)
       if (!cw || !ch) return
-      const dpr = Math.min((window.devicePixelRatio || 1) * (uiScaleRef.current || 1), 2.5)
+      // 캔버스 실해상도: 기기 픽셀비 × 판 배율을 그대로 쓰되, 총 픽셀 수로만 상한을 둔다.
+      // 예전엔 배율 2.5 고정 상한이라 픽셀비 2~3인 폰·고DPI 화면에서 실해상도가 모자라 흐렸음.
+      // 픽셀 예산 방식이면 캔버스가 작을 땐(폰) 배율을 다 받고, 클 땐(PC 큰 창) 알아서 낮아진다.
+      const want = (window.devicePixelRatio || 1) * (uiScaleRef.current || 1)
+      const fit = Math.sqrt(2600000 / Math.max(1, cw * ch))
+      const dpr = Math.max(1, Math.min(want, fit, 4))
       canvas.width = Math.round(cw * dpr); canvas.height = Math.round(ch * dpr)
       canvas.style.width = cw + 'px'; canvas.style.height = ch + 'px'
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      ctx.imageSmoothingEnabled = false
+      ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'
       w.W = cw; w.H = ch
       w.groundY = w.H - 36
     }
