@@ -1214,6 +1214,18 @@ export default function App() {
     cdConf, skCfg,
   }
 
+  // 최대 체력이 오르면 오른 만큼 현재 체력도 같이 올린다(강화가 즉시 이득). 초과분은 클램프.
+  const prevMaxHp = useRef(maxHp)
+  useEffect(() => {
+    const h = world.current && world.current.hero
+    if (h) {
+      const d = maxHp - prevMaxHp.current
+      if (d > 0) h.hp = Math.min(maxHp, h.hp + d)
+      else h.hp = Math.min(maxHp, h.hp)
+    }
+    prevMaxHp.current = maxHp
+  }, [maxHp])
+
   const cloudBusy = useRef(false)   // 어댑트/불러오기 중 로컬 저장 차단
   useEffect(() => {
     if (cloudBusy.current) return
@@ -1399,7 +1411,9 @@ export default function App() {
       })
     }
 
-    function addDmg(x, y, val, crit, miss, poison) { w.dmgTexts.push({ x, y, val: typeof val === 'number' ? Math.round(val).toLocaleString('en-US') : val, life: 0.8, crit, miss, poison }) }
+    // 100 미만은 소수점 첫째자리까지 — 초반에 공격력을 올려도 계속 '1'로만 보이는 걸 막는다
+    const dmgTxt = v => v < 100 ? String(Math.round(v * 10) / 10) : Math.round(v).toLocaleString('en-US')
+    function addDmg(x, y, val, crit, miss, poison) { w.dmgTexts.push({ x, y, val: typeof val === 'number' ? dmgTxt(val) : val, life: 0.8, crit, miss, poison }) }
     function burst(x, y, color, n = 10, blood = false) {
       for (let i = 0; i < n; i++) {
         const a = blood ? -Math.PI / 2 + (Math.random() - 0.5) * 2.2 : Math.random() * Math.PI * 2
