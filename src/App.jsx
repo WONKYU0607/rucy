@@ -1413,7 +1413,7 @@ export default function App() {
 
     // 100 미만은 소수점 첫째자리까지 — 초반에 공격력을 올려도 계속 '1'로만 보이는 걸 막는다
     const dmgTxt = v => v < 100 ? String(Math.round(v * 10) / 10) : Math.round(v).toLocaleString('en-US')
-    function addDmg(x, y, val, crit, miss, poison) { w.dmgTexts.push({ x, y, val: typeof val === 'number' ? dmgTxt(val) : val, life: 0.8, crit, miss, poison }) }
+    function addDmg(x, y, val, crit, miss, poison, self) { w.dmgTexts.push({ x, y, val: typeof val === 'number' ? dmgTxt(val) : val, life: 0.8, crit, miss, poison, self }) }
     function burst(x, y, color, n = 10, blood = false) {
       for (let i = 0; i < n; i++) {
         const a = blood ? -Math.PI / 2 + (Math.random() - 0.5) * 2.2 : Math.random() * Math.PI * 2
@@ -1663,13 +1663,14 @@ export default function App() {
                 const hitChance = Math.max(0.05, e.acc + 0.5 - st.eva)
                 if (Math.random() < hitChance) {
                   hero.hp -= e.dmg
+                  addDmg(w.heroX, w.groundY - 130, e.dmg, false, false, false, true)   // 받은 피해 표시
                   hero.flash = 0.28
                   w.shake = e.boss ? 9 : 4
                   w.heroKb = Math.max(w.heroKb || 0, e.boss ? 4 : 2)       // 히어로 넉백 (18/8 → 9/4 → 4/2)
                   w.hitstop = Math.max(w.hitstop || 0, e.boss ? 0.06 : 0.025)
                   burst(w.heroX + 15, w.groundY - 70, '#c81818', 8, true)
                 } else {
-                  addDmg(w.heroX, w.groundY - 130, 'DODGE', false, true)
+                  addDmg(w.heroX, w.groundY - 130, 'MISS', false, true)
                 }
               }
             } else e.lunge = 0
@@ -2567,7 +2568,7 @@ export default function App() {
       for (const d of w.dmgTexts) {
         ctx.globalAlpha = Math.min(1, d.life * 2.5)
         ctx.font = (d.crit ? '900 22px' : d.miss ? '800 14px' : '800 16px') + ' sans-serif'
-        ctx.fillStyle = d.poison ? '#4ce04c' : d.miss ? '#8ab4ff' : d.crit ? '#e01414' : '#ffffff'
+        ctx.fillStyle = d.self ? '#ff8a3d' : d.poison ? '#4ce04c' : d.miss ? '#8ab4ff' : d.crit ? '#e01414' : '#ffffff'   // 히어로 피격=주황
         ctx.strokeStyle = 'rgba(0,0,0,0.7)'; ctx.lineWidth = 3
         ctx.strokeText(d.val, d.x, d.y)
         ctx.fillText(d.val, d.x, d.y)
@@ -3487,7 +3488,8 @@ export default function App() {
         <div data-edit="hppill" style={st.hpPill}>
           <img src="/ui/hp_heart.webp" alt="" style={st.hpHeart} />
           <div style={st.hpTrack}><div style={{ ...st.hpFill, width: Math.min(100, heroHpUI / maxHp * 100) + '%' }} /></div>
-          <span className="pd-num" style={st.hpText}>{fmt(heroHpUI)} / {fmt(maxHp)}</span>
+          {/* 현재 체력은 Math.ceil(0.3도 1로 보이게), 최대 체력도 같은 올림으로 맞춘다 — 안 맞추면 꽉 찼을 때 745/744 처럼 1이 어긋난다 */}
+          <span className="pd-num" style={st.hpText}>{fmt(Math.min(heroHpUI, Math.ceil(maxHp)))} / {fmt(Math.ceil(maxHp))}</span>
         </div>
         <div data-edit="waveband" style={st.waveBanner} onClick={() => { if (!uiEdit) setWaveJump(String(wave)) }}>
           <div data-edit="wavetitle" style={st.waveTitle}>웨이브 {wave}</div>
