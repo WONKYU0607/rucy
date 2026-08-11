@@ -15,7 +15,11 @@ const fbAuth = FB_ON ? getAuth(initializeApp(FIREBASE_CONFIG)) : null
 const fbDb = FB_ON ? getFirestore() : null
 
 // ── 디버그 모드: 업그레이드 비용 무료 + 레벨 직접입력 (출시 전 false로) ──
-const DEBUG = true
+// ── 밸런싱 모드 ──
+// 켜면 디버그(무한 재화·무료 강화)가 꺼지고 세이브도 별도 키를 쓴다.
+// 디버그로 키운 진행이 섞이면 곡선을 볼 수 없어서 세이브부터 분리한다.
+const BAL = (() => { try { return localStorage.getItem('paleoBal') === '1' } catch { return false } })()
+const DEBUG = !BAL
 // ── 편집기는 PC 전용: 모바일에선 UI 편집(⚙)·모션 편집 메뉴를 아예 노출하지 않는다 ──
 const IS_PC = (() => {
   if (typeof navigator === 'undefined') return true
@@ -37,7 +41,7 @@ const SPLASH_BG = (() => {
   try { const q = new URLSearchParams(location.search); if (q.get('intro') === 'en') ko = false; if (q.get('intro') === 'ko') ko = true } catch {}
   return ko ? '/startbg/startbg.webp' : '/startbg/startbg_en.webp'
 })()
-const CFG_STAMP = Date.parse('2026-08-11T12:30:00+09:00')
+const CFG_STAMP = Date.parse('2026-08-11T14:50:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -226,12 +230,12 @@ const MOTION_DEFAULT = {
     sz: 0.85, x: -35, y: 0,
     walkSz: { 0: 0.95, 1: 0.96, 2: 0.94, 3: 0.94, 4: 0.86, 5: 0.9 },
     skillHide: {"44": 0, "35": 1},                  // 1이면 히어로 모션이 끝나는 순간부터 이펙트가 끝날 때까지 히어로를 안 그림 (토네이도처럼 이펙트만 남겨야 하는 스킬)
-    skillFront: {"45": 1, "46": 1, "47": 1, "44": 1, "43": 0, "39": 1, "40": 1, "41": 1, "42": 1, "37": 1, "22": 1, "23": 1, "24": 1, "25": 1, "26": 1, "27": 1, "28": 1, "29": 0, "31": 1, "32": 1, "33": 1, "34": 1, "35": 0, "36": 1},   // 1이면 그 스킬 시전 중 히어로를 몬스터 위에 그림
+    skillFront: {"48": 0, "45": 1, "46": 1, "47": 1, "44": 1, "43": 0, "39": 1, "40": 1, "41": 1, "42": 1, "37": 1, "22": 1, "23": 1, "24": 1, "25": 1, "26": 1, "27": 1, "28": 1, "29": 0, "31": 1, "32": 1, "33": 1, "34": 1, "35": 0, "36": 1},   // 1이면 그 스킬 시전 중 히어로를 몬스터 위에 그림
     skillSz: {"46": 1, "44": 1, "39": 0.85, "40": 0.8, "41": 0.97, "1": 0.85, "2": 0.85, "7": 0.9, "8": 0.95, "13": 0.85, "15": 0.83, "17": 0.88, "18": 1.07, "20": 1.06, "22": 1.03, "23": 0.9, "24": 0.9, "25": 0.8, "26": 0.54, "27": 0.8},   // 스킬별 크기
     skillPos: {"23": {"x": -5}},   // 스킬별 위치
-    skillFrSz: {"45": {"1": 0.8, "2": 0.75, "3": 0.8, "4": 0.8, "5": 0.75, "6": 0.75, "7": 0.8, "8": 0.75, "9": 0.8, "10": 0.8, "11": 0.75, "12": 0.75, "13": 0.8, "14": 0.75, "15": 0.8, "16": 0.8, "17": 0.75, "18": 0.75}, "46": {"1": 1.1}, "47": {"1": 0.96, "2": 0.96, "3": 0.97, "4": 0.97, "5": 0.97, "6": 0.96}, "44": {"1": 1.24, "2": 1.32, "3": 1.33, "4": 1.34, "5": 1.34}, "43": {"1": 1.2, "2": 1.15, "3": 1.1}, "41": {"1": 1.02, "2": 0.98, "3": 0.98, "4": 0.98, "5": 0.98, "6": 0.98, "7": 0.98, "8": 0.98, "9": 0.98, "10": 0.98, "11": 0.98}, "42": {"1": 0.96, "2": 0.96}, "37": {"1": 0.48, "2": 0.48, "3": 0.48, "4": 0.48, "5": 0.48, "6": 0.48, "7": 0.48, "8": 0.48, "9": 0.48, "10": 0.48, "11": 0.48}, "38": {"1": 0.55, "2": 0.55, "3": 0.55, "4": 0.55, "5": 0.55, "6": 0.55, "7": 0.55, "8": 0.55, "9": 0.55, "10": 0.55, "11": 0.55, "12": 0.55}, "2": {"2": 0.98}, "22": {"4": 0.95}, "23": {"1": 0.97, "2": 0.97, "3": 0.97, "4": 0.97, "5": 0.97}, "25": {"1": 0.98, "2": 1.06, "3": 1.18}, "28": {"1": 2.1, "2": 2.1, "3": 2.1, "4": 1.7, "5": 1.6, "6": 1.91}, "29": {"1": 0.88, "2": 0.87, "3": 0.9}, "31": {"1": 0.6, "2": 0.6, "3": 0.6, "4": 0.6, "5": 0.65}, "32": {"1": 0.73, "2": 0.73, "3": 0.75, "4": 0.75, "5": 0.82}, "33": {"1": 0.9, "2": 0.98, "3": 0.95, "5": 0.99, "6": 0.99}, "34": {"1": 0.98, "2": 1.02, "3": 1.08}, "35": {"1": 0.85, "2": 0.88, "3": 0.86}, "36": {"1": 0.78, "2": 0.75, "3": 0.77, "4": 0.81, "5": 0.79, "6": 0.77, "7": 0.81, "8": 0.77, "9": 0.8}},   // 스킬 프레임별 크기
-    skillFrPos: {"45": {"1": {"x": 21}, "2": {"x": 21}, "3": {"x": 22}, "4": {"x": 48}, "5": {"x": 46}, "6": {"x": 25}, "7": {"x": 21}, "8": {"x": 21}, "9": {"x": 22}, "10": {"x": 48}, "11": {"x": 46}, "12": {"x": 25}, "13": {"x": 21}, "14": {"x": 21}, "15": {"x": 22}, "16": {"x": 48}, "17": {"x": 46}, "18": {"x": 25}}, "46": {"1": {"x": -15}, "2": {"x": 23}, "3": {"x": 90}, "4": {"x": 120}, "5": {"x": 173}}, "47": {"1": {"x": -22}, "2": {"x": -7}, "3": {"x": 36}, "4": {"x": 69}, "5": {"x": 110}, "6": {"x": 45}}, "44": {"1": {"y": 3, "x": 7}, "2": {"y": 4, "x": 5}, "3": {"x": 9, "y": 3}, "4": {"y": 6, "x": 38}, "5": {"y": 9, "x": 33}}, "43": {"1": {"x": 40, "y": 2}, "2": {"y": 4, "x": 105}, "3": {"x": 102, "y": 5}}, "39": {"1": {"y": 2, "x": 27}, "2": {"x": 56, "y": 4}, "3": {"x": 65, "y": 2}, "4": {"x": 103, "y": 2}, "5": {"x": 103, "y": 2}, "6": {"x": 103, "y": 2}, "7": {"x": 103, "y": 2}}, "41": {"1": {"y": 2}, "2": {"y": 4, "x": 30}, "3": {"y": 4, "x": 2}, "4": {"y": 4, "x": 30}, "5": {"x": 2, "y": 4}, "6": {"x": 30, "y": 4}, "7": {"x": 1, "y": 4}, "8": {"x": 30, "y": 4}, "9": {"x": 4, "y": 4}, "10": {"x": 30, "y": 4}, "11": {"x": 2, "y": 4}}, "42": {"1": {"y": 5}, "2": {"y": 5}, "3": {"y": 4, "x": 26}, "4": {"y": 4, "x": 85}, "5": {"y": 4, "x": 130}, "6": {"y": 4, "x": 130}, "7": {"y": 4, "x": 129}, "8": {"y": 4, "x": 131}}, "37": {"2": {"x": 55}, "3": {"x": 120}, "4": {"x": 179}, "5": {"x": 193}, "6": {"x": 185}, "7": {"x": 133}, "8": {"x": 90}, "10": {"x": 97}, "11": {"x": 168}}, "38": {"2": {"x": 5}, "3": {"x": 10}, "4": {"x": 15}, "5": {"x": 20}, "6": {"x": 25}, "8": {"x": 5}, "9": {"x": 10}, "10": {"x": 15}, "11": {"x": 20}, "12": {"x": 25}}, "22": {"2": {"x": 20}, "3": {"x": 75}, "4": {"x": 155}}, "23": {"1": {"x": 35}, "2": {"x": 70}, "3": {"x": 105}, "4": {"x": 140}, "5": {"x": 175}}, "24": {"3": {"x": 50, "y": 14}, "4": {"y": 15, "x": 50}}, "25": {"1": {"y": 7}, "2": {"x": 45, "y": 3}, "3": {"x": 86, "y": 5}, "4": {"x": 100, "y": 9}}, "26": {"1": {"x": 20}, "2": {"x": 40}, "3": {"x": 60}, "4": {"x": 80}, "5": {"x": 100}, "6": {"x": 120}}, "27": {"1": {"x": 20}, "2": {"x": 20}, "3": {"x": 25}, "4": {"x": 15}, "5": {"x": 20}}, "28": {"1": {"x": 22, "y": 0}, "2": {"y": 3, "x": 30}, "3": {"x": 50, "y": -45}, "4": {"x": 110, "y": 13}, "5": {"x": 128, "y": 12}, "6": {"x": 132, "y": 16}}, "29": {"1": {"x": 10, "y": 3}, "2": {"x": 10, "y": 5}, "3": {"x": 2}}, "31": {"1": {"y": 2, "x": -4}, "2": {"y": 2}, "3": {"x": -4}, "5": {"x": -21, "y": 4}}, "32": {"1": {"y": 3, "x": -28}, "2": {"y": 6, "x": 34}, "3": {"y": 4, "x": 6}, "4": {"x": 37, "y": 3}, "5": {"y": 9, "x": 100}}, "33": {"1": {"y": 3, "x": -4}, "2": {"x": 10, "y": -14}, "3": {"x": 30, "y": -15}, "4": {"x": 105, "y": 10}, "5": {"x": 82, "y": 21}, "6": {"x": 84, "y": 20}}, "34": {"1": {"y": 3, "x": 1}, "2": {"x": 4, "y": 5}, "3": {"x": 10, "y": 4}}, "35": {"1": {"y": 4, "x": 5}, "2": {"y": 2, "x": 20}, "3": {"x": 30, "y": 1}}, "36": {"1": {"y": 4}, "3": {"y": 2}, "4": {"x": 18}, "5": {"x": 32, "y": 1}, "6": {"x": 62}, "7": {"y": 4, "x": 67}, "8": {"y": 3, "x": 73}, "9": {"y": 2, "x": 134}}},   // 스킬 프레임별 위치
-    skillFrT: {"45": [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1], "46": [0.12, 0.12, 0.15, 0.13, 0.13], "47": [0.1, 0.1, 0.1, 0.1, 0.1, 0.15], "44": [0.12, 0.12, 0.25, 0.12, 0.2], "43": [0.15, 0.15, 0.15], "39": [0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.4], "41": [0.15, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1], "42": [0.13, 0.13, 0.13, 0.13, 0.13, 0.13, 0.13, 0.13], "37": [0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07], "38": [0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12], "18": [0.2, 0.25], "22": [0.12, 0.15, 0.18, 0.2], "23": [0.15, 0.15, 0.15, 0.15, 0.25], "24": [0.15, 0.15, 0.2, 0.2], "25": [0.12, 0.12, 0.12, 0.15], "26": [0.15, 0.15, 0.15, 0.15, 0.15, 0.15], "27": [0.1, 0.1, 0.1, 0.25, 0.25], "28": [0.15, 0.15, 0.2, 0.15, 0.2, 0.25], "29": [0.1, 0.15, 0.25], "31": [0.15, 0.15, 0.15, 0.15, 0.4], "32": [0.1, 0.17, 0.12, 0.12, 0.33], "33": [0.16, 0.15, 0.13, 0.13, 0.15, 0.35], "34": [0.2, 0.15, 0.25], "35": [0.15, 0.15, 0.15], "36": [0.12, 0.12, 0.05, 0.05, 0.1, 0.07, 0.07, 0.12, 0.2]},   // 스킬 프레임별 재생시간(초)
+    skillFrSz: {"48": {"1": 1.43, "2": 1.43, "3": 1.43, "4": 1.43, "5": 1.45, "6": 1.45, "7": 1.5, "8": 1.6}, "45": {"1": 0.8, "2": 0.75, "3": 0.8, "4": 0.8, "5": 0.75, "6": 0.75, "7": 0.8, "8": 0.75, "9": 0.8, "10": 0.8, "11": 0.75, "12": 0.75, "13": 0.8, "14": 0.75, "15": 0.8, "16": 0.8, "17": 0.75, "18": 0.75}, "46": {"1": 1.1}, "47": {"1": 0.96, "2": 0.96, "3": 0.97, "4": 0.97, "5": 0.97, "6": 0.96}, "44": {"1": 1.24, "2": 1.32, "3": 1.33, "4": 1.34, "5": 1.34}, "43": {"1": 1.2, "2": 1.15, "3": 1.1}, "41": {"1": 1.02, "2": 0.98, "3": 0.98, "4": 0.98, "5": 0.98, "6": 0.98, "7": 0.98, "8": 0.98, "9": 0.98, "10": 0.98, "11": 0.98}, "42": {"1": 0.96, "2": 0.96}, "37": {"1": 0.48, "2": 0.48, "3": 0.48, "4": 0.48, "5": 0.48, "6": 0.48, "7": 0.48, "8": 0.48, "9": 0.48, "10": 0.48, "11": 0.48}, "38": {"1": 0.55, "2": 0.55, "3": 0.55, "4": 0.55, "5": 0.55, "6": 0.55, "7": 0.55, "8": 0.55, "9": 0.55, "10": 0.55, "11": 0.55, "12": 0.55}, "2": {"2": 0.98}, "22": {"4": 0.95}, "23": {"1": 0.97, "2": 0.97, "3": 0.97, "4": 0.97, "5": 0.97}, "25": {"1": 0.98, "2": 1.06, "3": 1.18}, "28": {"1": 2.1, "2": 2.1, "3": 2.1, "4": 1.7, "5": 1.6, "6": 1.91}, "29": {"1": 0.88, "2": 0.87, "3": 0.9}, "31": {"1": 0.6, "2": 0.6, "3": 0.6, "4": 0.6, "5": 0.65}, "32": {"1": 0.73, "2": 0.73, "3": 0.75, "4": 0.75, "5": 0.82}, "33": {"1": 0.9, "2": 0.98, "3": 0.95, "5": 0.99, "6": 0.99}, "34": {"1": 0.98, "2": 1.02, "3": 1.08}, "35": {"1": 0.85, "2": 0.88, "3": 0.86}, "36": {"1": 0.78, "2": 0.75, "3": 0.77, "4": 0.81, "5": 0.79, "6": 0.77, "7": 0.81, "8": 0.77, "9": 0.8}},   // 스킬 프레임별 크기
+    skillFrPos: {"48": {"1": {"y": 1}, "2": {"y": 1}, "3": {"x": 23, "y": 2}, "4": {"y": 10, "x": 62}, "5": {"y": 2, "x": 3}, "6": {"x": 11, "y": 2}, "7": {"x": 29, "y": 4}, "8": {"x": 55, "y": 6}}, "45": {"1": {"x": 21}, "2": {"x": 21}, "3": {"x": 22}, "4": {"x": 48}, "5": {"x": 46}, "6": {"x": 25}, "7": {"x": 21}, "8": {"x": 21}, "9": {"x": 22}, "10": {"x": 48}, "11": {"x": 46}, "12": {"x": 25}, "13": {"x": 21}, "14": {"x": 21}, "15": {"x": 22}, "16": {"x": 48}, "17": {"x": 46}, "18": {"x": 25}}, "46": {"1": {"x": -15}, "2": {"x": 23}, "3": {"x": 90}, "4": {"x": 120}, "5": {"x": 173}}, "47": {"1": {"x": -22}, "2": {"x": -7}, "3": {"x": 36}, "4": {"x": 69}, "5": {"x": 110}, "6": {"x": 45}}, "44": {"1": {"y": 3, "x": 7}, "2": {"y": 4, "x": 5}, "3": {"x": 9, "y": 3}, "4": {"y": 6, "x": 38}, "5": {"y": 9, "x": 33}}, "43": {"1": {"x": 40, "y": 2}, "2": {"y": 4, "x": 105}, "3": {"x": 102, "y": 5}}, "39": {"1": {"y": 2, "x": 27}, "2": {"x": 56, "y": 4}, "3": {"x": 65, "y": 2}, "4": {"x": 103, "y": 2}, "5": {"x": 103, "y": 2}, "6": {"x": 103, "y": 2}, "7": {"x": 103, "y": 2}}, "41": {"1": {"y": 2}, "2": {"y": 4, "x": 30}, "3": {"y": 4, "x": 2}, "4": {"y": 4, "x": 30}, "5": {"x": 2, "y": 4}, "6": {"x": 30, "y": 4}, "7": {"x": 1, "y": 4}, "8": {"x": 30, "y": 4}, "9": {"x": 4, "y": 4}, "10": {"x": 30, "y": 4}, "11": {"x": 2, "y": 4}}, "42": {"1": {"y": 5}, "2": {"y": 5}, "3": {"y": 4, "x": 26}, "4": {"y": 4, "x": 85}, "5": {"y": 4, "x": 130}, "6": {"y": 4, "x": 130}, "7": {"y": 4, "x": 129}, "8": {"y": 4, "x": 131}}, "37": {"2": {"x": 55}, "3": {"x": 120}, "4": {"x": 179}, "5": {"x": 193}, "6": {"x": 185}, "7": {"x": 133}, "8": {"x": 90}, "10": {"x": 97}, "11": {"x": 168}}, "38": {"2": {"x": 5}, "3": {"x": 10}, "4": {"x": 15}, "5": {"x": 20}, "6": {"x": 25}, "8": {"x": 5}, "9": {"x": 10}, "10": {"x": 15}, "11": {"x": 20}, "12": {"x": 25}}, "22": {"2": {"x": 20}, "3": {"x": 75}, "4": {"x": 155}}, "23": {"1": {"x": 35}, "2": {"x": 70}, "3": {"x": 105}, "4": {"x": 140}, "5": {"x": 175}}, "24": {"3": {"x": 50, "y": 14}, "4": {"y": 15, "x": 50}}, "25": {"1": {"y": 7}, "2": {"x": 45, "y": 3}, "3": {"x": 86, "y": 5}, "4": {"x": 100, "y": 9}}, "26": {"1": {"x": 20}, "2": {"x": 40}, "3": {"x": 60}, "4": {"x": 80}, "5": {"x": 100}, "6": {"x": 120}}, "27": {"1": {"x": 20}, "2": {"x": 20}, "3": {"x": 25}, "4": {"x": 15}, "5": {"x": 20}}, "28": {"1": {"x": 22, "y": 0}, "2": {"y": 3, "x": 30}, "3": {"x": 50, "y": -45}, "4": {"x": 110, "y": 13}, "5": {"x": 128, "y": 12}, "6": {"x": 132, "y": 16}}, "29": {"1": {"x": 10, "y": 3}, "2": {"x": 10, "y": 5}, "3": {"x": 2}}, "31": {"1": {"y": 2, "x": -4}, "2": {"y": 2}, "3": {"x": -4}, "5": {"x": -21, "y": 4}}, "32": {"1": {"y": 3, "x": -28}, "2": {"y": 6, "x": 34}, "3": {"y": 4, "x": 6}, "4": {"x": 37, "y": 3}, "5": {"y": 9, "x": 100}}, "33": {"1": {"y": 3, "x": -4}, "2": {"x": 10, "y": -14}, "3": {"x": 30, "y": -15}, "4": {"x": 105, "y": 10}, "5": {"x": 82, "y": 21}, "6": {"x": 84, "y": 20}}, "34": {"1": {"y": 3, "x": 1}, "2": {"x": 4, "y": 5}, "3": {"x": 10, "y": 4}}, "35": {"1": {"y": 4, "x": 5}, "2": {"y": 2, "x": 20}, "3": {"x": 30, "y": 1}}, "36": {"1": {"y": 4}, "3": {"y": 2}, "4": {"x": 18}, "5": {"x": 32, "y": 1}, "6": {"x": 62}, "7": {"y": 4, "x": 67}, "8": {"y": 3, "x": 73}, "9": {"y": 2, "x": 134}}},   // 스킬 프레임별 위치
+    skillFrT: {"48": [0.12, 0.12, 0.12, 0.3, 0.1, 0.1, 0.1, 0.15], "45": [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1], "46": [0.12, 0.12, 0.15, 0.13, 0.13], "47": [0.1, 0.1, 0.1, 0.1, 0.1, 0.15], "44": [0.12, 0.12, 0.25, 0.12, 0.2], "43": [0.15, 0.15, 0.15], "39": [0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.4], "41": [0.15, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1], "42": [0.13, 0.13, 0.13, 0.13, 0.13, 0.13, 0.13, 0.13], "37": [0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07], "38": [0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12], "18": [0.2, 0.25], "22": [0.12, 0.15, 0.18, 0.2], "23": [0.15, 0.15, 0.15, 0.15, 0.25], "24": [0.15, 0.15, 0.2, 0.2], "25": [0.12, 0.12, 0.12, 0.15], "26": [0.15, 0.15, 0.15, 0.15, 0.15, 0.15], "27": [0.1, 0.1, 0.1, 0.25, 0.25], "28": [0.15, 0.15, 0.2, 0.15, 0.2, 0.25], "29": [0.1, 0.15, 0.25], "31": [0.15, 0.15, 0.15, 0.15, 0.4], "32": [0.1, 0.17, 0.12, 0.12, 0.33], "33": [0.16, 0.15, 0.13, 0.13, 0.15, 0.35], "34": [0.2, 0.15, 0.25], "35": [0.15, 0.15, 0.15], "36": [0.12, 0.12, 0.05, 0.05, 0.1, 0.07, 0.07, 0.12, 0.2]},   // 스킬 프레임별 재생시간(초)
     evoSz: { 0: 0.95, 1: 0.85, 2: 0.9, 3: 0.88, 4: 0.9, 5: 0.9 },
     outline: {"blur": 10, "alpha": 0.8},   // 히어로 외곽 그림자
     range: {"0": 25, "1": 90, "2": 35, "3": 35, "4": 35, "5": 40},   // 진화단계별 기본공격 사거리(px). 히어로 x=200, 화면 폭 420 → 220이면 화면 끝
@@ -285,7 +289,7 @@ const MOTION_DEFAULT = {
   // 이펙트 프레임별 재생시간(초). 합 = 총 재생시간(전체 '프레임 속도'로 나눔).
   // 길이가 실제 프레임 수와 다르면 무시하고 균등 분할 — 프레임을 지우거나 늘려도 굳지 않음
   fxFrT: {"44": [0.2, 0.2, 0.2, 0.2, 0.2, 0.2], "43": [0.5], "40": [0.08, 0.08, 0.08, 0.08, 0.3], "1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.12, 0.12, 0.15, 0.15], "31": [0.03, 0.03, 0.03, 0.03], "33": [0.14, 0.17, 0.2, 0.35], "34": [0.23, 0.09, 0.18], "35": [0.28, 0.28, 0.28, 0.28, 0.28]},
-  skFx: {"48": {"pullPx": 70, "pullFrom": 0.1, "pullTo": 0.8, "pullRate": 6, "pullBoss": 0}, "45": {"tick": 0.1}, "47": {"tick": 0}, "39": {"tick": 0.25, "dotP": 8, "dotIv": 0.5, "dotDur": 5}, "41": {"tick": 0.1}, "42": {"tick": 0.32}, "37": {"tick": 0.25}, "38": {"tick": 0.22}, "1": {"noWait": 1, "sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "tick": 0.2, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "26": {"tick": 0.35}, "27": {"tick": 0.35}, "28": {"tick": 0}, "32": {"tick": 0.45}, "36": {"tick": 0.3}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1.1, "spd": 2.25, "fly": 1, "x": 0, "y": 0, "tick": 0.3, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}, "34": {"startP": 0.5, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"sz": 0.87, "y": -85, "x": 20}, "2": {"sz": 0.77, "x": 73, "y": -37}, "3": {"x": 71, "sz": 0.95, "y": 16}}}, "44": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "twGap": 35, "twSpd": 1.7, "tick": 0.25, "noWait": 1, "fr": {"1": {"x": 91, "sz": 1.01, "y": 16}, "2": {"x": 93, "y": 10, "sz": 0.86}, "3": {"x": 77, "y": 13, "sz": 1.07}, "4": {"x": 93, "y": 12}, "5": {"x": 83, "y": 13, "sz": 1.03}, "6": {"x": 89, "sz": 0.93, "y": 10}}}, "43": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "tick": 0, "fr": {"1": {"sz": 0.9, "x": 0, "y": 75}}}, "40": {"startP": 0.8, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"x": 105, "y": -101}, "2": {"x": 65, "y": -63}, "3": {"x": 77, "y": 3, "sz": 0.95}, "4": {"y": 13, "x": 77, "sz": 1.02}, "5": {"x": 79, "y": 17, "sz": 0.82}}}, "35": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "twGap": 35, "twSpd": 1.7, "tick": 0.25, "fr": {"1": {"x": 53, "sz": 0.47}, "2": {"sz": 0.58, "x": 85, "y": 3}, "3": {"sz": 0.63, "x": 60, "y": 3}, "4": {"sz": 0.69, "x": 102, "y": 5}, "5": {"sz": 0.76, "x": 81, "y": 3}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
+  skFx: {"48": {"pullPx": 30, "pullFrom": 0.1, "pullTo": 0.8, "pullRate": 4, "pullBoss": 1}, "45": {"tick": 0.1}, "47": {"tick": 0}, "39": {"tick": 0.25, "dotP": 8, "dotIv": 0.5, "dotDur": 5}, "41": {"tick": 0.1}, "42": {"tick": 0.32}, "37": {"tick": 0.25}, "38": {"tick": 0.22}, "1": {"noWait": 1, "sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "tick": 0.2, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "26": {"tick": 0.35}, "27": {"tick": 0.35}, "28": {"tick": 0}, "32": {"tick": 0.45}, "36": {"tick": 0.3}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1.1, "spd": 2.25, "fly": 1, "x": 0, "y": 0, "tick": 0.3, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}, "34": {"startP": 0.5, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"sz": 0.87, "y": -85, "x": 20}, "2": {"sz": 0.77, "x": 73, "y": -37}, "3": {"x": 71, "sz": 0.95, "y": 16}}}, "44": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "twGap": 35, "twSpd": 1.7, "tick": 0.25, "noWait": 1, "fr": {"1": {"x": 91, "sz": 1.01, "y": 16}, "2": {"x": 93, "y": 10, "sz": 0.86}, "3": {"x": 77, "y": 13, "sz": 1.07}, "4": {"x": 93, "y": 12}, "5": {"x": 83, "y": 13, "sz": 1.03}, "6": {"x": 89, "sz": 0.93, "y": 10}}}, "43": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "tick": 0, "fr": {"1": {"sz": 0.9, "x": 0, "y": 75}}}, "40": {"startP": 0.8, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"x": 105, "y": -101}, "2": {"x": 65, "y": -63}, "3": {"x": 77, "y": 3, "sz": 0.95}, "4": {"y": 13, "x": 77, "sz": 1.02}, "5": {"x": 79, "y": 17, "sz": 0.82}}}, "35": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "twGap": 35, "twSpd": 1.7, "tick": 0.25, "fr": {"1": {"x": 53, "sz": 0.47}, "2": {"sz": 0.58, "x": 85, "y": 3}, "3": {"sz": 0.63, "x": 60, "y": 3}, "4": {"sz": 0.69, "x": 102, "y": 5}, "5": {"sz": 0.76, "x": 81, "y": 3}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
 }
 const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 31, 33, 34, 35, 40, 43, 44]                          // 이펙트 있는 스킬 id
 // 이펙트 프레임 시간(초) 배열 — 넣은 값을 그대로 씀. 프레임을 늘리거나 줄이면 값도 같이 조정할 것.
@@ -629,6 +633,9 @@ const _deadCv = typeof document !== 'undefined' ? document.createElement('canvas
 const _deadCtx = _deadCv ? _deadCv.getContext('2d') : null
 const HERO_X = 200  // 평상시 영웅 x (동료가 설 왼쪽 공간 확보 / 보스전에선 화면 중앙 쪽으로 이동)
 const SPEED = 1                                      // 전역 속도 배율
+// 몹 체력 전역 배수 — 종별 표(ENEMY_TYPES.hp)는 그대로 두고 이 숫자 하나로 난이도를 조절한다.
+// 1.5 = 1웨이브 토끼 30 → 히어로 기본 공격력 10 기준 3대에 사망.
+const MOB_HP_MULT = 1.5
 const SCROLL = 140 * SPEED                            // 전진 속도 (px/s)
 // 웨이브 간격·대기속도는 모션 편집기(일반몹 탭)에서 조절 — MOTION_DEFAULT.wave 참조
 const PUNCH = { hitAt: 0.12, total: 0.3, range: 85 } // 4족 주먹질
@@ -814,19 +821,52 @@ const STAT_LIST = {
   aspd:     { name: '공격 속도',    icon: '⚡', per: 0.1, suffix: '%', cost: 25, growth: 1.18, cap: 200 },
   mspd:     { name: '이동 속도',    icon: '👟', per: 0.1, suffix: '%', cost: 25, growth: 1.18, cap: 200 },
 }
+// ── 밸런싱 모드 전용 수치 (BAL=true 일 때만 사용, 디버그 버전은 위 옛 값 그대로) ──
+const B = {
+  hp0: 3, hpR: 1.10,          // 일반몹 체력 3 × 1.10^(웨이브-1)
+  meat0: 5, expo0: 1,         // 처치 고기 5 / 경험치 1, 증가율은 체력과 동일
+  bossHpX: 10,                // 보스 체력 = 그 웨이브 일반몹 × 10
+  bossDmg0: 3, bossDmgR: 1.10,// 보스 공격력 3 × 1.10^(웨이브-10)
+  bossMeat0: 70,              // 보스 고기 70 × 1.10^(웨이브-10)
+  atk0: 1, hp0Hero: 10, atkR: 1.08, hpR_Hero: 1.08,   // 히어로 기본·레벨당 배율
+}
+// 고기 강화 9종 / 스킬포인트 11종 — 획득량 2종은 스킬포인트로만
+const STAT_BAL = {
+  atk:      { name: '공격력',       cost: 10,  growth: 1.08, mult: 1.08 },
+  hp:       { name: '체력',         cost: 10,  growth: 1.08, mult: 1.08 },
+  regen:    { name: '체력 회복',    cost: 500, growth: 1.12, per: 0.01, suffix: '%/초', cap: 50 },
+  critRate: { name: '치명타 확률',  cost: 500, growth: 1.12, per: 0.1,  suffix: '%', cap: 100 },
+  critDmg:  { name: '치명타 공격력', cost: 500, growth: 1.12, per: 1,   suffix: '%', base: 150 },
+  acc:      { name: '명중률',       cost: 500, growth: 1.12, per: 0.1,  suffix: '%', base: 1, cap: 100 },
+  eva:      { name: '회피율',       cost: 500, growth: 1.12, per: 0.1,  suffix: '%', base: 1, cap: 100 },
+  aspd:     { name: '공격 속도',    cost: 500, growth: 1.12, per: 0.1,  suffix: '%', base: 100, cap: 200 },
+  mspd:     { name: '이동 속도',    cost: 500, growth: 1.12, per: 0.1,  suffix: '%', base: 100, cap: 200 },
+  meatUp:   { name: '고기 획득량',  cost: 500, growth: 1.12, per: 1, suffix: '%', base: 100, cap: 1000, spOnly: true },
+  expUp:    { name: '경험치 획득량', cost: 500, growth: 1.12, per: 1, suffix: '%', base: 100, cap: 1000, spOnly: true },
+}
+const SL = k => (BAL ? STAT_BAL[k] : STAT_LIST[k])       // 지금 모드의 스탯 정의
 const STAT_KEYS = Object.keys(STAT_LIST)
+const MEAT_KEYS = BAL ? Object.keys(STAT_BAL).filter(k => !STAT_BAL[k].spOnly) : STAT_KEYS   // 고기 강화탭 목록
+const SP_KEYS = BAL ? Object.keys(STAT_BAL) : STAT_KEYS                                     // 스킬포인트 목록
 const statInit = () => STAT_KEYS.reduce((o, k) => (o[k] = 0, o), {})
 const statText = (k, lv) => {
-  const d = STAT_LIST[k]
+  const d = SL(k)
+  if (BAL) {
+    if (k === 'atk' || k === 'hp') return '×' + (Math.round(d.mult ** lv * 100) / 100)
+    let v = (d.base || 0) + lv * d.per
+    if (d.cap != null) v = Math.min(d.cap, v)
+    return (Math.round(v * 100) / 100) + (d.suffix || '')
+  }
   let v = d.cap ? Math.min(d.cap, lv * d.per) : lv * d.per
   v = Math.round(v * 10) / 10
   return d.suffix === '/초' ? `${v}/초` : `+${v}%`
 }
 // 강화(고기) 비용
-const buyCost = (k, lv) => Math.floor(STAT_LIST[k].cost * Math.pow(STAT_LIST[k].growth, lv))
+const buyCost = (k, lv) => Math.floor(SL(k).cost * Math.pow(SL(k).growth, lv))
 
 // 히어로 레벨업 필요 경험치
-const heroExpReq = lv => Math.floor(50 * Math.pow(1.18, lv - 1))
+// 영웅 레벨업 요구 경험치 — 밸런싱 모드는 10 × 1.12^(레벨−1) (레벨업당 스킬포인트 3점은 그대로)
+const heroExpReq = lv => Math.floor(BAL ? 10 * Math.pow(1.12, lv - 1) : 50 * Math.pow(1.18, lv - 1))
 
 
 // mode: quad = 4족 질주 + 주먹질 / biped = 직립 보행 + 돌 던지기
@@ -839,7 +879,7 @@ const EVOS = [
   { name: '인간', mult: 729, cost: 300000000, mode: 'human' },
 ]
 
-const SAVE_KEY = 'paleoDefSave_v5'
+const SAVE_KEY = BAL ? 'paleoDefSave_bal' : 'paleoDefSave_v5'   // 밸런싱 모드는 별도 세이브
 const SLOT_COUNT = 8
 const SET_COUNT = 3
 const emptySet = () => Array(SLOT_COUNT).fill(null)
@@ -1138,27 +1178,35 @@ export default function App() {
 
   // 스탯 총 레벨 = 강화(고기) + 스킬(SP), 효과는 STAT_LIST.per 기준
   const tot = k => (lv[k] || 0) + (skill[k] || 0)
-  const ATK_BASE = 10, HP_BASE = 100, ASPD = 1.0
+  const ATK_BASE = BAL ? B.atk0 : 10, HP_BASE = BAL ? B.hp0Hero : 100, ASPD = 1.0
+  // 밸런싱: 공격력·체력만 곱연산(×1.08/레벨), 나머지는 가산 + 상한
+  const capd = (k, v) => { const c = SL(k).cap; return c != null ? Math.min(c, v) : v }
+  const statVal = k => {                       // 표시·계산 공통 값
+    const d = SL(k), n = tot(k)
+    if (!BAL) return null
+    if (k === 'atk' || k === 'hp') return d.mult ** n
+    return capd(k, (d.base || 0) + n * d.per)
+  }
   // 힐러 패시브: 장착 시 히어로+동료 전체 공격력·공속·이속 상승
   const allyBuff = alliesOn.healer ? 1 + (ALLY_DEFS.healer.buff || 0) : 1
-  const aspdMult = (1 + Math.min(200, tot('aspd') * STAT_LIST.aspd.per) / 100) * allyBuff   // 공격속도 배율
-  const mspdMult = (1 + Math.min(200, tot('mspd') * STAT_LIST.mspd.per) / 100) * allyBuff   // 이동속도 배율
-  const maxHp = HP_BASE * (1 + tot('hp') * STAT_LIST.hp.per / 100)
+  const aspdMult = (BAL ? statVal('aspd') / 100 : 1 + Math.min(200, tot('aspd') * STAT_LIST.aspd.per) / 100) * allyBuff
+  const mspdMult = (BAL ? statVal('mspd') / 100 : 1 + Math.min(200, tot('mspd') * STAT_LIST.mspd.per) / 100) * allyBuff
+  const maxHp = BAL ? HP_BASE * statVal('hp') : HP_BASE * (1 + tot('hp') * STAT_LIST.hp.per / 100)
   const S = useRef({})
   S.current = {
-    atk: ATK_BASE * EVOS[evo].mult * (1 + tot('atk') * STAT_LIST.atk.per / 100) * allyBuff,
+    atk: ATK_BASE * EVOS[evo].mult * (BAL ? statVal('atk') : 1 + tot('atk') * STAT_LIST.atk.per / 100) * allyBuff,
     cd: 1000 / (ASPD * aspdMult) / SPEED,
     aspdMult, mspdMult,
     maxHp, wave, phase, alliesOn,
     mode: EVOS[evo].mode,
     evo,
-    critRate: Math.min(1, tot('critRate') * STAT_LIST.critRate.per / 100),
-    critMult: 2 + tot('critDmg') * STAT_LIST.critDmg.per / 100,
-    regen: tot('regen') * STAT_LIST.regen.per,
-    meatMult: 1 + tot('meatUp') * STAT_LIST.meatUp.per / 100,
-    expMult: 1 + tot('expUp') * STAT_LIST.expUp.per / 100,
-    acc: tot('acc') * STAT_LIST.acc.per / 100,
-    eva: tot('eva') * STAT_LIST.eva.per / 100,
+    critRate: BAL ? statVal('critRate') / 100 : Math.min(1, tot('critRate') * STAT_LIST.critRate.per / 100),
+    critMult: BAL ? statVal('critDmg') / 100 : 2 + tot('critDmg') * STAT_LIST.critDmg.per / 100,
+    regen: BAL ? maxHp * statVal('regen') / 100 : tot('regen') * STAT_LIST.regen.per,
+    meatMult: BAL ? statVal('meatUp') / 100 : 1 + tot('meatUp') * STAT_LIST.meatUp.per / 100,
+    expMult: BAL ? statVal('expUp') / 100 : 1 + tot('expUp') * STAT_LIST.expUp.per / 100,
+    acc: BAL ? statVal('acc') / 100 : tot('acc') * STAT_LIST.acc.per / 100,
+    eva: BAL ? statVal('eva') / 100 : tot('eva') * STAT_LIST.eva.per / 100,
     equipped,
     // TODO(패시브 효과): 장착된 패시브(SKILLS[si].passive)의 수치가 확정되면 여기서 상시형은 위 스탯에 합산,
     // 주기형은 전투 루프에서 슬롯 쿨(w.skillCd) 돌 때마다 버프 적용. 현재는 표시·장착만 되고 효과 0.
@@ -1330,14 +1378,22 @@ export default function App() {
       const key = WAVE_CYCLE[Math.floor((w.waveNum - 1) / 10) % WAVE_CYCLE.length]   // 10웨이브당 1종 (블록)
       const boss = w.bossPending && w.spawnLeft === 1
       const t = ENEMY_TYPES[key]
-      const sc = (1 + 0.4 * (w.waveNum - 1)) * (boss ? 12 : 1)
+      const wn = w.waveNum
+      // 밸런싱 모드: 종별 표의 hp/dmg/reward를 안 쓰고 웨이브 공식으로만 만든다.
+      // 일반몹은 공격력·명중·회피가 없고(맞아주는 역할) 보스만 공격한다.
+      const bHp   = B.hp0 * B.hpR ** (wn - 1) * (boss ? B.bossHpX : 1)
+      const bMeat = boss ? B.bossMeat0 * B.bossDmgR ** (wn - 10) : B.meat0 * B.hpR ** (wn - 1)
+      const bExp  = boss ? B.bossMeat0 * B.bossDmgR ** (wn - 10) : B.expo0 * B.hpR ** (wn - 1)
+      const bDmg  = boss ? B.bossDmg0 * B.bossDmgR ** (wn - 10) : 0
+      const sc = MOB_HP_MULT * (1 + 0.4 * (wn - 1)) * (boss ? 12 : 1)
+      const hp = BAL ? bHp : t.hp * sc
       w.enemies.push({
-        type: key, boss, x: w.W + 40 + (seq ? (seq - 1) * (motRef.current.wave.gap ?? 65) : 0), hp: t.hp * sc, maxHp: t.hp * sc,
+        type: key, boss, x: w.W + 40 + (seq ? (seq - 1) * (motRef.current.wave.gap ?? 65) : 0), hp, maxHp: hp,
         speed: t.speed * (boss ? 0.6 : 0.9 + Math.random() * 0.2),
-        dmg: t.dmg * (1 + 0.1 * (w.waveNum - 1)) * (boss ? 3 : 1),
-        meat: Math.floor(t.meat * (1 + 0.2 * (w.waveNum - 1))) * (boss ? 15 : 1),
-        exp: Math.floor(t.exp * (1 + 0.2 * (w.waveNum - 1))) * (boss ? 15 : 1),
-        acc: t.acc, eva: t.eva, air: boss ? 0 : (t.air || 0),
+        dmg: BAL ? bDmg : t.dmg * (1 + 0.1 * (wn - 1)) * (boss ? 3 : 1),
+        meat: BAL ? bMeat : Math.floor(t.meat * (1 + 0.2 * (wn - 1))) * (boss ? 15 : 1),
+        exp: BAL ? bExp : Math.floor(t.exp * (1 + 0.2 * (wn - 1))) * (boss ? 15 : 1),
+        acc: BAL ? (boss ? 0.15 : 0) : t.acc, eva: BAL ? (boss ? 0.05 : 0) : t.eva, air: boss ? 0 : (t.air || 0),
         h: boss ? t.h * 2 : t.h, color: t.color, cd: 0, flash: 0, animT: Math.random() * 10,   // 저주보스: 일반몹 2배(모션편집기 개별조절)
         scaleV: 1, yOff: 0, spdV: boss ? 1 : 0.93 + Math.random() * 0.14,   // 크기·높이 랜덤 제거 — 일렬로 서므로 균일해야 함(크기는 편집기에서 종별로)
       })
@@ -2704,6 +2760,8 @@ export default function App() {
   const cloudBestRef = useRef(0)                      // 마지막으로 확인한 클라우드 진행도
   async function pushCloud(force) {
     if (!FB_ON || !fbAuth.currentUser) return
+    // 밸런싱 모드 세이브는 클라우드에 올리지 않는다 — 문서가 하나라 실제 진행을 덮어쓴다
+    if (BAL) { setCloudMsg('밸런싱 모드는 클라우드 저장 안 함'); return }
     // 클라우드에 올리는 건 PC뿐이다. 폰은 받기만 한다 — 폰 저장소가 초기화돼도 클라우드가 안 망가진다.
     if (!IS_PC && !force) { setCloudMsg('이 기기는 받기 전용'); return }
     try {
@@ -2733,6 +2791,7 @@ export default function App() {
   }
   useEffect(() => {
     if (!FB_ON) return
+    if (BAL) return                                    // 밸런싱 모드는 클라우드에서 받지도 않는다
     return onAuthStateChanged(fbAuth, async u => {
       setFbUser(u)
       if (!u) { setRankInfo(null); return }
@@ -2911,6 +2970,7 @@ export default function App() {
           <div data-edit="menu" style={st.menuPanel} onClick={e => e.stopPropagation()}>
             <button style={{ ...st.menuItem, opacity: 0.5, display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => {}}><img data-edit="mailbox" src="/ui/mailbox.webp" alt="" style={st.mailImg} />우편함 <span style={{ fontSize: 11, opacity: 0.7 }}>준비 중</span></button>
             {IS_PC && <button style={st.menuItem} onClick={() => { setMotEdit(v => !v); setMenuOpen(false) }}>모션 편집 {motEdit ? '끄기' : '켜기'}</button>}
+            {IS_PC && <button style={st.menuItem} onClick={() => { localStorage.setItem('paleoBal', BAL ? '0' : '1'); location.reload() }}>밸런싱 모드 {BAL ? '끄기' : '켜기'} <span style={{ fontSize: 11, opacity: 0.6 }}>{BAL ? '(세이브 분리 중)' : ''}</span></button>}
             <div style={{ borderTop: '1px solid #3a2a14', margin: '4px 0' }} />
             {FB_ON && (fbUser ? (
               <>
@@ -3581,7 +3641,7 @@ export default function App() {
       </div>
 
       <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.panelInner}>
-        {tab === '강화' && STAT_KEYS.map(k => {
+        {tab === '강화' && MEAT_KEYS.map(k => {
           const d = STAT_LIST[k]
           const c = buyCost(k, lv[k])
           const ok = DEBUG || meat >= c
@@ -3592,8 +3652,10 @@ export default function App() {
                 <div data-edit="name" style={st.rowName}>{d.name} <span style={st.rowLv}>Lv.{lv[k]}</span></div>
                 <div data-edit="val" style={st.rowVal}>{statText(k, lv[k] + skill[k])} <span style={{ color: '#7cb35c' }}>→ {statText(k, lv[k] + 1 + skill[k])}</span></div>
               </div>
-              <input data-edit="input" style={st.dbgInput} type="number" inputMode="numeric" value={lv[k]} onChange={e => setStatLv(k, e.target.value)} />
-              <button data-edit="cost" style={{ ...st.costBtn, opacity: ok ? 1 : 0.4 }} onPointerDown={() => holdStart(() => buyStat(k))} onPointerUp={holdEnd} onPointerLeave={holdEnd} onPointerCancel={holdEnd} onContextMenu={e => e.preventDefault()}>{DEBUG ? '+1' : fmt(c)}</button>
+              {!BAL && <input data-edit="input" style={st.dbgInput} type="number" inputMode="numeric" value={lv[k]} onChange={e => setStatLv(k, e.target.value)} />}
+              <button data-edit="cost" style={{ ...st.costBtn, opacity: ok ? 1 : 0.4 }} onPointerDown={() => holdStart(() => buyStat(k))} onPointerUp={holdEnd} onPointerLeave={holdEnd} onPointerCancel={holdEnd} onContextMenu={e => e.preventDefault()}>
+                {BAL ? <span style={st.costMeat}><img src="/ui/ic_meat.webp" alt="" style={st.costMeatIc} />{fmt(c)}</span> : '+1'}
+              </button>
             </div>
           )
         })}
@@ -3621,7 +3683,7 @@ export default function App() {
         {tab === '성장' && (
           <>
             <div data-edit="spbarC" style={{ ...st.spBar, transform: 'translate(var(--pd-spbarC-x), var(--pd-spbarC-y))' }}>스킬포인트 <b style={{ color: '#7ce0ff', fontSize: 'calc(var(--pd-spbarfz) + 2px)' }}>{sp}</b></div>
-            {STAT_KEYS.map(k => {
+            {SP_KEYS.map(k => {
               const d = STAT_LIST[k]
               const ok = DEBUG || sp > 0
               return (
@@ -4338,9 +4400,10 @@ const UI_DEFAULT = {
   evochrgiant3: 92, evochrgiant3X: 6, evochrgiant3Y: -5,
   evochrgiant4: 92, evochrgiant4X: 4, evochrgiant4Y: -5,
   evochrgiant5: 84, evochrgiant5X: 1, evochrgiant5Y: -3,
-  rankh: 20, rankfz: 12, rankX: 6, rankY: 33,
+  rankh: 16, rankfz: 10, rankX: 7, rankY: 23,
   evocell: 78, evonamefz: 11, evofade: 56, evopadb: 0,   // 0이면 마지막 줄이 틀 안쪽 끝에 딱 붙는다 (flex:1+minHeight:0 로 이미 영역이 맞음)               // 동료 탭(caslot/canamefz)과 같은 시작값
   evocellX: -5, evocellY: 17, evonameX: 0, evonameY: 6,
+  costmeatic: 13,
   pbsz: 30, wjfz: 13, caslot: 81, caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 160, bth: 26, bhpw: 159, bhph: 30, pmw: 70, pmh: 23, pmfz: 11, pgw: 70, pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 39, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
   // 위치 이동(px): 요소별 X/Y
   avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: -1, pillY: 2, iconX: -3, iconY: 1,
@@ -4416,7 +4479,7 @@ Object.assign(UI_DEFAULT, {
 
 // 이벤트 던전 (버튼 + 창)
 Object.assign(UI_DEFAULT, {
-  evbtnw: 45, evbtnh: 48, evbtnX: 0, evbtnY: 0,          // 던전 버튼 틀
+  evbtnw: 43, evbtnh: 46, evbtnX: -30, evbtnY: -48,          // 던전 버튼 틀
   evbtntfz: 9, evbtntX: 1, evbtntY: 0,                  // 팻말 글씨 '이벤트 던전'
   evww: 340, evwh: 540, evwinX: 0, evwinY: 0,            // 던전 창
   evtitlefz: 20, evtitleX: 0, evtitleY: 0,
@@ -4487,7 +4550,7 @@ Object.assign(UI_DEFAULT, {
   qrewh: 37, qrewX: 3, qrewY: 0, qrewisz: 18, qrewiX: 0, qrewiY: 2, qrewvfz: 12, qrewvX: 1, qrewvY: 1, qlvfz: 7, qlvX: -3, qlvY: -6,
   advicotrexw: 141, advicotrexh: 254, advicotrexX: -3, advicotrexY: 0, advicospinow: 131, advicospinoh: 97, advicospinoX: 5, advicospinoY: -7, advicotrikew: 133, advicotrikeh: 93, advicotrikeX: 6, advicotrikeY: 0,
   advicostegow: 131, advicostegoh: 105, advicostegoX: 0, advicostegoY: -9, advicoraptorw: 302, advicoraptorh: 92, advicoraptorX: -11, advicoraptorY: -5, advicoankyw: 142, advicoankyh: 103, advicoankyX: 6, advicoankyY: -18,
-  advicopteraw: 195, advicopterah: 201, advicopteraX: 21, advicopteraY: -16, advicobrachiow: 135, advicobrachioh: 115, advicobrachioX: 0, advicobrachioY: -5, evbtnw: 45, evbtnh: 48, evbtnX: 6, evbtnY: 32,
+  advicopteraw: 195, advicopterah: 201, advicopteraX: 21, advicopteraY: -16, advicobrachiow: 135, advicobrachioh: 115, advicobrachioX: 0, advicobrachioY: -5, evbtnw: 43, evbtnh: 46, evbtnX: -30, evbtnY: -48,
   evbtntfz: 9, evbtntX: 1, evbtntY: 2, evww: 340, evwh: 540, evwinX: 0, evwinY: 0, evtitlefz: 20, evtitleX: 0, evtitleY: 0, evclsz: 30, evcloseX: 0,
   evcloseY: 0, evtabw: 60, evtabh: 30, evtabfz: 13, evtabX: 0, evtabY: 0, evprevh: 120, evprevX: 0, evprevY: 0, evnamefz: 15, evnameX: 0, evnameY: 0,
   evrowh: 46, evrowX: 0, evrowY: 0, evnosz: 26, evnoX: 0, evnoY: 0, evbnamefz: 15, evbnameX: 32, evbnameY: 0, evgow: 54, evgoh: 26, evgofz: 12,
@@ -4826,7 +4889,7 @@ ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k
 --pd-shoptfz:${c.shoptfz}px;--pd-shopsubfz:${c.shopsubfz}px;--pd-shopbw:${c.shopbw}px;--pd-shopbh:${c.shopbh}px;--pd-shopbbv:${c.shopbbv}px;--pd-shopbbh:${c.shopbbh}px;--pd-shopbfz:${c.shopbfz}px;
 --pd-gainic:${c.gainic}px;--pd-gainpv:${c.gainpv}px;--pd-gainph:${c.gainph}px;--pd-gainic-x:${c.gainicX}px;--pd-gainic-y:${c.gainicY}px;--pd-gaint-x:${c.gaintX}px;--pd-gaint-y:${c.gaintY}px;--pd-shopgem:${c.shopgem}px;
 --pd-gbtnfz:${c.gbtnfz}px;--pd-gbtnpw:${c.gbtnpw}px;--pd-gbtnph:${c.gbtnph}px;
---pd-pmw:${c.pmw}px;--pd-pmh:${c.pmh}px;--pd-pmfz:${c.pmfz}px;--pd-pgw:${c.pgw}px;--pd-pgh:${c.pgh}px;--pd-pgfz:${c.pgfz}px;--pd-hambsz:${c.hambsz}px;--pd-menufz:${c.menufz}px;--pd-pbsz:${c.pbsz}px;--pd-wjfz:${c.wjfz}px;--pd-caslot:${c.caslot}px;--pd-caimg:${c.caimg}px;--pd-canamefz:${c.canamefz}px;--pd-rankh:${c.rankh}px;--pd-rankfz:${c.rankfz}px;--pd-evocell:${c.evocell}px;--pd-evonamefz:${c.evonamefz}px;--pd-evofade:${c.evofade}px;--pd-evopadb:${c.evopadb}px;--pd-alwinw:${c.alwinw}px;--pd-alnamefz:${c.alnamefz}px;--pd-alimg:${c.alimg}px;--pd-alstatfz:${c.alstatfz}px;--pd-albtnw:${c.albtnw}px;--pd-albtnh:${c.albtnh}px;--pd-albtnfz:${c.albtnfz}px;--pd-alclosesz:${c.alclosesz}px;--pd-alclosefz:${c.alclosefz}px;${ALLY_EVO_KEYS.flatMap(k => [1, 2, 3, 4, 5].map(n => `--pd-evochr${k}${n}:${c[`evochr${k}${n}`]}px;--pd-evochr${k}${n}-x:${c[`evochr${k}${n}X`]}px;--pd-evochr${k}${n}-y:${c[`evochr${k}${n}Y`]}px;`)).join('')}--pd-catabfz:${c.catabfz}px;
+--pd-pmw:${c.pmw}px;--pd-pmh:${c.pmh}px;--pd-pmfz:${c.pmfz}px;--pd-pgw:${c.pgw}px;--pd-pgh:${c.pgh}px;--pd-pgfz:${c.pgfz}px;--pd-hambsz:${c.hambsz}px;--pd-menufz:${c.menufz}px;--pd-pbsz:${c.pbsz}px;--pd-wjfz:${c.wjfz}px;--pd-costmeatic:${c.costmeatic}px;--pd-caslot:${c.caslot}px;--pd-caimg:${c.caimg}px;--pd-canamefz:${c.canamefz}px;--pd-rankh:${c.rankh}px;--pd-rankfz:${c.rankfz}px;--pd-evocell:${c.evocell}px;--pd-evonamefz:${c.evonamefz}px;--pd-evofade:${c.evofade}px;--pd-evopadb:${c.evopadb}px;--pd-alwinw:${c.alwinw}px;--pd-alnamefz:${c.alnamefz}px;--pd-alimg:${c.alimg}px;--pd-alstatfz:${c.alstatfz}px;--pd-albtnw:${c.albtnw}px;--pd-albtnh:${c.albtnh}px;--pd-albtnfz:${c.albtnfz}px;--pd-alclosesz:${c.alclosesz}px;--pd-alclosefz:${c.alclosefz}px;${ALLY_EVO_KEYS.flatMap(k => [1, 2, 3, 4, 5].map(n => `--pd-evochr${k}${n}:${c[`evochr${k}${n}`]}px;--pd-evochr${k}${n}-x:${c[`evochr${k}${n}X`]}px;--pd-evochr${k}${n}-y:${c[`evochr${k}${n}Y`]}px;`)).join('')}--pd-catabfz:${c.catabfz}px;
 --pd-cabtnfz:${c.cabtnfz}px;
 ${['caslot', 'caimg', 'caname', 'catab', 'cabtn'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}--pd-pb-x:${c.pbX}px;--pd-pb-y:${c.pbY}px;--pd-wj-x:${c.wjX}px;--pd-wj-y:${c.wjY}px;--pd-btw:${c.btw}px;--pd-bth:${c.bth}px;--pd-bhpw:${c.bhpw}px;--pd-bhph:${c.bhph}px;
 ${['bt', 'bhp'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
@@ -5650,6 +5713,8 @@ const st = {
   rowVal: { fontSize: 'var(--pd-val)', opacity: 0.82, marginTop: 1, whiteSpace: 'nowrap', transform: 'translate(var(--pd-val-x), var(--pd-val-y))' },
   dbgBtn: { width: 27, padding: '7px 0', borderRadius: 6, border: '1px solid #5a4028', background: 'linear-gradient(180deg,#2c2013,#1e150b)', color: '#f3e6d0', fontSize: 15, flexShrink: 0 },
   dbgInput: { width: 'var(--pd-inputw)', padding: '6px 2px', borderRadius: 6, border: '1px solid #5a4028', background: '#160e07', color: GOLD, fontSize: 'var(--pd-inputfz)', textAlign: 'center', flexShrink: 0, fontFamily: "'Do Hyeon',sans-serif", transform: 'translate(var(--pd-input-x), var(--pd-input-y))' },
+  costMeat: { display: 'inline-flex', alignItems: 'center', gap: 3, whiteSpace: 'nowrap' },
+  costMeatIc: { width: 'var(--pd-costmeatic)', height: 'var(--pd-costmeatic)', objectFit: 'contain' },
   costBtn: {
     touchAction: 'manipulation', userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none',
     minWidth: 'var(--pd-costw)', height: 'var(--pd-costh)', padding: '0 8px', border: 'none', background: 'transparent',
@@ -5722,7 +5787,7 @@ const st = {
 
 // 피버타임 버튼 (2026-08-01 신규) — 사용자 확정값 블록보다 뒤에 둬야 함
 Object.assign(UI_DEFAULT, {
-  fevbtnw: 54, fevbtnh: 34, fevbtnX: -44, fevbtnY: -19,       // 비활성 팻말 틀 (원본 956x466 비율)
+  fevbtnw: 54, fevbtnh: 34, fevbtnX: 7, fevbtnY: -15,       // 비활성 팻말 틀 (원본 956x466 비율)
   fevonzoom: 123, fevonX: 0, fevonY: 1,                    // 활성 그림은 불꽃만큼 더 큼
   fevbtntfz: 8, fevbtntX: 0, fevbtntY: -5,                 // '(광고 시청 0/3)'
 })
