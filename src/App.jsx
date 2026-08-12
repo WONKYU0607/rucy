@@ -875,7 +875,7 @@ const buyCost = (k, lv) => Math.floor(SL(k).cost * Math.pow(SL(k).growth, lv))
 
 // 히어로 레벨업 필요 경험치
 // 영웅 레벨업 요구 경험치 — 밸런싱 모드는 10 × 1.12^(레벨−1) (레벨업당 스킬포인트 3점은 그대로)
-const heroExpReq = lv => Math.floor(BAL ? 10 * Math.pow(1.12, lv - 1) : 50 * Math.pow(1.18, lv - 1))
+const heroExpReq = lv => Math.floor(BAL ? 10 * Math.pow(1.16, lv - 1) : 50 * Math.pow(1.18, lv - 1))
 
 
 // mode: quad = 4족 질주 + 주먹질 / biped = 직립 보행 + 돌 던지기
@@ -1571,7 +1571,9 @@ export default function App() {
       // 그 순간 hero.state='attack'이 되며 스크롤이 멈춰 몹이 멀찍이 굳었다.
       const thrower = st.mode === 'biped'                       // 직립: 원거리(돌던지기)
       const engaged = (e, extra = 0) => {
-        const reached = e.stopX != null && e.x <= e.stopX + 6
+        // 허용오차는 이동 분기의 클램프와 같은 기준이어야 한다. 예전 +6 은 그 6px 구간에서
+        // 제자리 몹이 교전(scroll=0)인데 좁힐 수단이 없어 공격 분기에 못 들어가던 원인이었다.
+        const reached = e.stopX != null && e.x <= e.stopX + 0.5
         // 원거리는 사거리에 닿는 순간 멈춰서 던진다 (가까이 갈 이유가 없음)
         // 직립도 '멈춘 적'은 교전으로 인정 — 안 그러면 적 정지 위치가 사거리 밖일 때 영원히 교전이 안 됨
         if (thrower) return e.x - w.heroX < atkRange0 + extra || reached
@@ -1676,14 +1678,12 @@ export default function App() {
           // 히어로가 때릴 수 있는 거리면 몹도 반격할 수 있어야 한다.
           // (히어로 타격 판정은 사거리+40인데 몹 공격은 정지위치 도달이 조건이라, 그 사이 구간에서 몹이 일방적으로 맞고 죽었음)
           const inHeroReach = w.adv && !e.boss && (e.x - w.heroX) < atkRange + 40   // 모험 몹만 — 웨이브 몹에 걸면 스크롤 흐름에서 빠져 뒤로 밀리고 겹침
-          // engaged()는 stopX+6 에서 교전으로 인정하는데 이동 분기는 e.x > stopX 라, 그 6px 구간에서
-          // scroll=0(교전) + 자기속도 0(제자리) 이 겹치면 좁힐 수단이 없어 공격 분기에 영영 못 들어갔다.
-          // (웨이브 보스가 공격 모션·파고듦을 한 번도 안 하던 원인) → 사거리 안에 들어오면 정지위치로 스냅
-          if (still && e.x > stopX && e.x <= stopX + 6) e.x = stopX
           if (e.x > stopX && !inHeroReach && !(e.atkT > 0)) {
             const near = still ? 1 : Math.min(1, Math.max(0.3, (e.x - stopX) / 55))  // 정지 전 감속
             const own = still ? 0 : e.speed * (e.spdV || 1) * espd * SPEED * 1.3 * e.vt * near
-            e.x -= (own + scroll) * dt
+            // 정지위치를 지나치지 않게 클램프. 예전엔 stopX+6 안에 들면 e.x = stopX 로 순간이동시켰는데,
+            // 그 최대 6px 점프가 "몹이 도착할 때 앞으로 움찔"하는 정체였다.
+            e.x = Math.max(stopX, e.x - (own + scroll) * dt)
             if (e.atkT > 0) { e.atkT = 0; e.lunge = 0 }
             if (!waveMob) e.animT += dt * SPEED * (0.4 + 0.6 * e.vt * near) * (1 + scroll / SCROLL * 0.4) * Math.min(1.5, Math.max(0.6, 0.55 + e.speed / 160))   // 웨이브 제자리몹만 완전 정지
           } else if (waveMob) {                            // 웨이브 일반몹만 히어로를 공격하지 않는다 — 맞아주는 역할만
