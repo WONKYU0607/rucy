@@ -41,7 +41,7 @@ const SPLASH_BG = (() => {
   try { const q = new URLSearchParams(location.search); if (q.get('intro') === 'en') ko = false; if (q.get('intro') === 'ko') ko = true } catch {}
   return ko ? '/startbg/startbg.webp' : '/startbg/startbg_en.webp'
 })()
-const CFG_STAMP = Date.parse('2026-08-11T14:50:00+09:00')
+const CFG_STAMP = Date.parse('2026-08-12T17:25:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
 const ANIM = {
@@ -251,7 +251,7 @@ const MOTION_DEFAULT = {
     'd:trex': { sz: 1 }, 'd:spino': { sz: 1 }, 'd:trike': { sz: 1 }, 'd:stego': { sz: 1 },
     'd:raptor': { sz: 1 }, 'd:anky': { sz: 1 }, 'd:ptera': { sz: 1 }, 'd:brachio': { sz: 1 },
     'hyena': { sz: 1.07, stop: 30, spd: 1.5 }, 'bear': { sz: 1.16, y: -7, stop: 46, spd: 1.25 }, 'rhino': { sz: 1.13, stop: 43, spd: 1.2 }, 'mammoth': { sz: 0.92 },
-    'rabbit': { sz: 1.6, stop: 15 }, 'antelope': { sz: 1.28, stop: -20 }, 'deer': { sz: 1, stop: 35 }, 'boar': { sz: 1, stop: 45, spd: 1.4 },
+    'rabbit': { sz: 1.6, stop: 15 }, 'antelope': { sz: 1.28, stop: -20 }, 'deer': { sz: 1, stop: 35 }, 'boar': { sz: 1, stop: 40, spd: 0.2 },
     'wolf': { sz: 1.14, stop: 40, spd: 1.5 }, 'tiger': { sz: 1.1, stop: 15, spd: 1.3 }, 'monkey': { sz: 1.07, y: -1, stop: -12, spd: 1.5 }, 'snake': { sz: 1.46, stop: 6, spd: 1.45 },
     'ostrich': { sz: 0.9, stop: 4 }, 'turtle': { sz: 1.11 }, 'croc': { sz: 1.73, stop: 5 }, 'komodo': { sz: 1.42, stop: 4 },
     'eagle': { sz: 0.91, y: -92, spd: 1.7 }, 'giraffe': { sz: 0.84 }, 'lion': { sz: 1.29, stop: 30, spd: 1.5 }, 'elephant': { sz: 1, stop: 40 },
@@ -291,7 +291,7 @@ const MOTION_DEFAULT = {
   // 이펙트 프레임별 재생시간(초). 합 = 총 재생시간(전체 '프레임 속도'로 나눔).
   // 길이가 실제 프레임 수와 다르면 무시하고 균등 분할 — 프레임을 지우거나 늘려도 굳지 않음
   fxFrT: {"44": [0.2, 0.2, 0.2, 0.2, 0.2, 0.2], "43": [0.5], "40": [0.08, 0.08, 0.08, 0.08, 0.3], "1": [0.275, 0.275], "2": [0.08, 0.08], "16": [0.138, 0.138, 0.138, 0.138], "18": [0.183, 0.183, 0.183], "20": [0.12], "29": [0.12, 0.12, 0.15, 0.15], "31": [0.03, 0.03, 0.03, 0.03], "33": [0.14, 0.17, 0.2, 0.35], "34": [0.23, 0.09, 0.18], "35": [0.28, 0.28, 0.28, 0.28, 0.28]},
-  skFx: {"48": {"pullPx": 30, "pullFrom": 0.1, "pullTo": 0.8, "pullRate": 4, "pullBoss": 1}, "45": {"tick": 0.1}, "47": {"tick": 0}, "39": {"tick": 0.25, "dotP": 8, "dotIv": 0.5, "dotDur": 5}, "41": {"tick": 0.1}, "42": {"tick": 0.32}, "37": {"tick": 0.25}, "38": {"tick": 0.22}, "1": {"noWait": 1, "sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "tick": 0.2, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "26": {"tick": 0.35}, "27": {"tick": 0.35}, "28": {"tick": 0}, "32": {"tick": 0.45}, "36": {"tick": 0.3}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1.1, "spd": 2.25, "fly": 1, "x": 0, "y": 0, "tick": 0.3, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}, "34": {"startP": 0.5, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"sz": 0.87, "y": -85, "x": 20}, "2": {"sz": 0.77, "x": 73, "y": -37}, "3": {"x": 71, "sz": 0.95, "y": 16}}}, "44": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "twGap": 35, "twSpd": 1.7, "tick": 0.25, "noWait": 1, "fr": {"1": {"x": 91, "sz": 1.01, "y": 16}, "2": {"x": 93, "y": 10, "sz": 0.86}, "3": {"x": 77, "y": 13, "sz": 1.07}, "4": {"x": 93, "y": 12}, "5": {"x": 83, "y": 13, "sz": 1.03}, "6": {"x": 89, "sz": 0.93, "y": 10}}}, "43": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "tick": 0, "fr": {"1": {"sz": 0.9, "x": 0, "y": 75}}}, "40": {"startP": 0.8, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"x": 105, "y": -101}, "2": {"x": 65, "y": -63}, "3": {"x": 77, "y": 3, "sz": 0.95}, "4": {"y": 13, "x": 77, "sz": 1.02}, "5": {"x": 79, "y": 17, "sz": 0.82}}}, "35": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "twGap": 35, "twSpd": 1.7, "tick": 0.25, "fr": {"1": {"x": 53, "sz": 0.47}, "2": {"sz": 0.58, "x": 85, "y": 3}, "3": {"sz": 0.63, "x": 60, "y": 3}, "4": {"sz": 0.69, "x": 102, "y": 5}, "5": {"sz": 0.76, "x": 81, "y": 3}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
+  skFx: {"7": {"icZ": 1.05, "icX": 3, "icY": -1}, "8": {"icX": -1}, "13": {"icY": -7, "icX": 3}, "17": {"icY": -3, "icX": 1}, "23": {"icZ": 1.3, "icX": 6}, "24": {"icZ": 1.1}, "25": {"icZ": 1.5}, "46": {"icZ": 1.3, "icY": -2}, "48": {"pullPx": 30, "pullFrom": 0.1, "pullTo": 0.8, "pullRate": 4, "pullBoss": 1}, "45": {"icZ": 1.45, "icX": 6, "tick": 0.1}, "47": {"icZ": 1.4, "icY": -2, "tick": 0}, "39": {"icZ": 1.1, "icX": 1, "tick": 0.25, "dotP": 8, "dotIv": 0.5, "dotDur": 5}, "41": {"icZ": 1.4, "icY": -2, "icX": 1, "tick": 0.1}, "42": {"icZ": 1.2, "icX": 0, "tick": 0.32}, "37": {"icZ": 1.2, "icX": -6, "tick": 0.25}, "38": {"icZ": 1.25, "icX": 5, "tick": 0.22}, "1": {"noWait": 1, "sz": 0.8, "spd": 1.5, "fly": 1.25, "x": 15, "y": 0, "fr": {}}, "2": {"sz": 0.74, "spd": 1, "fly": 1.1, "x": 0, "y": 0, "fr": {"1": {"t": 1, "sz": 0.8}, "2": {"sz": 0.85, "y": 30}}}, "16": {"sz": 1.2, "spd": 1.3, "fly": 1, "x": 50, "y": 0, "fr": {}}, "18": {"icZ": 1.1, "icY": -5, "icX": 1, "sz": 1.04, "spd": 1.5, "fly": 1, "x": 45, "y": 0, "fr": {}}, "20": {"sz": 0.74, "spd": 1.25, "fly": 1, "x": 0, "y": 0, "fr": {}}, "29": {"icX": 1, "icY": -2, "sz": 1.2, "spd": 1.3, "fly": 1.6, "x": 100, "y": 10, "tick": 0.2, "fr": {"1": {"sz": 0.93, "t": 1.1, "x": -47}, "2": {"sz": 0.9, "x": -13}, "3": {"sz": 0.88, "y": -2}, "4": {"sz": 0.91, "t": 0.6, "x": 2, "y": -2}}}, "26": {"icZ": 1.45, "icX": -6, "icY": 2, "tick": 0.35}, "27": {"icZ": 1.3, "icX": 7, "tick": 0.35}, "28": {"tick": 0}, "32": {"icZ": 1.65, "icX": 7, "tick": 0.45}, "36": {"icZ": 1.2, "tick": 0.3}, "31": {"sz": 1.15, "spd": 1, "fly": 1, "x": 0, "y": 45, "fr": {"1": {"y": 0}}}, "33": {"startP": 0.55, "anchor": 0, "sz": 1.1, "spd": 2.25, "fly": 1, "x": 0, "y": 0, "tick": 0.3, "fr": {"1": {"x": 39, "y": 23, "sz": 0.72}, "2": {"x": 55, "sz": 0.5, "y": 11}, "3": {"x": 84, "sz": 0.73, "y": 20}, "4": {"x": 94, "sz": 0.69, "y": 19}}}, "34": {"icZ": 1.15, "icY": -6, "icX": 1, "startP": 0.5, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"sz": 0.87, "y": -85, "x": 20}, "2": {"sz": 0.77, "x": 73, "y": -37}, "3": {"x": 71, "sz": 0.95, "y": 16}}}, "44": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "twGap": 35, "twSpd": 1.7, "tick": 0.25, "noWait": 1, "fr": {"1": {"x": 91, "sz": 1.01, "y": 16}, "2": {"x": 93, "y": 10, "sz": 0.86}, "3": {"x": 77, "y": 13, "sz": 1.07}, "4": {"x": 93, "y": 12}, "5": {"x": 83, "y": 13, "sz": 1.03}, "6": {"x": 89, "sz": 0.93, "y": 10}}}, "43": {"startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "tick": 0, "fr": {"1": {"sz": 0.9, "x": 0, "y": 75}}}, "40": {"icZ": 1.05, "icX": 2, "startP": 0.8, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "fr": {"1": {"x": 105, "y": -101}, "2": {"x": 65, "y": -63}, "3": {"x": 77, "y": 3, "sz": 0.95}, "4": {"y": 13, "x": 77, "sz": 1.02}, "5": {"x": 79, "y": 17, "sz": 0.82}}}, "35": {"icZ": 0.85, "startP": 1, "anchor": 0, "sz": 1, "spd": 1, "fly": 1, "x": 0, "y": 0, "twGap": 35, "twSpd": 1.7, "tick": 0.25, "fr": {"1": {"x": 53, "sz": 0.47}, "2": {"sz": 0.58, "x": 85, "y": 3}, "3": {"sz": 0.63, "x": 60, "y": 3}, "4": {"sz": 0.69, "x": 102, "y": 5}, "5": {"sz": 0.76, "x": 81, "y": 3}}}},  // 스킬 이펙트 (x/y=위치, startP=시작 시점, anchor=1이면 히어로 기준)
 }
 const MOT_FX_IDS = [1, 2, 16, 18, 20, 29, 31, 33, 34, 35, 40, 43, 44]                          // 이펙트 있는 스킬 id
 // 이펙트 프레임 시간(초) 배열 — 넣은 값을 그대로 씀. 프레임을 늘리거나 줄이면 값도 같이 조정할 것.
@@ -931,7 +931,7 @@ function loadSave() {
       skEnh: s.skEnh && typeof s.skEnh === 'object' ? s.skEnh : {},
       // 디버그 모드는 전부 해금(기존 세이브에 skOpen이 없어 쓰던 스킬이 잠겨 보이는 걸 막는다). 밸런싱 모드만 실제 잠김
       skOpen: s.skOpen && typeof s.skOpen === 'object' ? { ...skFreeInit(), ...s.skOpen }
-        : (BAL ? skFreeInit() : Object.fromEntries(SKILLS.filter(k => !k.passive).map(k => [k.id, 1]))),
+        : (BAL ? skFreeInit() : Object.fromEntries(SKILLS.map(k => [k.id, 1]))),
       gearEq: s.gearEq && typeof s.gearEq === 'object' ? s.gearEq : { 무기: null, 방어구: null, 유물: null },
       nick: typeof s.nick === 'string' && s.nick ? s.nick : ('Slayer_' + Math.floor(Math.random() * 9000000 + 1000000)),
       mats: Array.isArray(s.mats) && s.mats.some(x => x > 0) ? s.mats : [99999, 99999, 99999, 99999, 99999], enh: s.enh && typeof s.enh === 'object' ? s.enh : {},
@@ -939,7 +939,7 @@ function loadSave() {
       pearl: typeof s.pearl === 'number' ? s.pearl : 0, quest: s.quest && typeof s.quest === 'object' && s.quest.ev ? s.quest : questInit(),
     }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, skCfg: {}, alliesOn: {}, allyEvo: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, allyLv: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, nick: 'Slayer_' + Math.floor(Math.random() * 9000000 + 1000000), mats: [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, advStage: {}, pearl: 0, evStage: {}, gachaLv: { 무기: 1, 방어구: 1, 유물: 1 }, gachaCnt: { 무기: 0, 방어구: 0, 유물: 0 }, gachaRw: {}, skCard: {}, skEnh: {}, skOpen: BAL ? skFreeInit() : Object.fromEntries(SKILLS.filter(k => !k.passive).map(k => [k.id, 1])), quest: questInit() }
+  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, skCfg: {}, alliesOn: {}, allyEvo: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, allyLv: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, nick: 'Slayer_' + Math.floor(Math.random() * 9000000 + 1000000), mats: [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, advStage: {}, pearl: 0, evStage: {}, gachaLv: { 무기: 1, 방어구: 1, 유물: 1 }, gachaCnt: { 무기: 0, 방어구: 0, 유물: 0 }, gachaRw: {}, skCard: {}, skEnh: {}, skOpen: BAL ? skFreeInit() : Object.fromEntries(SKILLS.map(k => [k.id, 1])), quest: questInit() }
 }
 const fmt = n => n >= 1e8 ? (n/1e8).toFixed(1)+'억' : n >= 1e4 ? (n/1e4).toFixed(1)+'만' : Math.floor(n).toLocaleString()
 const fmtPct = v => v >= 10000 ? fmt(Math.round(v)) : (Math.round(v * 10) / 10).toString()
@@ -1338,6 +1338,7 @@ export default function App() {
     window.addEventListener('resize', resize)
 
     function startWave(n) {
+      w.anchorX = null                 // 정지 기준 heroX 재설정 (보스전↔웨이브에서 히어로 x가 바뀜)
       w.enemies = []; w.stones = []; w.rocks = []; w.waves = []
       // 주의: dmgTexts/particles/pools/projs/strikes/skill은 유지 — 클리어 넘어갈 때 이펙트 끊김 방지
       w.bossBattle = false
@@ -1352,6 +1353,7 @@ export default function App() {
     }
 
     function startAdventure(cfg) {
+      w.anchorX = null
       w.enemies = []; w.stones = []; w.rocks = []; w.waves = []
       w.bossBattle = false; w.clearedFlag = false; w.bossPending = false
       w.adv = { ...cfg, mult: advMult(cfg.stage), bossOut: false, done: false, win: false }
@@ -1388,6 +1390,7 @@ export default function App() {
     }
 
     function startBossBattle() {
+      w.anchorX = null                 // 보스전은 히어로가 화면 34% 지점으로 이동 → 기준 다시 잡기
       w.enemies = []; w.stones = []; w.rocks = []; w.waves = []
       w.bossBattle = true
       w.bossTimer = BOSS_TIME
@@ -1659,10 +1662,15 @@ export default function App() {
           // 제자리 몹은 종·크기와 무관하게 **일괄 거리**로 선다 (편집기 '히어로와 거리')
           // 걸어오는 몹·보스만 예전 종별 계산 유지
           const qi = (advRank && !e.boss) ? (advRank.get(e) || 0) : 0        // 모험 1열 순번(0=맨 앞)
+          // 제자리 몹의 정지 기준 x. heroX 는 매 프레임 스프링 보간(+넉백)으로 미세하게 흔들리는데,
+          // 여기에 그대로 붙여두면 몹이 그 흔들림을 따라 조금씩 앞으로 당겨진다("일반몹이 움찔거린다").
+          // → 기준 heroX 를 웨이브·보스전 시작 시 한 번만 잡고(w.anchorX) 그 값을 쓴다.
+          if (w.anchorX == null) w.anchorX = w.heroX
+          const baseX = still ? w.anchorX : w.heroX
           const stopX = still
             ? (w.adv
-                ? w.heroX + (motRef.current.adv.dist ?? 60) + qi * (motRef.current.adv.gap ?? 40)   // 모험 1열
-                : w.heroX + (motRef.current.wave.dist ?? 95) + (e.boss ? estop : 0))                 // 웨이브: 일반몹 일괄 / 보스는 종별 정지값 가산
+                ? baseX + (motRef.current.adv.dist ?? 60) + qi * (motRef.current.adv.gap ?? 40)   // 모험 1열
+                : baseX + (motRef.current.wave.dist ?? 95) + (e.boss ? estop : 0))                 // 웨이브: 일반몹 일괄 / 보스는 종별 정지값 가산
             : w.heroX + Math.min(atkRange - 15, 60 + e.h * szm * 0.4) + estop
           e.stopX = stopX   // 정지위치 저장 → 멈춘 몬스터는 사거리 밖이어도 기본공격 판정(그림상 코앞인데 안닿는 문제 해결)
           // 히어로가 때릴 수 있는 거리면 몹도 반격할 수 있어야 한다.
