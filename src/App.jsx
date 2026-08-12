@@ -1191,6 +1191,13 @@ export default function App() {
     // 지급은 보물상자 → 받기 버튼에서. 여기선 대기 보상만 저장 (다이아는 추후 공식)
     setOffReward({ sec: Math.floor(away), kills, wave: init.best || init.wave || 1, meat: gm, exp: ge, gem: 0, meatRate: Math.floor(gm / mins), expRate: Math.floor(ge / mins), gemRate: 0 })
   }, [])
+  // 스킬 아이콘 확대·오프셋 — 전신 컷이라 등배로 두면 스킬끼리 구분이 안 된다
+  const skIconFit = id => {
+    const c = (motCfg.skFx || {})[id] || {}
+    const z = c.icZ ?? 1, x = c.icX ?? 0, y = c.icY ?? 0
+    if (z === 1 && !x && !y) return null
+    return { transform: `translate(${x}px, ${y}px) scale(${z})` }
+  }
   const [heroHpUI, setHeroHpUI] = useState(100)
   const [bossUI, setBossUI] = useState(null)   // 보스전 타이머/체력 바
   const [paused, setPaused] = useState(false)  // 디버그 일시정지
@@ -1578,7 +1585,9 @@ export default function App() {
       w._nearest = nearestEngaged
       const blocked = w.enemies.some(e => !e.dead && engaged(e))
       w._blocked = blocked
-      const moving = (st.phase === 'fighting' || st.phase === 'cleared') && hero.state === 'move' && !blocked
+      // 스킬 시전 중엔 전진하지 않는다. hero.state 는 기본공격일 때만 'attack' 이 되고 스킬은 w.skill 로 따로 관리돼서,
+      // 시전 중 앞의 적이 죽어 blocked 가 풀리면 스킬 모션을 재생한 채 걸어나가 보였다.
+      const moving = (st.phase === 'fighting' || st.phase === 'cleared') && hero.state === 'move' && !blocked && w.skill == null
       const scroll = moving ? SCROLL * st.mspdMult : 0
       w.scrollX += scroll * dt
 
@@ -3689,7 +3698,7 @@ export default function App() {
               return (
                 <div key={slot} data-edit="skqslot" style={st.skqSlot} onClick={() => { if (!uiEdit && !skqDrag.current.moved && si != null) unequipSkill(slot) }}>
                   {valid
-                    ? (skIcon(SKILLS[si]) ? <img src={skIcon(SKILLS[si])} alt="" style={st.skqSlotImg} /> : <span style={{ fontSize: 16 }}>{SKILLS[si].icon}</span>)
+                    ? (skIcon(SKILLS[si]) ? <img src={skIcon(SKILLS[si])} alt="" style={{ ...st.skqSlotImg, ...skIconFit(SKILLS[si].id) }} /> : <span style={{ fontSize: 16 }}>{SKILLS[si].icon}</span>)
                     : <span style={st.skqSlotEmpty}>{slot + 1}</span>}
                 </div>
               )
@@ -3798,7 +3807,7 @@ export default function App() {
             return (
               <div key={s.key} style={st.skCell} onClick={() => setSkillDetail(i)}>
                 <div data-edit="skcell" style={st.skCellIconWrap}>
-                  {skIcon(s) ? <img src={skIcon(s)} alt="" data-edit="skimg" style={{ ...st.skCellIconImg, ...(isOpen(s.id) ? null : st.skLockedImg) }} /> : <span style={{ fontSize: 22 }}>{s.icon}</span>}
+                  {skIcon(s) ? <img src={skIcon(s)} alt="" data-edit="skimg" style={{ ...st.skCellIconImg, ...skIconFit(s.id), ...(isOpen(s.id) ? null : st.skLockedImg) }} /> : <span style={{ fontSize: 22 }}>{s.icon}</span>}
                   {!isOpen(s.id) && <img src="/ui/lock.webp" alt="" data-edit="sklock" style={st.skLockIc} />}
                   {isEq && isOpen(s.id) && <div style={st.skCellEq}>장착{!ready && ` ${cd.toFixed(1)}`}</div>}
                 </div>
@@ -4170,6 +4179,14 @@ export default function App() {
                 <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>사거리 안의 적을 히어로 앞 그 거리 지점으로 빨아들입니다. 여러 마리가 한 자리에 겹칩니다. 끌기 속도가 클수록 빨리 달라붙습니다</div>
               </>) })()}
             <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>1이면 히어로 모션이 끝나는 즉시 기본공격·걷기로 돌아갑니다. 이펙트는 그대로 남아 재생·타격됩니다(낙하 이펙트가 있는 스킬만 해당)</div>
+            {(() => { const put5 = (k, v) => setMotCfg({ ...M, skFx: { ...M.skFx, [motHeroSk]: { ...(M.skFx[motHeroSk] || {}), [k]: v } } })
+              const c5 = M.skFx[motHeroSk] || {}
+              return (<>
+                {row('아이콘 확대', c5.icZ ?? 1, 0.5, 3, 0.05, v => put5('icZ', v))}
+                {row('아이콘 좌우', c5.icX ?? 0, -60, 60, 1, v => put5('icX', v))}
+                {row('아이콘 상하', c5.icY ?? 0, -60, 60, 1, v => put5('icY', v))}
+                <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>스킬 목록·퀵바 아이콘을 확대해 특징적인 부분만 보여줍니다. 전신이 다 보이면 스킬끼리 구분이 안 됩니다</div>
+              </>) })()}
             {row('연타 간격(초) 0=단발', (M.skFx[motHeroSk] || {}).tick ?? 0, 0, 1, 0.01, v => setMotCfg({ ...M, skFx: { ...M.skFx, [motHeroSk]: { ...(M.skFx[motHeroSk] || {}), tick: v } } }))}
             <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>0보다 크면 그 간격마다 데미지를 반복합니다(타격 시점 무시). 낙하 이펙트가 있는 스킬은 이펙트가 사는 동안, 없는 스킬은 시전 동안 반복합니다. 한 번에 스킬 데미지 전액이 들어가므로 총합이 횟수만큼 세집니다</div>
             {(() => { const put3 = (k, v) => setMotCfg({ ...M, skFx: { ...M.skFx, [motHeroSk]: { ...(M.skFx[motHeroSk] || {}), [k]: v } } })
@@ -5333,8 +5350,8 @@ const st = {
   skqWrap: { position: 'absolute', left: 4, zIndex: 30, display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 6, pointerEvents: 'auto' },
   skqSets: { display: 'flex', gap: 4, flexShrink: 0, transform: 'translate(var(--pd-skqset-x), var(--pd-skqset-y))' },
   skqSlots: { display: 'flex', gap: 4, overflowX: 'auto', overflowY: 'hidden', padding: '3px 4px', width: 'calc(var(--pd-skqslotsz) * 6 + 28px)', flexShrink: 0, borderRadius: 8, background: 'rgba(16,10,5,0.72)', border: '1px solid #5a4630', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.6)', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', cursor: 'grab', touchAction: 'pan-x', transform: 'translate(var(--pd-skqbar-x), var(--pd-skqbar-y))' },
-  skqSlot: { flexShrink: 0, width: 'var(--pd-skqslotsz)', height: 'var(--pd-skqslotsz)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, border: '1.5px solid #6a533a', background: 'rgba(0,0,0,0.4)', overflow: 'hidden', cursor: 'pointer' },
-  skqSlotImg: { width: '100%', height: '100%', objectFit: 'contain', imageRendering: 'pixelated' },
+  skqSlot: { flexShrink: 0, width: 'var(--pd-skqslotsz)', height: 'var(--pd-skqslotsz)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, border: '1.5px solid #6a533a', background: 'linear-gradient(180deg,#2d3a5e,#171d2f)', boxShadow: 'inset 0 10px 10px -8px rgba(255,255,255,0.12)', overflow: 'hidden', cursor: 'pointer' },
+  skqSlotImg: { width: '100%', height: '100%', objectFit: 'contain', imageRendering: 'pixelated', filter: 'drop-shadow(1px 0 0 #000) drop-shadow(-1px 0 0 #000) drop-shadow(0 1px 0 #000) drop-shadow(0 -1px 0 #000)' },
   skqSlotEmpty: { fontSize: 11, fontWeight: 800, color: 'rgba(200,180,140,0.4)' },
   skqSetBtn: { width: 'var(--pd-skqsetw)', height: 'var(--pd-skqseth)', fontSize: 'var(--pd-skqsetfz)', fontWeight: 800, color: '#b7a480', border: '1px solid #4a3a22', borderRadius: 6, background: 'rgba(20,13,7,0.8)', cursor: 'pointer', boxSizing: 'border-box', padding: 0, lineHeight: 1 },
   skqSetOn: { color: '#fff5df', border: '1px solid #d09340', background: 'linear-gradient(180deg,#4a3418,#2c1f0e)', boxShadow: 'inset 0 0 5px rgba(208,147,64,0.4)' },
@@ -5345,8 +5362,11 @@ const st = {
   skLearnBtn: { width: 'var(--pd-sklearnw)', height: 'var(--pd-sklearnh)', fontSize: 'var(--pd-sklearnfz)', color: '#2a1c0a', border: '1px solid #f0b040', background: 'linear-gradient(180deg,#ffcf5a,#e8992a)', transform: 'translate(var(--pd-sklearn-x), var(--pd-sklearn-y))' },
   skGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, var(--pd-skcellsz))', justifyContent: 'center', columnGap: 'var(--pd-skcellgap)', rowGap: 'var(--pd-skcellrgap)', width: '100%', boxSizing: 'border-box', padding: '2px 0' },
   skCell: { width: 'var(--pd-skcellsz)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '6px 0', boxSizing: 'border-box', cursor: 'pointer', transform: 'translate(var(--pd-skcell-x), var(--pd-skcell-y))' },
-  skCellIconWrap: { position: 'relative', width: 'var(--pd-skcellsz)', height: 'var(--pd-skcellsz)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #6a533a', borderRadius: 10, background: 'rgba(0,0,0,0.35)', boxShadow: 'inset 0 0 8px rgba(0,0,0,0.55)', overflow: 'hidden' },
-  skCellIconImg: { width: 'var(--pd-skimgsz)', height: 'var(--pd-skimgsz)', objectFit: 'contain', imageRendering: 'pixelated', transform: 'translate(var(--pd-skimg-x), var(--pd-skimg-y))' },
+  // 스킬 아이콘 배경: 그림이 대부분 따뜻한 색이라 차가운 남색으로 대비를 준다(위쪽 광택 + 아래로 어두워지는 그라데이션)
+  skCellIconWrap: { position: 'relative', width: 'var(--pd-skcellsz)', height: 'var(--pd-skcellsz)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #6a533a', borderRadius: 10, background: 'linear-gradient(180deg,#2d3a5e,#171d2f)', boxShadow: 'inset 0 14px 14px -10px rgba(255,255,255,0.13), inset 0 0 10px rgba(0,0,0,0.5)', overflow: 'hidden' },
+  // drop-shadow 를 네 방향으로 겹쳐 검은 외곽선 — 어두운 스킬 그림이 배경에 묻히지 않는다
+  skIconLine: { filter: 'drop-shadow(1px 0 0 #000) drop-shadow(-1px 0 0 #000) drop-shadow(0 1px 0 #000) drop-shadow(0 -1px 0 #000)' },
+  skCellIconImg: { width: 'var(--pd-skimgsz)', height: 'var(--pd-skimgsz)', objectFit: 'contain', imageRendering: 'pixelated', transform: 'translate(var(--pd-skimg-x), var(--pd-skimg-y))', filter: 'drop-shadow(1px 0 0 #000) drop-shadow(-1px 0 0 #000) drop-shadow(0 1px 0 #000) drop-shadow(0 -1px 0 #000)' },
   skCellEq: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: '1px 0', fontSize: 9, fontWeight: 800, textAlign: 'center', color: '#7ce0ff', background: 'rgba(10,20,30,0.85)', whiteSpace: 'nowrap' },
   skCellBarOuter: { position: 'relative', width: 'var(--pd-skcellsz)', height: 12, borderRadius: 3, overflow: 'hidden', background: 'rgba(0,0,0,0.6)', border: '1px solid #3a2c18', boxSizing: 'border-box', transform: 'translate(var(--pd-skbar-x), var(--pd-skbar-y))' },
   skCellBarFill: { position: 'absolute', left: 0, top: 0, bottom: 0, background: 'linear-gradient(180deg,#5ac0ff,#2a80c0)' },
@@ -5374,7 +5394,7 @@ const st = {
   // 스킬 상세창
   skdBox: { position: 'relative', width: 'min(92vw, 440px)', padding: '18px 16px 16px', borderRadius: 14, background: 'linear-gradient(180deg,#5a4126,#3a2915)', border: '3px solid #7a5a30', boxShadow: '0 10px 40px rgba(0,0,0,0.6)', boxSizing: 'border-box' },
   skdHead: { display: 'flex', alignItems: 'flex-start', gap: 12 },
-  skdIconWrap: { position: 'relative', flexShrink: 0, width: 'var(--pd-skdiconsz)', height: 'var(--pd-skdiconsz)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #d0902a', borderRadius: 12, background: 'rgba(0,0,0,0.4)', overflow: 'hidden', transform: 'translate(var(--pd-skdicon-x), var(--pd-skdicon-y))' },
+  skdIconWrap: { position: 'relative', flexShrink: 0, width: 'var(--pd-skdiconsz)', height: 'var(--pd-skdiconsz)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid #d0902a', borderRadius: 12, background: 'linear-gradient(180deg,#2d3a5e,#171d2f)', boxShadow: 'inset 0 14px 14px -10px rgba(255,255,255,0.13)', overflow: 'hidden', transform: 'translate(var(--pd-skdicon-x), var(--pd-skdicon-y))' },
   skdIconImg: { width: 'var(--pd-skdimgsz)', height: 'var(--pd-skdimgsz)', objectFit: 'contain', imageRendering: 'pixelated', transform: 'translate(var(--pd-skdimg-x), var(--pd-skdimg-y))' },
   skdLv: { position: 'absolute', bottom: 14, left: 2, padding: '1px 5px', fontSize: 11, fontWeight: 800, color: '#ffe08a', background: 'rgba(20,12,4,0.9)', border: '1px solid #7a5a30', borderRadius: 5 },
   skdMiniBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 13, background: 'rgba(0,0,0,0.7)', overflow: 'hidden' },
