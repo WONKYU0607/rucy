@@ -856,7 +856,9 @@ const STAT_BAL = {
 const SL = k => (BAL ? STAT_BAL[k] : STAT_LIST[k])       // 지금 모드의 스탯 정의
 const STAT_KEYS = Object.keys(STAT_LIST)
 const MEAT_KEYS = BAL ? Object.keys(STAT_BAL).filter(k => !STAT_BAL[k].spOnly) : STAT_KEYS   // 고기 강화탭 목록
-const SP_KEYS = BAL ? Object.keys(STAT_BAL) : STAT_KEYS                                     // 스킬포인트 목록
+// 스킬포인트에서 공격력·체력을 뺀다 — 고기 강화와 같은 지수(×1.08/레벨) 위에 합산돼 초반부터 폭주했다.
+// 고기 = 주축(공격력·체력), 스킬포인트 = 보조(특수 스탯 + 획득량).
+const SP_KEYS = BAL ? Object.keys(STAT_BAL).filter(k => k !== 'atk' && k !== 'hp') : STAT_KEYS
 const statInit = () => STAT_KEYS.reduce((o, k) => (o[k] = 0, o), {})
 const statText = (k, lv) => {
   const d = SL(k)
@@ -885,10 +887,10 @@ const EVOS = [
   //   Lv.100 → 웨이브 113쯤(강화만 했을 때). 스킬·장비·동료가 붙으면 더 빨라진다
   { name: '오스트랄로피테쿠스 (4족보행)', mult: 1, mode: 'quad' },
   { name: '오스트랄로피테쿠스 (직립보행)', mult: 3, cost: 1500, lv: 100, mode: 'biped' },
-  { name: '호모 에렉투스', mult: 5, cost: 300000, lv: 200, mode: 'erectus' },
-  { name: '호모 네안데르탈인', mult: 10, cost: 3000000, lv: 300, mode: 'neander' },
-  { name: '호모 사피엔스', mult: 30, cost: 30000000, lv: 400, mode: 'sapiens' },
-  { name: '인간', mult: 50, cost: 300000000, lv: 500, mode: 'human' },
+  { name: '호모 에렉투스', mult: 6, cost: 300000, lv: 200, mode: 'erectus' },
+  { name: '호모 네안데르탈인', mult: 9, cost: 3000000, lv: 300, mode: 'neander' },
+  { name: '호모 사피엔스', mult: 15, cost: 30000000, lv: 400, mode: 'sapiens' },
+  { name: '인간', mult: 30, cost: 300000000, lv: 500, mode: 'human' },
 ]
 
 const SAVE_KEY = BAL ? 'paleoDefSave_bal' : 'paleoDefSave_v5'   // 밸런싱 모드는 별도 세이브
