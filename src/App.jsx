@@ -172,7 +172,8 @@ const track = im => {
 const mkImg = src => { const i = new Image(); i.src = src; return track(i) }
 
 for (const k in LOOT_IMG) { LOOT_CIMG[k] = mkImg(LOOT_IMG[k]) }
-const DROP_DIA_P = 0.3   // 임시 확률 — 추후 웨이브 비례 공식으로 교체 (다이아 조각은 아직 연출만)
+const DROP_DIA_P = 0.3   // 다이아 조각 드롭 확률(임시) — 떨어지면 다이아 DROP_DIA_AMT 개 실제 지급
+const DROP_DIA_AMT = 1
 const DROP_MAT_P = 0.03  // 동료 재료 드롭 확률(임시 3%) — 떨어지면 동료 재료 1~4 중 하나를 실제로 1개 지급
 function LootPiece({ p, done }) {
   const r = useRef(null)
@@ -823,7 +824,8 @@ const EV_DUNGEONS = [
 ]
 const EV_EXTS = ['jpg', 'png', 'jpeg', 'webp', '']   // 순서대로 실제 로드해 확인. 마지막 ''는 확장자 없이 저장한 경우
 const EV_STAGES = 10           // 던전 보스당 단계 수 (도전창 10칸 바)
-const EV_REWARD = { dia: 3000, pearl: 100 }   // 클리어 보상: 다이아 / 강화 진주
+const EV_REWARD = { dia: 3000, pearl: 100 }   // 클리어 보상: 다이아 / 강화 진주 — 처음 깨는 단계만(이미 깬 단계는 다시 못 들어간다)
+const EV_DAILY = 3             // 이벤트 던전 하루 입장 횟수(던전마다, 자정 리셋)
 const evMult = st => 1 + 0.3 * (st - 1)       // 단계 배율 (1단계 1.0 → 10단계 3.7)
 const EV_TIME = 60             // 이벤트 던전 제한시간(초)
 const EV_WARN = 2.0            // 보스 등장 경고 연출 시간(초)
@@ -856,9 +858,8 @@ const QUEST_TABS = ['일일 퀘스트', '반복 퀘스트', '업적']
 // ev: 이벤트 키(진행 카운트 소스), ric: 보상 재화 아이콘 (gem=다이아, ruby=루비 수정, pearl=진주)
 const QUEST_LIST = [
   [ // 일일 퀘스트 (자정 리셋, 1회 수령)
-    { ev: 'daily_done', name: '일일 퀘스트 완료', goal: 5, ric: '/ui/gem.webp', rv: 3000 },
+    { ev: 'daily_done', name: '일일 퀘스트 완료', goal: 3, ric: '/ui/gem.webp', rv: 3000 },   // 아래 3개를 다 받으면
     { ev: 'playtime', name: '플레이타임', goal: 1500, ric: '/ui/ruby.webp', rv: 1 },
-    { ev: 'ad', name: '광고 보기', goal: 3, ric: '/ui/ruby.webp', rv: 1 },
     { ev: 'summon', name: '장비 소환', goal: 10, ric: '/ui/ruby.webp', rv: 1 },
     { ev: 'fuse', name: '장비 융합', goal: 10, ric: '/ui/ruby.webp', rv: 1 },
   ],
@@ -875,13 +876,15 @@ const QUEST_LIST = [
   [ // 업적 (계단식 무한 반복: 수령할 때마다 목표 +1, 매 수령 시 진주 지급. base=표시 시작값)
     { ev: 'levelup', name: '캐릭터 레벨업', base: 1, ric: '/ui/pearl.webp', rv: 10 },
     { ev: 'evolve', name: '캐릭터 진화', base: 1, max: 5, ric: '/ui/pearl.webp', rv: 100 },   // 진화는 5회가 끝
-    { ev: 'skill_enh', name: '스킬 강화', base: 0, ric: '/ui/pearl.webp', rv: 10 },
+    { ev: 'skill_enh', name: '스킬 강화', base: 0, ric: '/ui/gem.webp', rv: 100 },   // 진주로 주면 강화 비용(진주 10)이 그대로 돌아와 공짜가 됐다
     { ev: 'equip_enh', name: '장비 강화', base: 0, ric: '/ui/pearl.webp', rv: 10 },
     { ev: 'adv_clear', name: '모험 클리어', base: 0, ric: '/ui/pearl.webp', rv: 10 },
   ],
 ]
 const questDayStr = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}` }
-const questInit = () => ({ day: questDayStr(), ev: {}, dEv: {}, dClaim: {}, rLv: {}, rBase: {}, aLv: {} })
+const questInit = () => ({ qv: 2, day: questDayStr(), ev: {}, dEv: {}, dClaim: {}, rLv: {}, rBase: {}, aLv: {} })
+// 광고 퀘스트(일일 2번) 삭제로 소환·융합이 한 칸씩 당겨졌다 — 오늘 받은 표시도 같이 옮긴다
+const questMig = q => q.qv >= 2 ? q : { ...q, qv: 2, dClaim: { 0: q.dClaim?.[0], 1: q.dClaim?.[1], 2: q.dClaim?.[3], 3: q.dClaim?.[4] } }
 
 // 9종 스탯 — 강화탭(고기)·스킬탭(스킬포인트) 양쪽에서 사용
 // eff(lv): 레벨당 효과 텍스트 / 강화는 고기비용, 스킬은 SP 1/레벨
@@ -1033,6 +1036,7 @@ function loadSave() {
       allyLv: s.allyLv && typeof s.allyLv === 'object' ? s.allyLv : { hunter: 1, shaman: 1, healer: 1, giant: 1 },
       gem: s.gem ?? 0, inv: s.inv && typeof s.inv === 'object' ? s.inv : {}, best: s.best ?? s.wave ?? 1,
       evStage: s.evStage && typeof s.evStage === 'object' ? s.evStage : {},
+      evDay: s.evDay && typeof s.evDay === 'object' && s.evDay.n ? s.evDay : { day: '', n: {} },
       gachaLv: s.gachaLv && typeof s.gachaLv === 'object' ? s.gachaLv : { 무기: 1, 방어구: 1, 유물: 1 },
       gachaCnt: s.gachaCnt && typeof s.gachaCnt === 'object' ? s.gachaCnt : { 무기: 0, 방어구: 0, 유물: 0 },
       gachaRw: s.gachaRw && typeof s.gachaRw === 'object' ? s.gachaRw : {},
@@ -1045,10 +1049,10 @@ function loadSave() {
       nick: typeof s.nick === 'string' && s.nick ? s.nick : ('Slayer_' + Math.floor(Math.random() * 9000000 + 1000000)),
       mats: Array.isArray(s.mats) && s.mats.some(x => x > 0) ? s.mats : [99999, 99999, 99999, 99999, 99999], enh: s.enh && typeof s.enh === 'object' ? s.enh : {},
       ruby: typeof s.ruby === 'number' ? s.ruby : 50, advStage: s.advStage && typeof s.advStage === 'object' ? s.advStage : {},   // ruby 50 = 임시 지급(퀘스트 연동 전)
-      pearl: typeof s.pearl === 'number' ? s.pearl : 0, quest: s.quest && typeof s.quest === 'object' && s.quest.ev ? s.quest : questInit(),
+      pearl: typeof s.pearl === 'number' ? s.pearl : 0, quest: s.quest && typeof s.quest === 'object' && s.quest.ev ? questMig(s.quest) : questInit(),
     }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, skCfg: {}, alliesOn: {}, allyEvo: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, allyLv: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, nick: 'Slayer_' + Math.floor(Math.random() * 9000000 + 1000000), mats: [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, advStage: {}, pearl: 0, evStage: {}, gachaLv: { 무기: 1, 방어구: 1, 유물: 1 }, gachaCnt: { 무기: 0, 방어구: 0, 유물: 0 }, gachaRw: {}, skCard: {}, skEnh: {}, skOpen: BAL ? skFreeInit() : Object.fromEntries(SKILLS.map(k => [k.id, 1])), quest: questInit() }
+  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, skCfg: {}, alliesOn: {}, allyEvo: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, allyLv: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, nick: 'Slayer_' + Math.floor(Math.random() * 9000000 + 1000000), mats: [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, advStage: {}, pearl: 0, evStage: {}, evDay: { day: '', n: {} }, gachaLv: { 무기: 1, 방어구: 1, 유물: 1 }, gachaCnt: { 무기: 0, 방어구: 0, 유물: 0 }, gachaRw: {}, skCard: {}, skEnh: {}, skOpen: BAL ? skFreeInit() : Object.fromEntries(SKILLS.map(k => [k.id, 1])), quest: questInit() }
 }
 const fmt = n => n >= 1e8 ? (n/1e8).toFixed(1)+'억' : n >= 1e4 ? (n/1e4).toFixed(1)+'만' : Math.floor(n).toLocaleString()
 const fmtPct = v => v >= 10000 ? fmt(Math.round(v)) : (Math.round(v * 10) / 10).toString()
@@ -1100,6 +1104,7 @@ export default function App() {
     return i > 0 ? (CONTINENTS.find(c => c.key === ADV_ORDER[i - 1]) || {}).name : ''
   }
   const [pearl, setPearl] = useState(init.pearl ?? 0)              // 진주 (업적 보상 재화)
+  const [evDay, setEvDay] = useState(init.evDay || { day: '', n: {} })   // 이벤트 던전 오늘 입장 횟수 { day, n: { 던전키: 횟수 } }
   const [evStage, setEvStage] = useState(init.evStage || {})       // 이벤트 던전 보스별 클리어 단계 { 보스번호: 단계 }
   const [quest, setQuest] = useState(init.quest || questInit())    // 퀘스트 진행 상태
   const [advStage, setAdvStage] = useState(init.advStage || {})    // 대륙별 클리어 단계 { key: 0~10 }
@@ -1398,8 +1403,8 @@ export default function App() {
   const cloudBusy = useRef(false)   // 어댑트/불러오기 중 로컬 저장 차단
   useEffect(() => {
     if (cloudBusy.current) return
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, skCfg, skCfgV: 3, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, gachaLv, gachaCnt, gachaRw, skCard, skEnh, skOpen, quest, ts: Date.now() }))
-  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, skCfg, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, gachaLv, gachaCnt, gachaRw, skCard, skEnh, skOpen, quest])
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, skCfg, skCfgV: 3, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, evDay, gachaLv, gachaCnt, gachaRw, skCard, skEnh, skOpen, quest, ts: Date.now() }))
+  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, skCfg, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, evDay, gachaLv, gachaCnt, gachaRw, skCard, skEnh, skOpen, quest])
 
   // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제 — 패시브는 단계 공용이라 유지(예전엔 stage -1이라 불러올 때마다 빠졌음)
   useEffect(() => {
@@ -1610,7 +1615,7 @@ export default function App() {
     function spawnLoot(x, y) {
       w.loot = w.loot || []
       const kinds = ['meat', 'meat', 'meat', 'exp', 'exp']
-      if (Math.random() < DROP_DIA_P) kinds.push('dia')
+      if (Math.random() < DROP_DIA_P) { kinds.push('dia'); w.diaQ = (w.diaQ || 0) + DROP_DIA_AMT }
       if (Math.random() < DROP_MAT_P) { kinds.push('mat'); (w.matQ = w.matQ || [0, 0, 0, 0])[Math.floor(Math.random() * 4)]++ }
       const sx = Math.max(8, Math.min(w.W - 8, x))   // 스폰 x 화면 안쪽
       for (const k of kinds) w.loot.push({ k, x: sx + (Math.random() - 0.5) * 24, y, vx: (Math.random() - 0.5) * 170, vy: -(130 + Math.random() * 150), t: 0 })
@@ -2154,6 +2159,7 @@ export default function App() {
         if (w.killMeat) { const g = w.killMeat; w.killMeat = 0; setMeat(m => m + g) }
         if (w.qKill) { const n = w.qKill; w.qKill = 0; qEv('kill', n) }
         if (w.killExp) { const e = w.killExp; w.killExp = 0; setHexp(x => x + e) }
+        if (w.diaQ) { const dq = w.diaQ; w.diaQ = 0; setGem(g => g + dq) }   // 다이아 조각 지급(모아서 한 번에)
         if (w.matQ && w.matQ.some(v => v > 0)) {                 // 동료 재료 지급(한 번에 모아서)
           const mq = w.matQ; w.matQ = [0, 0, 0, 0]
           setMats(m => { const n = [...m]; for (let i = 0; i < 4; i++) n[i] = (n[i] || 0) + mq[i]; return n })
@@ -2275,8 +2281,7 @@ export default function App() {
           w._btShown = -1; w._bhShown = -1; setBossUI(null); setEvUI(null)
           if (c.win) {
             setEvStage(v => ({ ...v, [c.no]: Math.max(v[c.no] || 0, c.stage || 1) }))
-            setGem(g => g + EV_REWARD.dia)
-            setPearl(v => v + EV_REWARD.pearl)
+            if (c.isNew !== false) { setGem(g => g + EV_REWARD.dia); setPearl(v => v + EV_REWARD.pearl) }   // 이미 깬 단계는 보상 없음
             setClearMsg(`${c.name} ${c.stage || 1}단계 격파!`)
             // 격파하면 방금 잡은 보스의 도전창으로 돌아간다 — 진행바가 한 칸 더 찬 상태로 보인다
             const di = EV_DUNGEONS.findIndex(d => d.key === c.key)
@@ -3605,6 +3610,11 @@ export default function App() {
       {evPick && (() => {
         const cleared = evStage[evPick.no] || 0
         const stage = Math.min(EV_STAGES, cleared + 1)
+        const dkey = EV_DUNGEONS[evPick.di].key
+        const used = evDay.day === questDayStr() ? (evDay.n[dkey] || 0) : 0
+        const left = Math.max(0, EV_DAILY - used)
+        const allDone = cleared >= EV_STAGES                  // 10단계를 다 깼으면 끝 — 다시 못 들어간다
+        const canEnter = !allDone && (DEBUG || left > 0)
         return (
         <div style={st.evpOverlay} onClick={() => { if (!uiEdit) setEvPick(null) }}>
           <div data-edit="evpwin" style={st.evpWin} onClick={e => e.stopPropagation()}>
@@ -3625,11 +3635,12 @@ export default function App() {
               </div>
             </div>
             <div style={st.evpBtns}>
-              <button data-edit="evpenter" style={st.evpEnter} onClick={() => {
-                if (uiEdit) return
-                world.current.evStart = { key: EV_DUNGEONS[evPick.di].key, dname: evPick.dname, no: evPick.no, name: evPick.name, stage }
+              <button data-edit="evpenter" style={{ ...st.evpEnter, ...(canEnter ? null : { opacity: 0.45 }) }} onClick={() => {
+                if (uiEdit || !canEnter) return
+                world.current.evStart = { key: dkey, dname: evPick.dname, no: evPick.no, name: evPick.name, stage, isNew: stage > cleared }
+                setEvDay(d => { const t = questDayStr(); const b = d.day === t ? d : { day: t, n: {} }; return { ...b, n: { ...b.n, [dkey]: (b.n[dkey] || 0) + 1 } } })
                 setEvPick(null); setEvOpen(false); setNav('영웅'); setPaused(false)
-              }}>진입</button>
+              }}>{allDone ? '완료' : `진입 ${DEBUG ? '∞' : left}/${EV_DAILY}`}</button>
               <button data-edit="evpclose" style={st.evpClose} onClick={() => { if (!uiEdit) setEvPick(null) }}>닫기</button>
             </div>
           </div>
