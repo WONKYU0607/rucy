@@ -1349,7 +1349,7 @@ export default function App() {
       hero: { hp: maxHp, cd: 0, state: 'move', t: 0, did: false, flash: 0, animT: 0 },
       spawnLeft: 0, spawnTimer: 0, killed: 0, total: 1,
       shake: 0, scrollX: 0, needStart: true, W: 0, H: 0, groundY: 0, heroX: HERO_X, bossTimer: 0, hitstop: 0, allyU: {}, spears: [],
-      skillCd: SKILLS.map(() => 0), skill: null, skillT: 0, skillDid: false, rocks: [], projs: [], strikes: [], fx: [],
+      skillCd: SKILLS.map(() => 0), skillRdy: SKILLS.map(() => 0), skClock: 0, skill: null, skillT: 0, skillDid: false, rocks: [], projs: [], strikes: [], fx: [],
     }
   }
 
@@ -1785,7 +1785,12 @@ export default function App() {
         }
 
         // ── 스킬 시스템 (자동 발동) ──
-        for (let i = 0; i < SKILLS.length; i++) if (w.skillCd[i] > 0) w.skillCd[i] = Math.max(0, w.skillCd[i] - dt)
+        // 대기열: 쿨이 끝난 '시각'을 기록해 두고, 여러 개가 준비돼 있으면 먼저 준비된 것부터 쓴다
+        w.skClock += dt
+        for (let i = 0; i < SKILLS.length; i++) if (w.skillCd[i] > 0) {
+          w.skillCd[i] = Math.max(0, w.skillCd[i] - dt)
+          if (w.skillCd[i] <= 0) w.skillRdy[i] = w.skClock
+        }
         if (w.skill == null) {
           // 시전 중 아님: **멈춰서 기본공격에 들어간 시점(blocked)에만** 발동.
           // 예전엔 '살아있는 적이 하나라도 있으면'이라 화면 밖 몹만 있어도 걸어가며 스킬을 썼다.
@@ -1794,7 +1799,9 @@ export default function App() {
             const slots = st.equipped || []
             let ready = -1
             for (const si of slots) {
-              if (si != null && SKILLS[si].stage === st.evo && w.skillCd[si] <= 0) { ready = si; break }
+              if (si == null || SKILLS[si].stage !== st.evo || w.skillCd[si] > 0) continue
+              // 먼저 준비된 순. 같은 순간에 준비됐으면 번호가 큰(센) 스킬부터 (2026-10-21, 예전엔 칸 순서라 뒤 칸이 굶었음)
+              if (ready < 0 || w.skillRdy[si] < w.skillRdy[ready] || (w.skillRdy[si] === w.skillRdy[ready] && (SKILLS[si].rank || 0) > (SKILLS[ready].rank || 0))) ready = si
             }
             if (ready >= 0) { w.skill = ready; w.skillT = 0; w.skillDid = false; w.skillFx = false; w.skillNext = 0; w.skillCd[ready] = skEff(SKILLS[ready], st.skCfg).cd }
           }
