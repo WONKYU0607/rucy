@@ -547,7 +547,7 @@ const gearSrc = (cat, n) => `${CAT_DIR[cat]}${n}.webp`
 
 // ── 오프라인 보상 설정 (직접 수정 가능) ─────────────────────────
 const OFFLINE_MIN_SEC = 0           // 부재 시간 조건 없음 (잠깐 나갔다 와도 지급)
-const OFFLINE_CAP_SEC = 8 * 3600    // 최대 인정 시간 (8시간)
+const OFFLINE_CAP_SEC = 4 * 3600    // 최대 인정 시간 (4시간) — 2026-10-21 8시간에서 낮춤(방치 비중 90%→83%)
 const OFFLINE_RATE = 0.5            // 온라인 대비 효율 (50%)
 
 const SKILLS = SKILL_SHEET.map(c => {
