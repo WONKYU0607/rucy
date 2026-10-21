@@ -1341,8 +1341,7 @@ export default function App() {
     acc: BAL ? statVal('acc') / 100 : tot('acc') * STAT_LIST.acc.per / 100,
     eva: BAL ? statVal('eva') / 100 : tot('eva') * STAT_LIST.eva.per / 100,
     equipped,
-    // TODO(패시브 효과): 장착된 패시브(SKILLS[si].passive)의 수치가 확정되면 여기서 상시형은 위 스탯에 합산,
-    // 주기형은 전투 루프에서 슬롯 쿨(w.skillCd) 돌 때마다 버프 적용. 현재는 표시·장착만 되고 효과 0.
+    // 패시브 효과는 위 pas(열린 칸에 장착한 것만)로 계산해 critMult·meatMult·expMult와 전투 루프(pasMult·쿨타임 회복)에 반영한다.
     equippedPassives: (equipped || []).filter(si => si != null && SKILLS[si] && SKILLS[si].passive),
     skCfg,
     skEnh,
@@ -1457,6 +1456,7 @@ export default function App() {
       w.enemies = []; w.stones = []; w.rocks = []; w.waves = []
       w.bossBattle = false; w.clearedFlag = false; w.bossPending = false
       w.adv = { ...cfg, mult: advMult(cfg.stage), bossOut: false, done: false, win: false }
+      w.bsOn = false
       w.advTime = ADV_TIME
       w.total = ADV_MOBS + 1; w.killed = 0; w.spawnTimer = 200
       // 일반 몹은 제자리 1열이므로 시간차 스폰 없이 **50마리를 한 번에 줄 세운다** (간격이 균일해짐)
@@ -1857,7 +1857,7 @@ export default function App() {
         w.skClock += dt
         w.rushT = Math.max(0, (w.rushT || 0) - dt)
         w.bsT = Math.max(0, (w.bsT || 0) - dt)
-        if ((w.bossBattle || w.ev) && blocked && !w.bsOn) { w.bsOn = true; w.bsT = PAS_START_SEC }   // 보스와 교전이 시작된 순간
+        if ((w.bossBattle || w.ev || (w.adv && w.adv.bossOut)) && blocked && !w.bsOn) { w.bsOn = true; w.bsT = PAS_START_SEC }   // 보스와 교전이 시작된 순간(웨이브 보스·이벤트 던전·모험 보스)
         const _pp = st.pas || {}
         const _swiftOn = (w.skClock % PAS_SWIFT_CYCLE) < PAS_SWIFT_ON
         const _cdRate = 1 + (_pp.rage || 0) + (_swiftOn ? (_pp.swift || 0) : 0)   // 광폭화 · 신속한 훈련
