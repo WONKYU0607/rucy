@@ -94,34 +94,34 @@ const SKILL_SHEET = [
   { id: 17, n: 5, h: 133, stage: 0, title: '포효' },
   { id: 18, n: 5, h: 210, stage: 1, title: '바위치기 (강화)', charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5] } },
   { id: 20, n: 5, h: 195, stage: 1, title: '바위 회오리', charSeq: [1, 2, 3, 5], fx: { type: 'proj', fly: [4], flyScale: 0.9, yOff: 0 } },
-  { id: 22, n: 4, h: 180, stage: 1, title: '전광석화', charSeq: [1, 2, 3, 4], cd: 2, dmgMult: 3 },   // 나중에 손볼 예정(킵)
-  { id: 23, n: 6, h: 180, stage: 1, title: '사신과 함께', charSeq: [3, 4, 3, 4, 6], cd: 2, dmgMult: 3, aoe: true, rangePx: 200 },   // 원투-원투-어퍼컷 — 3·4·6번 그림만 사용(1·2·5번 삭제됨), 기본사거리 1.5배 내 모두
+  { id: 22, n: 4, h: 180, stage: 1, title: '전광석화', charSeq: [1, 2, 3, 4] },   // 나중에 손볼 예정(킵)
+  { id: 23, n: 6, h: 180, stage: 1, title: '사신과 함께', charSeq: [3, 4, 3, 4, 6], aoe: true, rangePx: 200 },   // 원투-원투-어퍼컷 — 3·4·6번 그림만 사용(1·2·5번 삭제됨), 기본사거리 1.5배 내 모두
   // ── 호모 에렉투스(stage 2) ── 효과(대상/데미지/사거리/쿨타임)는 인게임 스킬 상세창에서 조절
-  { id: 24, n: 7, h: 200, stage: 2, title: '암흑 강타', charSeq: [2, 4, 6, 7], cd: 2, dmgMult: 3 },
-  { id: 25, n: 5, h: 200, stage: 2, title: '뇌전 질주', charSeq: [1, 2, 3, 5], cd: 2, dmgMult: 3 },
-  { id: 26, n: 6, h: 200, stage: 2, title: '회전 폭풍', charSeq: [1, 2, 3, 4, 5, 6], cd: 2, dmgMult: 3, aoe: true, rangePx: 150 },
-  { id: 27, n: 5, h: 200, stage: 2, title: '화염 참격', charSeq: [1, 2, 4, 5, 3], cd: 2, dmgMult: 3 },
-  { id: 28, n: 7, h: 200, stage: 2, title: '피폭', charSeq: [1, 2, 3, 5, 6, 7], cd: 2, dmgMult: 3, aoe: true },
+  { id: 24, n: 7, h: 200, stage: 2, title: '암흑 강타', charSeq: [2, 4, 6, 7] },
+  { id: 25, n: 5, h: 200, stage: 2, title: '뇌전 질주', charSeq: [1, 2, 3, 5] },
+  { id: 26, n: 6, h: 200, stage: 2, title: '회전 폭풍', charSeq: [1, 2, 3, 4, 5, 6], aoe: true, rangePx: 150 },
+  { id: 27, n: 5, h: 200, stage: 2, title: '화염 참격', charSeq: [1, 2, 4, 5, 3] },
+  { id: 28, n: 7, h: 200, stage: 2, title: '피폭', charSeq: [1, 2, 3, 5, 6, 7], aoe: true },
   // 29·30: 히어로 모션(charSeq)과 이펙트(fx)가 각각 다른 시트 → 이펙트가 별도 레이어라 몹에 안 가림
-  { id: 29, n: 7, h: 200, stage: 2, title: '사이오닉 스톰', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [4, 5, 6, 7], fxH: 240, hitP: 0.6 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 150 },
-  { id: 48, n: 8, h: 200, stage: 5, title: '궁극의 소용돌이', charSeq: [1, 2, 3, 4, 5, 6, 7, 8], cd: 2, dmgMult: 3, aoe: true, rangePx: 220, hitAt: 0.85 },   // 1~4 소용돌이(시트1), 5~8 베기(시트2)
-  { id: 47, n: 6, h: 200, stage: 5, title: '회전검객', charSeq: [1, 2, 3, 4, 5, 6], cd: 2, dmgMult: 3, aoe: true, rangePx: 200, hitAt: 0.55 },   // 시트 1~6, 이펙트는 그림에 포함
-  { id: 46, n: 5, h: 200, stage: 5, title: '파워 찌르기', charSeq: [1, 2, 3, 4, 5], cd: 2, dmgMult: 3, aoe: true, rangePx: 200, hitAt: 0.55 },   // 시트 2·3·4·5·6 → 1~5, 이펙트는 그림에 포함
-  { id: 45, n: 6, h: 200, stage: 5, title: '무한검술', charSeq: [1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6], cd: 2, dmgMult: 3, aoe: true, rangePx: 200, hitAt: 0.5 },   // 시트 1·2·3·5·7·8 → 1~6, 3바퀴
-  { id: 44, n: 7, h: 200, stage: 5, title: '번개 토네이도', charSeq: [1, 2, 3, 4, 5], fx: { type: 'strike', frames: [6, 7, 6, 7, 6, 7], fxH: 260, hitP: 0.3, twin: { gap: 30, spd: 1.4 } }, cd: 2, dmgMult: 3, aoe: true, rangePx: 200 },   // 1~5 히어로, 6·7 번개기둥 교차 반복
-  { id: 43, n: 4, h: 200, stage: 5, title: '피의 십자가', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [4], fxH: 280, hitP: 0.3 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 200 },   // 인간 단계 — 1 찌르기 · 2 치켜듦 · 3 내려베기 + 십자 폭발
-  { id: 42, n: 8, h: 200, stage: 4, title: '환영', charSeq: [1, 2, 3, 4, 5, 6, 7, 8], cd: 2, dmgMult: 3, aoe: true, rangePx: 180, hitAt: 0.7 },   // 분신 난무 — 이펙트가 그림에 포함
-  { id: 41, n: 5, h: 200, stage: 4, title: '연속 달빛베기', charSeq: [1, 2, 3, 4, 5, 3, 4, 5, 3, 4, 5], cd: 2, dmgMult: 3, aoe: true, rangePx: 200, hitAt: 0.6 },   // 3·4·5번을 3바퀴
-  { id: 40, n: 10, h: 200, stage: 4, title: '단검비', charSeq: [1, 2, 3, 4, 5], fx: { type: 'strike', frames: [6, 7, 8, 9, 10], fxH: 260, hitP: 0.7 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 200 },   // 1~5 히어로, 6~10 낙하 이펙트
-  { id: 39, n: 8, h: 200, stage: 4, title: '독검', charSeq: [1, 2, 3, 4, 5, 6, 8], cd: 2, dmgMult: 3, aoe: true, rangePx: 180, hitAt: 0.85 },   // 시트에 7번이 없어 번호를 그대로 씀(7은 미사용)
-  { id: 38, n: 6, h: 200, stage: 4, title: '난도질', charSeq: [1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6], cd: 2, dmgMult: 3, aoe: true, rangePx: 150, hitAt: 0.6 },   // 쌍칼 회전 베기 — 이펙트가 그림에 포함
-  { id: 37, n: 8, h: 200, stage: 4, title: '순보', charSeq: [1, 2, 3, 4, 5, 6, 7, 8, 2, 3, 4], cd: 2, dmgMult: 3, aoe: true, rangePx: 200, hitAt: 0.55 },   // 대시 — 오른쪽 1~5 + 왼쪽 2~4, 끝에 2·3·4 재생
-  { id: 36, n: 9, h: 200, stage: 3, title: '불놀이야', charSeq: [1, 2, 3, 4, 5, 6, 7, 8, 9], cd: 2, dmgMult: 3, aoe: true, rangePx: 150 },   // 9프레임 전부 히어로 모션 — 이펙트가 그림에 포함(별도 fx 없음)
-  { id: 35, n: 7, h: 200, stage: 3, title: '토네이도', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [5, 6, 5, 6, 7], fxH: 260, hitP: 0.65, twin: { gap: 30, spd: 1.2 } }, cd: 2, dmgMult: 3, aoe: true, rangePx: 200 },   // 5·6 왕복 2바퀴 → 7 소멸, 같은 프레임 2장 교차
-  { id: 34, n: 7, h: 200, stage: 3, title: '엑스밤', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [5, 6, 7], fxH: 260, hitP: 0.8 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 200 },
-  { id: 33, n: 10, h: 200, stage: 3, title: '지각변동', charSeq: [1, 2, 3, 4, 5, 6], fx: { type: 'strike', frames: [7, 8, 9, 10], fxH: 200, hitP: 0.7 }, cd: 2, dmgMult: 3, aoe: true, rangePx: 200 },
-  { id: 32, n: 5, h: 200, stage: 3, title: '얼음도끼', charSeq: [1, 2, 3, 4, 5], cd: 2, dmgMult: 3, aoe: true, rangePx: 150 },   // 이펙트가 그림에 포함 — 별도 fx 없음
-  { id: 31, n: 8, h: 200, stage: 3, title: '회전 도끼', charSeq: [1, 2, 1, 2, 3], fx: { type: 'proj', fly: [5, 6, 7, 8], fxH: 120 }, cd: 2, dmgMult: 3 },   // 관통 투사체
+  { id: 29, n: 7, h: 200, stage: 2, title: '사이오닉 스톰', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [4, 5, 6, 7], fxH: 240, hitP: 0.6 }, aoe: true, rangePx: 150 },
+  { id: 48, n: 8, h: 200, stage: 5, title: '궁극의 소용돌이', charSeq: [1, 2, 3, 4, 5, 6, 7, 8], aoe: true, rangePx: 220, hitAt: 0.85 },   // 1~4 소용돌이(시트1), 5~8 베기(시트2)
+  { id: 47, n: 6, h: 200, stage: 5, title: '회전검객', charSeq: [1, 2, 3, 4, 5, 6], aoe: true, rangePx: 200, hitAt: 0.55 },   // 시트 1~6, 이펙트는 그림에 포함
+  { id: 46, n: 5, h: 200, stage: 5, title: '파워 찌르기', charSeq: [1, 2, 3, 4, 5], aoe: true, rangePx: 200, hitAt: 0.55 },   // 시트 2·3·4·5·6 → 1~5, 이펙트는 그림에 포함
+  { id: 45, n: 6, h: 200, stage: 5, title: '무한검술', charSeq: [1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6], aoe: true, rangePx: 200, hitAt: 0.5 },   // 시트 1·2·3·5·7·8 → 1~6, 3바퀴
+  { id: 44, n: 7, h: 200, stage: 5, title: '번개 토네이도', charSeq: [1, 2, 3, 4, 5], fx: { type: 'strike', frames: [6, 7, 6, 7, 6, 7], fxH: 260, hitP: 0.3, twin: { gap: 30, spd: 1.4 } }, aoe: true, rangePx: 200 },   // 1~5 히어로, 6·7 번개기둥 교차 반복
+  { id: 43, n: 4, h: 200, stage: 5, title: '피의 십자가', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [4], fxH: 280, hitP: 0.3 }, aoe: true, rangePx: 200 },   // 인간 단계 — 1 찌르기 · 2 치켜듦 · 3 내려베기 + 십자 폭발
+  { id: 42, n: 8, h: 200, stage: 4, title: '환영', charSeq: [1, 2, 3, 4, 5, 6, 7, 8], aoe: true, rangePx: 180, hitAt: 0.7 },   // 분신 난무 — 이펙트가 그림에 포함
+  { id: 41, n: 5, h: 200, stage: 4, title: '연속 달빛베기', charSeq: [1, 2, 3, 4, 5, 3, 4, 5, 3, 4, 5], aoe: true, rangePx: 200, hitAt: 0.6 },   // 3·4·5번을 3바퀴
+  { id: 40, n: 10, h: 200, stage: 4, title: '단검비', charSeq: [1, 2, 3, 4, 5], fx: { type: 'strike', frames: [6, 7, 8, 9, 10], fxH: 260, hitP: 0.7 }, aoe: true, rangePx: 200 },   // 1~5 히어로, 6~10 낙하 이펙트
+  { id: 39, n: 8, h: 200, stage: 4, title: '독검', charSeq: [1, 2, 3, 4, 5, 6, 8], aoe: true, rangePx: 180, hitAt: 0.85 },   // 시트에 7번이 없어 번호를 그대로 씀(7은 미사용)
+  { id: 38, n: 6, h: 200, stage: 4, title: '난도질', charSeq: [1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6], aoe: true, rangePx: 150, hitAt: 0.6 },   // 쌍칼 회전 베기 — 이펙트가 그림에 포함
+  { id: 37, n: 8, h: 200, stage: 4, title: '순보', charSeq: [1, 2, 3, 4, 5, 6, 7, 8, 2, 3, 4], aoe: true, rangePx: 200, hitAt: 0.55 },   // 대시 — 오른쪽 1~5 + 왼쪽 2~4, 끝에 2·3·4 재생
+  { id: 36, n: 9, h: 200, stage: 3, title: '불놀이야', charSeq: [1, 2, 3, 4, 5, 6, 7, 8, 9], aoe: true, rangePx: 150 },   // 9프레임 전부 히어로 모션 — 이펙트가 그림에 포함(별도 fx 없음)
+  { id: 35, n: 7, h: 200, stage: 3, title: '토네이도', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [5, 6, 5, 6, 7], fxH: 260, hitP: 0.65, twin: { gap: 30, spd: 1.2 } }, aoe: true, rangePx: 200 },   // 5·6 왕복 2바퀴 → 7 소멸, 같은 프레임 2장 교차
+  { id: 34, n: 7, h: 200, stage: 3, title: '엑스밤', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [5, 6, 7], fxH: 260, hitP: 0.8 }, aoe: true, rangePx: 200 },
+  { id: 33, n: 10, h: 200, stage: 3, title: '지각변동', charSeq: [1, 2, 3, 4, 5, 6], fx: { type: 'strike', frames: [7, 8, 9, 10], fxH: 200, hitP: 0.7 }, aoe: true, rangePx: 200 },
+  { id: 32, n: 5, h: 200, stage: 3, title: '얼음도끼', charSeq: [1, 2, 3, 4, 5], aoe: true, rangePx: 150 },   // 이펙트가 그림에 포함 — 별도 fx 없음
+  { id: 31, n: 8, h: 200, stage: 3, title: '회전 도끼', charSeq: [1, 2, 1, 2, 3], fx: { type: 'proj', fly: [5, 6, 7, 8], fxH: 120 } },   // 관통 투사체
   ...PASSIVE_SHEET,   // 진화 단계별 패시브 (오스트랄로~인간)
 ]
 // 스킬 전체 프레임 이미지 (이펙트 렌더용)
@@ -480,6 +480,28 @@ const ALLY_OPEN_WAVE = 200                    // 동료 개방 — 최고 웨이
 const SK_FREE = [7, 18, 24, 32, 38, 43]       // 0 할퀴기 · 1 바위치기(강화) · 2 암흑 강타 · 3 얼음도끼 · 4 난도질 · 5 피의 십자가
 const skFreeInit = () => Object.fromEntries(SK_FREE.map(id => [id, 1]))
 
+// ── 스킬 쿨타임·피해 (2026-10-21 확정) ──
+// 단계마다 스킬 6개를 1~6번으로 나누고, 번호가 클수록 넓고 센 광역기다.
+// 피해는 '1회 총 피해'(공격력 배수)로 정하고, 연타 스킬은 그 값을 타수로 나눈다.
+//   → 연타 간격(모션 편집기)은 연출만 바꾸고 세기는 바꾸지 않는다.
+// 독이 있는 스킬은 총 피해의 80%를 타격으로, 20%를 독으로 준다(SK_DOT_SHARE).
+const SK_RANK_CD  = [5, 9, 12, 15, 18, 20]          // 번호별 쿨타임(초)
+const SK_RANK_DMG = [2.5, 5, 7.5, 10, 13, 16]       // 번호별 1회 총 피해(공격력의 250% ~ 1600%)
+const SK_RANK = {                                    // 스킬 id → 번호
+  7: 1, 15: 2, 8: 3, 13: 4, 17: 5, 16: 6,            // 4족보행: 할퀴기·로우킥·내려치기·데굴데굴·포효·바위치기 (전부 단일)
+  18: 1, 22: 2, 1: 3, 2: 4, 20: 5, 23: 6,            // 직립보행: 바위치기(강화)·전광석화·번개 바위·전기 작살·바위 회오리·사신과 함께
+  25: 1, 24: 2, 27: 3, 26: 4, 29: 5, 28: 6,          // 에렉투스: 뇌전 질주·암흑 강타·화염 참격·회전 폭풍·사이오닉 스톰·피폭
+  31: 1, 32: 2, 36: 3, 34: 4, 33: 5, 35: 6,          // 네안데르탈인: 회전 도끼·얼음도끼·불놀이야·엑스밤·지각변동·토네이도
+  37: 1, 38: 2, 39: 3, 42: 4, 40: 5, 41: 6,          // 사피엔스: 순보·난도질·독검·환영·단검비·연속 달빛베기 (난도질은 동작이 1.44초라 2번)
+  46: 1, 47: 2, 43: 3, 44: 4, 45: 5, 48: 6,          // 인간: 파워 찌르기·회전검객·피의 십자가·번개 토네이도·무한검술·궁극의 소용돌이
+}
+const SK_DOT_SHARE = 0.2                             // 독 스킬: 총 피해 중 독 비중
+const SK_ENH_MAX = 10                                // 스킬 강화 상한(단계)
+const SK_ENH_STEP = 0.1                              // 강화 1단계당 피해 +10%
+const skEnhMult = (enh, id) => 1 + SK_ENH_STEP * Math.min(SK_ENH_MAX, (enh || {})[id] || 0)
+// 연타 횟수 — 전투 루프와 똑같이 0초부터 tick씩 더해 가며 센다(나눗셈으로 세면 부동소수 때문에 1타가 어긋난다)
+const tickCount = (total, tick) => { if (!(tick > 0)) return 1; let n = 0; for (let t = 0; t < total && n < 500; t += tick) n++; return Math.max(1, n) }
+
 const SK_UNLOCK_CARDS = 1                     // 스킬 해금에 쓰는 카드 수
 const SK_UNLOCK_PEARL = 10                    // 스킬 해금에 쓰는 진주
 const CARD_ENH_CARDS = 2                      // 스킬 강화에 쓰는 카드 수
@@ -559,7 +581,10 @@ const SKILLS = SKILL_SHEET.map(c => {
     key: 's' + c.id, id: c.id, name: c.title || ('스킬 ' + c.id), anim: 's_' + c.id, icon: String(c.id), stage: c.stage,
     stages: c.stages || null, passive: !!c.passive, icon2: c.ic || null, desc2: c.desc2 || null,
     h: c.h, fx: c.fx || null, frameEnds: ends, frameT: ft,
-    cd: c.cd ?? 2, cast: acc, hitAt: c.hitAt ?? 0.55, dmgMult: c.dmgMult ?? 2, aoe: c.aoe || false, rangePx: c.rangePx || null, maxTargets: c.maxTargets || 1,
+    rank: SK_RANK[c.id] || 0,
+    cd: SK_RANK[c.id] ? SK_RANK_CD[SK_RANK[c.id] - 1] : (c.cd ?? 2), cast: acc, hitAt: c.hitAt ?? 0.55,
+    dmgMult: SK_RANK[c.id] ? SK_RANK_DMG[SK_RANK[c.id] - 1] : (c.dmgMult ?? 2),   // 1회 총 피해(연타면 타수로 나눔)
+    aoe: c.aoe || false, rangePx: c.rangePx || null, maxTargets: c.maxTargets || 1,
     desc: c.n + '프레임 · 임시값',
   }
 })
@@ -572,6 +597,21 @@ const skFrT = (sk, mot) => {
 }
 const skEnds = t => { const e = []; let a = 0; for (const v of t) { a += v; e.push(a) } return e }
 const skCast = t => t.reduce((a, b) => a + b, 0)
+// 한 번 시전할 때 몇 번 때리는지. 낙하 이펙트는 이펙트 재생시간, 나머지는 시전시간 동안 tick 간격으로 센다
+const skHits = (sk, mot) => {
+  const fc = ((mot || {}).skFx || {})[sk.id] || {}
+  const tick = fc.tick ?? ((sk.fx && sk.fx.tick) || 0)
+  if (!(tick > 0)) return 1
+  if (sk.fx && sk.fx.type === 'strike') return tickCount(fxTotal(mot, sk.id, sk.fx.frames.length, STRIKE_DUR_BY[sk.id] ?? STRIKE_DUR) / (fc.spd || 1), tick)
+  return tickCount(skCast(skFrT(sk, mot)), tick)
+}
+// 독 설정(모션 편집기의 독 항목이 0보다 크면 독 있음). 1틱 피해는 '총 피해 × 독 비중'을 틱 수로 나눈 값
+const skDot = (fc, total) => {
+  const on = (fc.dotP ?? 0) > 0 && (fc.dotDur ?? 0) > 0
+  if (!on) return null
+  const iv = Math.max(0.05, fc.dotIv ?? 0.5), dur = fc.dotDur
+  return { d: total * SK_DOT_SHARE / Math.max(1, Math.round(dur / iv)), iv, dur }
+}
 // 대시 프레임 타이밍: 0=기모으기 앞부분 짧게, 주먹뻗기(3,4번) 길게
 
 // ── 동료 정의: 영웅 뒤에서 투사체 공격 (겹침 허용, 소형) ──
@@ -917,7 +957,9 @@ function loadSave() {
         if (!s.skCfg && Array.isArray(s.cdConf)) SKILLS.forEach((k, i) => {   // 옛 인덱스 배열 → id 기준 이관
           if (s.cdConf[i] != null && s.cdConf[i] !== k.cd) o[k.id] = { ...(o[k.id] || {}), cd: s.cdConf[i] }
         })
-        if (s.skCfgV !== 2) for (const id in o) { if (o[id] && o[id].range != null) { o[id] = { ...o[id] }; delete o[id].range } }   // 옛 range는 '기본사거리 배수' — px로 바뀌었으니 버림(코드 기본값 사용)
+        const _v = s.skCfgV || 0
+        if (_v < 2) for (const id in o) { if (o[id] && o[id].range != null) { o[id] = { ...o[id] }; delete o[id].range } }   // 옛 range는 '기본사거리 배수' — px로 바뀌었으니 버림(코드 기본값 사용)
+        if (_v < 3) for (const id in o) { if (o[id] && (o[id].cd != null || o[id].dmg != null)) { o[id] = { ...o[id] }; delete o[id].cd; delete o[id].dmg } }   // 2026-10-21 쿨타임·피해 확정 — 옛 임시 체계의 값은 버림
         return o
       })(),
       // 장착·재화·기록: 저장된 값 그대로 복원 (누락 시 기본값)
@@ -1250,6 +1292,7 @@ export default function App() {
     // 주기형은 전투 루프에서 슬롯 쿨(w.skillCd) 돌 때마다 버프 적용. 현재는 표시·장착만 되고 효과 0.
     equippedPassives: (equipped || []).filter(si => si != null && SKILLS[si] && SKILLS[si].passive),
     skCfg,
+    skEnh,
   }
 
   // 최대 체력이 오르면 오른 만큼 현재 체력도 같이 올린다(강화가 즉시 이득). 초과분은 클램프.
@@ -1267,7 +1310,7 @@ export default function App() {
   const cloudBusy = useRef(false)   // 어댑트/불러오기 중 로컬 저장 차단
   useEffect(() => {
     if (cloudBusy.current) return
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, skCfg, skCfgV: 2, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, gachaLv, gachaCnt, gachaRw, skCard, skEnh, skOpen, quest, ts: Date.now() }))
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, skCfg, skCfgV: 3, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, gachaLv, gachaCnt, gachaRw, skCard, skEnh, skOpen, quest, ts: Date.now() }))
   }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, skCfg, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, gachaLv, gachaCnt, gachaRw, skCard, skEnh, skOpen, quest])
 
   // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제
@@ -1539,9 +1582,11 @@ export default function App() {
     // 스킬 데미지 (명중 무시, 항상 적중 + 큰 피 이펙트)
     // noStop: 히트스톱 생략(관통 투사체의 2번째 이후 타격 등)
     function applySkillDmg(t, dmg, noStop, dot) {
+      const _cs = S.current
+      if (Math.random() < (_cs.critRate || 0)) dmg *= (_cs.critMult || 1)   // 스킬도 치명타 (2026-10-21). 숫자 표시는 종전대로
       t.hp -= dmg
-      // 독(지속 데미지): 시전이 끝나도 남아 간격마다 깎는다. 잡몹은 대개 즉사하니 사실상 보스용
-      if (dot && dot.p > 0 && dot.dur > 0) t.dot = { d: dmg * dot.p / 100, iv: Math.max(0.05, dot.iv), left: dot.dur, t: 0 }
+      // 독(지속 데미지): 시전이 끝나도 남아 간격마다 깎는다. 1틱 피해는 skDot()이 총 피해에서 미리 나눠 둔 값
+      if (dot && dot.d > 0 && dot.dur > 0) t.dot = { d: dot.d, iv: dot.iv, left: dot.dur, t: 0 }
       t.flash = 1
       t.kb = Math.max(t.kb || 0, t.boss ? 55 : 150)
       t.sqD = motRef.current.hitSq.dur; t.sq = t.sqD
@@ -1771,19 +1816,21 @@ export default function App() {
               // 크기 보정 없음 — 일반몹이든 보스든 이펙트 크기·오프셋은 동일, 위치(x2)만 대상을 따라간다
               w.strikes.push({ id: sk.id, frames: sk.fx.frames, x: x2, anchor: _fxc.anchor ? 1 : 0, twin: _tw, t: 0,
                 dur: fxTotal(motRef.current, sk.id, sk.fx.frames.length, STRIKE_DUR_BY[sk.id] ?? STRIKE_DUR) / (_fxc.spd || 1),
-                dmg: st.atk * __e2.dmgMult, hitDone: false, h: sk.fx.fxH ?? sk.h, hitP: sk.fx.hitP ?? 0.45,
+                dmg: st.atk * __e2.dmgMult * skEnhMult(st.skEnh, sk.id) * (skDot(_fxc, 1) ? 1 - SK_DOT_SHARE : 1) / skHits(sk, motRef.current),
+                hitDone: false, h: sk.fx.fxH ?? sk.h, hitP: sk.fx.hitP ?? 0.45,
                 aoe: __e2.aoe, rng: rng2, hx: w.heroX, stun: sk.stun || 0,
                 tick: _fxc.tick ?? sk.fx.tick ?? 0, nextHit: 0,
-                dot: { p: _fxc.dotP ?? 0, iv: _fxc.dotIv ?? 0.5, dur: _fxc.dotDur ?? 0 } })   // tick>0 이면 hitP 단발 대신 그 간격으로 계속 때린다
+                dot: skDot(_fxc, st.atk * __e2.dmgMult * skEnhMult(st.skEnh, sk.id)) })   // tick>0 이면 hitP 단발 대신 그 간격으로 계속 때린다
             }
           }
           // 한 번 발동할 때 하는 일(투사체 생성 / 광역·단일 데미지). 연타면 이걸 간격마다 반복한다.
           // noStop=true 면 히트스톱·화면흔들림 생략 — 연타 2타째부터는 걸면 화면이 뚝뚝 끊긴다
           const _fire = noStop => {
             const __ef = skEff(sk, st.skCfg)
-            const dmg = st.atk * __ef.dmgMult
             const _fc = motRef.current.skFx[sk.id] || {}
-            const _dot = { p: _fc.dotP ?? 0, iv: _fc.dotIv ?? 0.5, dur: _fc.dotDur ?? 0 }
+            const _total = st.atk * __ef.dmgMult * skEnhMult(st.skEnh, sk.id)     // 1회 시전 총 피해(대상 1마리 기준)
+            const _dot = skDot(_fc, _total)
+            const dmg = _total * (_dot ? 1 - SK_DOT_SHARE : 1) / skHits(sk, motRef.current)
             if (sk.fx && sk.fx.type === 'proj') {
               // 투사체: 히어로 앞에서 생성, 명중 시 데미지
               const _spd = (motRef.current.skFx[sk.id] || {}).spd || 1
@@ -2759,6 +2806,7 @@ export default function App() {
   }
   // 스킬 강화: 카드 2장 + 강화 진주
   function enhanceSkill(id) {
+    if ((skEnh[id] || 0) >= SK_ENH_MAX) return            // 상한 10단계(+100%)
     if ((skCard[id] || 0) < CARD_ENH_CARDS) return
     if (!DEBUG && pearl < CARD_ENH_PEARL) return
     setSkCard(c => ({ ...c, [id]: (c[id] || 0) - CARD_ENH_CARDS }))
@@ -2947,10 +2995,14 @@ export default function App() {
     qEv('skill_enh')
     setSkill(s => ({ ...s, [k]: s[k] + 1 }))
   }
+  // 진화 조건용: 지금 단계 액티브 스킬 중 해금한 수
+  const evoSkAll = SKILLS.filter(k => !k.passive && k.stage === evo).length
+  const evoSkOpen = SKILLS.filter(k => !k.passive && k.stage === evo && skOpen[k.id]).length
   function evolve() {
     if (evo >= EVOS.length - 1) return
-    if (BAL) {                                   // 밸런싱: 히어로 레벨만 본다(고기 소모 없음)
+    if (BAL) {                                   // 밸런싱: 히어로 레벨 + 지금 단계 스킬 전부 해금(고기 소모 없음)
       if (hlv < (EVOS[evo + 1].lv || 0)) return
+      if (evoSkOpen < evoSkAll) return
     } else {
       const c = DEBUG ? 0 : EVOS[evo + 1].cost
       if (meat < c) return
@@ -3178,7 +3230,7 @@ export default function App() {
                   AUTO<span style={{ ...st.skdAutoDot, ...(auto ? st.skdAutoDotOn : {}) }} />
                 </button>
               </div>
-              <div data-edit="skdeffect" style={st.skdEffect}>{ef.aoe ? (ef.rangePx ? `${ef.rangePx}px 이내` : '화면 전체') + '의 적 모두에게' : '적 1명에게'}<br />공격력의 <b style={{ color: '#f0a830' }}>{s.dmgMult * 100}%</b>로 1회 공격</div>
+              <div data-edit="skdeffect" style={st.skdEffect}>{ef.aoe ? (ef.rangePx ? `${ef.rangePx}px 이내` : '화면 전체') + '의 적 모두에게' : '적 1명에게'}<br />공격력의 <b style={{ color: '#f0a830' }}>{Math.round(ef.dmgMult * skEnhMult(skEnh, s.id) * 100)}%</b>{skHits(s, motCfg) > 1 ? `를 ${skHits(s, motCfg)}회에 나눠 공격` : '로 1회 공격'}</div>
               <div style={st.skdStatRow}>
                 <div data-edit="skdstat" style={st.skdStat}><span style={st.skdStatK}>필요공격수</span><span style={st.skdStatV}>—</span></div>
                 <div data-edit="skdstat" style={st.skdStat}><span style={st.skdStatK}>MP 소모</span><span style={st.skdStatV}>—</span></div>
@@ -3230,8 +3282,8 @@ export default function App() {
                     onClick={() => { if (!uiEdit) enhanceSkill(s.id) }}>
                     <span>강화 {(skEnh[s.id] || 0) > 0 ? `+${skEnh[s.id]}` : ''}</span>
                     <span style={st.skdEnhCost}>
-                      {skCard[s.id] || 0}/{CARD_ENH_CARDS}
-                      <img src="/ui/pearl.webp" alt="" style={st.skdEnhIc} />{CARD_ENH_PEARL}
+                      {(skEnh[s.id] || 0) >= SK_ENH_MAX ? '최대' : <>{skCard[s.id] || 0}/{CARD_ENH_CARDS}
+                      <img src="/ui/pearl.webp" alt="" style={st.skdEnhIc} />{CARD_ENH_PEARL}</>}
                     </span>
                   </button>
                   <button data-edit="skdequip" style={{ ...st.skdEquipBtn, ...(isEq ? st.skdEquipOn : {}) }} onClick={() => { if (isEq) unequipSkill(eqSlot); else equipSkill(skillDetail); setSkillDetail(null) }}>{isEq ? '해제' : '장착'}</button>
@@ -3764,11 +3816,12 @@ export default function App() {
               <div data-edit="val" style={st.rowVal}>
                 공격력 ×{EVOS[evo].mult}
                 {evo < EVOS.length - 1 && <span style={{ color: '#7cb35c' }}> → ×{EVOS[evo + 1].mult}</span>}
+                {BAL && evo < EVOS.length - 1 && <span style={{ color: evoSkOpen >= evoSkAll ? '#7cb35c' : '#e0a050' }}> · 스킬 {evoSkOpen}/{evoSkAll}</span>}
               </div>
             </div>
             {DEBUG && <button style={st.dbgBtn} onClick={() => setEvo(v => Math.max(0, v - 1))}>−</button>}
             {evo < EVOS.length - 1
-              ? <button data-edit="cost" style={{ ...st.costBtn, opacity: (BAL ? hlv >= (EVOS[evo + 1].lv || 0) : DEBUG || meat >= EVOS[evo + 1].cost) ? 1 : 0.4 }} onClick={evolve}>{BAL ? `Lv.${EVOS[evo + 1].lv}` : DEBUG ? '+1' : fmt(EVOS[evo + 1].cost)}</button>
+              ? <button data-edit="cost" style={{ ...st.costBtn, opacity: (BAL ? hlv >= (EVOS[evo + 1].lv || 0) && evoSkOpen >= evoSkAll : DEBUG || meat >= EVOS[evo + 1].cost) ? 1 : 0.4 }} onClick={evolve}>{BAL ? `Lv.${EVOS[evo + 1].lv}` : DEBUG ? '+1' : fmt(EVOS[evo + 1].cost)}</button>
               : <div style={{ fontSize: 12, opacity: 0.6 }}>최종 단계</div>}
           </div>
         )}
@@ -4201,7 +4254,7 @@ export default function App() {
             <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>0보다 크면 그 간격마다 데미지를 반복합니다(타격 시점 무시). 낙하 이펙트가 있는 스킬은 이펙트가 사는 동안, 없는 스킬은 시전 동안 반복합니다. 한 번에 스킬 데미지 전액이 들어가므로 총합이 횟수만큼 세집니다</div>
             {(() => { const put3 = (k, v) => setMotCfg({ ...M, skFx: { ...M.skFx, [motHeroSk]: { ...(M.skFx[motHeroSk] || {}), [k]: v } } })
               return (<>
-                {row('독 데미지(%) 0=없음', (M.skFx[motHeroSk] || {}).dotP ?? 0, 0, 100, 1, v => put3('dotP', v))}
+                {row('독 사용 (0=없음, 총 피해의 20%)', (M.skFx[motHeroSk] || {}).dotP ?? 0, 0, 100, 1, v => put3('dotP', v))}
                 {row('독 간격(초)', (M.skFx[motHeroSk] || {}).dotIv ?? 0.5, 0.05, 3, 0.05, v => put3('dotIv', v))}
                 {row('독 지속(초)', (M.skFx[motHeroSk] || {}).dotDur ?? 0, 0, 20, 0.5, v => put3('dotDur', v))}
                 <div style={{ fontSize: 10, color: '#7b6a50', marginBottom: 6 }}>맞은 적에게 지속 데미지를 남깁니다. 시전이 끝나도 계속 깎이며, 한 틱은 그 타격 데미지의 독 데미지(%)입니다. 잡몹은 대개 즉사하니 사실상 보스용입니다</div>
