@@ -565,16 +565,23 @@ const rollItem = (lv = 1) => {
   return EQUIP_MAX - 1
 }
 const invKey = (cat, i) => `${cat}:${i}`
-// 장착 능력치 (임시 수치 — 추후 교체). 주능력치: 1번 10%, ×1.5. 보조: 번호 비례
-const ATK_MULT = i => 10 * Math.pow(1.5, i - 1)
+// ── 장비 능력치 (2026-10-21 구조 확정, 수치는 마지막 곡선 단계에서 조정) ──
+// 등급 기본값: 장비 번호마다 ×GEAR_STEP (1번 +100% → 30번 약 +3만%) — 표시는 크지만 몹 체력도 지수라 실제 세기는 곡선으로 맞춘다
+// 강화: 레벨당 기본값의 +4% (Lv.100 = 5배), 상한 없음 — 비용이 오르니 갈수록 덜 오른다
+// 보유 효과: 갖고 있는(1개 이상 또는 장착 중) 장비마다 주 능력치의 10%가 같은 능력치에 더해진다
+// 무기 = 공격력·치명타 피해 / 방어구 = 최대 체력·받는 피해 감소 / 유물 = 스킬 피해·고기·경험치 획득량
+const GEAR_BASE = 100, GEAR_STEP = 1.22, GEAR_ENH = 0.04, GEAR_OWN = 0.1
+const GEAR_RED_CAP = 60                                // 받는 피해 감소 상한(%)
+const gearMain = i => GEAR_BASE * Math.pow(GEAR_STEP, i - 1)
+const gearLvMult = lv => 1 + GEAR_ENH * (lv || 0)
 const gearStats = (cat, i, lv = 0) => {
-  const m = Math.pow(1.2, lv)                          // 강화당 ×1.2
-  const b = ATK_MULT(i) * m
-  if (cat === '무기') return [['공격력 증가', b], ['치명타 데미지', i * m], ['골드 획득량', i * 0.7 * m]]
-  if (cat === '방어구') return [['체력 증가', b], ['체력 회복량', i * m], ['경험치 획득량', i * 0.7 * m]]
-  return [['회피 증가', i * 0.5 * m], ['명중률 증가', i * m], ['이동속도 증가', i * 0.3 * m]]
+  const m = gearLvMult(lv), b = gearMain(i) * m
+  if (cat === '무기') return [['공격력', b], ['치명타 피해', 5 * i * m]]
+  if (cat === '방어구') return [['최대 체력', b], ['받는 피해 감소', Math.min(GEAR_RED_CAP, i * m)]]
+  return [['스킬 피해', b], ['고기·경험치 획득량', 2 * i * m]]
 }
-const enhCost = lv => Math.floor(100 * Math.pow(1.5, lv))   // 강화 비용: 100, 150, 225 …
+const gearOwnPct = (i, lv) => gearMain(i) * gearLvMult(lv) * GEAR_OWN   // 보유 효과(주 능력치 %)
+const enhCost = lv => Math.floor(100 * Math.pow(1.06, lv))   // 강화 큐브: 100 → Lv.100 약 3.4만 — 큐브 수급과 같이 마지막에 조정
 const MAT_IMG = i => `/ui/mat${i}.webp`
 // 프로필/아바타용 진화단계 초상화 (4족·직립은 유인원 공통)
 const heroProfileSrc = m => m === 'erectus' ? '/hero/profile/erectus.webp' : m === 'neander' ? '/hero/profile/neander.webp' : m === 'sapiens' ? '/hero/profile/sapiens.webp' : m === 'human' ? '/hero/profile/human.webp' : '/hero/profile/ape.webp'
@@ -1331,26 +1338,38 @@ export default function App() {
   const allyAtkMul = {}
   for (const k in ALLY_ATK) allyAtkMul[k] = ALLY_ATK[k].mult * allyG(k)
   const allyBuff = 1 + give.atk                    // 힐러: 히어로 공격력(동료 피해도 히어로 공격력 기준이라 같이 오른다)
+  // 장비: 주 능력치 % 합(장착 + 보유)과 보조 능력치
+  const gearMainSum = { 무기: 0, 방어구: 0, 유물: 0 }, gearSub = { crit: 0, red: 0, gain: 0 }
+  for (const cat of EQUIP_CATS) {
+    const ei = gearEq[cat]
+    if (ei) {
+      const sts = gearStats(cat, ei, enh[invKey(cat, ei)] || 0)
+      gearMainSum[cat] += sts[0][1]
+      if (cat === '무기') gearSub.crit += sts[1][1]; else if (cat === '방어구') gearSub.red += sts[1][1]; else gearSub.gain += sts[1][1]
+    }
+    for (let i = 1; i <= EQUIP_MAX; i++) if ((inv[invKey(cat, i)] || 0) > 0 || ei === i) gearMainSum[cat] += gearOwnPct(i, enh[invKey(cat, i)] || 0)
+  }
+  const gearAtk = 1 + gearMainSum['무기'] / 100
   const aspdMult = (BAL ? statVal('aspd') / 100 : 1 + Math.min(200, tot('aspd') * STAT_LIST.aspd.per) / 100)
   const mspdMult = (BAL ? statVal('mspd') / 100 : 1 + Math.min(200, tot('mspd') * STAT_LIST.mspd.per) / 100)
-  const maxHp = (BAL ? HP_BASE * statVal('hp') : HP_BASE * (1 + tot('hp') * STAT_LIST.hp.per / 100)) * (1 + give.hp)
+  const maxHp = (BAL ? HP_BASE * statVal('hp') : HP_BASE * (1 + tot('hp') * STAT_LIST.hp.per / 100)) * (1 + give.hp) * (1 + gearMainSum['방어구'] / 100)
   // 열린 칸에 장착한 패시브의 효과값 { beast: 0.25, ... } — 강화 단계 반영
   const slotOpen = slotsOpen(evo)
   const pas = {}
   for (const si of (equipped || []).slice(0, slotOpen)) { const k = si != null && SKILLS[si]; if (k && k.passive && k.pkey) pas[k.pkey] = (PASSIVE_VAL[k.pkey] || 0) * skEnhMult(skEnh, k.id) }
   const S = useRef({})
   S.current = {
-    atk: ATK_BASE * EVOS[evo].mult * (BAL ? statVal('atk') : 1 + tot('atk') * STAT_LIST.atk.per / 100) * allyBuff,
+    atk: ATK_BASE * EVOS[evo].mult * (BAL ? statVal('atk') : 1 + tot('atk') * STAT_LIST.atk.per / 100) * allyBuff * gearAtk,
     cd: 1000 / (ASPD * aspdMult) / SPEED,
     aspdMult, mspdMult,
     maxHp, wave, phase, alliesOn,
     mode: EVOS[evo].mode,
     evo,
     critRate: BAL ? statVal('critRate') / 100 : Math.min(1, tot('critRate') * STAT_LIST.critRate.per / 100),
-    critMult: ((BAL ? statVal('critDmg') / 100 : 2 + tot('critDmg') * STAT_LIST.critDmg.per / 100) + (pas.crush || 0)) * (1 + give.critDmg),
+    critMult: ((BAL ? statVal('critDmg') / 100 : 2 + tot('critDmg') * STAT_LIST.critDmg.per / 100) + (pas.crush || 0) + gearSub.crit / 100) * (1 + give.critDmg),
     regen: (BAL ? maxHp * statVal('regen') / 100 : tot('regen') * STAT_LIST.regen.per) + maxHp * give.regen,
-    meatMult: (BAL ? statVal('meatUp') / 100 : 1 + tot('meatUp') * STAT_LIST.meatUp.per / 100) + (pas.hunter || 0),
-    expMult: (BAL ? statVal('expUp') / 100 : 1 + tot('expUp') * STAT_LIST.expUp.per / 100) + (pas.expblessing || 0),
+    meatMult: (BAL ? statVal('meatUp') / 100 : 1 + tot('meatUp') * STAT_LIST.meatUp.per / 100) + (pas.hunter || 0) + gearSub.gain / 100,
+    expMult: (BAL ? statVal('expUp') / 100 : 1 + tot('expUp') * STAT_LIST.expUp.per / 100) + (pas.expblessing || 0) + gearSub.gain / 100,
     acc: BAL ? statVal('acc') / 100 : tot('acc') * STAT_LIST.acc.per / 100,
     eva: BAL ? statVal('eva') / 100 : tot('eva') * STAT_LIST.eva.per / 100,
     equipped,
@@ -1359,7 +1378,9 @@ export default function App() {
     skCfg,
     skEnh,
     slotOpen, pas,
-    skMul: 1 + give.skillDmg, dmgRed: give.dmgRed, allyAtkMul,
+    skMul: (1 + give.skillDmg) * (1 + gearMainSum['유물'] / 100),
+    dmgRed: 1 - (1 - give.dmgRed) * (1 - gearSub.red / 100),   // 거인 × 방어구 (곱으로 겹침)
+    allyAtkMul,
   }
 
   // 최대 체력이 오르면 오른 만큼 현재 체력도 같이 올린다(강화가 즉시 이득). 초과분은 클램프.
@@ -3274,6 +3295,13 @@ export default function App() {
                             <span><span style={{ color: '#e8d5b0' }}>+{fmtPct(val)}%</span><span style={{ color: '#8fe36b', fontWeight: 700, marginLeft: 6 }}>▶ +{fmtPct(statsNext[x][1])}%</span></span>
                           </div>
                         ))}
+                      </div>
+                      <div style={st.dSecTitle}>보유 효과</div>
+                      <div style={st.dStatBox}>
+                        <div data-edit="dstat" style={st.dStatRow}>
+                          <span>{stats[0][0]}</span>
+                          <span><span style={{ color: '#e8d5b0' }}>+{fmtPct(gearOwnPct(i, lv))}%</span><span style={{ color: '#8fe36b', fontWeight: 700, marginLeft: 6 }}>▶ +{fmtPct(gearOwnPct(i, lv + 1))}%</span></span>
+                        </div>
                       </div>
                       <div style={st.dBtns}>
                         <button data-edit="denh" style={{ ...st.dEnhBtn, ...(canEnh ? st.dEnhBtnOn : {}) }} onClick={() => { if (canEnh) { if (!DEBUG) setMats(m => { const n = [...m]; n[4] -= cost; return n }); setEnh(e => ({ ...e, [key]: lv + 1 })); qEv('equip_enh') } }}>
