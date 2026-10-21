@@ -172,7 +172,8 @@ const track = im => {
 const mkImg = src => { const i = new Image(); i.src = src; return track(i) }
 
 for (const k in LOOT_IMG) { LOOT_CIMG[k] = mkImg(LOOT_IMG[k]) }
-const DROP_DIA_P = 0.3, DROP_MAT_P = 0.3   // 임시 확률 — 추후 웨이브 비례 공식으로 교체
+const DROP_DIA_P = 0.3   // 임시 확률 — 추후 웨이브 비례 공식으로 교체 (다이아 조각은 아직 연출만)
+const DROP_MAT_P = 0.03  // 동료 재료 드롭 확률(임시 3%) — 떨어지면 동료 재료 1~4 중 하나를 실제로 1개 지급
 function LootPiece({ p, done }) {
   const r = useRef(null)
   useEffect(() => {
@@ -626,54 +627,62 @@ const skDot = (fc, total) => {
 }
 // 대시 프레임 타이밍: 0=기모으기 앞부분 짧게, 주먹뻗기(3,4번) 길게
 
-// ── 동료 정의: 영웅 뒤에서 투사체 공격 (겹침 허용, 소형) ──
-// cd는 미사용 — 동료 공격은 히어로 기본공격에 동기화되고, 투사체는 히어로 타격 순간에 맞춰 속도가 역산됨
+// ── 동료 정의: 영웅 뒤에서 공격 (겹침 허용, 소형) ──
+// 공격 주기·피해 배율은 ALLY_ATK. 히어로 기본공격과 따로 돈다(2026-10-21)
 // 전직 단계별 그림 — 동료 4종 × 5단계 (/ally/evo/hunter_1.webp ...)
 const ALLY_EVO_KEYS = ['hunter', 'shaman', 'healer', 'giant']
 const ALLY_EVO_IMG = (k, n) => `/ally/evo/${k}_${n}.webp`
 const ALLY_EVO_MAX = 5
 
-// ── 동료 성장·전직 (임시 밸런싱 — 나중에 통째로 교체) ──
-const ALLY_LV_MAX = 100                    // 이 레벨을 찍으면 다음 단계로 전직
-const ALLY_STAGE_MULT = [1, 1.6, 2.5, 3.8, 5.6]   // 전직 단계별 능력치 배수 (1~5단계)
-// [표시명, 1레벨 기준값, 레벨당 증가율(%)] — self=동료 본인, give=히어로에게 부여
-const ALLY_STAT = {
-  hunter: { self: [['공격력', 120, 4], ['공격 주기', 1.15, 0], ['사거리', 450, 0]],
-            give: [['히어로 공격력', 3, 2], ['치명타 확률', 1, 1.5]] },
-  shaman: { self: [['공격력', 150, 4], ['공격 주기', 1.6, 0], ['사거리', 450, 0]],
-            give: [['히어로 공격력', 4, 2], ['스킬 피해', 2, 2]] },
-  healer: { self: [['전체 버프', 5, 3]],
-            give: [['히어로 체력', 4, 2], ['체력 회복', 3, 2]] },
-  giant:  { self: [['공격력', 200, 4], ['공격 주기', 1.8, 0]],
-            give: [['히어로 체력', 5, 2], ['받는 피해 감소', 1, 1.5]] },
+// ── 동료 성장·공격·부여 (2026-10-21 확정) ──
+// 성장 배율 G = 전직 단계 + (레벨−1)/100 → 1단계 Lv.1 = 1, 5단계 Lv.100 = 5.99
+// 자기 공격 = 히어로 공격력 × mult × G          (헌터 15%→90%, 주술사 15%→90%, 거인 25%→150%)
+// 히어로에게 부여 = 최대값 × G / ALLY_G_MAX    (5단계 Lv.100에서 최대 = 각 효과 2배)
+const ALLY_LV_MAX = 100                    // 이 레벨을 찍으면 다음 단계로 전직(비용 없음)
+const allyGrowth = (lv, stg) => (stg || 1) + ((lv || 1) - 1) / 100
+const ALLY_G_MAX = ALLY_EVO_MAX + (ALLY_LV_MAX - 1) / 100
+// 동료 공격: 각자 자기 쿨타임(초)으로 사거리 안 적을 공격. 히어로 기본공격과 무관
+const ALLY_ATK = {
+  hunter: { mult: 0.15, cd: 1.15 },
+  shaman: { mult: 0.15, cd: 1.6, aoe: true },   // 광역: 맞은 자리 주변 ALLY_AOE_R 안의 적 전부
+  giant:  { mult: 0.25, cd: 1.8 },
 }
-const allyStatVal = (base, per, lv, stage) => base * (1 + per / 100 * (lv - 1)) * (ALLY_STAGE_MULT[stage - 1] || 1)
+const ALLY_AOE_R = 90
+// 히어로에게 부여(최대값). critDmg·skillDmg·hp·atk 은 배율(+100% = 2배), dmgRed 는 받는 피해 감소, regen 은 초당 최대 체력 비율
+const ALLY_GIVE = {
+  hunter: { critDmg: 1.0 },
+  shaman: { skillDmg: 1.0 },
+  giant:  { hp: 1.0, dmgRed: 0.5 },
+  healer: { atk: 1.0, regen: 0.01 },
+}
+const ALLY_GIVE_LABEL = { critDmg: '치명타 피해', skillDmg: '스킬 피해', hp: '최대 체력', dmgRed: '받는 피해 감소', atk: '공격력', regen: '체력 회복(초당)' }
+const ALLY_MAT = { hunter: 0, shaman: 1, healer: 2, giant: 3 }   // 레벨업 재료(동료 재료 1~4). 1회에 전직 단계 수만큼
 
 const ALLY_DEFS = {
   hunter: {
-    name: '헌터', h: 68, xOff: -75, yOff: 27, atkMult: 0.45, cd: 1.15, range: 450,
+    name: '헌터', h: 68, xOff: -75, yOff: 27, range: 450,
     projSpd: 560, projW: 62, projBob: 0, atkDur: 0.42, throwAt: 0.16, projYr: 0.62,
     walk: [1, 2, 3, 4].map(i => `/ally/hunter/hwalk_${i}.webp`),
     atk: [1, 2].map(i => `/ally/hunter/hatk_${i}.webp`),
     proj: '/ally/hunter/spear.webp',
   },
   shaman: {
-    name: '주술사', h: 68, xOff: -75, yOff: -34, atkMult: 0.55, cd: 1.6, range: 450,
+    name: '주술사', h: 68, xOff: -75, yOff: -34, range: 450,
     projSpd: 400, projW: 26, projBob: 5, atkDur: 0.5, throwAt: 0.2, projYr: 0.75,
     walk: [1, 2, 3, 4].map(i => `/ally/shaman/swalk_${i}.webp`),
     atk: [1].map(i => `/ally/shaman/satk_${i}.webp`),
     proj: '/ally/shaman/fire.webp',
   },
   healer: {
-    // 공격 없음 — 장착 시 히어로+동료 전체에 이동속도·공격속도·공격력 +5% (패시브)
-    name: '힐러', kind: 'buff', buff: 0.05, h: 60, xOff: -108, yOff: -5,
+    // 공격 없음 — 히어로 공격력·체력 회복을 올려 준다(ALLY_GIVE.healer)
+    name: '힐러', kind: 'buff', h: 60, xOff: -108, yOff: -5,
     walk: [1, 2, 3, 4, 5, 6, 7, 8].map(i => `/ally/healer/heal_${i}.webp`),
     atk: [],
   },
   giant: {
-    // 근접 주먹 — 투사체 없이 히어로 타격 순간에 맨 앞 적을 직접 타격
-    name: '거인', kind: 'melee', h: 125, xOff: -155, yOff: 3, atkMult: 0.8, range: 360,
-    atkDur: 0.5,
+    // 근접 주먹 — 투사체 없이 공격 모션 hitAt 초에 맨 앞 적을 직접 타격
+    name: '거인', kind: 'melee', h: 125, xOff: -155, yOff: 3, range: 360,
+    atkDur: 0.5, hitAt: 0.25,
     walk: [1, 2, 3].map(i => `/ally/giant/gwalk_${i}.webp`),
     atk: [1, 2, 3].map(i => `/ally/giant/gatk_${i}.webp`),
   },
@@ -1315,11 +1324,16 @@ export default function App() {
     if (k === 'atk' || k === 'hp') return d.mult ** n
     return capd(k, (d.base || 0) + n * d.per)
   }
-  // 힐러 패시브: 장착 시 히어로+동료 전체 공격력·공속·이속 상승
-  const allyBuff = alliesOn.healer ? 1 + (ALLY_DEFS.healer.buff || 0) : 1
-  const aspdMult = (BAL ? statVal('aspd') / 100 : 1 + Math.min(200, tot('aspd') * STAT_LIST.aspd.per) / 100) * allyBuff
-  const mspdMult = (BAL ? statVal('mspd') / 100 : 1 + Math.min(200, tot('mspd') * STAT_LIST.mspd.per) / 100) * allyBuff
-  const maxHp = BAL ? HP_BASE * statVal('hp') : HP_BASE * (1 + tot('hp') * STAT_LIST.hp.per / 100)
+  // 동료가 히어로에게 주는 효과(장착한 동료만, 성장 배율 반영)와 동료 공격 배율
+  const allyG = k => allyGrowth(allyLv[k] || 1, allyEvo[k] || 1)
+  const give = { critDmg: 0, skillDmg: 0, hp: 0, dmgRed: 0, atk: 0, regen: 0 }
+  for (const k in ALLY_GIVE) if (alliesOn[k]) { const f = allyG(k) / ALLY_G_MAX; for (const g in ALLY_GIVE[k]) give[g] += ALLY_GIVE[k][g] * f }
+  const allyAtkMul = {}
+  for (const k in ALLY_ATK) allyAtkMul[k] = ALLY_ATK[k].mult * allyG(k)
+  const allyBuff = 1 + give.atk                    // 힐러: 히어로 공격력(동료 피해도 히어로 공격력 기준이라 같이 오른다)
+  const aspdMult = (BAL ? statVal('aspd') / 100 : 1 + Math.min(200, tot('aspd') * STAT_LIST.aspd.per) / 100)
+  const mspdMult = (BAL ? statVal('mspd') / 100 : 1 + Math.min(200, tot('mspd') * STAT_LIST.mspd.per) / 100)
+  const maxHp = (BAL ? HP_BASE * statVal('hp') : HP_BASE * (1 + tot('hp') * STAT_LIST.hp.per / 100)) * (1 + give.hp)
   // 열린 칸에 장착한 패시브의 효과값 { beast: 0.25, ... } — 강화 단계 반영
   const slotOpen = slotsOpen(evo)
   const pas = {}
@@ -1333,8 +1347,8 @@ export default function App() {
     mode: EVOS[evo].mode,
     evo,
     critRate: BAL ? statVal('critRate') / 100 : Math.min(1, tot('critRate') * STAT_LIST.critRate.per / 100),
-    critMult: (BAL ? statVal('critDmg') / 100 : 2 + tot('critDmg') * STAT_LIST.critDmg.per / 100) + (pas.crush || 0),
-    regen: BAL ? maxHp * statVal('regen') / 100 : tot('regen') * STAT_LIST.regen.per,
+    critMult: ((BAL ? statVal('critDmg') / 100 : 2 + tot('critDmg') * STAT_LIST.critDmg.per / 100) + (pas.crush || 0)) * (1 + give.critDmg),
+    regen: (BAL ? maxHp * statVal('regen') / 100 : tot('regen') * STAT_LIST.regen.per) + maxHp * give.regen,
     meatMult: (BAL ? statVal('meatUp') / 100 : 1 + tot('meatUp') * STAT_LIST.meatUp.per / 100) + (pas.hunter || 0),
     expMult: (BAL ? statVal('expUp') / 100 : 1 + tot('expUp') * STAT_LIST.expUp.per / 100) + (pas.expblessing || 0),
     acc: BAL ? statVal('acc') / 100 : tot('acc') * STAT_LIST.acc.per / 100,
@@ -1345,6 +1359,7 @@ export default function App() {
     skCfg,
     skEnh,
     slotOpen, pas,
+    skMul: 1 + give.skillDmg, dmgRed: give.dmgRed, allyAtkMul,
   }
 
   // 최대 체력이 오르면 오른 만큼 현재 체력도 같이 올린다(강화가 즉시 이득). 초과분은 클램프.
@@ -1575,7 +1590,7 @@ export default function App() {
       w.loot = w.loot || []
       const kinds = ['meat', 'meat', 'meat', 'exp', 'exp']
       if (Math.random() < DROP_DIA_P) kinds.push('dia')
-      if (Math.random() < DROP_MAT_P) kinds.push('mat')
+      if (Math.random() < DROP_MAT_P) { kinds.push('mat'); (w.matQ = w.matQ || [0, 0, 0, 0])[Math.floor(Math.random() * 4)]++ }
       const sx = Math.max(8, Math.min(w.W - 8, x))   // 스폰 x 화면 안쪽
       for (const k of kinds) w.loot.push({ k, x: sx + (Math.random() - 0.5) * 24, y, vx: (Math.random() - 0.5) * 170, vy: -(130 + Math.random() * 150), t: 0 })
     }
@@ -1649,7 +1664,7 @@ export default function App() {
     // noStop: 히트스톱 생략(관통 투사체의 2번째 이후 타격 등)
     function applySkillDmg(t, dmg, noStop, dot) {
       const _cs = S.current
-      dmg *= pasMult(t)
+      dmg *= pasMult(t) * (_cs.skMul || 1)
       if (Math.random() < (_cs.critRate || 0)) dmg *= (_cs.critMult || 1)   // 스킬도 치명타 (2026-10-21). 숫자 표시는 종전대로
       t.hp -= dmg
       // 독(지속 데미지): 시전이 끝나도 남아 간격마다 깎는다. 1틱 피해는 skDot()이 총 피해에서 미리 나눠 둔 값
@@ -1822,8 +1837,9 @@ export default function App() {
                 // 회피 판정: 적 명중률 − 내 회피 보너스
                 const hitChance = Math.max(0.05, e.acc + 0.5 - st.eva)
                 if (Math.random() < hitChance) {
-                  hero.hp -= e.dmg
-                  addDmg(w.heroX, w.groundY - 130, e.dmg, false, false, false, true)   // 받은 피해 표시
+                  const _din = e.dmg * (1 - (st.dmgRed || 0))                // 거인: 받는 피해 감소
+                  hero.hp -= _din
+                  addDmg(w.heroX, w.groundY - 130, _din, false, false, false, true)   // 받은 피해 표시
                   hero.flash = 0.28
                   w.shake = e.boss ? 9 : 4
                   w.heroKb = Math.max(w.heroKb || 0, e.boss ? 4 : 2)       // 히어로 넉백 (18/8 → 9/4 → 4/2)
@@ -2117,6 +2133,10 @@ export default function App() {
         if (w.killMeat) { const g = w.killMeat; w.killMeat = 0; setMeat(m => m + g) }
         if (w.qKill) { const n = w.qKill; w.qKill = 0; qEv('kill', n) }
         if (w.killExp) { const e = w.killExp; w.killExp = 0; setHexp(x => x + e) }
+        if (w.matQ && w.matQ.some(v => v > 0)) {                 // 동료 재료 지급(한 번에 모아서)
+          const mq = w.matQ; w.matQ = [0, 0, 0, 0]
+          setMats(m => { const n = [...m]; for (let i = 0; i < 4; i++) n[i] = (n[i] || 0) + mq[i]; return n })
+        }
         if (w.gainQueue && w.gainQueue.length) {
           const q = w.gainQueue; w.gainQueue = []
           setGains(g => [...g, ...q.map(x => ({ ...x, id: w.gainId = (w.gainId || 0) + 1, born: now }))].slice(-6))
@@ -2150,40 +2170,37 @@ export default function App() {
           }
         } else if (w._btShown !== -1) { w._btShown = -1; w._bhShown = -1; setBossUI(null) }
 
-        // ── 동료: 장착된 각 동료가 영웅 뒤에서 투사체 공격 ──
+        // ── 동료: 각자 자기 쿨타임으로 사거리 안 적을 공격 (2026-10-21 — 히어로 기본공격과 분리) ──
+        // 피해 = 히어로 공격력 × ALLY_ATK.mult × 성장 배율. 치명타·패시브는 dealDamage 에서 같이 적용된다
         if (st.phase === 'fighting') {
           for (const ak in ALLY_DEFS) {
             if (!st.alliesOn?.[ak]) continue
             const d = ALLY_DEFS[ak]
-            const au = w.allyU[ak] || (w.allyU[ak] = { state: 'walk', t: 0, rt: 0, animT: 0, thrown: false, seq: -1, hitIn: 0.3 })
+            const au = w.allyU[ak] || (w.allyU[ak] = { state: 'walk', t: 0, animT: 0, thrown: false, cdT: 0 })
             au.x = w.heroX + d.xOff
-            // 히어로가 공격을 시작하면 동료도 같은 프레임에 공격 개시 (버프형 제외)
-            if (d.kind !== 'buff' && hero.state === 'attack' && au.seq !== w.atkSeq) {
-              au.seq = w.atkSeq
-              au.state = 'atk'; au.t = 0; au.rt = 0; au.thrown = false
-              au.hitIn = w.heroHitIn || 0.3
+            const _aa = ALLY_ATK[ak]
+            if (_aa) {
+              au.cdT = Math.max(0, (au.cdT || 0) - dt)
+              if (au.state !== 'atk' && au.cdT <= 0 && w.enemies.some(e => !e.dead && e.x > au.x && e.x - au.x < d.range)) {
+                au.state = 'atk'; au.t = 0; au.thrown = false; au.cdT = _aa.cd
+              }
             }
             if (au.state === 'atk') {
-              au.t += dt * SPEED * st.aspdMult   // 공격 모션도 히어로 공속에 맞춤
-              au.rt += dt
+              au.t += dt * SPEED
+              const _amul = (st.allyAtkMul || {})[ak] || 0
               if (d.kind === 'melee') {
-                // 근접: 히어로 타격 순간에 맨 앞 적을 직접 타격
-                if (!au.thrown && au.rt >= au.hitIn) {
+                // 근접: 공격 모션 hitAt 초에 맨 앞 적을 직접 타격
+                if (!au.thrown && au.t >= (d.hitAt ?? d.atkDur * 0.5)) {
                   au.thrown = true
                   const tgt = w.enemies.find(e => !e.dead && e.x > au.x && e.x - au.x < d.range)
-                  if (tgt) dealDamage(tgt, { ...st, atk: st.atk * d.atkMult })
+                  if (tgt) dealDamage(tgt, { ...st, atk: st.atk * _amul })
                 }
               } else if (!au.thrown && au.t >= d.throwAt) {
                 au.thrown = true
                 const amb = motRef.current.ally[ak] || {}                    // 투사체 발사 위치 편집값
                 const lx = au.x + d.h * 0.4 + (amb.projX || 0)
                 const ly = w.groundY - d.h * d.projYr + (d.yOff || 0) + (amb.projY || 0)
-                const tgt = w.enemies.find(e => !e.dead && e.x > lx)
-                // 남은 시간에 맞춰 속도 역산 → 히어로 타격 순간에 명중
-                const remain = Math.max(0.05, au.hitIn - au.rt)
-                let spd = d.projSpd
-                if (tgt) spd = Math.min(2000, Math.max(200, (tgt.x - (26 + tgt.h * 0.2) - lx) / remain))
-                w.spears.push({ ally: ak, t: 0, x: lx, y: ly, spd })
+                w.spears.push({ ally: ak, t: 0, x: lx, y: ly, spd: d.projSpd, mul: _amul })
               }
               if (au.t >= d.atkDur) { au.state = 'walk'; au.t = 0 }
             } else if (!w._blocked && hero.state === 'move') {
@@ -2195,7 +2212,12 @@ export default function App() {
             sp2.t += dt
             sp2.x += (sp2.spd || d.projSpd) * dt
             const hit = w.enemies.find(e => !e.dead && Math.abs(e.x - sp2.x) < 26 + e.h * (e.dino ? (motRef.current.size[e.dino] || 1) : 1) * 0.2)
-            if (hit) { sp2.dead = true; dealDamage(hit, { ...st, atk: st.atk * d.atkMult }) }
+            if (hit) {
+              sp2.dead = true
+              const _sa = { ...st, atk: st.atk * (sp2.mul || 0) }
+              if ((ALLY_ATK[sp2.ally] || {}).aoe) { const hx = hit.x; for (const e of w.enemies) if (!e.dead && Math.abs(e.x - hx) < ALLY_AOE_R) dealDamage(e, _sa) }   // 주술사: 광역
+              else dealDamage(hit, _sa)
+            }
             else if (sp2.x > w.W + 80) sp2.dead = true
           }
           w.spears = w.spears.filter(sp2 => !sp2.dead)
@@ -3505,14 +3527,22 @@ export default function App() {
       })()}
 
       {allyPick && (() => {
-        const d = ALLY_DEFS[allyPick], cfg = ALLY_STAT[allyPick]
+        const d = ALLY_DEFS[allyPick]
         const lv = allyLv[allyPick] || 1, stg = allyEvo[allyPick] || 1
         const canEvo = lv >= ALLY_LV_MAX && stg < ALLY_EVO_MAX
-        const fmt = v => v >= 100 ? Math.round(v).toLocaleString() : (Math.round(v * 100) / 100)
-        const rows = (list, pct) => list.map(([nm, base, per]) => (
+        const G = allyGrowth(lv, stg), at = ALLY_ATK[allyPick], gv = ALLY_GIVE[allyPick] || {}
+        const pc = v => Math.round(v * 1000) / 10
+        const num = v => v >= 100 ? Math.round(v).toLocaleString() : (Math.round(v * 10) / 10)
+        const mi = ALLY_MAT[allyPick], cost = stg                       // 레벨업 1회 = 전용 재료 × 전직 단계
+        const canLv = lv < ALLY_LV_MAX && (DEBUG || (mats[mi] || 0) >= cost)
+        const selfRows = at
+          ? [['공격', `히어로 공격력의 ${pc(at.mult * G)}%`], ['현재 피해', num((S.current.atk || 0) * at.mult * G)], ['공격 주기', `${at.cd}초${at.aoe ? ' · 광역' : ''}`]]
+          : [['공격', '직접 공격 없음']]
+        const giveRows = Object.keys(gv).map(g => [ALLY_GIVE_LABEL[g], g === 'dmgRed' ? `-${pc(gv[g] * G / ALLY_G_MAX)}%` : `+${pc(gv[g] * G / ALLY_G_MAX)}%`])
+        const rows = list => list.map(([nm, v]) => (
           <div key={nm} data-edit="alstat" style={st.alRow}>
             <span style={st.alRowK}>{nm}</span>
-            <span style={st.alRowV}>{fmt(allyStatVal(base, per, lv, stg))}{pct ? '%' : ''}</span>
+            <span style={st.alRowV}>{v}</span>
           </div>
         ))
         return (
@@ -3525,17 +3555,21 @@ export default function App() {
             <div style={st.alBarOuter}><div style={{ ...st.alBarInner, width: (lv / ALLY_LV_MAX * 100) + '%' }} /></div>
 
             <div style={st.alSecT}>동료 능력치</div>
-            {rows(cfg.self, false)}
+            {rows(selfRows)}
             <div style={st.alSecT}>히어로에게 부여</div>
-            {rows(cfg.give, true)}
+            {rows(giveRows)}
 
             <div style={st.alBtns}>
-              <button data-edit="albtn" style={st.alBtn}
-                onClick={() => { if (!uiEdit) setAllyLv(v => ({ ...v, [allyPick]: Math.min(ALLY_LV_MAX, (v[allyPick] || 1) + 1) })) }}>레벨 +1</button>
+              <button data-edit="albtn" style={{ ...st.alBtn, opacity: canLv ? 1 : 0.4 }}
+                onClick={() => {
+                  if (uiEdit || !canLv) return
+                  if (!DEBUG) setMats(m => { const n = [...m]; n[mi] = (n[mi] || 0) - cost; return n })
+                  setAllyLv(v => ({ ...v, [allyPick]: Math.min(ALLY_LV_MAX, (v[allyPick] || 1) + 1) }))
+                }}>{lv >= ALLY_LV_MAX ? '최대 레벨' : <>레벨 +1<span style={{ display: 'block', fontSize: '0.8em', opacity: 0.85 }}>재료{mi + 1} ×{cost}</span></>}</button>
               <button data-edit="albtn" style={{ ...st.alBtn, opacity: canEvo ? 1 : 0.4 }}
                 onClick={() => { if (!uiEdit && canEvo) { setAllyEvo(v => ({ ...v, [allyPick]: stg + 1 })); setAllyLv(v => ({ ...v, [allyPick]: 1 })) } }}>전직</button>
             </div>
-            <div style={st.alHint}>레벨 {ALLY_LV_MAX} 달성 시 다음 단계로 전직합니다 (비용·재화는 추후)</div>
+            <div style={st.alHint}>레벨 {ALLY_LV_MAX} 달성 시 다음 단계로 전직할 수 있습니다 (전직 비용 없음)</div>
           </div>
         </div>
         )
