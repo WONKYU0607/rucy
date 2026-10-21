@@ -876,7 +876,7 @@ const QUEST_LIST = [
   [ // 업적 (계단식 무한 반복: 수령할 때마다 목표 +1, 매 수령 시 진주 지급. base=표시 시작값)
     { ev: 'levelup', name: '캐릭터 레벨업', base: 1, ric: '/ui/pearl.webp', rv: 10 },
     { ev: 'evolve', name: '캐릭터 진화', base: 1, max: 5, ric: '/ui/pearl.webp', rv: 100 },   // 진화는 5회가 끝
-    { ev: 'skill_enh', name: '스킬 강화', base: 0, ric: '/ui/gem.webp', rv: 100 },   // 진주로 주면 강화 비용(진주 10)이 그대로 돌아와 공짜가 됐다
+    { ev: 'skill_enh', name: '스킬 강화', base: 0, ric: '/ui/pearl.webp', rv: 10 },
     { ev: 'equip_enh', name: '장비 강화', base: 0, ric: '/ui/pearl.webp', rv: 10 },
     { ev: 'adv_clear', name: '모험 클리어', base: 0, ric: '/ui/pearl.webp', rv: 10 },
   ],
