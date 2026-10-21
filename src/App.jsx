@@ -1055,7 +1055,6 @@ export default function App() {
   const [equipTab, setEquipTab] = useState('무기')  // 장비 서브탭: 무기/방어구/유물
   const [detailItem, setDetailItem] = useState(null)  // 장비 상세창 { cat, i } | null
   const [skillDetail, setSkillDetail] = useState(null) // 스킬 상세창 index | null (UI 골격)
-  const [skillAuto, setSkillAuto] = useState({})       // 스킬별 AUTO 토글 (세션, 표시용)
   const [lootFly, setLootFly] = useState([])          // 재화칸으로 비행 중인 전리품 조각
   // 안전장치: 조각이 어떤 이유로든 안 지워지면 화면 구석에 반투명 점으로 박힌 채 남는다.
   // 도착 시간(0.62s)보다 넉넉히 지난 것은 주기적으로 강제 제거.
@@ -2863,8 +2862,8 @@ export default function App() {
   }
   // 스킬 카드 소환: 배운 스킬 중에서만 나온다
   function learnedSkills() {
-    // 카드 뽑기 풀 — 현재 진화 단계 이하 전부(B안). 진화할수록 풀이 넓어진다
-    return SKILLS.filter(k => k.passive || (k.stage >= 0 && k.stage <= evo))   // 패시브도 강화용 카드가 나온다
+    // 카드 뽑기 풀 — 지금 단계 액티브 6개 + 패시브 8개(2026-10-21). 이전 단계 스킬은 장착할 수 없어 카드가 쓸모없으므로 뺀다
+    return SKILLS.filter(k => k.passive || k.stage === evo)
   }
   const isOpen = id => {
     const k = SKILLS.find(x => x.id === id)
@@ -3292,7 +3291,6 @@ export default function App() {
         const s = SKILLS[skillDetail]
         const eqSlot = equipped.indexOf(skillDetail)
         const isEq = eqSlot >= 0
-        const auto = !!skillAuto[skillDetail]
         const ef = skEff(s, skCfg)                       // 현재 적용 중인 효과값(설정 > 코드 기본)
         return (
           <div style={st.dOverlay} onClick={e => { if (!uiEdit && e.target === e.currentTarget) setSkillDetail(null) }}>
@@ -3300,16 +3298,13 @@ export default function App() {
               <div style={st.skdHead}>
                 <div data-edit="skdicon" style={st.skdIconWrap}>
                   {skIcon(s, evo) ? <img src={skIcon(s, evo)} alt="" data-edit="skdimg" style={st.skdIconImg} /> : <span style={{ fontSize: 34 }}>{s.icon}</span>}
-                  <span style={st.skdLv}>Lv.1</span>
-                  <div style={st.skdMiniBar}><div style={{ ...st.skdMiniFill, width: '0%' }} /><div style={st.skdMiniTxt}>0/2</div></div>
+                  <span style={st.skdLv}>Lv.{skEnh[s.id] || 0}</span>
+                  <div style={st.skdMiniBar}><div style={{ ...st.skdMiniFill, width: (skEnh[s.id] || 0) >= SK_ENH_MAX ? '100%' : `${Math.min(100, (skCard[s.id] || 0) / CARD_ENH_CARDS * 100)}%` }} /><div style={st.skdMiniTxt}>{(skEnh[s.id] || 0) >= SK_ENH_MAX ? '최대' : `${skCard[s.id] || 0}/${CARD_ENH_CARDS}`}</div></div>
                 </div>
                 <div style={st.skdHeadMid}>
-                  <div data-edit="skdtitle" style={st.skdTitle}><span style={{ color: GRADE_COLOR['일반'] }}>[일반]</span> {s.name}</div>
+                  <div data-edit="skdtitle" style={st.skdTitle}><span style={{ color: s.passive ? '#c49bff' : '#7ce0ff' }}>[{s.passive ? '패시브' : '액티브'}]</span> {s.name}</div>
                   <div data-edit="skddesc" style={st.skdDesc}>{s.desc2 || '설명 준비 중'}</div>
                 </div>
-                <button data-edit="skdauto" style={{ ...st.skdAuto, ...(auto ? st.skdAutoOn : {}) }} onClick={() => { if (!uiEdit) setSkillAuto(a => ({ ...a, [skillDetail]: !a[skillDetail] })) }}>
-                  AUTO<span style={{ ...st.skdAutoDot, ...(auto ? st.skdAutoDotOn : {}) }} />
-                </button>
               </div>
               {s.passive ? (
               <div data-edit="skdeffect" style={st.skdEffect}>{passiveText(s.pkey, (PASSIVE_VAL[s.pkey] || 0) * skEnhMult(skEnh, s.id))}
@@ -3317,11 +3312,11 @@ export default function App() {
               ) : (
               <div data-edit="skdeffect" style={st.skdEffect}>{ef.aoe ? (ef.rangePx ? `${ef.rangePx}px 이내` : '화면 전체') + '의 적 모두에게' : '적 1명에게'}<br />공격력의 <b style={{ color: '#f0a830' }}>{Math.round(ef.dmgMult * skEnhMult(skEnh, s.id) * 100)}%</b>{skHits(s, motCfg) > 1 ? `를 ${skHits(s, motCfg)}회에 나눠 공격` : '로 1회 공격'}</div>
               )}
-              <div style={st.skdStatRow}>
-                <div data-edit="skdstat" style={st.skdStat}><span style={st.skdStatK}>필요공격수</span><span style={st.skdStatV}>—</span></div>
-                <div data-edit="skdstat" style={st.skdStat}><span style={st.skdStatK}>MP 소모</span><span style={st.skdStatV}>—</span></div>
-              </div>
-              {!s.passive && <div style={st.skdCfgBox}>
+              {!s.passive && <div style={st.skdStatRow}>
+                <div data-edit="skdstat" style={st.skdStat}><span style={st.skdStatK}>쿨타임</span><span style={st.skdStatV}>{ef.cd}초</span></div>
+                <div data-edit="skdstat" style={st.skdStat}><span style={st.skdStatK}>타격 수</span><span style={st.skdStatV}>{skHits(s, motCfg)}회</span></div>
+              </div>}
+              {!s.passive && IS_PC && DEBUG && <div style={st.skdCfgBox}>
                 {(() => {
                   const put = (k, v) => setSkCfg(c => ({ ...c, [s.id]: { ...(c[s.id] || {}), [k]: v } }))
                   const row = (label, val, onMinus, onPlus, extra) => (
@@ -3947,8 +3942,6 @@ export default function App() {
           <div style={st.skillFixed}>
           <div style={st.skHeadRow}>
             <div data-edit="skhtitle" style={st.skHeadTitle}>스킬</div>
-            <button data-edit="skfuse" style={st.skHeadBtn} onClick={() => { /* TODO: 스킬 합성 */ }}>합성</button>
-            <button data-edit="sklearn" style={{ ...st.skHeadBtn, ...st.skLearnBtn }} onClick={() => { /* TODO: 스킬 배우기 */ }}>스킬 배우기</button>
           </div>
           </div>
           <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.skillScroll}>
