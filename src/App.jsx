@@ -204,7 +204,21 @@ const ADV_STAGES = 10          // 대륙당 탐험 단계 수
 const ADV_ORDER = ['africa', 'middle_east', 'europe', 'oceania', 'asia', 'greenland', 'south_america', 'north_america']
 const ADV_COST_RUBY = 1        // 진입 1회당 루비 소모
 const advReward = st => ({ dia: 50 * st, mat: 10 * st })   // 단계별 보상 (임시 수치)
-const ADV_TIME = 60            // 모험 제한시간(초)
+// 밸런싱 모드 모험 난이도 (2026-10-22): 대륙(ADV_ORDER 순)·단계마다 '웨이브 몇'의 몹·보스와 같은 세기.
+// ADV_WAVE[대륙번호×10 + 단계-1] — 8일째(1번 대륙 1단계) ~ 216일째(8번 대륙 10단계)에 깨지도록 시뮬레이션으로 맞춤(하루 3번×15분 기준)
+const ADV_WAVE = [
+  1187, 1429, 1641, 1851, 2073, 2251, 2396, 2547, 2732, 2929,
+  3112, 3267, 3451, 3667, 3859, 4061, 4283, 4471, 4618, 4742,
+  4853, 4996, 5124, 5233, 5367, 5462, 5570, 5660, 5780, 5907,
+  6022, 6138, 6254, 6366, 6476, 6590, 6742, 6883, 7010, 7147,
+  7263, 7387, 7495, 7600, 7710, 7822, 7937, 8043, 8151, 8253,
+  8364, 8471, 8582, 8699, 8897, 9068, 9217, 9352, 9532, 9682,
+  9810, 9923, 10064, 10187, 10301, 10400, 10496, 10590, 10692, 10792,
+  10876, 10964, 11048, 11125, 11201, 11274, 11342, 11422, 11500, 11575,
+]
+const advWave = (key, st) => ADV_WAVE[Math.max(0, ADV_ORDER.indexOf(key)) * ADV_STAGES + Math.min(ADV_STAGES, Math.max(1, st || 1)) - 1]
+const ADV_MOB_DMG = 0.1        // 모험 일반몹 공격력 = 같은 웨이브 보스의 10%
+const ADV_TIME = 90            // 모험 제한시간(초) — 60초는 몹이 아무리 약해도 걷는 시간 때문에 50마리를 못 잡았다(2026-10-21 실측)
 const ADV_MOBS = 50            // 보스 등장 전 처치해야 할 일반몹 수
 const ADV_WARN = 2.0           // 보스 등장 경고 연출 시간(초)
 // ── 공격 타이밍 ──────────────────────────────────────────────
@@ -488,8 +502,8 @@ const equipImg = (cat, i) => `${CAT_DIR[cat]}${pad2(i)}.webp`
 const GACHA_CATS = { 무기: {}, 방어구: {}, 유물: {} }   // 3 카테고리, 각 30개 동일 규격
 const GACHA_COST = { 1: 10, 10: 100, 30: 300 }
 const CARD_COST = { 1: 10, 10: 100 }          // 스킬 카드 소환 비용(다이아)
-const ADV_OPEN_WAVE = 100                     // 모험 개방 — 최고 웨이브 도달 조건
-const ALLY_OPEN_WAVE = 200                    // 동료 개방 — 최고 웨이브 도달 조건
+const ADV_OPEN_WAVE = BAL ? 1030 : 100       // 모험 개방 — 최고 웨이브 도달 조건 (밸런싱: 8일째쯤, 2026-10-22)
+const ALLY_OPEN_WAVE = BAL ? 2110 : 200      // 동료 개방 — 최고 웨이브 도달 조건 (밸런싱: 25일째쯤, 2026-10-22)
 // 진화 단계별 기본 해금 스킬(단계당 1개). 스킬 목록에서도 맨 앞에 온다
 const SK_FREE = [7, 18, 24, 32, 38, 43]       // 0 할퀴기 · 1 바위치기(강화) · 2 암흑 강타 · 3 얼음도끼 · 4 난도질 · 5 피의 십자가
 const skFreeInit = () => Object.fromEntries(SK_FREE.map(id => [id, 1]))
@@ -590,8 +604,10 @@ const gearSrc = (cat, n) => `${CAT_DIR[cat]}${n}.webp`
 
 // ── 오프라인 보상 설정 (직접 수정 가능) ─────────────────────────
 const OFFLINE_MIN_SEC = 0           // 부재 시간 조건 없음 (잠깐 나갔다 와도 지급)
-const OFFLINE_CAP_SEC = 4 * 3600    // 최대 인정 시간 (4시간) — 2026-10-21 8시간에서 낮춤(방치 비중 90%→83%)
+const OFFLINE_CAP_SEC = 4 * 3600    // 최대 인정 시간 (4시간) — 2026-10-21 8시간에서 낮춤
 const OFFLINE_RATE = 0.5            // 온라인 대비 효율 (50%)
+// 밸런싱 모드 오프라인 처치 수 = 부재 시간 × 50% × '최근 온라인 처치 속도'(일반 웨이브를 깬 속도의 이동평균, 세이브에 저장).
+// 예전엔 기본공격 DPS로만 계산해서, 스킬이 피해 대부분을 내는 후반엔 오프라인 보상이 0에 가까웠다(2026-10-21)
 
 const SKILLS = SKILL_SHEET.map(c => {
   const len = c.charSeq ? c.charSeq.length : c.n
@@ -826,7 +842,33 @@ const EV_EXTS = ['jpg', 'png', 'jpeg', 'webp', '']   // 순서대로 실제 로�
 const EV_STAGES = 10           // 던전 보스당 단계 수 (도전창 10칸 바)
 const EV_REWARD = { dia: 3000, pearl: 100 }   // 클리어 보상: 다이아 / 강화 진주 — 처음 깨는 단계만(이미 깬 단계는 다시 못 들어간다)
 const EV_DAILY = 3             // 이벤트 던전 하루 입장 횟수(던전마다, 자정 리셋)
-const evMult = st => 1 + 0.3 * (st - 1)       // 단계 배율 (1단계 1.0 → 10단계 3.7)
+const evMult = st => 1 + 0.3 * (st - 1)       // 단계 배율 (1단계 1.0 → 10단계 3.7) — 디버그 모드 전용
+// 밸런싱 모드 이벤트 던전 난이도 (2026-10-22): EV_WAVE[(보스 번호-1)×10 + 단계-1] = 그 웨이브 보스와 같은 공식.
+// 제한이 60초(웨이브 보스의 3배)라 체력만 EV_HP_X 배. 1일째(1번 1단계) ~ 216일째(20번 10단계), 하루 3번×15분 기준
+const EV_WAVE = [
+  488, 581, 690, 767, 866, 933, 1036, 1167, 1259, 1360,
+  1446, 1540, 1626, 1696, 1790, 1894, 1973, 2064, 2140, 2215,
+  2272, 2332, 2393, 2458, 2521, 2593, 2670, 2743, 2823, 2911,
+  2994, 3065, 3116, 3180, 3259, 3337, 3412, 3515, 3595, 3671,
+  3740, 3829, 3913, 4005, 4086, 4180, 4267, 4353, 4425, 4494,
+  4552, 4604, 4655, 4705, 4749, 4795, 4856, 4910, 4968, 5022,
+  5074, 5118, 5166, 5210, 5261, 5324, 5369, 5406, 5447, 5492,
+  5534, 5574, 5613, 5643, 5692, 5754, 5794, 5856, 5905, 5951,
+  5999, 6044, 6093, 6145, 6192, 6236, 6281, 6331, 6370, 6421,
+  6463, 6503, 6561, 6626, 6687, 6742, 6804, 6862, 6917, 6964,
+  7024, 7073, 7133, 7178, 7225, 7287, 7337, 7375, 7417, 7466,
+  7508, 7552, 7595, 7644, 7687, 7733, 7778, 7825, 7871, 7924,
+  7966, 8008, 8054, 8099, 8140, 8187, 8224, 8270, 8316, 8360,
+  8403, 8449, 8495, 8540, 8582, 8630, 8690, 8736, 8854, 8934,
+  9000, 9064, 9127, 9188, 9246, 9298, 9375, 9448, 9512, 9575,
+  9635, 9697, 9744, 9795, 9841, 9888, 9945, 10005, 10057, 10110,
+  10159, 10205, 10254, 10297, 10339, 10378, 10419, 10457, 10495, 10535,
+  10572, 10620, 10658, 10702, 10738, 10782, 10819, 10849, 10887, 10925,
+  10956, 10990, 11026, 11056, 11087, 11123, 11151, 11183, 11213, 11243,
+  11272, 11300, 11329, 11359, 11393, 11430, 11461, 11490, 11523, 11552,
+]
+const evWave = (no, st) => EV_WAVE[(Math.min(20, Math.max(1, no)) - 1) * EV_STAGES + Math.min(EV_STAGES, Math.max(1, st || 1)) - 1]
+const EV_HP_X = 3
 const EV_TIME = 60             // 이벤트 던전 제한시간(초)
 const EV_WARN = 2.0            // 보스 등장 경고 연출 시간(초)
 const EV_BG = {}               // 던전별 배경 — 확장자를 순서대로 실제 로드 시도(추측 금지)
@@ -864,7 +906,7 @@ const QUEST_LIST = [
     { ev: 'fuse', name: '장비 융합', goal: 10, ric: '/ui/ruby.webp', rv: 1 },
   ],
   [ // 반복 퀘스트 (수령 시 레벨↑ + 초과분 이월, 무한 반복)
-    { ev: 'stage', name: '스테이지 클리어', goal: 1, ric: '/ui/gem.webp', rv: 100 },
+    { ev: 'stage', name: '스테이지 클리어', goal: 1, ric: '/ui/gem.webp', rv: BAL ? 10 : 100 },   // 밸런싱 100 → 10 (2026-10-22)
     { ev: 'kill', name: '몬스터 처치', goal: 500, ric: '/ui/gem.webp', rv: 50 },
     { ev: 'skill_get', name: '스킬 획득', goal: 1, ric: '/ui/gem.webp', rv: 100 },
     { ev: 'summon', name: '장비 소환', goal: 30, ric: '/ui/gem.webp', rv: 100 },
@@ -902,14 +944,58 @@ const STAT_LIST = {
   mspd:     { name: '이동 속도',    icon: '👟', per: 0.1, suffix: '%', cost: 25, growth: 1.18, cap: 200 },
 }
 // ── 밸런싱 모드 전용 수치 (BAL=true 일 때만 사용, 디버그 버전은 위 옛 값 그대로) ──
+// 2026-10-22 일정(원래 경험치 방식, 1.2배 더디게): 일반 웨이브는 쉽게 계속 깨 나가고, 어려운 건 보스·이벤트 던전·모험.
+// 하루 3번×15분 기준 진화 3/12/29/61/210일째, 180일째 웨이브 약 8,800 (시뮬레이션 flat13_S12h — 보스 공격 횟수·웨이브 시간은 실제 게임 실측값)
 const B = {
-  hp0: 3, hpR: 1.14,          // 일반몹 체력 3 × 1.14^(웨이브-1) — 진화·장비·동료·치명타의 곱을 흡수
-  meat0: 5, expo0: 1, rwR: 1.10,   // 처치 고기 5 / 경험치 1 — 증가율 1.10 (체력 1.14와 별개, 이 격차를 성장수단이 메운다)
-  bossHpX: 10,                // 보스 체력 = 그 웨이브 일반몹 × 10
-  bossDmg0: 3, bossDmgR: 1.14,// 보스 공격력 3 × 1.14^(웨이브-10) — 체력과 같은 비율
+  hp0: 3, hpR: 1.01,          // 일반몹 체력 3 × 1.01^(웨이브-1) — 웨이브는 막히지 않게 완만하게
+  meat0: 5, expo0: 1, rwR: 1.01,   // 처치 고기 5 / 경험치 1 — 증가율 1.01
+  bossHpX: 10, bossHpG: 1.003,// 보스 체력 = 그 웨이브 일반몹 × 10 × 1.003^(웨이브-1) × 날짜 보정(BOSS_X)
+  bossDmg0: 3, bossDmgR: 1.01,// 보스 공격력 3 × 1.01^(웨이브-10)
   bossMeat0: 70,              // 보스 고기 70 × rwR^(웨이브-10)
   atk0: 1, hp0Hero: 10, atkR: 1.08, hpR_Hero: 1.08,   // 히어로 기본·레벨당 배율
 }
+// 보스 체력 날짜 보정표 [웨이브, ln 배율] — 구간 사이는 ln 을 선형 보간, 끝 이후는 마지막 기울기로 연장.
+// 460웨이브(2일째)까지는 보정 없음(초반은 쭉쭉), 그 뒤로 하루 3번×15분 하는 사람이 날짜표대로 도착하게 맞춘 값
+const BOSS_X = [
+  [1, 0], [460, 0], [600, 14.644], [680, 16.577], [760, 18.067], [840, 17.942], [920, 17.799], [1000, 17.799],
+  [1075, 17.777], [1150, 17.821], [1225, 17.775], [1300, 18.111], [1375, 19.59], [1450, 19.999], [1525, 20.027], [1600, 20.453],
+  [1655, 20.518], [1710, 20.461], [1765, 21.081], [1820, 21.026], [1875, 20.882], [1930, 20.746], [1985, 20.651], [2040, 20.587],
+  [2095, 20.563], [2150, 20.92], [2205, 20.835], [2260, 21.175], [2315, 21.133], [2370, 21.016], [2425, 22.144], [2480, 23.043],
+  [2535, 23.199], [2590, 23.221], [2645, 23.25], [2700, 23.852], [2750, 23.801], [2800, 23.797], [2850, 23.745], [2900, 23.735],
+  [2950, 23.61], [3000, 24.008], [3050, 23.939], [3100, 23.862], [3150, 23.817], [3200, 23.712], [3250, 23.681], [3300, 23.909],
+  [3350, 24.107], [3400, 24.072], [3450, 23.936], [3500, 23.78], [3550, 23.739], [3600, 23.62], [3650, 23.467], [3700, 23.226],
+  [3750, 23.138], [3800, 23.005], [3850, 22.839], [3900, 22.768], [3950, 22.696], [4000, 22.707], [4050, 22.715], [4100, 22.958],
+  [4150, 22.885], [4200, 22.855], [4250, 22.785], [4300, 22.679], [4350, 22.59], [4400, 22.986], [4450, 23.499], [4500, 23.493],
+  [4541.667, 23.594], [4583.333, 23.539], [4625, 23.493], [4666.667, 23.435], [4708.333, 23.446], [4750, 23.392], [4791.667, 23.334], [4833.333, 23.274],
+  [4875, 23.215], [4916.667, 23.137], [4958.333, 23.078], [5000, 23.321], [5041.667, 23.228], [5083.333, 23.15], [5125, 23.068], [5166.667, 22.963],
+  [5208.333, 22.893], [5250, 22.75], [5291.667, 23.152], [5333.333, 23.081], [5375, 22.999], [5416.667, 22.944], [5458.333, 22.865], [5500, 22.707],
+  [5541.667, 22.632], [5583.333, 22.531], [5625, 22.384], [5666.667, 22.31], [5708.333, 22.172], [5750, 22.093], [5791.667, 21.934], [5833.333, 21.856],
+  [5875, 21.769], [5916.667, 21.623], [5958.333, 21.547], [6000, 21.387], [6041.667, 21.297], [6083.333, 21.152], [6125, 21.001], [6166.667, 21.312],
+  [6208.333, 21.244], [6250, 21.098], [6291.667, 21.006], [6333.333, 20.852], [6375, 20.773], [6416.667, 20.619], [6458.333, 20.562], [6500, 20.413],
+  [6541.667, 20.321], [6583.333, 20.168], [6625, 20.105], [6666.667, 19.952], [6708.333, 19.814], [6750, 19.735], [6791.667, 19.584], [6833.333, 19.512],
+  [6875, 19.371], [6916.667, 19.305], [6958.333, 19.152], [7000, 19.009], [7041.667, 18.952], [7083.333, 19.146], [7125, 19.104], [7166.667, 18.971],
+  [7208.333, 18.836], [7250, 18.789], [7291.667, 18.655], [7333.333, 18.605], [7375, 18.469], [7416.667, 18.337], [7458.333, 18.288], [7500, 18.154],
+  [7536.111, 18.102], [7572.222, 18.031], [7608.333, 17.978], [7644.444, 17.908], [7680.556, 17.844], [7716.667, 17.774], [7752.778, 17.632], [7788.889, 17.577],
+  [7825, 17.503], [7861.111, 17.367], [7897.222, 17.304], [7933.333, 17.237], [7969.444, 17.438], [8005.556, 17.288], [8041.667, 17.223], [8077.778, 17.157],
+  [8113.889, 17.01], [8150, 16.944], [8186.111, 17.265], [8222.222, 17.104], [8258.333, 17.038], [8294.444, 16.961], [8330.556, 16.812], [8366.667, 16.738],
+  [8402.778, 16.653], [8438.889, 16.513], [8475, 16.439], [8511.111, 16.354], [8547.222, 16.215], [8583.333, 16.136], [8619.444, 16.061], [8655.556, 15.91],
+  [8691.667, 15.833], [8727.778, 15.763], [8763.889, 15.614], [8800, 15.537], [8833.333, 15.497], [8866.667, 15.211], [8900, 15.176], [8933.333, 15.053],
+  [8966.667, 14.931], [9000, 14.893], [9033.333, 14.78], [9066.667, 14.661], [9100, 14.623], [9133.333, 14.505], [9166.667, 14.388], [9200, 14.349],
+  [9233.333, 14.23], [9266.667, 14.117], [9300, 14.078], [9333.333, 13.954], [9366.667, 13.844], [9400, 13.802], [9433.333, 13.681], [9466.667, 13.574],
+  [9500, 13.527], [9533.333, 13.407], [9566.667, 13.293], [9600, 13.177], [9633.333, 13.132], [9666.667, 13.022], [9700, 12.842], [9733.333, 13.539],
+  [9766.667, 13.916], [9800, 13.877], [9833.333, 13.768], [9866.667, 13.657], [9900, 13.626], [9933.333, 13.515], [9966.667, 13.406], [10000, 13.367],
+  [10500, 12.096], [11000, 11.152], [11500, 10.209], [12000, 9.265], [12500, 8.321], [13000, 7.378], [13500, 6.434], [14000, 5.491],
+  [14500, 4.547], [15000, 3.604], [15500, 2.66], [16000, 1.717],
+]
+const bossXln = w => {
+  const T = BOSS_X
+  if (w <= T[0][0]) return T[0][1]
+  for (let i = 1; i < T.length; i++) if (w <= T[i][0]) { const [w0, l0] = T[i - 1], [w1, l1] = T[i]; return l0 + (l1 - l0) * (w - w0) / (w1 - w0) }
+  const [w0, l0] = T[T.length - 2], [w1, l1] = T[T.length - 1]
+  return l1 + (l1 - l0) / (w1 - w0) * (w - w1)
+}
+// 웨이브 w 보스 체력 — ln 으로 계산(큰 웨이브에서 중간값이 넘치지 않게)
+const bossHpAt = w => Math.exp(Math.log(B.hp0 * B.bossHpX) + (w - 1) * Math.log(B.hpR * B.bossHpG) + bossXln(w))
 // 고기 강화 9종 / 스킬포인트 11종 — 획득량 2종은 스킬포인트로만
 const STAT_BAL = {
   atk:      { name: '공격력',       cost: 10,  growth: 1.08, mult: 1.08 },
@@ -918,7 +1004,6 @@ const STAT_BAL = {
   critRate: { name: '치명타 확률',  cost: 500, growth: 1.12, per: 0.1,  suffix: '%', cap: 100 },
   critDmg:  { name: '치명타 공격력', cost: 500, growth: 1.12, per: 1,   suffix: '%', base: 150 },
   acc:      { name: '명중률',       cost: 500, growth: 1.12, per: 0.1,  suffix: '%', base: 1, cap: 100 },
-  eva:      { name: '회피율',       cost: 500, growth: 1.12, per: 0.1,  suffix: '%', base: 1, cap: 100 },
   aspd:     { name: '공격 속도',    cost: 500, growth: 1.12, per: 0.1,  suffix: '%', base: 100, cap: 200 },
   mspd:     { name: '이동 속도',    cost: 500, growth: 1.12, per: 0.1,  suffix: '%', base: 100, cap: 200 },
   meatUp:   { name: '고기 획득량',  cost: 500, growth: 1.12, per: 1, suffix: '%', base: 100, cap: 1000, spOnly: true },
@@ -948,20 +1033,21 @@ const buyCost = (k, lv) => Math.floor(SL(k).cost * Math.pow(SL(k).growth, lv))
 
 // 히어로 레벨업 필요 경험치
 // 영웅 레벨업 요구 경험치 — 밸런싱 모드는 10 × 1.12^(레벨−1) (레벨업당 스킬포인트 3점은 그대로)
-const heroExpReq = lv => Math.floor(BAL ? 10 * Math.pow(1.16, lv - 1) : 50 * Math.pow(1.18, lv - 1))
+const heroExpReq = lv => Math.floor(BAL ? 10 * Math.pow(1.113, lv - 1) : 50 * Math.pow(1.18, lv - 1))   // 밸런싱 1.16 → 1.113 (2026-10-22)
 
 
 // mode: quad = 4족 질주 + 주먹질 / biped = 직립 보행 + 돌 던지기
 const EVOS = [
   // mult = 히어로 공격력 배수. 1/3/27/81/243/729 → 1/3/5/10/30/50 으로 축소(2026-08-12)
   // 밸런싱 모드 진화 조건은 히어로 레벨만 본다(lv). 고기(cost)는 디버그 모드 전용
-  //   Lv.100 → 웨이브 113쯤(강화만 했을 때). 스킬·장비·동료가 붙으면 더 빨라진다
+  //   진화 레벨 100/200/300/500/1000 고정(2026-10-22). 배율은 단계마다 ×15 — 진화하면 스킬이 기본 1개로 돌아가
+  //   스킬 세기가 8~14배 떨어지는 것(실측)을 메운다. 밸런싱 모드만, 디버그 모드는 예전 배율
   { name: '오스트랄로피테쿠스 (4족보행)', mult: 1, mode: 'quad' },
-  { name: '오스트랄로피테쿠스 (직립보행)', mult: 3, cost: 1500, lv: 100, mode: 'biped' },
-  { name: '호모 에렉투스', mult: 6, cost: 300000, lv: 200, mode: 'erectus' },
-  { name: '호모 네안데르탈인', mult: 9, cost: 3000000, lv: 300, mode: 'neander' },
-  { name: '호모 사피엔스', mult: 15, cost: 30000000, lv: 400, mode: 'sapiens' },
-  { name: '인간', mult: 30, cost: 300000000, lv: 500, mode: 'human' },
+  { name: '오스트랄로피테쿠스 (직립보행)', mult: BAL ? 15 : 3, cost: 1500, lv: 100, mode: 'biped' },
+  { name: '호모 에렉투스', mult: BAL ? 225 : 6, cost: 300000, lv: 200, mode: 'erectus' },
+  { name: '호모 네안데르탈인', mult: BAL ? 3375 : 9, cost: 3000000, lv: 300, mode: 'neander' },
+  { name: '호모 사피엔스', mult: BAL ? 50625 : 15, cost: 30000000, lv: 500, mode: 'sapiens' },
+  { name: '인간', mult: BAL ? 759375 : 30, cost: 300000000, lv: 1000, mode: 'human' },
 ]
 
 // ── 액티브 스킬 레벨 해금 (밸런싱 모드, 2026-10-21) ──
@@ -1037,6 +1123,7 @@ function loadSave() {
       gem: s.gem ?? 0, inv: s.inv && typeof s.inv === 'object' ? s.inv : {}, best: s.best ?? s.wave ?? 1,
       evStage: s.evStage && typeof s.evStage === 'object' ? s.evStage : {},
       evDay: s.evDay && typeof s.evDay === 'object' && s.evDay.n ? s.evDay : { day: '', n: {} },
+      killRate: typeof s.killRate === 'number' && s.killRate > 0 ? s.killRate : 0,
       gachaLv: s.gachaLv && typeof s.gachaLv === 'object' ? s.gachaLv : { 무기: 1, 방어구: 1, 유물: 1 },
       gachaCnt: s.gachaCnt && typeof s.gachaCnt === 'object' ? s.gachaCnt : { 무기: 0, 방어구: 0, 유물: 0 },
       gachaRw: s.gachaRw && typeof s.gachaRw === 'object' ? s.gachaRw : {},
@@ -1052,9 +1139,17 @@ function loadSave() {
       pearl: typeof s.pearl === 'number' ? s.pearl : 0, quest: s.quest && typeof s.quest === 'object' && s.quest.ev ? questMig(s.quest) : questInit(),
     }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, skCfg: {}, alliesOn: {}, allyEvo: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, allyLv: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, nick: 'Slayer_' + Math.floor(Math.random() * 9000000 + 1000000), mats: [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, advStage: {}, pearl: 0, evStage: {}, evDay: { day: '', n: {} }, gachaLv: { 무기: 1, 방어구: 1, 유물: 1 }, gachaCnt: { 무기: 0, 방어구: 0, 유물: 0 }, gachaRw: {}, skCard: {}, skEnh: {}, skOpen: BAL ? skFreeInit() : Object.fromEntries(SKILLS.map(k => [k.id, 1])), quest: questInit() }
+  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, skCfg: {}, alliesOn: {}, allyEvo: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, allyLv: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, nick: 'Slayer_' + Math.floor(Math.random() * 9000000 + 1000000), mats: BAL ? [0, 0, 0, 0, 0] : [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, killRate: 0, advStage: {}, pearl: 0, evStage: {}, evDay: { day: '', n: {} }, gachaLv: { 무기: 1, 방어구: 1, 유물: 1 }, gachaCnt: { 무기: 0, 방어구: 0, 유물: 0 }, gachaRw: {}, skCard: {}, skEnh: {}, skOpen: BAL ? skFreeInit() : Object.fromEntries(SKILLS.map(k => [k.id, 1])), quest: questInit() }
 }
-const fmt = n => n >= 1e8 ? (n/1e8).toFixed(1)+'억' : n >= 1e4 ? (n/1e4).toFixed(1)+'만' : Math.floor(n).toLocaleString()
+// 큰 숫자: 만(10^4)부터 4자리마다 한 단위, 무량대수(10^68)를 넘으면 지수 표기
+const NUM_UNITS = ['', '만', '억', '조', '경', '해', '자', '양', '구', '간', '정', '재', '극', '항하사', '아승기', '나유타', '불가사의', '무량대수']
+const fmt = n => {
+  if (!(n >= 1e4)) return Math.floor(n).toLocaleString()
+  if (!isFinite(n)) return '∞'
+  const k = Math.floor(Math.log10(n) / 4)
+  if (k >= NUM_UNITS.length) return n.toExponential(2).replace('e+', 'e')
+  return (n / 10 ** (4 * k)).toFixed(1) + NUM_UNITS[k]
+}
 const fmtPct = v => v >= 10000 ? fmt(Math.round(v)) : (Math.round(v * 10) / 10).toString()
 
 export default function App() {
@@ -1278,6 +1373,7 @@ export default function App() {
   const [offReward, setOffReward] = useState(null) // 오프라인 보상 대기(pending)
   const [offOpen, setOffOpen] = useState(false)    // 오프라인 보상 창 열림
   const offDone = useRef(false)
+  const killRate = useRef(init.killRate || 0)      // 최근 온라인 처치 속도(마리/초) — 오프라인 보상 계산용
 
   // 오프라인 보상: 부재 시간 동안 나갈 당시 웨이브에서 무한 전투한 것으로 계산
   useEffect(() => {
@@ -1297,7 +1393,9 @@ export default function App() {
     // 마리당 처치+접근 시간. 상한·하한 없음 — 세면 많이, 약하면 적게(실제 전투와 일치).
     // min(6)이 있으면 못 잡는 웨이브에서도 6초에 한 마리를 쳐줘서 '높은 웨이브에 두는 게 항상 이득'이 된다.
     const killT = avgHp / Math.max(1, dps) + 1.2
-    const kills = Math.max(1, Math.floor(away * OFFLINE_RATE / killT))   // 짧게 나갔다 와도 최소 1마리
+    const kills = Math.max(1, Math.floor(BAL && killRate.current > 0
+      ? away * OFFLINE_RATE * killRate.current       // 실제 온라인 처치 속도 기준(스킬·동료 포함)
+      : away * OFFLINE_RATE / killT))                // 기록이 아직 없으면 예전 식(기본공격)
     const gm = Math.floor(kills * avgMeat * st2.meatMult)
     const ge = Math.floor(kills * avgExp * st2.expMult)
     const mins = Math.max(1, away / 60)
@@ -1376,7 +1474,7 @@ export default function App() {
     meatMult: (BAL ? statVal('meatUp') / 100 : 1 + tot('meatUp') * STAT_LIST.meatUp.per / 100) + (pas.hunter || 0) + gearSub.gain / 100,
     expMult: (BAL ? statVal('expUp') / 100 : 1 + tot('expUp') * STAT_LIST.expUp.per / 100) + (pas.expblessing || 0) + gearSub.gain / 100,
     acc: BAL ? statVal('acc') / 100 : tot('acc') * STAT_LIST.acc.per / 100,
-    eva: BAL ? statVal('eva') / 100 : tot('eva') * STAT_LIST.eva.per / 100,
+    eva: BAL ? 0 : tot('eva') * STAT_LIST.eva.per / 100,   // 밸런싱 모드는 회피 없음(2026-10-21) — 회피로 보스 한 방을 피해 체력을 안 올려도 넘어가서 뺐다
     equipped,
     // 패시브 효과는 위 pas(열린 칸에 장착한 것만)로 계산해 critMult·meatMult·expMult와 전투 루프(pasMult·쿨타임 회복)에 반영한다.
     equippedPassives: (equipped || []).filter(si => si != null && SKILLS[si] && SKILLS[si].passive),
@@ -1403,7 +1501,7 @@ export default function App() {
   const cloudBusy = useRef(false)   // 어댑트/불러오기 중 로컬 저장 차단
   useEffect(() => {
     if (cloudBusy.current) return
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, skCfg, skCfgV: 3, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, evDay, gachaLv, gachaCnt, gachaRw, skCard, skEnh, skOpen, quest, ts: Date.now() }))
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, skCfg, skCfgV: 3, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, evDay, gachaLv, gachaCnt, gachaRw, skCard, skEnh, skOpen, quest, killRate: killRate.current, ts: Date.now() }))
   }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, skCfg, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, evDay, gachaLv, gachaCnt, gachaRw, skCard, skEnh, skOpen, quest])
 
   // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제 — 패시브는 단계 공용이라 유지(예전엔 stage -1이라 불러올 때마다 빠졌음)
@@ -1489,6 +1587,7 @@ export default function App() {
       w.bsOn = false
       w.waveNum = n
       w.clearedFlag = false
+      w.waveT0 = w.clk || 0            // 처치 속도 측정용(일시정지 제외 실제 시간)
     }
 
     function startAdventure(cfg) {
@@ -1520,11 +1619,14 @@ export default function App() {
       const t = ENEMY_TYPES[key]
       const wv = c.no * 10
       const sc = (1 + 0.4 * (wv - 1)) * 12 * (c.mult || 1)
+      const bw = BAL ? evWave(c.no, c.stage) : 0      // 밸런싱 모드: 표의 웨이브 보스와 같은 공식(체력만 ×EV_HP_X)
+      const bHp = BAL ? bossHpAt(bw) * EV_HP_X : t.hp * sc
       w.enemies.push({
-        type: key, evBoss: c.no, boss: true, x: w.W + 40, hp: t.hp * sc, maxHp: t.hp * sc,
-        speed: t.speed * 0.6, dmg: t.dmg * (1 + 0.1 * (wv - 1)) * 3 * (c.mult || 1),
-        meat: Math.floor(t.meat * (1 + 0.2 * (wv - 1))) * 15, exp: Math.floor(t.exp * (1 + 0.2 * (wv - 1))) * 15,
-        acc: t.acc, eva: t.eva, air: 0, atkT: 0,
+        type: key, evBoss: c.no, boss: true, x: w.W + 40, hp: bHp, maxHp: bHp,
+        speed: t.speed * 0.6, dmg: BAL ? B.bossDmg0 * B.bossDmgR ** (bw - 10) : t.dmg * (1 + 0.1 * (wv - 1)) * 3 * (c.mult || 1),
+        meat: BAL ? B.bossMeat0 * B.rwR ** (bw - 10) : Math.floor(t.meat * (1 + 0.2 * (wv - 1))) * 15,
+        exp: BAL ? B.bossMeat0 * B.rwR ** (bw - 10) : Math.floor(t.exp * (1 + 0.2 * (wv - 1))) * 15,
+        acc: BAL ? 0.15 : t.acc, eva: BAL ? 0.05 : t.eva, air: 0, atkT: 0,
         h: (BOSS_TYPES[c.no - 1] || {}).h || 130, color: t.color, cd: 0, flash: 0, animT: 0,
         scaleV: 1, yOff: 0, spdV: 1,
       })
@@ -1553,14 +1655,18 @@ export default function App() {
       const key = WAVE_CYCLE[(a.wave - 1) % WAVE_CYCLE.length]
       const t = ENEMY_TYPES[key]
       const sc = (1 + 0.4 * (a.wave - 1)) * a.mult * (isBoss ? 12 : 1)
+      // 밸런싱 모드: 표의 웨이브(advWave) 몹·보스와 같은 공식. 일반몹 공격력은 그 웨이브 보스의 ADV_MOB_DMG 배
+      const aw = BAL ? advWave(a.key, a.stage) : 0
+      const aHp = BAL ? (isBoss ? bossHpAt(aw) : B.hp0 * B.hpR ** (aw - 1)) : t.hp * sc
+      const aDmg = BAL ? B.bossDmg0 * B.bossDmgR ** (aw - 10) * (isBoss ? 1 : ADV_MOB_DMG) : t.dmg * (1 + 0.1 * (a.wave - 1)) * a.mult * (isBoss ? 3 : 1)
       w.enemies.push({
         type: key, dino: a.boss, boss: isBoss, bossIdx: 0,
-        x: w.W + 40 + (isBoss ? 0 : w.enemies.filter(e2 => !e2.dead && !e2.boss).length * (motRef.current.adv.gap ?? 40)), hp: t.hp * sc, maxHp: t.hp * sc,
+        x: w.W + 40 + (isBoss ? 0 : w.enemies.filter(e2 => !e2.dead && !e2.boss).length * (motRef.current.adv.gap ?? 40)), hp: aHp, maxHp: aHp,
         speed: t.speed * (isBoss ? 0.6 : 0.9 + Math.random() * 0.2),
-        dmg: t.dmg * (1 + 0.1 * (a.wave - 1)) * a.mult * (isBoss ? 3 : 1),
-        meat: Math.floor(t.meat * (1 + 0.2 * (a.wave - 1))) * (isBoss ? 15 : 1),
-        exp: Math.floor(t.exp * (1 + 0.2 * (a.wave - 1))) * (isBoss ? 15 : 1),
-        acc: t.acc, eva: t.eva, air: DINO_AIR[a.boss] || 0, atkT: 0,
+        dmg: aDmg,
+        meat: BAL ? (isBoss ? B.bossMeat0 * B.rwR ** (aw - 10) : B.meat0 * B.rwR ** (aw - 1)) : Math.floor(t.meat * (1 + 0.2 * (a.wave - 1))) * (isBoss ? 15 : 1),
+        exp: BAL ? (isBoss ? B.bossMeat0 * B.rwR ** (aw - 10) : B.expo0 * B.rwR ** (aw - 1)) : Math.floor(t.exp * (1 + 0.2 * (a.wave - 1))) * (isBoss ? 15 : 1),
+        acc: BAL ? 0.15 : t.acc, eva: BAL ? (isBoss ? 0.05 : 0) : t.eva, air: DINO_AIR[a.boss] || 0, atkT: 0,
         h: Math.round(isBoss ? ADV_BOSS_H * (DINO_RB[a.boss] || 1) : ADV_MOB_H * (DINO_RM[a.boss] || 1)), color: t.color, cd: 0, flash: 0, animT: Math.random() * 10,
         scaleV: isBoss ? 1 : 0.95 + Math.random() * 0.1, yOff: 0, spdV: isBoss ? 1 : 0.93 + Math.random() * 0.14,
       })
@@ -1574,7 +1680,7 @@ export default function App() {
       const wn = w.waveNum
       // 밸런싱 모드: 종별 표의 hp/dmg/reward를 안 쓰고 웨이브 공식으로만 만든다.
       // 일반몹은 공격력·명중·회피가 없고(맞아주는 역할) 보스만 공격한다.
-      const bHp   = B.hp0 * B.hpR ** (wn - 1) * (boss ? B.bossHpX : 1)
+      const bHp   = boss ? bossHpAt(wn) : B.hp0 * B.hpR ** (wn - 1)
       const bMeat = boss ? B.bossMeat0 * B.rwR ** (wn - 10) : B.meat0 * B.rwR ** (wn - 1)
       const bExp  = boss ? B.bossMeat0 * B.rwR ** (wn - 10) : B.expo0 * B.rwR ** (wn - 1)
       const bDmg  = boss ? B.bossDmg0 * B.bossDmgR ** (wn - 10) : 0
@@ -1593,7 +1699,7 @@ export default function App() {
     }
 
     // 100 미만은 소수점 첫째자리까지 — 초반에 공격력을 올려도 계속 '1'로만 보이는 걸 막는다
-    const dmgTxt = v => v < 100 ? String(Math.round(v * 10) / 10) : Math.round(v).toLocaleString('en-US')
+    const dmgTxt = v => v < 100 ? String(Math.round(v * 10) / 10) : v < 1e8 ? Math.round(v).toLocaleString('en-US') : fmt(v)   // 1억부터 단위 표기
     function addDmg(x, y, val, crit, miss, poison, self) { w.dmgTexts.push({ x, y, val: typeof val === 'number' ? dmgTxt(val) : val, life: 0.8, crit, miss, poison, self }) }
     function burst(x, y, color, n = 10, blood = false) {
       for (let i = 0; i < n; i++) {
@@ -1710,6 +1816,7 @@ export default function App() {
       const rawDt = Math.min((now - last) / 1000, 0.05)
       last = now
       let dt = w.paused ? 0 : rawDt
+      w.clk = (w.clk || 0) + dt              // 일시정지 제외 실제 경과 시간(히트스톱 포함)
       if (dt > 0 && w.hitstop > 0) { w.hitstop -= rawDt; dt = 0 }  // 히트스톱: 세계 정지, 렌더 유지
       w.hsCd = Math.max(0, (w.hsCd || 0) - rawDt)  // 기본공격 히트스톱 재발동 쿨
       const st = S.current
@@ -1731,6 +1838,9 @@ export default function App() {
         const reached = e.stopX != null && e.x <= e.stopX + 0.5
         // 원거리는 사거리에 닿는 순간 멈춰서 던진다 (가까이 갈 이유가 없음)
         // 직립도 '멈춘 적'은 교전으로 인정 — 안 그러면 적 정지 위치가 사거리 밖일 때 영원히 교전이 안 됨
+        // 모험 일반몹은 '사거리+40' 안에 들면 그 자리에 멈춘다(아래 inHeroReach). 교전도 같은 기준이어야
+        // 그 사이에 선 몹이 굳지 않는다 — 예전엔 마지막 한 마리가 히어로 앞에 선 채 안 죽어 시간 초과로 졌다(2026-10-22 실측)
+        if (w.adv && !e.boss && e.x - w.heroX < atkRange0 + 40) return true
         if (thrower) return e.x - w.heroX < atkRange0 + extra || reached
         if (!w.adv && !e.boss) return reached                  // 근접 + 제자리 몹: 정지위치에 닿아야 교전
         return e.x - w.heroX < atkRange0 + extra || reached    // 근접 + 걸어오는 몹·보스
@@ -1931,7 +2041,7 @@ export default function App() {
               w.skillFx = true
               const __e2 = skEff(sk, st.skCfg)
               const rng2 = __e2.rangePx || Infinity
-              const inR2 = w.enemies.filter(e => !e.dead && e.x - w.heroX < rng2).sort((a, b) => a.x - b.x)
+              const inR2 = w.enemies.filter(e => !e.dead && e.x - (e.fxOff || 0) - w.heroX < rng2).sort((a, b) => a.x - b.x)
               const _t0 = inR2[0]
               const _tw = sk.fx.twin || null                                   // 교차 2장 연출(토네이도)
               const x2 = _fxc.anchor ? w.heroX : (_t0 ? _t0.x - (_t0.fxOff || 0) : w.heroX + 260)   // 보스는 estop 만큼 되돌려 보정
@@ -1964,7 +2074,7 @@ export default function App() {
               // 이펙트는 위 startP 시점에 이미 생성됨(시전당 1개). 데미지도 그 이펙트가 처리(연타 포함)
             } else if (__ef.aoe) {
               const rng = __ef.rangePx || Infinity   // 히어로 기준 px 이내만, 0/null이면 화면 전체(메테오)
-              for (const t of w.enemies) if (!t.dead && t.x - w.heroX < rng) { applySkillDmg(t, dmg, noStop, _dot); if (sk.stun) t.stun = sk.stun }
+              for (const t of w.enemies) if (!t.dead && t.x - (t.fxOff || 0) - w.heroX < rng) { applySkillDmg(t, dmg, noStop, _dot); if (sk.stun) t.stun = sk.stun }
             } else {
               const targets = w.enemies.filter(e => !e.dead).sort((a, b) => a.x - b.x).slice(0, sk.maxTargets || 1)
               for (const t of targets) applySkillDmg(t, dmg, noStop, _dot)
@@ -2035,8 +2145,8 @@ export default function App() {
           const _hit = noStop => {
             if (!(stk.dmg > 0)) return
             const _dot = stk.dot
-            if (stk.aoe) { for (const e of w.enemies) if (!e.dead && e.x - stk.hx < stk.rng) { applySkillDmg(e, stk.dmg, noStop, _dot); if (stk.stun) e.stun = stk.stun } }
-            else { const e = w.enemies.find(e2 => !e2.dead && Math.abs(e2.x - stk.x) < 70); if (e) applySkillDmg(e, stk.dmg, noStop, _dot) }
+            if (stk.aoe) { for (const e of w.enemies) if (!e.dead && e.x - (e.fxOff || 0) - stk.hx < stk.rng) { applySkillDmg(e, stk.dmg, noStop, _dot); if (stk.stun) e.stun = stk.stun } }
+            else { const e = w.enemies.find(e2 => !e2.dead && Math.abs(e2.x - (e2.fxOff || 0) - stk.x) < 70); if (e) applySkillDmg(e, stk.dmg, noStop, _dot) }
           }
           if (stk.tick > 0) {
             // 연타: 이펙트 시작(0초)부터 끝날 때까지 tick 간격으로. hitP는 무시된다.
@@ -2345,6 +2455,9 @@ export default function App() {
             w.needStart = true
           } else {
             setMeat(m => m + 15 + w.waveNum * 5)
+            // 처치 속도(마리/초) 이동평균 — 오프라인 보상에 쓴다
+            const _wd = (w.clk || 0) - (w.waveT0 || 0)
+            if (_wd > 1 && w.total > 0) { const r = w.total / _wd; killRate.current = killRate.current > 0 ? killRate.current * 0.7 + r * 0.3 : r }
             if (w.waveNum % 10 === 0) {
               // 10웨이브: 보스 도전 버튼 띄우되 멈추지 않고 같은 웨이브 계속 반복
               if (!w.bossPrompted) { w.bossPrompted = true; setClearMsg(w.waveNum) }
@@ -3446,7 +3559,7 @@ export default function App() {
           ['고기 획득량', '+' + Math.round(tot('meatUp') * STAT_LIST.meatUp.per) + '%'],
           ['경험치 획득량', '+' + Math.round(tot('expUp') * STAT_LIST.expUp.per) + '%'],
           ['명중률', Math.round(sc.acc * 100) + '%'],
-          ['회피율', Math.round(sc.eva * 100) + '%'],
+          ...(BAL ? [] : [['회피율', Math.round(sc.eva * 100) + '%']]),
           ['공격 속도', '+' + Math.min(200, Math.round(tot('aspd') * STAT_LIST.aspd.per)) + '%'],
           ['이동 속도', '+' + Math.min(200, Math.round(tot('mspd') * STAT_LIST.mspd.per)) + '%'],
         ]
@@ -3565,7 +3678,7 @@ export default function App() {
         const canEvo = lv >= ALLY_LV_MAX && stg < ALLY_EVO_MAX
         const G = allyGrowth(lv, stg), at = ALLY_ATK[allyPick], gv = ALLY_GIVE[allyPick] || {}
         const pc = v => Math.round(v * 1000) / 10
-        const num = v => v >= 100 ? Math.round(v).toLocaleString() : (Math.round(v * 10) / 10)
+        const num = v => v >= 1e8 ? fmt(v) : v >= 100 ? Math.round(v).toLocaleString() : (Math.round(v * 10) / 10)
         const mi = ALLY_MAT[allyPick], cost = stg                       // 레벨업 1회 = 전용 재료 × 전직 단계
         const canLv = lv < ALLY_LV_MAX && (DEBUG || (mats[mi] || 0) >= cost)
         const selfRows = at
