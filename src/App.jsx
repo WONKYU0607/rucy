@@ -906,7 +906,7 @@ const QUEST_LIST = [
     { ev: 'fuse', name: '장비 융합', goal: 10, ric: '/ui/ruby.webp', rv: 1 },
   ],
   [ // 반복 퀘스트 (수령 시 레벨↑ + 초과분 이월, 무한 반복)
-    { ev: 'stage', name: '스테이지 클리어', goal: 1, ric: '/ui/gem.webp', rv: BAL ? 10 : 100 },   // 밸런싱 100 → 10 (2026-10-22)
+    { ev: 'stage', name: '스테이지 클리어', goal: 1, ric: '/ui/gem.webp', rv: 100 },
     { ev: 'kill', name: '몬스터 처치', goal: 500, ric: '/ui/gem.webp', rv: 50 },
     { ev: 'skill_get', name: '스킬 획득', goal: 1, ric: '/ui/gem.webp', rv: 100 },
     { ev: 'summon', name: '장비 소환', goal: 30, ric: '/ui/gem.webp', rv: 100 },
