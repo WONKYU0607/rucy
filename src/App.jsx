@@ -1053,6 +1053,7 @@ const EVOS = [
 // ── 액티브 스킬 레벨 해금 (밸런싱 모드, 2026-10-21) ──
 // 진화하면 그 단계 기본 스킬(SK_FREE) 1개가 바로 열리고, 나머지 5개는 다음 진화 레벨까지 구간을 6등분한 레벨에서
 // 번호 순(약한 것부터)으로 하나씩 열린다. 진화 레벨을 바꾸면 해금 레벨도 같이 따라간다. 마지막 단계는 직전 구간 길이를 쓴다.
+// 해금 레벨은 5 단위로 반올림(2026-10-23 — 18·117·283 처럼 들쭉날쭉해 보여서)
 const SK_UNLOCK_LV = (() => {
   const o = {}
   for (let st = 0; st < EVOS.length; st++) {
@@ -1060,7 +1061,7 @@ const SK_UNLOCK_LV = (() => {
     const next = st < EVOS.length - 1 ? EVOS[st + 1].lv : base + (base - (EVOS[st - 1].lv || 1))
     const ids = SKILLS.filter(k => !k.passive && k.stage === st).map(k => k.id)
     const order = [...ids.filter(id => SK_FREE.includes(id)), ...ids.filter(id => !SK_FREE.includes(id)).sort((a, b) => (SK_RANK[a] || 0) - (SK_RANK[b] || 0))]
-    order.forEach((id, k) => { o[id] = base + Math.round((next - base) * k / order.length) })
+    order.forEach((id, k) => { o[id] = k === 0 ? base : Math.round((base + (next - base) * k / order.length) / 5) * 5 })
   }
   return o
 })()
