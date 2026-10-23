@@ -107,32 +107,32 @@ const SKILL_SHEET = [
   { id: 18, n: 5, h: 210, stage: 1, title: '바위치기 (강화)', charSeq: [1, 2], fx: { type: 'strike', frames: [3, 4, 5] } },
   { id: 20, n: 5, h: 195, stage: 1, title: '바위 회오리', charSeq: [1, 2, 3, 5], fx: { type: 'proj', fly: [4], flyScale: 0.9, yOff: 0 } },
   { id: 22, n: 4, h: 180, stage: 1, title: '전광석화', charSeq: [1, 2, 3, 4] },   // 나중에 손볼 예정(킵)
-  { id: 23, n: 6, h: 180, stage: 1, title: '사신과 함께', charSeq: [3, 4, 3, 4, 6], aoe: true, rangePx: 200 },   // 원투-원투-어퍼컷 — 3·4·6번 그림만 사용(1·2·5번 삭제됨), 기본사거리 1.5배 내 모두
+  { id: 23, n: 6, h: 180, stage: 1, title: '사신과 함께', charSeq: [3, 4, 3, 4, 6] },   // 원투-원투-어퍼컷 — 3·4·6번 그림만 사용(1·2·5번 삭제됨), 기본사거리 1.5배 내 모두
   // ── 호모 에렉투스(stage 2) ── 효과(대상/데미지/사거리/쿨타임)는 인게임 스킬 상세창에서 조절
   { id: 24, n: 7, h: 200, stage: 2, title: '암흑 강타', charSeq: [2, 4, 6, 7] },
   { id: 25, n: 5, h: 200, stage: 2, title: '뇌전 질주', charSeq: [1, 2, 3, 5] },
-  { id: 26, n: 6, h: 200, stage: 2, title: '회전 폭풍', charSeq: [1, 2, 3, 4, 5, 6], aoe: true, rangePx: 150 },
+  { id: 26, n: 6, h: 200, stage: 2, title: '회전 폭풍', charSeq: [1, 2, 3, 4, 5, 6] },
   { id: 27, n: 5, h: 200, stage: 2, title: '화염 참격', charSeq: [1, 2, 4, 5, 3] },
-  { id: 28, n: 7, h: 200, stage: 2, title: '피폭', charSeq: [1, 2, 3, 5, 6, 7], aoe: true },
+  { id: 28, n: 7, h: 200, stage: 2, title: '피폭', charSeq: [1, 2, 3, 5, 6, 7] },
   // 29·30: 히어로 모션(charSeq)과 이펙트(fx)가 각각 다른 시트 → 이펙트가 별도 레이어라 몹에 안 가림
-  { id: 29, n: 7, h: 200, stage: 2, title: '사이오닉 스톰', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [4, 5, 6, 7], fxH: 240, hitP: 0.6 }, aoe: true, rangePx: 150 },
-  { id: 48, n: 8, h: 200, stage: 5, title: '궁극의 소용돌이', charSeq: [1, 2, 3, 4, 5, 6, 7, 8], aoe: true, rangePx: 220, hitAt: 0.85 },   // 1~4 소용돌이(시트1), 5~8 베기(시트2)
-  { id: 47, n: 6, h: 200, stage: 5, title: '회전검객', charSeq: [1, 2, 3, 4, 5, 6], aoe: true, rangePx: 200, hitAt: 0.55 },   // 시트 1~6, 이펙트는 그림에 포함
-  { id: 46, n: 5, h: 200, stage: 5, title: '파워 찌르기', charSeq: [1, 2, 3, 4, 5], aoe: true, rangePx: 200, hitAt: 0.55 },   // 시트 2·3·4·5·6 → 1~5, 이펙트는 그림에 포함
-  { id: 45, n: 6, h: 200, stage: 5, title: '무한검술', charSeq: [1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6], aoe: true, rangePx: 200, hitAt: 0.5 },   // 시트 1·2·3·5·7·8 → 1~6, 3바퀴
-  { id: 44, n: 7, h: 200, stage: 5, title: '번개 토네이도', charSeq: [1, 2, 3, 4, 5], fx: { type: 'strike', frames: [6, 7, 6, 7, 6, 7], fxH: 260, hitP: 0.3, twin: { gap: 30, spd: 1.4 } }, aoe: true, rangePx: 200 },   // 1~5 히어로, 6·7 번개기둥 교차 반복
-  { id: 43, n: 4, h: 200, stage: 5, title: '피의 십자가', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [4], fxH: 280, hitP: 0.3 }, aoe: true, rangePx: 200 },   // 인간 단계 — 1 찌르기 · 2 치켜듦 · 3 내려베기 + 십자 폭발
-  { id: 42, n: 8, h: 200, stage: 4, title: '환영', charSeq: [1, 2, 3, 4, 5, 6, 7, 8], aoe: true, rangePx: 180, hitAt: 0.7 },   // 분신 난무 — 이펙트가 그림에 포함
-  { id: 41, n: 5, h: 200, stage: 4, title: '연속 달빛베기', charSeq: [1, 2, 3, 4, 5, 3, 4, 5, 3, 4, 5], aoe: true, rangePx: 200, hitAt: 0.6 },   // 3·4·5번을 3바퀴
-  { id: 40, n: 10, h: 200, stage: 4, title: '단검비', charSeq: [1, 2, 3, 4, 5], fx: { type: 'strike', frames: [6, 7, 8, 9, 10], fxH: 260, hitP: 0.7 }, aoe: true, rangePx: 200 },   // 1~5 히어로, 6~10 낙하 이펙트
-  { id: 39, n: 8, h: 200, stage: 4, title: '독검', charSeq: [1, 2, 3, 4, 5, 6, 8], aoe: true, rangePx: 180, hitAt: 0.85 },   // 시트에 7번이 없어 번호를 그대로 씀(7은 미사용)
-  { id: 38, n: 6, h: 200, stage: 4, title: '난도질', charSeq: [1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6], aoe: true, rangePx: 150, hitAt: 0.6 },   // 쌍칼 회전 베기 — 이펙트가 그림에 포함
-  { id: 37, n: 8, h: 200, stage: 4, title: '순보', charSeq: [1, 2, 3, 4, 5, 6, 7, 8, 2, 3, 4], aoe: true, rangePx: 200, hitAt: 0.55 },   // 대시 — 오른쪽 1~5 + 왼쪽 2~4, 끝에 2·3·4 재생
-  { id: 36, n: 9, h: 200, stage: 3, title: '불놀이야', charSeq: [1, 2, 3, 4, 5, 6, 7, 8, 9], aoe: true, rangePx: 150 },   // 9프레임 전부 히어로 모션 — 이펙트가 그림에 포함(별도 fx 없음)
-  { id: 35, n: 7, h: 200, stage: 3, title: '토네이도', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [5, 6, 5, 6, 7], fxH: 260, hitP: 0.65, twin: { gap: 30, spd: 1.2 } }, aoe: true, rangePx: 200 },   // 5·6 왕복 2바퀴 → 7 소멸, 같은 프레임 2장 교차
-  { id: 34, n: 7, h: 200, stage: 3, title: '엑스밤', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [5, 6, 7], fxH: 260, hitP: 0.8 }, aoe: true, rangePx: 200 },
-  { id: 33, n: 10, h: 200, stage: 3, title: '지각변동', charSeq: [1, 2, 3, 4, 5, 6], fx: { type: 'strike', frames: [7, 8, 9, 10], fxH: 200, hitP: 0.7 }, aoe: true, rangePx: 200 },
-  { id: 32, n: 5, h: 200, stage: 3, title: '얼음도끼', charSeq: [1, 2, 3, 4, 5], aoe: true, rangePx: 150 },   // 이펙트가 그림에 포함 — 별도 fx 없음
+  { id: 29, n: 7, h: 200, stage: 2, title: '사이오닉 스톰', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [4, 5, 6, 7], fxH: 240, hitP: 0.6 } },
+  { id: 48, n: 8, h: 200, stage: 5, title: '궁극의 소용돌이', charSeq: [1, 2, 3, 4, 5, 6, 7, 8], hitAt: 0.85 },   // 1~4 소용돌이(시트1), 5~8 베기(시트2)
+  { id: 47, n: 6, h: 200, stage: 5, title: '회전검객', charSeq: [1, 2, 3, 4, 5, 6], hitAt: 0.55 },   // 시트 1~6, 이펙트는 그림에 포함
+  { id: 46, n: 5, h: 200, stage: 5, title: '파워 찌르기', charSeq: [1, 2, 3, 4, 5], hitAt: 0.55 },   // 시트 2·3·4·5·6 → 1~5, 이펙트는 그림에 포함
+  { id: 45, n: 6, h: 200, stage: 5, title: '무한검술', charSeq: [1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6], hitAt: 0.5 },   // 시트 1·2·3·5·7·8 → 1~6, 3바퀴
+  { id: 44, n: 7, h: 200, stage: 5, title: '번개 토네이도', charSeq: [1, 2, 3, 4, 5], fx: { type: 'strike', frames: [6, 7, 6, 7, 6, 7], fxH: 260, hitP: 0.3, twin: { gap: 30, spd: 1.4 } } },   // 1~5 히어로, 6·7 번개기둥 교차 반복
+  { id: 43, n: 4, h: 200, stage: 5, title: '피의 십자가', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [4], fxH: 280, hitP: 0.3 } },   // 인간 단계 — 1 찌르기 · 2 치켜듦 · 3 내려베기 + 십자 폭발
+  { id: 42, n: 8, h: 200, stage: 4, title: '환영', charSeq: [1, 2, 3, 4, 5, 6, 7, 8], hitAt: 0.7 },   // 분신 난무 — 이펙트가 그림에 포함
+  { id: 41, n: 5, h: 200, stage: 4, title: '연속 달빛베기', charSeq: [1, 2, 3, 4, 5, 3, 4, 5, 3, 4, 5], hitAt: 0.6 },   // 3·4·5번을 3바퀴
+  { id: 40, n: 10, h: 200, stage: 4, title: '단검비', charSeq: [1, 2, 3, 4, 5], fx: { type: 'strike', frames: [6, 7, 8, 9, 10], fxH: 260, hitP: 0.7 } },   // 1~5 히어로, 6~10 낙하 이펙트
+  { id: 39, n: 8, h: 200, stage: 4, title: '독검', charSeq: [1, 2, 3, 4, 5, 6, 8], hitAt: 0.85 },   // 시트에 7번이 없어 번호를 그대로 씀(7은 미사용)
+  { id: 38, n: 6, h: 200, stage: 4, title: '난도질', charSeq: [1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6], hitAt: 0.6 },   // 쌍칼 회전 베기 — 이펙트가 그림에 포함
+  { id: 37, n: 8, h: 200, stage: 4, title: '순보', charSeq: [1, 2, 3, 4, 5, 6, 7, 8, 2, 3, 4], hitAt: 0.55 },   // 대시 — 오른쪽 1~5 + 왼쪽 2~4, 끝에 2·3·4 재생
+  { id: 36, n: 9, h: 200, stage: 3, title: '불놀이야', charSeq: [1, 2, 3, 4, 5, 6, 7, 8, 9] },   // 9프레임 전부 히어로 모션 — 이펙트가 그림에 포함(별도 fx 없음)
+  { id: 35, n: 7, h: 200, stage: 3, title: '토네이도', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [5, 6, 5, 6, 7], fxH: 260, hitP: 0.65, twin: { gap: 30, spd: 1.2 } } },   // 5·6 왕복 2바퀴 → 7 소멸, 같은 프레임 2장 교차
+  { id: 34, n: 7, h: 200, stage: 3, title: '엑스밤', charSeq: [1, 2, 3], fx: { type: 'strike', frames: [5, 6, 7], fxH: 260, hitP: 0.8 } },
+  { id: 33, n: 10, h: 200, stage: 3, title: '지각변동', charSeq: [1, 2, 3, 4, 5, 6], fx: { type: 'strike', frames: [7, 8, 9, 10], fxH: 200, hitP: 0.7 } },
+  { id: 32, n: 5, h: 200, stage: 3, title: '얼음도끼', charSeq: [1, 2, 3, 4, 5] },   // 이펙트가 그림에 포함 — 별도 fx 없음
   { id: 31, n: 8, h: 200, stage: 3, title: '회전 도끼', charSeq: [1, 2, 1, 2, 3], fx: { type: 'proj', fly: [5, 6, 7, 8], fxH: 120 } },   // 관통 투사체
   ...PASSIVE_SHEET,   // 패시브 8종 (단계 공용)
 ]
@@ -144,7 +144,7 @@ const SKILL_ICON_FRAME = { 1: 6, 2: 5, 7: 3, 8: 4, 13: 4, 15: 3, 16: 3, 17: 4, 1
 const skEff = (sk, cfg) => {
   const c = (cfg || {})[sk.id] || {}
   return {
-    cd: c.cd ?? sk.cd,
+    cd: DEBUG ? SK_DEBUG_CD : (c.cd ?? sk.cd),   // 디버그 모드는 세이브에 남은 쿨타임 값과 상관없이 1초(2026-10-23)
     dmgMult: c.dmg ?? sk.dmgMult,
     aoe: c.aoe != null ? !!c.aoe : sk.aoe,
     rangePx: c.range != null ? (c.range > 0 ? c.range : null) : (sk.rangePx ?? null),   // px, 0/null = 화면 전체
@@ -524,6 +524,17 @@ const SK_RANK = {                                    // 스킬 id → 번호
   37: 1, 38: 2, 39: 3, 42: 4, 40: 5, 41: 6,          // 사피엔스: 순보·난도질·독검·환영·단검비·연속 달빛베기 (난도질은 동작이 1.44초라 2번)
   46: 1, 47: 2, 43: 3, 44: 4, 45: 5, 48: 6,          // 인간: 파워 찌르기·회전검객·피의 십자가·번개 토네이도·무한검술·궁극의 소용돌이
 }
+// 스킬 대상·사거리 (2026-10-23 사용자가 디버그 모드에서 맞춘 값) — [광역 1/단일 0, 사거리 px(0 = 화면 전체)]
+// 번호 순(1~6). 투사체(전기 작살·바위 회오리·회전 도끼)는 이 값과 상관없이 날아가며 맞는 몹을 전부 관통한다.
+// 단일은 사거리를 안 본다(그 단계 기본공격 사거리 안에서 가장 가까운 1마리). 무한검술 60은 광역으로 바꿀 때 쓰는 값
+const SK_AREA = {
+  7: [0, 0], 15: [0, 0], 8: [1, 120], 13: [1, 100], 17: [1, 170], 16: [1, 170],   // 4족보행
+  18: [1, 170], 22: [1, 220], 1: [1, 170], 2: [1, 0], 20: [1, 0], 23: [1, 200],   // 직립보행
+  25: [1, 220], 24: [1, 80], 27: [1, 140], 26: [1, 180], 29: [1, 200], 28: [1, 0],   // 에렉투스
+  31: [1, 0], 32: [1, 170], 36: [1, 170], 34: [1, 220], 33: [1, 200], 35: [1, 200],   // 네안데르탈인
+  37: [1, 210], 38: [1, 100], 39: [1, 150], 42: [1, 180], 40: [1, 220], 41: [1, 90],   // 사피엔스
+  46: [1, 240], 47: [1, 150], 43: [1, 130], 44: [1, 240], 45: [0, 60], 48: [1, 220],   // 인간
+}
 const SK_DOT_SHARE = 0.2                             // 독 스킬: 총 피해 중 독 비중
 const SK_ENH_MAX = 10                                // 스킬 강화 상한(단계)
 const SK_ENH_STEP = 0.1                              // 강화 1단계당 피해 +10%
@@ -622,7 +633,7 @@ const SKILLS = SKILL_SHEET.map(c => {
     rank: SK_RANK[c.id] || 0,
     cd: DEBUG ? SK_DEBUG_CD : SK_RANK[c.id] ? SK_RANK_CD[SK_RANK[c.id] - 1] : (c.cd ?? 2), cast: acc, hitAt: c.hitAt ?? 0.55,
     dmgMult: SK_RANK[c.id] ? SK_RANK_DMG[SK_RANK[c.id] - 1] : (c.dmgMult ?? 2),   // 1회 총 피해(연타면 타수로 나눔)
-    aoe: c.aoe || false, rangePx: c.rangePx || null, maxTargets: c.maxTargets || 1,
+    aoe: SK_AREA[c.id] ? !!SK_AREA[c.id][0] : !!c.aoe, rangePx: SK_AREA[c.id] ? (SK_AREA[c.id][1] || null) : (c.rangePx || null), maxTargets: c.maxTargets || 1,
     desc: c.n + '프레임 · 임시값',
   }
 })
