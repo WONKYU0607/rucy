@@ -551,6 +551,8 @@ const SK_DOT_SHARE = 0.2                             // 독 스킬: 총 피해 �
 const SK_ENH_MAX = 10                                // 스킬 강화 상한(단계)
 const SK_ENH_STEP = 0.1                              // 강화 1단계당 피해 +10%
 const skEnhMult = (enh, id) => 1 + SK_ENH_STEP * Math.min(SK_ENH_MAX, (enh || {})[id] || 0)
+const SK_ENH_CD_STEP = 0.05                          // 강화 1단계당 쿨타임 −5% (10단계 = 절반, 2026-10-23 요청). 액티브만
+const skEnhCdMult = (enh, id) => 1 - SK_ENH_CD_STEP * Math.min(SK_ENH_MAX, (enh || {})[id] || 0)
 // 연타 횟수 — 전투 루프와 똑같이 0초부터 tick씩 더해 가며 센다(나눗셈으로 세면 부동소수 때문에 1타가 어긋난다)
 const tickCount = (total, tick) => { if (!(tick > 0)) return 1; let n = 0; for (let t = 0; t < total && n < 500; t += tick) n++; return Math.max(1, n) }
 
@@ -2053,7 +2055,7 @@ export default function App() {
               // 먼저 준비된 순. 같은 순간에 준비됐으면 번호가 큰(센) 스킬부터 (2026-10-21, 예전엔 칸 순서라 뒤 칸이 굶었음)
               if (ready < 0 || w.skillRdy[si] < w.skillRdy[ready] || (w.skillRdy[si] === w.skillRdy[ready] && (SKILLS[si].rank || 0) > (SKILLS[ready].rank || 0))) ready = si
             }
-            if (ready >= 0) { w.skill = ready; w.skillT = 0; w.skillDid = false; w.skillFx = false; w.skillNext = 0; w.skillCd[ready] = skEff(SKILLS[ready], st.skCfg).cd }
+            if (ready >= 0) { w.skill = ready; w.skillT = 0; w.skillDid = false; w.skillFx = false; w.skillNext = 0; w.skillCd[ready] = skEff(SKILLS[ready], st.skCfg).cd * skEnhCdMult(st.skEnh, SKILLS[ready].id) }   // 강화하면 쿨타임 감소
           }
         } else {
           const sk = SKILLS[w.skill]
@@ -3506,7 +3508,7 @@ export default function App() {
               <div data-edit="skdeffect" style={st.skdEffect}>{ef.aoe ? (ef.rangePx ? `${ef.rangePx}px 이내` : '화면 전체') + '의 적 모두에게' : '적 1명에게'}<br />공격력의 <b style={{ color: '#f0a830' }}>{Math.round(ef.dmgMult * skEnhMult(skEnh, s.id) * 100)}%</b>{skHits(s, motCfg) > 1 ? `를 ${skHits(s, motCfg)}회에 나눠 공격` : '로 1회 공격'}</div>
               )}
               {!s.passive && <div style={st.skdStatRow}>
-                <div data-edit="skdstat" style={st.skdStat}><span style={st.skdStatK}>쿨타임</span><span style={st.skdStatV}>{ef.cd}초</span></div>
+                <div data-edit="skdstat" style={st.skdStat}><span style={st.skdStatK}>쿨타임</span><span style={st.skdStatV}>{Math.round(ef.cd * skEnhCdMult(skEnh, s.id) * 10) / 10}초</span></div>
                 <div data-edit="skdstat" style={st.skdStat}><span style={st.skdStatK}>타격 수</span><span style={st.skdStatV}>{skHits(s, motCfg)}회</span></div>
               </div>}
               {!s.passive && IS_PC && DEBUG && <div style={st.skdCfgBox}>
