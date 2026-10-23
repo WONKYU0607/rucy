@@ -176,9 +176,9 @@ const track = im => {
 const mkImg = src => { const i = new Image(); i.src = src; return track(i) }
 
 for (const k in LOOT_IMG) { LOOT_CIMG[k] = mkImg(LOOT_IMG[k]) }
-const DROP_DIA_P = 0.3   // 다이아 조각 드롭 확률(임시) — 떨어지면 다이아 DROP_DIA_AMT 개 실제 지급
+const DROP_DIA_P = 0.15  // 다이아 조각 드롭 확률 15%(2026-10-23 확정) — 떨어지면 다이아 DROP_DIA_AMT 개 실제 지급
 const DROP_DIA_AMT = 1
-const DROP_MAT_P = 0.03  // 동료 재료 드롭 확률(임시 3%) — 떨어지면 동료 재료 1~4 중 하나를 실제로 1개 지급
+const DROP_MAT_P = 0.05  // 동료 재료 드롭 확률 5%(2026-10-23 확정) — 떨어지면 동료 재료 1~4 중 하나를 실제로 1개 지급
 function LootPiece({ p, done }) {
   const r = useRef(null)
   useEffect(() => {
@@ -207,7 +207,7 @@ const ADV_STAGES = 10          // 대륙당 탐험 단계 수
 // 대륙 개방 순서 — 아프리카만 열려 있고, 앞 대륙을 10단계까지 다 깨야 다음이 열린다
 const ADV_ORDER = ['africa', 'middle_east', 'europe', 'oceania', 'asia', 'greenland', 'south_america', 'north_america']
 const ADV_COST_RUBY = 1        // 진입 1회당 루비 소모
-const advReward = st => ({ dia: 50 * st, mat: 10 * st })   // 단계별 보상 (임시 수치)
+const advReward = st => ({ dia: 100, mat: 10 * st })   // 단계별 보상 — 다이아는 단계마다 100(2026-10-23 확정), 강화 큐브는 임시 수치
 // 밸런싱 모드 모험 난이도 (2026-10-22): 대륙(ADV_ORDER 순)·단계마다 '웨이브 몇'의 몹·보스와 같은 세기.
 // ADV_WAVE[대륙번호×10 + 단계-1] — 8일째(1번 대륙 1단계) ~ 216일째(8번 대륙 10단계)에 깨지도록 시뮬레이션으로 맞춤(하루 3번×15분 기준)
 const ADV_WAVE = [
@@ -1162,11 +1162,11 @@ function loadSave() {
       gearEq: s.gearEq && typeof s.gearEq === 'object' ? s.gearEq : { 무기: null, 방어구: null, 유물: null },
       nick: typeof s.nick === 'string' && s.nick ? s.nick : ('Slayer_' + Math.floor(Math.random() * 9000000 + 1000000)),
       mats: Array.isArray(s.mats) && s.mats.some(x => x > 0) ? s.mats : [99999, 99999, 99999, 99999, 99999], enh: s.enh && typeof s.enh === 'object' ? s.enh : {},
-      ruby: typeof s.ruby === 'number' ? s.ruby : 50, advStage: s.advStage && typeof s.advStage === 'object' ? s.advStage : {},   // ruby 50 = 임시 지급(퀘스트 연동 전)
+      ruby: typeof s.ruby === 'number' ? s.ruby : 0, advStage: s.advStage && typeof s.advStage === 'object' ? s.advStage : {},   // 시작 루비 0(2026-10-23 확정)
       pearl: typeof s.pearl === 'number' ? s.pearl : 0, quest: s.quest && typeof s.quest === 'object' && s.quest.ev ? questMig(s.quest) : questInit(),
     }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, skCfg: {}, alliesOn: {}, allyEvo: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, allyLv: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, nick: 'Slayer_' + Math.floor(Math.random() * 9000000 + 1000000), mats: BAL ? [0, 0, 0, 0, 0] : [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 50, killRate: 0, advStage: {}, pearl: 0, evStage: {}, evDay: { day: '', n: {} }, gachaLv: { 무기: 1, 방어구: 1, 유물: 1 }, gachaCnt: { 무기: 0, 방어구: 0, 유물: 0 }, gachaRw: {}, skCard: {}, skEnh: {}, skOpen: BAL ? skFreeInit() : Object.fromEntries(SKILLS.map(k => [k.id, 1])), quest: questInit() }
+  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, skCfg: {}, alliesOn: {}, allyEvo: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, allyLv: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, nick: 'Slayer_' + Math.floor(Math.random() * 9000000 + 1000000), mats: BAL ? [0, 0, 0, 0, 0] : [99999, 99999, 99999, 99999, 99999], enh: {}, ruby: 0, killRate: 0, advStage: {}, pearl: 0, evStage: {}, evDay: { day: '', n: {} }, gachaLv: { 무기: 1, 방어구: 1, 유물: 1 }, gachaCnt: { 무기: 0, 방어구: 0, 유물: 0 }, gachaRw: {}, skCard: {}, skEnh: {}, skOpen: BAL ? skFreeInit() : Object.fromEntries(SKILLS.map(k => [k.id, 1])), quest: questInit() }
 }
 // 큰 숫자: 만(10^4)부터 4자리마다 한 단위, 무량대수(10^68)를 넘으면 지수 표기
 const NUM_UNITS = ['', '만', '억', '조', '경', '해', '자', '양', '구', '간', '정', '재', '극', '항하사', '아승기', '나유타', '불가사의', '무량대수']
