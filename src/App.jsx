@@ -204,10 +204,13 @@ const CONTINENTS = [
 ]
 // UI 기준 해상도 — 모든 편집값(px)이 이 판 위에서 맞춰짐. 실제 화면은 이 판을 통째로 확대/축소
 const ADV_STAGES = 10          // 대륙당 탐험 단계 수
-// 대륙 개방 순서 — 아프리카만 열려 있고, 앞 대륙을 10단계까지 다 깨야 다음이 열린다
-const ADV_ORDER = ['africa', 'middle_east', 'europe', 'oceania', 'asia', 'greenland', 'south_america', 'north_america']
+// 대륙 개방 순서(2026-10-24 확정) — 아프리카 → 중동 → 유럽 → 아시아 → 오세아니아 → 남미 → 북미 → 그린란드.
+// 아프리카만 열려 있고, 앞 대륙을 10단계까지 다 깨야 다음이 열린다(밸런싱 모드. 디버그 모드는 전부 개방). 난이도표도 이 순서
+const ADV_ORDER = ['africa', 'middle_east', 'europe', 'asia', 'oceania', 'south_america', 'north_america', 'greenland']
 const ADV_COST_RUBY = 1        // 진입 1회당 루비 소모
-const advReward = st => ({ dia: 100, mat: 900 + 100 * st })   // 단계별 보상(2026-10-23 확정) — 다이아 100, 강화 큐브 1단계 1000개부터 단계마다 +100
+// 단계별 보상(2026-10-24 확정) — 대륙을 넘어가도 이어서 오른다. 전체 단계 g = 대륙 순번×10 + 단계 (1 ~ 80)
+// 다이아 100×g (1단계 100 → 마지막 8,000), 강화 큐브 900+100×g (1단계 1,000 → 마지막 8,900)
+const advReward = (key, st) => { const g = Math.max(0, ADV_ORDER.indexOf(key)) * ADV_STAGES + Math.min(ADV_STAGES, Math.max(1, st || 1)); return { dia: 100 * g, mat: 900 + 100 * g } }
 // 밸런싱 모드 모험 난이도 (2026-10-22): 대륙(ADV_ORDER 순)·단계마다 '웨이브 몇'의 몹·보스와 같은 세기.
 // ADV_WAVE[대륙번호×10 + 단계-1] — 8일째(1번 대륙 1단계) ~ 216일째(8번 대륙 10단계)에 깨지도록 시뮬레이션으로 맞춤(하루 3번×15분 기준)
 const ADV_WAVE = [
@@ -1426,12 +1429,14 @@ export default function App() {
     const gm = Math.floor(kills * avgMeat * st2.meatMult)
     const ge = Math.floor(kills * avgExp * st2.expMult)
     const mins = Math.max(1, away / 60)
-    // 동료 재료: 오프라인 처치 수 × 웨이브 드롭 확률(5%), 4종에 고르게 나눠 지급(2026-10-23). 다이아는 오프라인 보상 없음
+    // 다이아: 오프라인 처치 수 × 웨이브 다이아 조각 확률(15%) × 조각당 개수(2026-10-24)
+    const dn = Math.floor(kills * DROP_DIA_P + Math.random()) * DROP_DIA_AMT
+    // 동료 재료: 오프라인 처치 수 × 웨이브 드롭 확률(5%), 4종에 고르게 나눠 지급(2026-10-23)
     const mn = Math.floor(kills * DROP_MAT_P + Math.random())
     const om = [0, 0, 0, 0].map(() => Math.floor(mn / 4))
     for (let r = mn - om[0] * 4, i = Math.floor(Math.random() * 4); r > 0; r--, i = (i + 1) % 4) om[i]++
     // 지급은 보물상자 → 받기 버튼에서. 여기선 대기 보상만 저장
-    setOffReward({ sec: Math.floor(away), kills, wave: init.best || init.wave || 1, meat: gm, exp: ge, gem: 0, meatRate: Math.floor(gm / mins), expRate: Math.floor(ge / mins), gemRate: 0, mats: om, mat: mn, matRate: Math.floor(mn / mins) })
+    setOffReward({ sec: Math.floor(away), kills, wave: init.best || init.wave || 1, meat: gm, exp: ge, gem: dn, meatRate: Math.floor(gm / mins), expRate: Math.floor(ge / mins), gemRate: Math.floor(dn / mins), mats: om, mat: mn, matRate: Math.floor(mn / mins) })
   }, [])
   // 스킬 아이콘 확대·오프셋 — 전신 컷이라 등배로 두면 스킬끼리 구분이 안 된다
   const skIconFit = id => {
@@ -2459,7 +2464,7 @@ export default function App() {
           if (a.win) {
             setAdvStage(v => ({ ...v, [a.key]: Math.max(v[a.key] || 0, a.stage) }))
             qEv('adv_clear')
-            const rw = advReward(a.stage)
+            const rw = advReward(a.key, a.stage)
             setGem(g => g + rw.dia)
             setMats(m => { const n = [...m]; n[4] = (n[4] || 0) + rw.mat; return n })
             setClearMsg(`${a.name} ${a.stage}단계 클리어!`)
@@ -3325,7 +3330,7 @@ export default function App() {
     setSkillSets(sets => { const next = sets.map(a => a.slice()); next[activeSet][slot] = null; return next })
   }
 
-  const offData = offReward || (uiEdit ? { sec: 7200, kills: 1234, wave: 670, meat: 12345, exp: 6789, gem: 0, meatRate: 102, expRate: 56, gemRate: 0, mats: [15, 15, 16, 15], mat: 61, matRate: 0 } : null)
+  const offData = offReward || (uiEdit ? { sec: 7200, kills: 1234, wave: 670, meat: 12345, exp: 6789, gem: 185, meatRate: 102, expRate: 56, gemRate: 1, mats: [15, 15, 16, 15], mat: 61, matRate: 0 } : null)
   return (
     <div style={st.outer}>
     <style>{`
@@ -3658,7 +3663,7 @@ export default function App() {
       {advSel && (() => {
         const cleared = advStage[advSel.key] || 0
         const stage = Math.min(ADV_STAGES, cleared + 1)
-        const rw = advReward(stage)
+        const rw = advReward(advSel.key, stage)
         return (
         <div style={st.advOverlay} onClick={() => { if (!uiEdit) setAdvSel(null) }}>
           <div data-edit="advwin" style={st.advWin} onClick={e => e.stopPropagation()}>
@@ -4381,7 +4386,8 @@ export default function App() {
             <div style={st.offItems}>
               {[['/ui/ic_meat.webp', offData.meat, offData.meatRate, '#ff9d6a'],
                 ['/ui/ic_exp.webp', offData.exp, offData.expRate, '#6ec4ff'],
-                ['mats', offData.mat || 0, offData.matRate || 0, '#cfe8ff']].map(([ic, v, rate, col], i) => (
+                ['/ui/gem.webp', offData.gem, offData.gemRate, '#cfe8ff'],
+                ['mats', offData.mat || 0, offData.matRate || 0, '#d9f0b8']].map(([ic, v, rate, col], i) => (
                 <div key={i} data-edit="offitem" style={st.offItem}>
                   {ic === 'mats'
                     ? <div data-edit="offitemic" style={{ ...st.offItemIc, display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr' }}>{[0, 1, 2, 3].map(m => <img key={m} src={MAT_IMG(m)} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />)}</div>
