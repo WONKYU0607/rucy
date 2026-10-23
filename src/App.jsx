@@ -515,6 +515,7 @@ const skFreeInit = () => Object.fromEntries(SK_FREE.map(id => [id, 1]))
 // 독이 있는 스킬은 총 피해의 80%를 타격으로, 20%를 독으로 준다(SK_DOT_SHARE).
 const SK_RANK_CD  = [5, 9, 12, 15, 18, 20]          // 번호별 쿨타임(초)
 const SK_RANK_DMG = [2.5, 5, 7.5, 10, 13, 16]       // 번호별 1회 총 피해(공격력의 250% ~ 1600%)
+const SK_DEBUG_CD = 1                               // 디버그 모드는 확인하기 편하게 모든 스킬 쿨타임 1초(2026-10-23 요청). 밸런싱 모드는 위 번호별 값
 const SK_RANK = {                                    // 스킬 id → 번호
   7: 1, 15: 2, 8: 3, 13: 4, 17: 5, 16: 6,            // 4족보행: 할퀴기·로우킥·내려치기·데굴데굴·포효·바위치기 (전부 단일)
   18: 1, 22: 2, 1: 3, 2: 4, 20: 5, 23: 6,            // 직립보행: 바위치기(강화)·전광석화·번개 바위·전기 작살·바위 회오리·사신과 함께
@@ -619,7 +620,7 @@ const SKILLS = SKILL_SHEET.map(c => {
     stages: c.stages || null, passive: !!c.passive, pkey: c.pkey || null, icon2: c.ic || null, desc2: c.desc2 || null,
     h: c.h, fx: c.fx || null, frameEnds: ends, frameT: ft,
     rank: SK_RANK[c.id] || 0,
-    cd: SK_RANK[c.id] ? SK_RANK_CD[SK_RANK[c.id] - 1] : (c.cd ?? 2), cast: acc, hitAt: c.hitAt ?? 0.55,
+    cd: DEBUG ? SK_DEBUG_CD : SK_RANK[c.id] ? SK_RANK_CD[SK_RANK[c.id] - 1] : (c.cd ?? 2), cast: acc, hitAt: c.hitAt ?? 0.55,
     dmgMult: SK_RANK[c.id] ? SK_RANK_DMG[SK_RANK[c.id] - 1] : (c.dmgMult ?? 2),   // 1회 총 피해(연타면 타수로 나눔)
     aoe: c.aoe || false, rangePx: c.rangePx || null, maxTargets: c.maxTargets || 1,
     desc: c.n + '프레임 · 임시값',
