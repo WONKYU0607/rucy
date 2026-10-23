@@ -207,7 +207,7 @@ const ADV_STAGES = 10          // 대륙당 탐험 단계 수
 // 대륙 개방 순서 — 아프리카만 열려 있고, 앞 대륙을 10단계까지 다 깨야 다음이 열린다
 const ADV_ORDER = ['africa', 'middle_east', 'europe', 'oceania', 'asia', 'greenland', 'south_america', 'north_america']
 const ADV_COST_RUBY = 1        // 진입 1회당 루비 소모
-const advReward = st => ({ dia: 100, mat: 10 * st })   // 단계별 보상 — 다이아는 단계마다 100(2026-10-23 확정), 강화 큐브는 임시 수치
+const advReward = st => ({ dia: 100, mat: 900 + 100 * st })   // 단계별 보상(2026-10-23 확정) — 다이아 100, 강화 큐브 1단계 1000개부터 단계마다 +100
 // 밸런싱 모드 모험 난이도 (2026-10-22): 대륙(ADV_ORDER 순)·단계마다 '웨이브 몇'의 몹·보스와 같은 세기.
 // ADV_WAVE[대륙번호×10 + 단계-1] — 8일째(1번 대륙 1단계) ~ 216일째(8번 대륙 10단계)에 깨지도록 시뮬레이션으로 맞춤(하루 3번×15분 기준)
 const ADV_WAVE = [
@@ -1161,7 +1161,7 @@ function loadSave() {
         : (BAL ? skFreeInit() : Object.fromEntries(SKILLS.map(k => [k.id, 1]))),
       gearEq: s.gearEq && typeof s.gearEq === 'object' ? s.gearEq : { 무기: null, 방어구: null, 유물: null },
       nick: typeof s.nick === 'string' && s.nick ? s.nick : ('Slayer_' + Math.floor(Math.random() * 9000000 + 1000000)),
-      mats: Array.isArray(s.mats) && s.mats.some(x => x > 0) ? s.mats : [99999, 99999, 99999, 99999, 99999], enh: s.enh && typeof s.enh === 'object' ? s.enh : {},
+      mats: Array.isArray(s.mats) && (BAL || s.mats.some(x => x > 0)) ? s.mats : (BAL ? [0, 0, 0, 0, 0] : [99999, 99999, 99999, 99999, 99999]), enh: s.enh && typeof s.enh === 'object' ? s.enh : {},   // 밸런싱 모드는 재료 0도 그대로(예전엔 전부 0이면 99999로 채워져, 새로 시작한 사람이 다시 켜면 재료가 무한이 됐음)
       ruby: typeof s.ruby === 'number' ? s.ruby : 0, advStage: s.advStage && typeof s.advStage === 'object' ? s.advStage : {},   // 시작 루비 0(2026-10-23 확정)
       pearl: typeof s.pearl === 'number' ? s.pearl : 0, quest: s.quest && typeof s.quest === 'object' && s.quest.ev ? questMig(s.quest) : questInit(),
     }
@@ -1426,8 +1426,12 @@ export default function App() {
     const gm = Math.floor(kills * avgMeat * st2.meatMult)
     const ge = Math.floor(kills * avgExp * st2.expMult)
     const mins = Math.max(1, away / 60)
-    // 지급은 보물상자 → 받기 버튼에서. 여기선 대기 보상만 저장 (다이아는 추후 공식)
-    setOffReward({ sec: Math.floor(away), kills, wave: init.best || init.wave || 1, meat: gm, exp: ge, gem: 0, meatRate: Math.floor(gm / mins), expRate: Math.floor(ge / mins), gemRate: 0 })
+    // 동료 재료: 오프라인 처치 수 × 웨이브 드롭 확률(5%), 4종에 고르게 나눠 지급(2026-10-23). 다이아는 오프라인 보상 없음
+    const mn = Math.floor(kills * DROP_MAT_P + Math.random())
+    const om = [0, 0, 0, 0].map(() => Math.floor(mn / 4))
+    for (let r = mn - om[0] * 4, i = Math.floor(Math.random() * 4); r > 0; r--, i = (i + 1) % 4) om[i]++
+    // 지급은 보물상자 → 받기 버튼에서. 여기선 대기 보상만 저장
+    setOffReward({ sec: Math.floor(away), kills, wave: init.best || init.wave || 1, meat: gm, exp: ge, gem: 0, meatRate: Math.floor(gm / mins), expRate: Math.floor(ge / mins), gemRate: 0, mats: om, mat: mn, matRate: Math.floor(mn / mins) })
   }, [])
   // 스킬 아이콘 확대·오프셋 — 전신 컷이라 등배로 두면 스킬끼리 구분이 안 된다
   const skIconFit = id => {
@@ -1744,8 +1748,9 @@ export default function App() {
     function spawnLoot(x, y) {
       w.loot = w.loot || []
       const kinds = ['meat', 'meat', 'meat', 'exp', 'exp']
-      if (Math.random() < DROP_DIA_P) { kinds.push('dia'); w.diaQ = (w.diaQ || 0) + DROP_DIA_AMT }
-      if (Math.random() < DROP_MAT_P) { kinds.push('mat'); (w.matQ = w.matQ || [0, 0, 0, 0])[Math.floor(Math.random() * 4)]++ }
+      const _waveDrop = !w.adv && !w.ev                    // 다이아 조각·동료 재료는 웨이브에서만(2026-10-23) — 모험·이벤트 던전은 안 떨어짐
+      if (_waveDrop && Math.random() < DROP_DIA_P) { kinds.push('dia'); w.diaQ = (w.diaQ || 0) + DROP_DIA_AMT }
+      if (_waveDrop && Math.random() < DROP_MAT_P) { kinds.push('mat'); (w.matQ = w.matQ || [0, 0, 0, 0])[Math.floor(Math.random() * 4)]++ }
       const sx = Math.max(8, Math.min(w.W - 8, x))   // 스폰 x 화면 안쪽
       for (const k of kinds) w.loot.push({ k, x: sx + (Math.random() - 0.5) * 24, y, vx: (Math.random() - 0.5) * 170, vy: -(130 + Math.random() * 150), t: 0 })
     }
@@ -3320,7 +3325,7 @@ export default function App() {
     setSkillSets(sets => { const next = sets.map(a => a.slice()); next[activeSet][slot] = null; return next })
   }
 
-  const offData = offReward || (uiEdit ? { sec: 7200, kills: 1234, wave: 670, meat: 12345, exp: 6789, gem: 0, meatRate: 102, expRate: 56, gemRate: 0 } : null)
+  const offData = offReward || (uiEdit ? { sec: 7200, kills: 1234, wave: 670, meat: 12345, exp: 6789, gem: 0, meatRate: 102, expRate: 56, gemRate: 0, mats: [15, 15, 16, 15], mat: 61, matRate: 0 } : null)
   return (
     <div style={st.outer}>
     <style>{`
@@ -4376,16 +4381,18 @@ export default function App() {
             <div style={st.offItems}>
               {[['/ui/ic_meat.webp', offData.meat, offData.meatRate, '#ff9d6a'],
                 ['/ui/ic_exp.webp', offData.exp, offData.expRate, '#6ec4ff'],
-                ['/ui/gem.webp', offData.gem, offData.gemRate, '#cfe8ff']].map(([ic, v, rate, col], i) => (
+                ['mats', offData.mat || 0, offData.matRate || 0, '#cfe8ff']].map(([ic, v, rate, col], i) => (
                 <div key={i} data-edit="offitem" style={st.offItem}>
-                  <img data-edit="offitemic" src={ic} alt="" style={st.offItemIc} />
+                  {ic === 'mats'
+                    ? <div data-edit="offitemic" style={{ ...st.offItemIc, display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr' }}>{[0, 1, 2, 3].map(m => <img key={m} src={MAT_IMG(m)} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />)}</div>
+                    : <img data-edit="offitemic" src={ic} alt="" style={st.offItemIc} />}
                   <span data-edit="offitemval" style={{ ...st.offItemVal, color: col }}>+{fmt(v)}</span>
                   <span data-edit="offitemrate" style={st.offItemRate}>{fmt(rate)}/분</span>
                 </div>
               ))}
             </div>
             <div style={st.offBtns}>
-              <button data-edit="offclaim" style={st.offBtnClaim} onClick={() => { if (uiEdit) return; if (offReward) { setMeat(m => m + offReward.meat); setHexp(x => x + offReward.exp); if (offReward.gem) setGem(g => g + offReward.gem) } setOffReward(null); setOffOpen(false) }}>
+              <button data-edit="offclaim" style={st.offBtnClaim} onClick={() => { if (uiEdit) return; if (offReward) { setMeat(m => m + offReward.meat); setHexp(x => x + offReward.exp); if (offReward.gem) setGem(g => g + offReward.gem); if (offReward.mats) setMats(m => { const n = [...m]; offReward.mats.forEach((v, k) => { n[k] = (n[k] || 0) + v }); return n }) } setOffReward(null); setOffOpen(false) }}>
                 <span style={st.offBtnClaimText}>받기</span>
               </button>
               <button data-edit="offbtn" style={st.offBtnAd} onClick={() => { if (!uiEdit) { /* TODO: 광고 시청 → 오프라인 보상 +50% */ } }}>
