@@ -65,25 +65,29 @@ const ANIM = {
 //   fx strike = 낙하/타격: 적 위치에 frames 재생, 중반에 데미지
 // stage — 0:4족보행 1:직립보행 2:에렉투스 3:네안데르탈인 4:사피엔스 5:인간
 const PASSIVE_KEYS = [
-  ['beast', '야수의 본능', '일반몹에게 주는 피해 증가'],
-  ['rage', '광폭화', '스킬 쿨타임 회복 속도 증가'],
+  ['beast', '야수의 본능', '기본공격 피해 증가'],
+  ['rage', '광폭화', '공격 속도 증가'],
   ['crush', '분쇄', '치명타 피해 증가'],
-  ['battlerush', '전투의 열기', '적 처치 시 5초간 공격력 증가'],
+  ['battlerush', '전투의 열기', '적 5마리 처치마다 공격력 증가(최대 5번)'],
   ['hunter', '사냥꾼의 본능', '고기 획득량 증가'],
   ['expblessing', '경험의 축복', '경험치 획득량 증가'],
-  ['battlestart', '전투 시작', '보스전 시작 후 10초간 공격력 증가'],
-  ['swift', '신속한 훈련', '15초마다 5초간 스킬 쿨타임 회복 속도 증가'],
+  ['battlestart', '전투 시작', '보스와 싸우는 동안 10초마다 공격력 증가(최대 5번)'],
+  ['swift', '신속한 훈련', '15초마다 공격 속도 증가(최대 5번)'],
 ]
 // 패시브 효과 기본값(강화 0) — 강화는 액티브와 같은 규칙(레벨당 +10%, 최대 10레벨 = 2배)
-const PASSIVE_VAL = { beast: 0.25, rage: 0.25, crush: 1.0, battlerush: 0.25, hunter: 0.5, expblessing: 0.5, battlestart: 0.5, swift: 0.75 }
-const PAS_RUSH_SEC = 5          // 전투의 열기: 처치 후 유지 시간(처치할 때마다 새로 시작, 중첩 없음)
-const PAS_START_SEC = 10        // 전투 시작: 보스와 교전이 시작된 뒤 유지 시간
-const PAS_SWIFT_CYCLE = 15, PAS_SWIFT_ON = 5   // 신속한 훈련: 15초마다 5초간
+// 2026-10-23 사용자 확정: 광폭화 공속 +25% / 신속한 훈련 15초마다 공속 +15%(최대 5번) / 야수의 본능 기본공격 +25%
+// 전투 시작 보스와 싸우는 동안 10초마다 공격력 +10%(최대 5번) / 전투의 열기 5마리 처치마다 공격력 +20%(최대 5번) / 분쇄 치명타 피해 +100%p
+// 중첩(신속한 훈련·전투 시작·전투의 열기)은 0으로 안 돌아간다 — 히어로가 쓰러지거나 게임을 다시 켤 때만 0
+const PASSIVE_VAL = { beast: 0.25, rage: 0.25, crush: 1.0, battlerush: 0.2, hunter: 0.5, expblessing: 0.5, battlestart: 0.1, swift: 0.15 }   // 중첩형은 1번당 값
+const PAS_STACK_MAX = 5         // 중첩 최대 횟수(신속한 훈련·전투 시작·전투의 열기)
+const PAS_SWIFT_SEC = 15        // 신속한 훈련: 이 시간마다 1번
+const PAS_START_SEC = 10        // 전투 시작: 보스와 싸우는 시간 이만큼마다 1번
+const PAS_RUSH_KILLS = 5        // 전투의 열기: 이만큼 처치마다 1번
 const passiveText = (k, v) => {
   const pc = Math.round(v * 1000) / 10
-  return { beast: `일반몹에게 주는 피해 +${pc}%`, rage: `스킬 쿨타임 회복 속도 +${pc}%`, crush: `치명타 피해 +${pc}%p`,
-    battlerush: `적 처치 시 ${PAS_RUSH_SEC}초간 공격력 +${pc}%`, hunter: `고기 획득량 +${pc}%`, expblessing: `경험치 획득량 +${pc}%`,
-    battlestart: `보스전 시작 후 ${PAS_START_SEC}초간 공격력 +${pc}%`, swift: `${PAS_SWIFT_CYCLE}초마다 ${PAS_SWIFT_ON}초간 스킬 쿨타임 회복 속도 +${pc}%` }[k] || ''
+  return { beast: `기본공격 피해 +${pc}%`, rage: `공격 속도 +${pc}%`, crush: `치명타 피해 +${pc}%p`,
+    battlerush: `적 ${PAS_RUSH_KILLS}마리 처치마다 공격력 +${pc}% (최대 ${PAS_STACK_MAX}번)`, hunter: `고기 획득량 +${pc}%`, expblessing: `경험치 획득량 +${pc}%`,
+    battlestart: `보스와 싸우는 동안 ${PAS_START_SEC}초마다 공격력 +${pc}% (최대 ${PAS_STACK_MAX}번)`, swift: `${PAS_SWIFT_SEC}초마다 공격 속도 +${pc}% (최대 ${PAS_STACK_MAX}번)` }[k] || ''
 }
 // 진화 단계별 패시브 아이콘 폴더. 패시브 자체는 8종 하나로 통합(2026-10-21) — 강화가 진화해도 이어지고, 아이콘만 단계에 맞춰 바뀐다
 const PASSIVE_TIERS = [
@@ -1605,7 +1609,6 @@ export default function App() {
       w.bossPending = false
       w.spawnTimer = 200
       w.spawnIdx = 0                 // 일렬 배치 순번 (웨이브마다 리셋)
-      w.bsOn = false
       w.waveNum = n
       w.clearedFlag = false
       w.waveT0 = w.clk || 0            // 처치 속도 측정용(일시정지 제외 실제 시간)
@@ -1616,7 +1619,6 @@ export default function App() {
       w.enemies = []; w.stones = []; w.rocks = []; w.waves = []
       w.bossBattle = false; w.clearedFlag = false; w.bossPending = false
       w.adv = { ...cfg, mult: advMult(cfg.stage), bossOut: false, done: false, win: false }
-      w.bsOn = false
       w.advTime = ADV_TIME
       w.total = ADV_MOBS + 1; w.killed = 0; w.spawnTimer = 200
       // 일반 몹은 제자리 1열이므로 시간차 스폰 없이 **50마리를 한 번에 줄 세운다** (간격이 균일해짐)
@@ -1628,7 +1630,6 @@ export default function App() {
       w.enemies = []; w.stones = []; w.rocks = []; w.waves = []
       w.adv = null; w.bossBattle = false; w.clearedFlag = false; w.bossPending = false
       w.ev = { ...cfg, mult: evMult(cfg.stage || 1), bossOut: false, done: false, win: false, warnT: EV_WARN }
-      w.bsOn = false
       w.evTime = EV_TIME
       w.spawnLeft = 0; w.total = 1; w.killed = 0; w.spawnTimer = 200; w.spawnIdx = 0
       w.shake = 6
@@ -1663,7 +1664,6 @@ export default function App() {
       w.killed = 0
       w.bossPending = true
       w.bossGiveUp = false
-      w.bsOn = false                 // 전투 시작 패시브: 보스와 붙는 순간 10초 켠다
       w.spawnTimer = 200
       w.spawnIdx = 0                 // 보스전은 한 마리뿐 — 화면 끝에서 걸어 나오게 0부터
       w.clearedFlag = false
@@ -1765,13 +1765,14 @@ export default function App() {
       }
       if (items.length) setLootFly(v => [...v, ...items])
     }
-    // 패시브 피해 배율: 야수의 본능(일반몹) · 전투의 열기(처치 후 5초) · 전투 시작(보스 교전 후 10초)
+    // 패시브 공격력 배율(기본공격·스킬 공통): 전투 시작·전투의 열기 — 쌓인 횟수만큼. 야수의 본능은 기본공격만(dealDamage)
+    // 기본공격 속도 배율 = 능력치 + 광폭화 + 신속한 훈련 × 쌓인 횟수
+    function heroAspd(st) { const p = st.pas || {}; return st.aspdMult + (p.rage || 0) + (p.swift || 0) * (w.swiftN || 0) }
     function pasMult(t) {
       const p = S.current.pas || {}
       let m = 1
-      if (p.beast && !t.boss) m *= 1 + p.beast
-      if (p.battlerush && w.rushT > 0) m *= 1 + p.battlerush
-      if (p.battlestart && w.bsT > 0) m *= 1 + p.battlestart
+      if (p.battlerush) m *= 1 + p.battlerush * (w.rushN || 0)
+      if (p.battlestart) m *= 1 + p.battlestart * (w.bsN || 0)
       return m
     }
     function dealDamage(t, st) {
@@ -1782,7 +1783,7 @@ export default function App() {
         return
       }
       const crit = Math.random() < st.critRate
-      const dmg = st.atk * (crit ? st.critMult : 1) * pasMult(t)
+      const dmg = st.atk * (crit ? st.critMult : 1) * pasMult(t) * (1 + ((st.pas || {}).beast || 0))   // 야수의 본능: 기본공격 피해
       t.hp -= dmg
       t.flash = 1
       t.kb = Math.max(t.kb || 0, t.boss ? 30 : 85)   // 넉백 초기속도(px/s), ease-out 감쇠
@@ -1797,7 +1798,7 @@ export default function App() {
     }
     function killEnemy(t, st) {
       t.dead = true
-      w.rushT = PAS_RUSH_SEC              // 전투의 열기: 처치할 때마다 5초 새로 시작
+      if ((st.pas || {}).battlerush && (w.rushK = (w.rushK || 0) + 1) >= PAS_RUSH_KILLS) { w.rushK = 0; w.rushN = Math.min(PAS_STACK_MAX, (w.rushN || 0) + 1) }   // 전투의 열기: 5마리마다 1번
       t.dieT = 0.5
       w.killed++
       const gm = Math.floor(t.meat * st.meatMult)
@@ -2027,14 +2028,17 @@ export default function App() {
         // ── 스킬 시스템 (자동 발동) ──
         // 대기열: 쿨이 끝난 '시각'을 기록해 두고, 여러 개가 준비돼 있으면 먼저 준비된 것부터 쓴다
         w.skClock += dt
-        w.rushT = Math.max(0, (w.rushT || 0) - dt)
-        w.bsT = Math.max(0, (w.bsT || 0) - dt)
-        if ((w.bossBattle || w.ev || (w.adv && w.adv.bossOut)) && blocked && !w.bsOn) { w.bsOn = true; w.bsT = PAS_START_SEC }   // 보스와 교전이 시작된 순간(웨이브 보스·이벤트 던전·모험 보스)
+        // 중첩형 패시브 — 0으로 안 돌아가고, 히어로가 쓰러졌을 때만 0 (게임을 다시 켜면 w 가 새로 만들어져 0)
         const _pp = st.pas || {}
-        const _swiftOn = (w.skClock % PAS_SWIFT_CYCLE) < PAS_SWIFT_ON
-        const _cdRate = 1 + (_pp.rage || 0) + (_swiftOn ? (_pp.swift || 0) : 0)   // 광폭화 · 신속한 훈련
+        if (hero.hp <= 0) { w.swiftN = 0; w.swiftT = 0; w.bsN = 0; w.bsT = 0; w.rushN = 0; w.rushK = 0 }
+        else {
+          if (_pp.swift) { w.swiftT = (w.swiftT || 0) + dt; while (w.swiftT >= PAS_SWIFT_SEC) { w.swiftT -= PAS_SWIFT_SEC; w.swiftN = Math.min(PAS_STACK_MAX, (w.swiftN || 0) + 1) } }   // 신속한 훈련
+          if (_pp.battlestart && (w.bossBattle || w.ev || (w.adv && w.adv.bossOut)) && blocked) {   // 전투 시작: 보스(웨이브·이벤트·모험)와 붙어 있는 시간만 센다
+            w.bsT = (w.bsT || 0) + dt; while (w.bsT >= PAS_START_SEC) { w.bsT -= PAS_START_SEC; w.bsN = Math.min(PAS_STACK_MAX, (w.bsN || 0) + 1) }
+          }
+        }
         for (let i = 0; i < SKILLS.length; i++) if (w.skillCd[i] > 0) {
-          w.skillCd[i] = Math.max(0, w.skillCd[i] - dt * _cdRate)
+          w.skillCd[i] = Math.max(0, w.skillCd[i] - dt)
           if (w.skillCd[i] <= 0) w.skillRdy[i] = w.skClock
         }
         if (w.skill == null) {
@@ -2213,9 +2217,9 @@ export default function App() {
           const target = w._nearest()
           if (hero.cd <= 0 && target) {
             hero.state = 'attack'; hero.t = 0; hero.did = false
-            hero.cd = st.cd
+            hero.cd = st.cd * st.aspdMult / heroAspd(st)
             // 동료 동기화: 히어로 타격까지 걸리는 실제 시간(초) → 동료 투사체가 같은 순간 명중하도록 역산에 사용
-            const rate = SPEED * st.aspdMult
+            const rate = SPEED * heroAspd(st)
             if (st.mode === 'quad') w.heroHitIn = PUNCH.hitAt / rate
             else if (MELEE_MODES.includes(st.mode)) w.heroHitIn = (MC(st.mode).total * heroHitProg(st.mode, motRef.current)) / rate
             else {
@@ -2226,7 +2230,7 @@ export default function App() {
             w.atkSeq = (w.atkSeq || 0) + 1
           }
         } else if (hero.state === 'attack') {
-          hero.t += dt * SPEED * st.aspdMult
+          hero.t += dt * SPEED * heroAspd(st)
           if (st.mode === 'quad') {
             if (!hero.did && hero.t >= PUNCH.hitAt) {
               hero.did = true
