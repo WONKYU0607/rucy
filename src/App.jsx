@@ -709,7 +709,8 @@ const ALLY_GIVE = {
   healer: { atk: 1.0, regen: 0.01 },
 }
 const ALLY_GIVE_LABEL = { critDmg: '치명타 피해', skillDmg: '스킬 피해', hp: '최대 체력', dmgRed: '받는 피해 감소', atk: '공격력', regen: '체력 회복(초당)' }
-const ALLY_MAT = { hunter: 0, shaman: 1, healer: 2, giant: 3 }   // 레벨업 재료(동료 재료 1~4). 1회에 전직 단계 수만큼
+const ALLY_MAT = { hunter: 0, shaman: 1, healer: 2, giant: 3 }   // 레벨업 재료(동료 재료 1~4). 1회에 ALLY_LV_MAT × 전직 단계
+const ALLY_LV_MAT = 100   // 2026-10-25 확정: 레벨업 1회 = 재료 100 × 전직 단계 → 1명 끝까지 148,500개(하루 3번×15분 약 195일)
 
 const ALLY_DEFS = {
   hunter: {
@@ -3321,6 +3322,7 @@ export default function App() {
   function switchSet(n) { if (n >= 0 && n < SET_COUNT) setActiveSet(n) }
   function enterAdventure() {
     if (uiEdit || !advSel || (!DEBUG && ruby < ADV_COST_RUBY)) return
+    if ((advStage[advSel.key] || 0) >= ADV_STAGES) return   // 10단계를 다 깼으면 끝 — 다시 못 들어간다(2026-10-25)
     const stage = Math.min(ADV_STAGES, (advStage[advSel.key] || 0) + 1)
     if (!DEBUG) setRuby(r => r - ADV_COST_RUBY)
     world.current.advStart = { key: advSel.key, boss: advSel.boss, name: advSel.name, stage, wave }
@@ -3664,6 +3666,8 @@ export default function App() {
         const cleared = advStage[advSel.key] || 0
         const stage = Math.min(ADV_STAGES, cleared + 1)
         const rw = advReward(advSel.key, stage)
+        const allDone = cleared >= ADV_STAGES                 // 10단계를 다 깼으면 끝 — 다시 못 들어간다
+        const canEnter = !allDone && (DEBUG || ruby >= ADV_COST_RUBY)
         return (
         <div style={st.advOverlay} onClick={() => { if (!uiEdit) setAdvSel(null) }}>
           <div data-edit="advwin" style={st.advWin} onClick={e => e.stopPropagation()}>
@@ -3699,8 +3703,8 @@ export default function App() {
             </div>
 
             <div style={st.advWinBtns}>
-              <button data-edit="adventer" style={{ ...st.advEnterBtn, ...(!DEBUG && ruby < ADV_COST_RUBY ? st.advBtnOff : null) }} onClick={enterAdventure}>
-                진입 <img src="/ui/ruby.webp" alt="" style={st.advRuby} />{DEBUG ? '∞' : fmt(ruby) + '/' + ADV_COST_RUBY}
+              <button data-edit="adventer" style={{ ...st.advEnterBtn, ...(canEnter ? null : st.advBtnOff) }} onClick={enterAdventure}>
+                {allDone ? '완료' : <>진입 <img src="/ui/ruby.webp" alt="" style={st.advRuby} />{DEBUG ? '∞' : fmt(ruby) + '/' + ADV_COST_RUBY}</>}
               </button>
               <button data-edit="advclose" style={st.advCloseBtn} onClick={() => { if (!uiEdit) setAdvSel(null) }}>닫기</button>
             </div>
@@ -3716,7 +3720,7 @@ export default function App() {
         const G = allyGrowth(lv, stg), at = ALLY_ATK[allyPick], gv = ALLY_GIVE[allyPick] || {}
         const pc = v => Math.round(v * 1000) / 10
         const num = v => v >= 1e8 ? fmt(v) : v >= 100 ? Math.round(v).toLocaleString() : (Math.round(v * 10) / 10)
-        const mi = ALLY_MAT[allyPick], cost = stg                       // 레벨업 1회 = 전용 재료 × 전직 단계
+        const mi = ALLY_MAT[allyPick], cost = ALLY_LV_MAT * stg         // 레벨업 1회 = 전용 재료 100 × 전직 단계
         const canLv = lv < ALLY_LV_MAX && (DEBUG || (mats[mi] || 0) >= cost)
         const selfRows = at
           ? [['공격', `히어로 공격력의 ${pc(at.mult * G)}%`], ['현재 피해', num((S.current.atk || 0) * at.mult * G)], ['공격 주기', `${at.cd}초${at.aoe ? ' · 광역' : ''}`]]
