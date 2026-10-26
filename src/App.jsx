@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { initializeApp } from 'firebase/app'
+import { LANG, EN_ON, T, TF, L, enUnit } from './i18n.js'
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut } from 'firebase/auth'
-import { getFirestore, doc, getDoc, setDoc, collection, query, where, getCountFromServer } from 'firebase/firestore'
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query, where, getCountFromServer } from 'firebase/firestore'
 
 // ── Firebase 클라우드 세이브 설정: 콘솔 웹앱 구성값 붙여넣기 ──
 const FIREBASE_CONFIG = {
@@ -35,19 +36,38 @@ const IS_PC = (() => {
   return true
 })()
 const EDITOR = IS_PC && DEV        // 편집기(⚙ UI 편집·모션 편집)를 띄울지 — PC + 개발자 모드일 때만
+// ── 휴대폰 하단바 뒤로가기 (2026-10-26) ──
+// 브라우저 기록에 여유분(BACK_WANT개)을 쌓아 두고, 뒤로가기가 오면 popstate 로 받아 게임 안에서 처리한다
+// (열린 창 닫기 → 영웅 탭 → 게임 종료 확인). 앱(Capacitor)에서도 하단바 뒤로가기는 웹뷰의 '뒤로'로 들어와 같은 길을 탄다.
+// **popstate 안에서 다시 쌓으면 안 된다.** 크롬은 사용자 조작 없이 만든 기록을 뒤로가기 때 건너뛰고 popstate 도 안 띄워서
+// 두 번째 뒤로가기에 사이트가 그냥 나가진다(총칼대전에서 겪음). 그래서 사용자가 화면을 누를 때 여유분을 채운다.
+const BACK_WANT = 4
+let backGuards = 0
+let onBack = null                    // App 이 매 렌더마다 최신 처리 함수로 바꿔 끼운다
+const backTopUp = () => { if (backGuards < 0) return; try { while (backGuards < BACK_WANT) { backGuards++; history.pushState({ pdBack: backGuards }, '') } } catch {} }
+if (typeof window !== 'undefined') {
+  backTopUp()
+  for (const ev of ['pointerdown', 'touchstart', 'mousedown', 'keydown']) window.addEventListener(ev, backTopUp, { capture: true, passive: true })
+  window.addEventListener('popstate', () => { if (backGuards > 0) backGuards--; if (onBack) onBack() })
+}
+// 게임 종료: 앱이면 앱을 닫고, 웹이면 게임에 들어오기 전 페이지로 돌아간다(브라우저 탭은 페이지가 스스로 닫을 수 없다)
+const leaveGame = () => {
+  const app = typeof window !== 'undefined' && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App
+  if (app && app.exitApp) { app.exitApp(); return }
+  onBack = null
+  const n = Math.max(0, backGuards) + 1; backGuards = -1
+  try { history.go(-n) } catch {}
+  setTimeout(() => { try { window.close() } catch {} }, 300)
+}
 // ── 코드에 박아둔 UI·모션 값의 기준 시각 ─────────────────────────────
 // 저장된(브라우저/클라우드) 편집 시각이 이 시각보다 **오래됐으면** 코드값으로 덮는다.
 // · 모바일처럼 편집 안 하는 기기 → 배포만 하면 PC 값이 자동으로 들어옴
 // · PC에서 배포 후 편집한 값 → 편집 시각이 더 최신이라 그대로 유지됨
 // 사용자 설정을 코드에 새로 박을 때만 이 줄을 현재 시각으로 갱신할 것.
 // 진입창(TAP TO START) 배경: 한국어 사용자는 기존 그림, 그 외에는 영문 그림.
-// 개발자 모드에서만 ?intro=en / ?intro=ko 로 강제 지정(확인용)
-const isKoUser = () => { try { return /^ko/i.test(navigator.language || (navigator.languages || [])[0] || '') } catch { return true } }
-const SPLASH_BG = (() => {
-  let ko = isKoUser()
-  if (DEV) try { const q = new URLSearchParams(location.search); if (q.get('intro') === 'en') ko = false; if (q.get('intro') === 'ko') ko = true } catch {}
-  return ko ? '/startbg/startbg.webp' : '/startbg/startbg_en.webp'
-})()
+// 언어는 i18n.js 의 LANG(기기 언어, 개발자 모드에선 ?lang= / ?intro= 로 바꿔 볼 수 있음)
+const SPLASH_BG = LANG === 'ko' ? '/startbg/startbg.webp' : '/startbg/startbg_en.webp'
+if (typeof document !== 'undefined') document.title = T('오스트랄로피테쿠스 키우기')
 const CFG_STAMP = Date.parse('2026-08-12T17:25:00+09:00')
 
 // ── 주인공 애니메이션 (flip 틀리면 해당 값만 수정) ──
@@ -92,9 +112,9 @@ const PAS_START_SEC = 10        // 전투 시작: 보스와 싸우는 시간 이
 const PAS_RUSH_KILLS = 5        // 전투의 열기: 이만큼 처치마다 1번
 const passiveText = (k, v) => {
   const pc = Math.round(v * 1000) / 10
-  return { beast: `기본공격 피해 +${pc}%`, rage: `공격 속도 +${pc}%`, crush: `치명타 피해 +${pc}%p`,
-    battlerush: `적 ${PAS_RUSH_KILLS}마리 처치마다 공격력 +${pc}% (최대 ${PAS_STACK_MAX}번)`, hunter: `고기 획득량 +${pc}%`, expblessing: `경험치 획득량 +${pc}%`,
-    battlestart: `보스와 싸우는 동안 ${PAS_START_SEC}초마다 공격력 +${pc}% (최대 ${PAS_STACK_MAX}번)`, swift: `${PAS_SWIFT_SEC}초마다 공격 속도 +${pc}% (최대 ${PAS_STACK_MAX}번)` }[k] || ''
+  return { beast: TF('기본공격 피해 +{0}%', pc), rage: TF('공격 속도 +{0}%', pc), crush: TF('치명타 피해 +{0}%p', pc),
+    battlerush: TF('적 {0}마리 처치마다 공격력 +{1}% (최대 {2}번)', PAS_RUSH_KILLS, pc, PAS_STACK_MAX), hunter: TF('고기 획득량 +{0}%', pc), expblessing: TF('경험치 획득량 +{0}%', pc),
+    battlestart: TF('보스와 싸우는 동안 {0}초마다 공격력 +{1}% (최대 {2}번)', PAS_START_SEC, pc, PAS_STACK_MAX), swift: TF('{0}초마다 공격 속도 +{1}% (최대 {2}번)', PAS_SWIFT_SEC, pc, PAS_STACK_MAX) }[k] || ''
 }
 // 진화 단계별 패시브 아이콘 폴더. 패시브 자체는 8종 하나로 통합(2026-10-21) — 강화가 진화해도 이어지고, 아이콘만 단계에 맞춰 바뀐다
 const PASSIVE_TIERS = [
@@ -104,7 +124,7 @@ const PASSIVE_TIERS = [
   { base: 131, path: k => `/skill/passive/sapiens_${k}.webp`, stages: [4] },     // 호모 사피엔스
   { base: 141, path: k => `/skill/passive/human_${k}.webp`, stages: [5] },       // 인간
 ]
-const PASSIVE_SHEET = PASSIVE_KEYS.map(([k, nm, ds], i) => ({ id: 101 + i, n: 1, h: 0, stage: -1, stages: [0, 1, 2, 3, 4, 5], passive: true, pkey: k, ic: PASSIVE_TIERS[0].path(k), title: nm, desc2: ds }))
+const PASSIVE_SHEET = PASSIVE_KEYS.map(([k, nm, ds], i) => ({ id: 101 + i, n: 1, h: 0, stage: -1, stages: [0, 1, 2, 3, 4, 5], passive: true, pkey: k, ic: PASSIVE_TIERS[0].path(k), title: T(nm), desc2: T(ds) }))
 const passiveIcon = (k, ev) => PASSIVE_TIERS[Math.max(0, Math.min(PASSIVE_TIERS.length - 1, (ev || 0) - 1))].path(k)   // 4족·직립 = 1번 폴더
 const SKILL_SHEET = [
   { id: 1, n: 6, h: 280, stage: 1, title: '번개 바위', charSeq: [1, 2, 3, 4], fx: { type: 'strike', frames: [5, 6], fxH: 240 } },
@@ -192,14 +212,14 @@ function LootPiece({ p, done }) {
 }
 // 모험 대륙 (지도 위 버튼 → 진입창 → 전투). x/y=지도상 기본 위치%
 const CONTINENTS = [
-  { key: 'africa', name: '아프리카', x: 50, y: 55, mon: '스피노사우루스', boss: 'spino' },
-  { key: 'middle_east', name: '중동', x: 57, y: 43, mon: '안킬로사우루스', boss: 'anky' },
-  { key: 'asia', name: '아시아', x: 67, y: 36, mon: '벨로키랍토르', boss: 'raptor' },
-  { key: 'europe', name: '유럽', x: 46, y: 23, mon: '트리케라톱스', boss: 'trike' },
-  { key: 'north_america', name: '북아메리카', x: 15, y: 28, mon: '티라노사우루스', boss: 'trex' },
-  { key: 'south_america', name: '남아메리카', x: 23, y: 66, mon: '브라키오사우루스', boss: 'brachio' },
-  { key: 'oceania', name: '오세아니아', x: 82, y: 72, mon: '프테라노돈', boss: 'ptera' },
-  { key: 'greenland', name: '그린란드', x: 22, y: 9, mon: '스테고사우루스', boss: 'stego' },
+  { key: 'africa', name: T('아프리카'), x: 50, y: 55, mon: T('스피노사우루스'), boss: 'spino' },
+  { key: 'middle_east', name: T('중동'), x: 57, y: 43, mon: T('안킬로사우루스'), boss: 'anky' },
+  { key: 'asia', name: T('아시아'), x: 67, y: 36, mon: T('벨로키랍토르'), boss: 'raptor' },
+  { key: 'europe', name: T('유럽'), x: 46, y: 23, mon: T('트리케라톱스'), boss: 'trike' },
+  { key: 'north_america', name: T('북아메리카'), x: 15, y: 28, mon: T('티라노사우루스'), boss: 'trex' },
+  { key: 'south_america', name: T('남아메리카'), x: 23, y: 66, mon: T('브라키오사우루스'), boss: 'brachio' },
+  { key: 'oceania', name: T('오세아니아'), x: 82, y: 72, mon: T('프테라노돈'), boss: 'ptera' },
+  { key: 'greenland', name: T('그린란드'), x: 22, y: 9, mon: T('스테고사우루스'), boss: 'stego' },
 ]
 // UI 기준 해상도 — 모든 편집값(px)이 이 판 위에서 맞춰짐. 실제 화면은 이 판을 통째로 확대/축소
 const ADV_STAGES = 10          // 대륙당 탐험 단계 수
@@ -246,7 +266,7 @@ const DINO_ATK_FRAMES = {
   trike: [2, 3, 4], stego: [2, 3, 4], anky: [2, 3, 4], brachio: [2, 3, 4],
   ptera: [1, 3],
 }
-const DINO_NAME = { trex: '티라노', spino: '스피노', trike: '트리케라톱스', stego: '스테고', raptor: '랩터', anky: '안킬로', ptera: '익룡', brachio: '브라키오' }
+const DINO_NAME = { trex: T('티라노'), spino: T('스피노'), trike: T('트리케라톱스'), stego: T('스테고'), raptor: T('랩터'), anky: T('안킬로'), ptera: T('익룡'), brachio: T('브라키오') }
 // 종별 정지 위치 보정(px): +면 더 오른쪽(멀리)에서 멈춤, −면 더 가까이
 const DINO_STOP = { trex: 51, spino: 11, trike: 16, stego: 0, raptor: 2, anky: 0, ptera: 23, brachio: -21 }
 const DINO_KEYS = ['trex', 'spino', 'trike', 'stego', 'raptor', 'anky', 'ptera', 'brachio']
@@ -655,9 +675,9 @@ const gearMain = i => GEAR_BASE * Math.pow(GEAR_STEP, i - 1)
 const gearLvMult = lv => 1 + GEAR_ENH * (lv || 0)
 const gearStats = (cat, i, lv = 0) => {
   const m = gearLvMult(lv), b = gearMain(i) * m
-  if (cat === '무기') return [['공격력', b], ['치명타 피해', 5 * i * m]]
-  if (cat === '방어구') return [['최대 체력', b], ['받는 피해 감소', Math.min(GEAR_RED_CAP, i * m)]]
-  return [['스킬 피해', b], ['고기·경험치 획득량', 2 * i * m]]
+  if (cat === '무기') return [[T('공격력'), b], [T('치명타 피해'), 5 * i * m]]
+  if (cat === '방어구') return [[T('최대 체력'), b], [T('받는 피해 감소'), Math.min(GEAR_RED_CAP, i * m)]]
+  return [[T('스킬 피해'), b], [T('고기·경험치 획득량'), 2 * i * m]]
 }
 const gearOwnPct = (i, lv) => gearMain(i) * gearLvMult(lv) * GEAR_OWN   // 보유 효과(주 능력치 %)
 const enhCost = lv => Math.floor(100 * Math.pow(1.06, lv))   // 강화 큐브: 100 → Lv.100 약 3.4만 — 큐브 수급과 같이 마지막에 조정
@@ -668,6 +688,7 @@ const gearSrc = (cat, n) => `${CAT_DIR[cat]}${n}.webp`
 
 // ── 오프라인 보상 설정 (직접 수정 가능) ─────────────────────────
 const OFFLINE_MIN_SEC = 0           // 부재 시간 조건 없음 (잠깐 나갔다 와도 지급)
+const RESUME_MIN_SEC = 60           // 앱을 내렸다 돌아올 때는 1분 이상 비웠을 때만 (2026-10-26)
 const OFFLINE_CAP_SEC = 4 * 3600    // 최대 인정 시간 (4시간) — 2026-10-21 8시간에서 낮춤
 const OFFLINE_RATE = 0.5            // 온라인 대비 효율 (50%)
 // 오프라인 처치 수 = 부재 시간 × 50% × '최근 온라인 처치 속도'(일반 웨이브를 깬 속도의 이동평균, 세이브에 저장).
@@ -679,8 +700,8 @@ const SKILLS = SKILL_SHEET.map(c => {
   const ends = []; let acc = 0
   for (const t of ft) { acc += t; ends.push(acc) }
   return {
-    key: 's' + c.id, id: c.id, name: c.title || ('스킬 ' + c.id), anim: 's_' + c.id, icon: String(c.id), stage: c.stage,
-    stages: c.stages || null, passive: !!c.passive, pkey: c.pkey || null, icon2: c.ic || null, desc2: c.desc2 || SK_DESC[c.id] || null,
+    key: 's' + c.id, id: c.id, name: c.title ? T(c.title) : TF('스킬 {0}', c.id), anim: 's_' + c.id, icon: String(c.id), stage: c.stage,
+    stages: c.stages || null, passive: !!c.passive, pkey: c.pkey || null, icon2: c.ic || null, desc2: (c.desc2 || SK_DESC[c.id]) ? T(c.desc2 || SK_DESC[c.id]) : null,
     h: c.h, fx: c.fx || null, frameEnds: ends, frameT: ft,
     rank: SK_RANK[c.id] || 0,
     cd: SK_CD_DMG[c.id] ? SK_CD_DMG[c.id][0] : (c.cd ?? 2), cast: acc, hitAt: c.hitAt ?? 0.55,
@@ -742,20 +763,20 @@ const ALLY_GIVE = {
   giant:  { hp: 1.0, dmgRed: 0.5 },
   healer: { atk: 1.0, regen: 0.01 },
 }
-const ALLY_GIVE_LABEL = { critDmg: '치명타 피해', skillDmg: '스킬 피해', hp: '최대 체력', dmgRed: '받는 피해 감소', atk: '공격력', regen: '체력 회복(초당)' }
+const ALLY_GIVE_LABEL = { critDmg: T('치명타 피해'), skillDmg: T('스킬 피해'), hp: T('최대 체력'), dmgRed: T('받는 피해 감소'), atk: T('공격력'), regen: T('체력 회복(초당)') }
 const ALLY_MAT = { hunter: 0, shaman: 1, healer: 2, giant: 3 }   // 레벨업 재료(동료 재료 1~4). 1회에 ALLY_LV_MAT × 전직 단계
 const ALLY_LV_MAT = 45    // 2026-10-25 확정: 레벨업 1회 = 재료 45 × 전직 단계 → 1명 끝까지 66,825개(하루 3번×15분 약 212일, 5차 진화와 같이)
 
 const ALLY_DEFS = {
   hunter: {
-    name: '헌터', h: 68, xOff: -75, yOff: 27, range: 450,
+    name: T('헌터'), h: 68, xOff: -75, yOff: 27, range: 450,
     projSpd: 560, projW: 62, projBob: 0, atkDur: 0.42, throwAt: 0.16, projYr: 0.62,
     walk: [1, 2, 3, 4].map(i => `/ally/hunter/hwalk_${i}.webp`),
     atk: [1, 2].map(i => `/ally/hunter/hatk_${i}.webp`),
     proj: '/ally/hunter/spear.webp',
   },
   shaman: {
-    name: '주술사', h: 68, xOff: -75, yOff: -34, range: 450,
+    name: T('주술사'), h: 68, xOff: -75, yOff: -34, range: 450,
     projSpd: 400, projW: 26, projBob: 5, atkDur: 0.5, throwAt: 0.2, projYr: 0.75,
     walk: [1, 2, 3, 4].map(i => `/ally/shaman/swalk_${i}.webp`),
     atk: [1].map(i => `/ally/shaman/satk_${i}.webp`),
@@ -763,13 +784,13 @@ const ALLY_DEFS = {
   },
   healer: {
     // 공격 없음 — 히어로 공격력·체력 회복을 올려 준다(ALLY_GIVE.healer)
-    name: '힐러', kind: 'buff', h: 60, xOff: -108, yOff: -5,
+    name: T('힐러'), kind: 'buff', h: 60, xOff: -108, yOff: -5,
     walk: [1, 2, 3, 4, 5, 6, 7, 8].map(i => `/ally/healer/heal_${i}.webp`),
     atk: [],
   },
   giant: {
     // 근접 주먹 — 투사체 없이 공격 모션 hitAt 초에 맨 앞 적을 직접 타격
-    name: '거인', kind: 'melee', h: 125, xOff: -155, yOff: 3, range: 360,
+    name: T('거인'), kind: 'melee', h: 125, xOff: -155, yOff: 3, range: 360,
     atkDur: 0.5, hitAt: 0.25,
     walk: [1, 2, 3].map(i => `/ally/giant/gwalk_${i}.webp`),
     atk: [1, 2, 3].map(i => `/ally/giant/gatk_${i}.webp`),
@@ -822,58 +843,58 @@ const heroHitProg = (m, mot) => {
 const ENEMY_TYPES = {
   // 일반몹 50종 — 전부 1프레임(/monster/{키}/{키}_1.png), 원본이 왼쪽을 향해 flip 불필요
   // 능력치(체력·공격·보상)는 종과 상관없이 웨이브 공식(B)으로만 만든다 — 종은 이름·겉모습·속도·크기만
-  rabbit:   { name: '토끼', speed: 85,   h: 30, color: '#a1887f', flip: false, frames: ['/monster/rabbit/rabbit_1.webp'] },
-  antelope: { name: '영양', speed: 65,  h: 55, color: '#c98a4b', flip: false, frames: ['/monster/antelope/antelope_1.webp'] },
-  deer:     { name: '사슴', speed: 50, h: 75, color: '#b5794a', flip: false, frames: ['/monster/deer/deer_1.webp'] },
-  boar:     { name: '멧돼지', speed: 60, h: 65, color: '#7a6a52', flip: false, frames: ['/monster/boar/boar_1.webp'] },
-  wolf:     { name: '늑대', speed: 120, h: 55, color: '#9a8f7a', flip: false, frames: ['/monster/wolf/wolf_1.webp'] },
-  hyena:    { name: '하이에나', speed: 55, h: 55, color: '#b0a15f', flip: false, frames: ['/monster/hyena/hyena_1.webp'] },
-  bear:     { name: '동굴곰', speed: 40, h: 75, color: '#6b4f35', flip: false, frames: ['/monster/bear/bear_1.webp'] },
-  rhino:    { name: '털코뿔소', speed: 45, h: 70, color: '#9c988f', flip: false, frames: ['/monster/rhino/rhino_1.webp'] },
-  mammoth:  { name: '매머드', speed: 32, h: 120, color: '#5f4a34', flip: false, frames: ['/monster/mammoth/mammoth_1.webp'] },
-  tiger:    { name: '검치호', speed: 80, h: 60, color: '#c68a3c', flip: false, frames: ['/monster/tiger/tiger_1.webp'] },
+  rabbit:   { name: T('토끼'), speed: 85,   h: 30, color: '#a1887f', flip: false, frames: ['/monster/rabbit/rabbit_1.webp'] },
+  antelope: { name: T('영양'), speed: 65,  h: 55, color: '#c98a4b', flip: false, frames: ['/monster/antelope/antelope_1.webp'] },
+  deer:     { name: T('사슴'), speed: 50, h: 75, color: '#b5794a', flip: false, frames: ['/monster/deer/deer_1.webp'] },
+  boar:     { name: T('멧돼지'), speed: 60, h: 65, color: '#7a6a52', flip: false, frames: ['/monster/boar/boar_1.webp'] },
+  wolf:     { name: T('늑대'), speed: 120, h: 55, color: '#9a8f7a', flip: false, frames: ['/monster/wolf/wolf_1.webp'] },
+  hyena:    { name: T('하이에나'), speed: 55, h: 55, color: '#b0a15f', flip: false, frames: ['/monster/hyena/hyena_1.webp'] },
+  bear:     { name: T('동굴곰'), speed: 40, h: 75, color: '#6b4f35', flip: false, frames: ['/monster/bear/bear_1.webp'] },
+  rhino:    { name: T('털코뿔소'), speed: 45, h: 70, color: '#9c988f', flip: false, frames: ['/monster/rhino/rhino_1.webp'] },
+  mammoth:  { name: T('매머드'), speed: 32, h: 120, color: '#5f4a34', flip: false, frames: ['/monster/mammoth/mammoth_1.webp'] },
+  tiger:    { name: T('검치호'), speed: 80, h: 60, color: '#c68a3c', flip: false, frames: ['/monster/tiger/tiger_1.webp'] },
   // 신규 10종
-  monkey:   { name: '원숭이', speed: 100,   h: 55, color: '#8a6a4a', flip: false, frames: ['/monster/monkey/monkey_1.webp'] },
-  croc:     { name: '악어', speed: 45, h: 40, color: '#5f7a3a', flip: false, frames: ['/monster/croc/croc_1.webp'] },
-  elephant: { name: '코끼리', speed: 35, h: 105, color: '#8d8d94', flip: false, frames: ['/monster/elephant/elephant_1.webp'] },
-  giraffe:  { name: '기린', speed: 70, h: 145, color: '#d0a04a', flip: false, frames: ['/monster/giraffe/giraffe_1.webp'] },
-  ostrich:  { name: '타조', speed: 130, h: 95, color: '#3a3a3a', flip: false, frames: ['/monster/ostrich/ostrich_1.webp'] },
-  lion:     { name: '사자', speed: 90, h: 70, color: '#c68a3c', flip: false, frames: ['/monster/lion/lion_1.webp'] },
-  snake:    { name: '뱀', speed: 70, h: 30, color: '#6a7a4a', flip: false, frames: ['/monster/snake/snake_1.webp'] },
-  turtle:   { name: '거북이', speed: 30, h: 45, color: '#5a6a3a', flip: false, frames: ['/monster/turtle/turtle_1.webp'] },
-  komodo:   { name: '코모도 드래곤', speed: 55, h: 40, color: '#6a5a5a', flip: false, frames: ['/monster/komodo/komodo_1.webp'] },
-  eagle:    { name: '독수리', speed: 140, h: 70, color: '#5a4a3a', flip: false, air: 90, frames: ['/monster/eagle/eagle_1.webp'] },
+  monkey:   { name: T('원숭이'), speed: 100,   h: 55, color: '#8a6a4a', flip: false, frames: ['/monster/monkey/monkey_1.webp'] },
+  croc:     { name: T('악어'), speed: 45, h: 40, color: '#5f7a3a', flip: false, frames: ['/monster/croc/croc_1.webp'] },
+  elephant: { name: T('코끼리'), speed: 35, h: 105, color: '#8d8d94', flip: false, frames: ['/monster/elephant/elephant_1.webp'] },
+  giraffe:  { name: T('기린'), speed: 70, h: 145, color: '#d0a04a', flip: false, frames: ['/monster/giraffe/giraffe_1.webp'] },
+  ostrich:  { name: T('타조'), speed: 130, h: 95, color: '#3a3a3a', flip: false, frames: ['/monster/ostrich/ostrich_1.webp'] },
+  lion:     { name: T('사자'), speed: 90, h: 70, color: '#c68a3c', flip: false, frames: ['/monster/lion/lion_1.webp'] },
+  snake:    { name: T('뱀'), speed: 70, h: 30, color: '#6a7a4a', flip: false, frames: ['/monster/snake/snake_1.webp'] },
+  turtle:   { name: T('거북이'), speed: 30, h: 45, color: '#5a6a3a', flip: false, frames: ['/monster/turtle/turtle_1.webp'] },
+  komodo:   { name: T('코모도 드래곤'), speed: 55, h: 40, color: '#6a5a5a', flip: false, frames: ['/monster/komodo/komodo_1.webp'] },
+  eagle:    { name: T('독수리'), speed: 140, h: 70, color: '#5a4a3a', flip: false, air: 90, frames: ['/monster/eagle/eagle_1.webp'] },
   // 신규 30종
-  pig: { name: '돼지', speed: 60, h: 50, color: '#e8a8a8', flip: false, frames: ['/monster/pig/pig_1.webp'] },
-  chicken: { name: '닭', speed: 75, h: 45, color: '#e8e0d0', flip: false, frames: ['/monster/chicken/chicken_1.webp'] },
-  duck: { name: '오리', speed: 85, h: 40, color: '#4a6a3a', flip: false, frames: ['/monster/duck/duck_1.webp'] },
-  frog: { name: '개구리', speed: 70, h: 35, color: '#6a9a3a', flip: false, frames: ['/monster/frog/frog_1.webp'] },
-  bat: { name: '박쥐', speed: 135, h: 50, color: '#4a3a4a', flip: false, air: 80, frames: ['/monster/bat/bat_1.webp'] },
-  pelican: { name: '펠리컨', speed: 110, h: 70, color: '#e0d8c8', flip: false, air: 60, frames: ['/monster/pelican/pelican_1.webp'] },
-  mantis: { name: '사마귀', speed: 95, h: 60, color: '#7aa03a', flip: false, frames: ['/monster/mantis/mantis_1.webp'] },
-  polarbear: { name: '북극곰', speed: 42, h: 75, color: '#e8e8e0', flip: false, frames: ['/monster/polarbear/polarbear_1.webp'] },
-  alpaca: { name: '알파카', speed: 72, h: 70, color: '#e8dcc0', flip: false, frames: ['/monster/alpaca/alpaca_1.webp'] },
-  buffalo: { name: '버팔로', speed: 45, h: 80, color: '#5a4028', flip: false, frames: ['/monster/buffalo/buffalo_1.webp'] },
-  camel: { name: '낙타', speed: 58, h: 90, color: '#c89a5a', flip: false, frames: ['/monster/camel/camel_1.webp'] },
-  horse: { name: '말', speed: 115, h: 80, color: '#7a4a2a', flip: false, frames: ['/monster/horse/horse_1.webp'] },
-  panda: { name: '판다', speed: 40, h: 65, color: '#e8e8e8', flip: false, frames: ['/monster/panda/panda_1.webp'] },
-  scorpion: { name: '전갈', speed: 60, h: 40, color: '#5a3a4a', flip: false, frames: ['/monster/scorpion/scorpion_1.webp'] },
-  tarantula: { name: '타란툴라', speed: 80, h: 40, color: '#3a2a2a', flip: false, frames: ['/monster/tarantula/tarantula_1.webp'] },
-  cobra: { name: '킹코브라', speed: 65, h: 50, color: '#8a7a3a', flip: false, frames: ['/monster/cobra/cobra_1.webp'] },
-  zebra: { name: '얼룩말', speed: 105, h: 75, color: '#d8d8d8', flip: false, frames: ['/monster/zebra/zebra_1.webp'] },
-  cheetah: { name: '치타', speed: 150, h: 55, color: '#d0a04a', flip: false, frames: ['/monster/cheetah/cheetah_1.webp'] },
-  koala: { name: '코알라', speed: 55, h: 50, color: '#9a9aa0', flip: false, frames: ['/monster/koala/koala_1.webp'] },
-  kangaroo: { name: '캥거루', speed: 100, h: 90, color: '#b08a5a', flip: false, frames: ['/monster/kangaroo/kangaroo_1.webp'] },
-  cat: { name: '고양이', speed: 110, h: 40, color: '#8a8a8a', flip: false, frames: ['/monster/cat/cat_1.webp'] },
-  dog: { name: '개', speed: 95, h: 50, color: '#c8985a', flip: false, frames: ['/monster/dog/dog_1.webp'] },
-  hippo: { name: '하마', speed: 38, h: 80, color: '#9a7a9a', flip: false, frames: ['/monster/hippo/hippo_1.webp'] },
-  gorilla: { name: '고릴라', speed: 55, h: 75, color: '#3a3a3a', flip: false, frames: ['/monster/gorilla/gorilla_1.webp'] },
-  gator: { name: '앨리게이터', speed: 42, h: 40, color: '#4a6a3a', flip: false, frames: ['/monster/gator/gator_1.webp'] },
-  squirrel: { name: '다람쥐', speed: 95, h: 35, color: '#b06a3a', flip: false, frames: ['/monster/squirrel/squirrel_1.webp'] },
-  penguin: { name: '펭귄', speed: 50, h: 50, color: '#2a2a3a', flip: false, frames: ['/monster/penguin/penguin_1.webp'] },
-  seal: { name: '물개', speed: 45, h: 40, color: '#9a9aa8', flip: false, frames: ['/monster/seal/seal_1.webp'] },
-  cow: { name: '소', speed: 50, h: 70, color: '#e8e8e0', flip: false, frames: ['/monster/cow/cow_1.webp'] },
-  tiger2: { name: '호랑이', speed: 125, h: 55, color: '#d08a3c', flip: false, frames: ['/monster/tiger2/tiger2_1.webp'] },
+  pig: { name: T('돼지'), speed: 60, h: 50, color: '#e8a8a8', flip: false, frames: ['/monster/pig/pig_1.webp'] },
+  chicken: { name: T('닭'), speed: 75, h: 45, color: '#e8e0d0', flip: false, frames: ['/monster/chicken/chicken_1.webp'] },
+  duck: { name: T('오리'), speed: 85, h: 40, color: '#4a6a3a', flip: false, frames: ['/monster/duck/duck_1.webp'] },
+  frog: { name: T('개구리'), speed: 70, h: 35, color: '#6a9a3a', flip: false, frames: ['/monster/frog/frog_1.webp'] },
+  bat: { name: T('박쥐'), speed: 135, h: 50, color: '#4a3a4a', flip: false, air: 80, frames: ['/monster/bat/bat_1.webp'] },
+  pelican: { name: T('펠리컨'), speed: 110, h: 70, color: '#e0d8c8', flip: false, air: 60, frames: ['/monster/pelican/pelican_1.webp'] },
+  mantis: { name: T('사마귀'), speed: 95, h: 60, color: '#7aa03a', flip: false, frames: ['/monster/mantis/mantis_1.webp'] },
+  polarbear: { name: T('북극곰'), speed: 42, h: 75, color: '#e8e8e0', flip: false, frames: ['/monster/polarbear/polarbear_1.webp'] },
+  alpaca: { name: T('알파카'), speed: 72, h: 70, color: '#e8dcc0', flip: false, frames: ['/monster/alpaca/alpaca_1.webp'] },
+  buffalo: { name: T('버팔로'), speed: 45, h: 80, color: '#5a4028', flip: false, frames: ['/monster/buffalo/buffalo_1.webp'] },
+  camel: { name: T('낙타'), speed: 58, h: 90, color: '#c89a5a', flip: false, frames: ['/monster/camel/camel_1.webp'] },
+  horse: { name: T('말'), speed: 115, h: 80, color: '#7a4a2a', flip: false, frames: ['/monster/horse/horse_1.webp'] },
+  panda: { name: T('판다'), speed: 40, h: 65, color: '#e8e8e8', flip: false, frames: ['/monster/panda/panda_1.webp'] },
+  scorpion: { name: T('전갈'), speed: 60, h: 40, color: '#5a3a4a', flip: false, frames: ['/monster/scorpion/scorpion_1.webp'] },
+  tarantula: { name: T('타란툴라'), speed: 80, h: 40, color: '#3a2a2a', flip: false, frames: ['/monster/tarantula/tarantula_1.webp'] },
+  cobra: { name: T('킹코브라'), speed: 65, h: 50, color: '#8a7a3a', flip: false, frames: ['/monster/cobra/cobra_1.webp'] },
+  zebra: { name: T('얼룩말'), speed: 105, h: 75, color: '#d8d8d8', flip: false, frames: ['/monster/zebra/zebra_1.webp'] },
+  cheetah: { name: T('치타'), speed: 150, h: 55, color: '#d0a04a', flip: false, frames: ['/monster/cheetah/cheetah_1.webp'] },
+  koala: { name: T('코알라'), speed: 55, h: 50, color: '#9a9aa0', flip: false, frames: ['/monster/koala/koala_1.webp'] },
+  kangaroo: { name: T('캥거루'), speed: 100, h: 90, color: '#b08a5a', flip: false, frames: ['/monster/kangaroo/kangaroo_1.webp'] },
+  cat: { name: T('고양이'), speed: 110, h: 40, color: '#8a8a8a', flip: false, frames: ['/monster/cat/cat_1.webp'] },
+  dog: { name: T('개'), speed: 95, h: 50, color: '#c8985a', flip: false, frames: ['/monster/dog/dog_1.webp'] },
+  hippo: { name: T('하마'), speed: 38, h: 80, color: '#9a7a9a', flip: false, frames: ['/monster/hippo/hippo_1.webp'] },
+  gorilla: { name: T('고릴라'), speed: 55, h: 75, color: '#3a3a3a', flip: false, frames: ['/monster/gorilla/gorilla_1.webp'] },
+  gator: { name: T('앨리게이터'), speed: 42, h: 40, color: '#4a6a3a', flip: false, frames: ['/monster/gator/gator_1.webp'] },
+  squirrel: { name: T('다람쥐'), speed: 95, h: 35, color: '#b06a3a', flip: false, frames: ['/monster/squirrel/squirrel_1.webp'] },
+  penguin: { name: T('펭귄'), speed: 50, h: 50, color: '#2a2a3a', flip: false, frames: ['/monster/penguin/penguin_1.webp'] },
+  seal: { name: T('물개'), speed: 45, h: 40, color: '#9a9aa8', flip: false, frames: ['/monster/seal/seal_1.webp'] },
+  cow: { name: T('소'), speed: 50, h: 70, color: '#e8e8e0', flip: false, frames: ['/monster/cow/cow_1.webp'] },
+  tiger2: { name: T('호랑이'), speed: 125, h: 55, color: '#d08a3c', flip: false, frames: ['/monster/tiger2/tiger2_1.webp'] },
 }
 const EIMG = {}
 for (const k in ENEMY_TYPES) {
@@ -889,10 +910,10 @@ for (const k in ENEMY_TYPES) {
 // ── 이벤트 던전: 4개 던전, 각 던전에 웨이브 보스 5명씩 배정 ──
 // 배치: 보스1~5=4번던전, 6~10=3번, 11~15=2번, 16~20=1번 (뒤 던전일수록 강한 보스)
 const EV_DUNGEONS = [
-  { key: 'ev1', name: '수호자의 성소', from: 16, to: 20 },
-  { key: 'ev2', name: '무너진 요새', from: 11, to: 15 },
-  { key: 'ev3', name: '잊혀진 밀림', from: 6, to: 10 },
-  { key: 'ev4', name: '용암의 심장', from: 1, to: 5 },
+  { key: 'ev1', name: T('수호자의 성소'), from: 16, to: 20 },
+  { key: 'ev2', name: T('무너진 요새'), from: 11, to: 15 },
+  { key: 'ev3', name: T('잊혀진 밀림'), from: 6, to: 10 },
+  { key: 'ev4', name: T('용암의 심장'), from: 1, to: 5 },
 ]
 const EV_EXTS = ['jpg', 'png', 'jpeg', 'webp', '']   // 순서대로 실제 로드해 확인. 마지막 ''는 확장자 없이 저장한 경우
 const EV_STAGES = 10           // 던전 보스당 단계 수 (도전창 10칸 바)
@@ -935,14 +956,14 @@ for (const d of EV_DUNGEONS) {
 }
 
 const BOSS_TYPES = [
-  { name: '저주받은 검치호', h: 125 }, { name: '뇌전 매머드', h: 145 }, { name: '암흑 고릴라', h: 135 },
-  { name: '용암 곰', h: 130 }, { name: '독왕 코브라', h: 125 },
-  { name: '서리 마수', h: 130 }, { name: '뇌전 기린', h: 175 }, { name: '수정 코뿔소', h: 135 },
-  { name: '심연 악어', h: 110 }, { name: '맹독 전갈', h: 120 },
-  { name: '바위 골렘', h: 150 }, { name: '숲 골렘', h: 150 }, { name: '용암 골렘', h: 150 },
-  { name: '얼음 골렘', h: 150 }, { name: '뇌전 거인', h: 150 },
-  { name: '원석 골렘', h: 150 }, { name: '고목 정령', h: 155 }, { name: '화염 골렘', h: 155 },
-  { name: '빙정 골렘', h: 150 }, { name: '폭풍 정령', h: 150 },
+  { name: T('저주받은 검치호'), h: 125 }, { name: T('뇌전 매머드'), h: 145 }, { name: T('암흑 고릴라'), h: 135 },
+  { name: T('용암 곰'), h: 130 }, { name: T('독왕 코브라'), h: 125 },
+  { name: T('서리 마수'), h: 130 }, { name: T('뇌전 기린'), h: 175 }, { name: T('수정 코뿔소'), h: 135 },
+  { name: T('심연 악어'), h: 110 }, { name: T('맹독 전갈'), h: 120 },
+  { name: T('바위 골렘'), h: 150 }, { name: T('숲 골렘'), h: 150 }, { name: T('용암 골렘'), h: 150 },
+  { name: T('얼음 골렘'), h: 150 }, { name: T('뇌전 거인'), h: 150 },
+  { name: T('원석 골렘'), h: 150 }, { name: T('고목 정령'), h: 155 }, { name: T('화염 골렘'), h: 155 },
+  { name: T('빙정 골렘'), h: 150 }, { name: T('폭풍 정령'), h: 150 },
 ].map((b, i) => ({ ...b, frames: [`/boss/boss${i + 1}/boss${i + 1}_1.webp`] }))   // 1번 프레임만 사용 — 제자리 고정 + 파고듦으로만 공격
 const BIMG = BOSS_TYPES.map(b => b.frames.map(src => mkImg(src)))
 const WAVE_CYCLE = ['rabbit', 'antelope', 'deer', 'boar', 'wolf', 'hyena', 'bear', 'rhino', 'tiger', 'mammoth', 'monkey', 'snake', 'ostrich', 'turtle', 'croc', 'komodo', 'eagle', 'giraffe', 'lion', 'elephant',
@@ -951,31 +972,31 @@ const WAVE_CYCLE = ['rabbit', 'antelope', 'deer', 'boar', 'wolf', 'hyena', 'bear
   'cat', 'dog', 'hippo', 'gorilla', 'gator', 'squirrel', 'penguin', 'seal', 'cow', 'tiger2']
 
 // ── 퀘스트 (내용은 임시 플레이스홀더 — 목록·보상·진행 연동은 추후 확정) ──
-const QUEST_TABS = ['일일 퀘스트', '반복 퀘스트', '업적']
+const QUEST_TABS = ['일일 퀘스트', '반복 퀘스트', '업적'].map(T)
 // ev: 이벤트 키(진행 카운트 소스), ric: 보상 재화 아이콘 (gem=다이아, ruby=루비 수정, pearl=진주)
 const QUEST_LIST = [
   [ // 일일 퀘스트 (자정 리셋, 1회 수령)
-    { ev: 'daily_done', name: '일일 퀘스트 완료', goal: 3, ric: '/ui/gem.webp', rv: 3000 },   // 아래 3개를 다 받으면
-    { ev: 'playtime', name: '플레이타임', goal: 1500, ric: '/ui/ruby.webp', rv: 1 },
-    { ev: 'summon', name: '장비 소환', goal: 10, ric: '/ui/ruby.webp', rv: 1 },
-    { ev: 'fuse', name: '장비 융합', goal: 10, ric: '/ui/ruby.webp', rv: 1 },
+    { ev: 'daily_done', name: T('일일 퀘스트 완료'), goal: 3, ric: '/ui/gem.webp', rv: 3000 },   // 아래 3개를 다 받으면
+    { ev: 'playtime', name: T('플레이타임'), goal: 1500, ric: '/ui/ruby.webp', rv: 1 },
+    { ev: 'summon', name: T('장비 소환'), goal: 10, ric: '/ui/ruby.webp', rv: 1 },
+    { ev: 'fuse', name: T('장비 융합'), goal: 10, ric: '/ui/ruby.webp', rv: 1 },
   ],
   [ // 반복 퀘스트 (수령 시 레벨↑ + 초과분 이월, 무한 반복)
-    { ev: 'stage', name: '스테이지 클리어', goal: 1, ric: '/ui/gem.webp', rv: 100 },
-    { ev: 'kill', name: '몬스터 처치', goal: 500, ric: '/ui/gem.webp', rv: 50 },
-    { ev: 'skill_get', name: '스킬 획득', goal: 1, ric: '/ui/gem.webp', rv: 100 },
-    { ev: 'summon', name: '장비 소환', goal: 30, ric: '/ui/gem.webp', rv: 100 },
-    { ev: 'fuse', name: '장비 융합', goal: 30, ric: '/ui/gem.webp', rv: 100 },
-    { ev: 'enh_atk', name: '공격력 강화', goal: 100, ric: '/ui/gem.webp', rv: 100 },
-    { ev: 'enh_hp', name: '체력 강화', goal: 100, ric: '/ui/gem.webp', rv: 100 },
-    { ev: 'enh_crit', name: '치명타 공격력 강화', goal: 100, ric: '/ui/gem.webp', rv: 100 },
+    { ev: 'stage', name: T('스테이지 클리어'), goal: 1, ric: '/ui/gem.webp', rv: 100 },
+    { ev: 'kill', name: T('몬스터 처치'), goal: 500, ric: '/ui/gem.webp', rv: 50 },
+    { ev: 'skill_get', name: T('스킬 획득'), goal: 1, ric: '/ui/gem.webp', rv: 100 },
+    { ev: 'summon', name: T('장비 소환'), goal: 30, ric: '/ui/gem.webp', rv: 100 },
+    { ev: 'fuse', name: T('장비 융합'), goal: 30, ric: '/ui/gem.webp', rv: 100 },
+    { ev: 'enh_atk', name: T('공격력 강화'), goal: 100, ric: '/ui/gem.webp', rv: 100 },
+    { ev: 'enh_hp', name: T('체력 강화'), goal: 100, ric: '/ui/gem.webp', rv: 100 },
+    { ev: 'enh_crit', name: T('치명타 공격력 강화'), goal: 100, ric: '/ui/gem.webp', rv: 100 },
   ],
   [ // 업적 (계단식 무한 반복: 수령할 때마다 목표 +1, 매 수령 시 진주 지급. base=표시 시작값)
-    { ev: 'levelup', name: '캐릭터 레벨업', base: 1, ric: '/ui/pearl.webp', rv: 10 },
-    { ev: 'evolve', name: '캐릭터 진화', base: 1, max: 5, ric: '/ui/pearl.webp', rv: 100 },   // 진화는 5회가 끝
-    { ev: 'skill_enh', name: '스킬 강화', base: 0, ric: '/ui/pearl.webp', rv: 10 },
-    { ev: 'equip_enh', name: '장비 강화', base: 0, ric: '/ui/pearl.webp', rv: 10 },
-    { ev: 'adv_clear', name: '모험 클리어', base: 0, ric: '/ui/pearl.webp', rv: 10 },
+    { ev: 'levelup', name: T('캐릭터 레벨업'), base: 1, ric: '/ui/pearl.webp', rv: 10 },
+    { ev: 'evolve', name: T('캐릭터 진화'), base: 1, max: 5, ric: '/ui/pearl.webp', rv: 100 },   // 진화는 5회가 끝
+    { ev: 'skill_enh', name: T('스킬 강화'), base: 0, ric: '/ui/pearl.webp', rv: 10 },
+    { ev: 'equip_enh', name: T('장비 강화'), base: 0, ric: '/ui/pearl.webp', rv: 10 },
+    { ev: 'adv_clear', name: T('모험 클리어'), base: 0, ric: '/ui/pearl.webp', rv: 10 },
   ],
 ]
 const questDayStr = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}` }
@@ -1038,16 +1059,16 @@ const bossXln = w => {
 const bossHpAt = w => Math.exp(Math.log(B.hp0 * B.bossHpX) + (w - 1) * Math.log(B.hpR * B.bossHpG) + bossXln(w))
 // 고기 강화 9종 / 스킬포인트 11종 — 획득량 2종은 스킬포인트로만
 const STAT_BAL = {
-  atk:      { name: '공격력',       cost: 10,  growth: 1.08, mult: 1.08 },
-  hp:       { name: '체력',         cost: 10,  growth: 1.08, mult: 1.08 },
-  regen:    { name: '체력 회복',    cost: 500, growth: 1.12, per: 0.01, suffix: '%/초', cap: 50 },
-  critRate: { name: '치명타 확률',  cost: 500, growth: 1.12, per: 0.1,  suffix: '%', cap: 100 },
-  critDmg:  { name: '치명타 공격력', cost: 500, growth: 1.12, per: 1,   suffix: '%', base: 150 },
-  acc:      { name: '명중률',       cost: 500, growth: 1.12, per: 0.1,  suffix: '%', base: 1, cap: 100 },
-  aspd:     { name: '공격 속도',    cost: 500, growth: 1.12, per: 0.1,  suffix: '%', base: 100, cap: 200 },
-  mspd:     { name: '이동 속도',    cost: 500, growth: 1.12, per: 0.1,  suffix: '%', base: 100, cap: 200 },
-  meatUp:   { name: '고기 획득량',  cost: 500, growth: 1.12, per: 1, suffix: '%', base: 100, cap: 1000, spOnly: true },
-  expUp:    { name: '경험치 획득량', cost: 500, growth: 1.12, per: 1, suffix: '%', base: 100, cap: 1000, spOnly: true },
+  atk:      { name: T('공격력'),       cost: 10,  growth: 1.08, mult: 1.08 },
+  hp:       { name: T('체력'),         cost: 10,  growth: 1.08, mult: 1.08 },
+  regen:    { name: T('체력 회복'),    cost: 500, growth: 1.12, per: 0.01, suffix: T('%/초'), cap: 50 },
+  critRate: { name: T('치명타 확률'),  cost: 500, growth: 1.12, per: 0.1,  suffix: '%', cap: 100 },
+  critDmg:  { name: T('치명타 공격력'), cost: 500, growth: 1.12, per: 1,   suffix: '%', base: 150 },
+  acc:      { name: T('명중률'),       cost: 500, growth: 1.12, per: 0.1,  suffix: '%', base: 1, cap: 100 },
+  aspd:     { name: T('공격 속도'),    cost: 500, growth: 1.12, per: 0.1,  suffix: '%', base: 100, cap: 200 },
+  mspd:     { name: T('이동 속도'),    cost: 500, growth: 1.12, per: 0.1,  suffix: '%', base: 100, cap: 200 },
+  meatUp:   { name: T('고기 획득량'),  cost: 500, growth: 1.12, per: 1, suffix: '%', base: 100, cap: 1000, spOnly: true },
+  expUp:    { name: T('경험치 획득량'), cost: 500, growth: 1.12, per: 1, suffix: '%', base: 100, cap: 1000, spOnly: true },
 }
 const SL = k => STAT_BAL[k]                               // 스탯 정의
 const STAT_KEYS = Object.keys(STAT_BAL)
@@ -1058,7 +1079,7 @@ const SP_KEYS = STAT_KEYS.filter(k => k !== 'atk' && k !== 'hp')
 const statInit = () => STAT_KEYS.reduce((o, k) => (o[k] = 0, o), {})
 const statText = (k, lv) => {
   const d = SL(k)
-  if (k === 'atk' || k === 'hp') return '×' + (Math.round(d.mult ** lv * 100) / 100)
+  if (k === 'atk' || k === 'hp') { const m = d.mult ** lv; return '×' + (m >= 1e4 ? fmt(m) : (Math.round(m * 100) / 100).toLocaleString()) }   // 큰 배율은 만·억 단위로(지수 표기 방지)
   let v = (d.base || 0) + lv * d.per
   if (d.cap != null) v = Math.min(d.cap, v)
   return (Math.round(v * 100) / 100) + (d.suffix || '')
@@ -1075,12 +1096,12 @@ const EVOS = [
   // mult = 히어로 공격력 배수, lv = 진화에 필요한 히어로 레벨(진화 조건은 레벨만 본다)
   //   진화 레벨 100/200/300/500/1000 고정(2026-10-22). 배율은 단계마다 ×15 — 진화하면 스킬이 기본 1개로 돌아가
   //   스킬 세기가 8~14배 떨어지는 것(실측)을 메운다.
-  { name: '오스트랄로피테쿠스 (4족보행)', mult: 1, mode: 'quad' },
-  { name: '오스트랄로피테쿠스 (직립보행)', mult: 15, lv: 100, mode: 'biped' },
-  { name: '호모 에렉투스', mult: 225, lv: 200, mode: 'erectus' },
-  { name: '호모 네안데르탈인', mult: 3375, lv: 300, mode: 'neander' },
-  { name: '호모 사피엔스', mult: 50625, lv: 500, mode: 'sapiens' },
-  { name: '인간', mult: 759375, lv: 1000, mode: 'human' },
+  { name: T('오스트랄로피테쿠스 (4족보행)'), mult: 1, mode: 'quad' },
+  { name: T('오스트랄로피테쿠스 (직립보행)'), mult: 15, lv: 100, mode: 'biped' },
+  { name: T('호모 에렉투스'), mult: 225, lv: 200, mode: 'erectus' },
+  { name: T('호모 네안데르탈인'), mult: 3375, lv: 300, mode: 'neander' },
+  { name: T('호모 사피엔스'), mult: 50625, lv: 500, mode: 'sapiens' },
+  { name: T('인간'), mult: 759375, lv: 1000, mode: 'human' },
 ]
 
 // ── 액티브 스킬 레벨 해금 (2026-10-21) ──
@@ -1105,6 +1126,32 @@ const slotsOpen = ev => Math.min(SLOT_COUNT, 3 + (ev || 0))
 // 읽지 않고 브라우저에 그대로 남겨 둔다.
 const SAVE_KEY = 'paleoDefSave_r1'
 const SAVE_REL = 1          // 클라우드 세이브의 출시판 표시 — 이 표시가 없는(출시 전) 클라우드 세이브는 받지 않는다
+// 게스트·익명 플레이 막음: 구글 로그인해야 시작하고, 처음엔 닉네임부터 정한다 (2026-10-26)
+const NEED_LOGIN = FB_ON
+// ── 닉네임 규칙 ──
+// 2~8자, 한글(완성형)·영문·숫자만. 중복은 Firestore paleoNicks/{소문자 닉네임} 문서로 막는다(규칙: 없을 때만 만들 수 있음)
+const NICK_MIN = 2, NICK_MAX = 8
+const nickKey = n => n.trim().toLowerCase()
+// 금칙어 — 부분 일치(숫자를 끼워 넣은 것도 숫자 빼고 한 번 더 본다). 운영자 사칭은 따로
+const NICK_BAN = [
+  '시발', '씨발', '씨바', '시바', '씨빨', '시빨', '십알', '시벌', '씨벌', '씹', '좆', '존나', '졸라', '지랄', '병신', '븅신', '빙신', '등신',
+  '개새', '개색', '개세', '새끼', '색끼', '쌔끼', '미친년', '미친놈', '미친새', '니미', '느금', '니애미', '느개비', '엠창', '애미', '애비',
+  '창녀', '걸레', '보지', '자지', '섹스', '야동', '강간', '성폭', '한남', '김치녀', '일베', '운지', '홍어', '쪽바리', '짱깨', '틀딱', '장애인',
+  'fuck', 'fuk', 'shit', 'bitch', 'cunt', 'dick', 'pussy', 'nigger', 'nigga', 'faggot', 'asshole', 'bastard', 'slut', 'whore',
+  'sex', 'porn', 'rape', 'nazi', 'hitler', 'penis', 'vagina', 'motherfucker',
+]
+const NICK_STAFF = ['운영자', '관리자', '운영진', '개발자', '운영팀', 'admin', 'administrator', 'moderator', 'operator', 'official']
+const NICK_STAFF_EXACT = ['gm', 'dev', 'system', '시스템']
+// 문제 없으면 null, 있으면 안내 문구
+const nickProblem = raw => {
+  const n = (raw || '').trim()
+  if (n.length < NICK_MIN || n.length > NICK_MAX) return TF('{0}~{1}자로 정해 주세요', NICK_MIN, NICK_MAX)
+  if (!/^[가-힣a-zA-Z0-9]+$/.test(n)) return T('한글·영문·숫자만 쓸 수 있어요')
+  const low = n.toLowerCase(), noNum = low.replace(/[0-9]/g, '')
+  if (NICK_BAN.some(w => low.includes(w) || noNum.includes(w))) return T('쓸 수 없는 단어가 들어 있어요')
+  if (NICK_STAFF.some(w => low.includes(w) || noNum.includes(w)) || NICK_STAFF_EXACT.includes(noNum)) return T('운영자처럼 보이는 닉네임은 쓸 수 없어요')
+  return null
+}
 const SLOT_COUNT = 8
 const SET_COUNT = 3
 const emptySet = () => Array(SLOT_COUNT).fill(null)
@@ -1161,15 +1208,17 @@ function loadSave() {
       mats: Array.isArray(s.mats) ? s.mats : [0, 0, 0, 0, 0], enh: s.enh && typeof s.enh === 'object' ? s.enh : {},
       ruby: typeof s.ruby === 'number' ? s.ruby : 0, advStage: s.advStage && typeof s.advStage === 'object' ? s.advStage : {},   // 시작 루비 0(2026-10-23 확정)
       pearl: typeof s.pearl === 'number' ? s.pearl : 0, quest: s.quest && typeof s.quest === 'object' && s.quest.ev ? questMig(s.quest) : questInit(),
+      nickReg: typeof s.nickReg === 'string' ? s.nickReg : '', uid: typeof s.uid === 'string' ? s.uid : null,   // 등록된(중복 확인 끝난) 닉네임, 이 세이브의 구글 계정
     }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, alliesOn: {}, allyEvo: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, allyLv: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, nick: 'Slayer_' + Math.floor(Math.random() * 9000000 + 1000000), mats: [0, 0, 0, 0, 0], enh: {}, ruby: 0, killRate: 0, advStage: {}, pearl: 0, evStage: {}, evDay: { day: '', n: {} }, gachaLv: { 무기: 1, 방어구: 1, 유물: 1 }, gachaCnt: { 무기: 0, 방어구: 0, 유물: 0 }, gachaRw: {}, skCard: {}, skEnh: {}, quest: questInit() }
+  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, alliesOn: {}, allyEvo: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, allyLv: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, nick: 'Slayer_' + Math.floor(Math.random() * 9000000 + 1000000), mats: [0, 0, 0, 0, 0], enh: {}, ruby: 0, killRate: 0, advStage: {}, pearl: 0, evStage: {}, evDay: { day: '', n: {} }, gachaLv: { 무기: 1, 방어구: 1, 유물: 1 }, gachaCnt: { 무기: 0, 방어구: 0, 유물: 0 }, gachaRw: {}, skCard: {}, skEnh: {}, quest: questInit(), nickReg: '', uid: null }
 }
 // 큰 숫자: 만(10^4)부터 4자리마다 한 단위, 무량대수(10^68)를 넘으면 지수 표기
 const NUM_UNITS = ['', '만', '억', '조', '경', '해', '자', '양', '구', '간', '정', '재', '극', '항하사', '아승기', '나유타', '불가사의', '무량대수']
 const fmt = n => {
   if (!(n >= 1e4)) return Math.floor(n).toLocaleString()
   if (!isFinite(n)) return '∞'
+  if (EN_ON) { const k3 = Math.floor(Math.log10(n) / 3); return (n / 10 ** (3 * k3)).toFixed(1) + enUnit(k3) }   // 영어: K·M·B·T·aa…
   const k = Math.floor(Math.log10(n) / 4)
   if (k >= NUM_UNITS.length) return n.toExponential(2).replace('e+', 'e')
   return (n / 10 ** (4 * k)).toFixed(1) + NUM_UNITS[k]
@@ -1205,9 +1254,13 @@ export default function App() {
   const [fuseQty, setFuseQty] = useState(0)           // 융합 수량
   const [gearEq, setGearEq] = useState(init.gearEq || { 무기: null, 방어구: null, 유물: null })  // 장착 슬롯
   const [nick, setNick] = useState(init.nick || 'Slayer')          // 닉네임
-  const [nickEdit, setNickEdit] = useState(false)                  // 닉네임 편집 중
+  const [nickReg, setNickReg] = useState(init.nickReg || '')      // 중복 확인을 마친 닉네임('' = 아직 안 정함)
+  const [nickOpen, setNickOpen] = useState(null)                   // 닉네임 창: 'change'(프로필에서 바꾸기). 처음 정하기는 아래 needNick 로 강제
+  const [nickIn, setNickIn] = useState('')                         // 닉네임 창 입력값
+  const [nickMsg, setNickMsg] = useState('')                       // 닉네임 창 안내(오류) 문구
+  const [nickBusy, setNickBusy] = useState(false)
+  const uidRef = useRef(init.uid || null)                          // 이 세이브의 구글 계정(다른 계정 세이브가 섞이지 않게)
   const [profileOpen, setProfileOpen] = useState(false)            // 프로필 창
-  const [profTab, setProfTab] = useState('info')                   // 프로필 탭 info/look
   const [mats, setMats] = useState(init.mats || [0, 0, 0, 0, 0])   // 재화 5종 (0~3 동료용, 4 무기강화용)
   const [ruby, setRuby] = useState(init.ruby ?? 0)                 // 루비 수정 (모험 진입 재화)
   // 대륙 잠금: 앞 대륙을 10단계까지 다 깨야 열린다
@@ -1394,16 +1447,13 @@ export default function App() {
   }, [motCfg])
   const [offReward, setOffReward] = useState(null) // 오프라인 보상 대기(pending)
   const [offOpen, setOffOpen] = useState(false)    // 오프라인 보상 창 열림
+  const [exitOpen, setExitOpen] = useState(false)  // 게임 종료 확인 박스
   const offDone = useRef(false)
   const killRate = useRef(init.killRate || 0)      // 최근 온라인 처치 속도(마리/초) — 오프라인 보상 계산용
 
   // 오프라인 보상: 부재 시간 동안 나갈 당시 웨이브에서 무한 전투한 것으로 계산
-  useEffect(() => {
-    if (offDone.current) return
-    offDone.current = true
-    const away = init.ts ? Math.min(OFFLINE_CAP_SEC, (Date.now() - init.ts) / 1000) : 60   // ts 없으면 1분으로 간주
-    if (away < OFFLINE_MIN_SEC) return
-    const wv = init.wave
+  // 앱을 껐다 켤 때(세이브 저장 시각 기준)와, 앱을 내렸다 돌아올 때(내린 시각 기준, 2026-10-26) 둘 다 같은 계산을 쓴다.
+  const calcOffline = (away, wv, showWave) => {
     // 실제 전투와 같은 웨이브 공식
     const avgHp = B.hp0 * B.hpR ** (wv - 1)
     const avgMeat = B.meat0 * B.rwR ** (wv - 1)
@@ -1418,15 +1468,45 @@ export default function App() {
       : away * OFFLINE_RATE / killT))                // 기록이 아직 없으면 예전 식(기본공격)
     const gm = Math.floor(kills * avgMeat * st2.meatMult)
     const ge = Math.floor(kills * avgExp * st2.expMult)
-    const mins = Math.max(1, away / 60)
     // 다이아: 오프라인 처치 수 × 웨이브 다이아 조각 확률(15%) × 조각당 개수(2026-10-24)
     const dn = Math.floor(kills * DROP_DIA_P + Math.random()) * DROP_DIA_AMT
     // 동료 재료: 오프라인 처치 수 × 웨이브 드롭 확률(5%), 4종에 고르게 나눠 지급(2026-10-23)
     const mn = Math.floor(kills * DROP_MAT_P + Math.random())
     const om = [0, 0, 0, 0].map(() => Math.floor(mn / 4))
     for (let r = mn - om[0] * 4, i = Math.floor(Math.random() * 4); r > 0; r--, i = (i + 1) % 4) om[i]++
+    return { sec: Math.floor(away), kills, wave: showWave, meat: gm, exp: ge, gem: dn, mats: om, mat: mn }
+  }
+  // 대기 보상에 더한다(받기 전에 또 내렸다 오면 합산). 분당 표시는 합친 값으로 다시 계산
+  const addOffline = r => setOffReward(o => {
+    const t = o ? { ...r, sec: o.sec + r.sec, kills: o.kills + r.kills, meat: o.meat + r.meat, exp: o.exp + r.exp, gem: o.gem + r.gem,
+      mats: o.mats.map((v, i) => v + r.mats[i]), mat: o.mat + r.mat } : r
+    const mins = Math.max(1, t.sec / 60)
+    return { ...t, meatRate: Math.floor(t.meat / mins), expRate: Math.floor(t.exp / mins), gemRate: Math.floor(t.gem / mins), matRate: Math.floor(t.mat / mins) }
+  })
+  useEffect(() => {
+    if (offDone.current) return
+    offDone.current = true
+    if (!init.ts) return                             // 새로 시작한 플레이어는 비운 시간이 없다(예전엔 1분으로 쳐서 첫 화면에 보물상자가 떴음)
+    const away = Math.min(OFFLINE_CAP_SEC, (Date.now() - init.ts) / 1000)
+    if (away < OFFLINE_MIN_SEC) return
     // 지급은 보물상자 → 받기 버튼에서. 여기선 대기 보상만 저장
-    setOffReward({ sec: Math.floor(away), kills, wave: init.best || init.wave || 1, meat: gm, exp: ge, gem: dn, meatRate: Math.floor(gm / mins), expRate: Math.floor(ge / mins), gemRate: Math.floor(dn / mins), mats: om, mat: mn, matRate: Math.floor(mn / mins) })
+    addOffline(calcOffline(away, init.wave, init.best || init.wave || 1))
+  }, [])
+  // 앱을 내렸다 돌아올 때: 내린 동안은 게임이 멈춰 있으므로(화면 갱신 정지) 그 시간을 오프라인 보상으로 준다.
+  // 1분 미만은 주지 않는다(잠깐 다른 앱 보고 올 때마다 상자가 뜨지 않게). 대기 중인 보상과 합쳐 최대 4시간
+  const hiddenAt = useRef(null)
+  const offPendSec = useRef(0); offPendSec.current = offReward ? offReward.sec : 0
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') { if (hiddenAt.current == null) hiddenAt.current = Date.now(); return }
+      const t0 = hiddenAt.current; hiddenAt.current = null
+      if (t0 == null) return
+      const away = Math.min(OFFLINE_CAP_SEC - offPendSec.current, (Date.now() - t0) / 1000)
+      if (away < RESUME_MIN_SEC) return
+      addOffline(calcOffline(away, waveRef.current, bestRef.current || waveRef.current))
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
   }, [])
   // 스킬 아이콘 확대·오프셋 — 전신 컷이라 등배로 두면 스킬끼리 구분이 안 된다
   const skIconFit = id => {
@@ -1437,10 +1517,10 @@ export default function App() {
   }
   const [heroHpUI, setHeroHpUI] = useState(100)
   const [bossUI, setBossUI] = useState(null)   // 보스전 타이머/체력 바
-  const [paused, setPaused] = useState(false)  // 일시정지
   const [waveJump, setWaveJump] = useState(null) // 웨이브 이동 모달 입력값(null=닫힘)
   const [best, setBest] = useState(init.best || init.wave || 1) // 도달 최고 웨이브(이동 상한)
   const bestRef = useRef(best); bestRef.current = best          // 랭킹 조회에서 최신값을 쓰기 위해
+  const waveRef = useRef(wave); waveRef.current = wave             // 앱 복귀 보상에서 지금 웨이브를 읽기 위해
   const [progress, setProgress] = useState(0)
   const [gains, setGains] = useState([])       // 획득 팝업 리스트
   const [skillCdUI, setSkillCdUI] = useState(SKILLS.map(() => 0))  // 스킬 남은 쿨타임(초)
@@ -1524,8 +1604,8 @@ export default function App() {
   const cloudBusy = useRef(false)   // 어댑트/불러오기 중 로컬 저장 차단
   useEffect(() => {
     if (cloudBusy.current) return
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, evDay, gachaLv, gachaCnt, gachaRw, skCard, skEnh, quest, killRate: killRate.current, ts: Date.now() }))
-  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, evDay, gachaLv, gachaCnt, gachaRw, skCard, skEnh, quest])
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, evDay, gachaLv, gachaCnt, gachaRw, skCard, skEnh, quest, nickReg, uid: uidRef.current, killRate: killRate.current, ts: Date.now() }))
+  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, evDay, gachaLv, gachaCnt, gachaRw, skCard, skEnh, quest, nickReg])
 
   // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제 — 패시브는 단계 공용이라 유지(예전엔 stage -1이라 불러올 때마다 빠졌음)
   useEffect(() => {
@@ -1832,7 +1912,7 @@ export default function App() {
     function loop(now) {
       const rawDt = Math.min((now - last) / 1000, 0.05)
       last = now
-      let dt = w.paused ? 0 : rawDt
+      let dt = rawDt
       w.clk = (w.clk || 0) + dt              // 일시정지 제외 실제 경과 시간(히트스톱 포함)
       if (dt > 0 && w.hitstop > 0) { w.hitstop -= rawDt; dt = 0 }  // 히트스톱: 세계 정지, 렌더 유지
       w.hsCd = Math.max(0, (w.hsCd || 0) - rawDt)  // 기본공격 히트스톱 재발동 쿨
@@ -2387,7 +2467,7 @@ export default function App() {
             w.clearedFlag = true
             w.enemies = []; w.stones = []; w.rocks = []
             w.bossBattle = false
-            setClearMsg(w.bossGiveUp ? '보스전 나가기' : '시간 초과 — 보스 실패')
+            setClearMsg(w.bossGiveUp ? T('보스전 나가기') : T('시간 초과 — 보스 실패'))
             setBossReady(true)                                  // 보스 도전 버튼 다시 활성 — 재도전 가능
             w.needStart = true                                  // 같은 웨이브의 일반 웨이브로 복귀
             w.bossGiveUp = false
@@ -2412,7 +2492,7 @@ export default function App() {
           if (c.win) {
             setEvStage(v => ({ ...v, [c.no]: Math.max(v[c.no] || 0, c.stage || 1) }))
             if (c.isNew !== false) { setGem(g => g + EV_REWARD.dia); setPearl(v => v + EV_REWARD.pearl) }   // 이미 깬 단계는 보상 없음
-            setClearMsg(`${c.name} ${c.stage || 1}단계 격파!`)
+            setClearMsg(TF('{0} {1}단계 격파!', c.name, c.stage || 1))
             // 격파하면 방금 잡은 보스의 도전창으로 돌아간다 — 진행바가 한 칸 더 찬 상태로 보인다
             const di = EV_DUNGEONS.findIndex(d => d.key === c.key)
             if (di >= 0) {
@@ -2420,7 +2500,7 @@ export default function App() {
               setEvOpen(true)
               setEvPick({ di, no: c.no, name: c.name, dname: c.dname || EV_DUNGEONS[di].name })
             }
-          } else setClearMsg(c.quit ? '던전 포기' : (hero.hp <= 0 ? '던전 실패 — 쓰러짐' : '던전 실패 — 시간 초과'))
+          } else setClearMsg(c.quit ? T('던전 포기') : (hero.hp <= 0 ? T('던전 실패 — 쓰러짐') : T('던전 실패 — 시간 초과')))
           if (c.quit) setEvOpen(true)                          // 포기하면 던전 목록창을 다시 열어둔다(도전 확인창 아님)
           w.needStart = true                                   // 웨이브로 복귀
           hero.hp = st.maxHp
@@ -2450,9 +2530,9 @@ export default function App() {
             const rw = advReward(a.key, a.stage)
             setGem(g => g + rw.dia)
             setMats(m => { const n = [...m]; n[4] = (n[4] || 0) + rw.mat; return n })
-            setClearMsg(`${a.name} ${a.stage}단계 클리어!`)
+            setClearMsg(TF('{0} {1}단계 클리어!', a.name, a.stage))
           } else {
-            setClearMsg(a.quit ? '모험 포기' : (hero.hp <= 0 ? '모험 실패 — 쓰러짐' : '모험 실패 — 시간 초과'))
+            setClearMsg(a.quit ? T('모험 포기') : (hero.hp <= 0 ? T('모험 실패 — 쓰러짐') : T('모험 실패 — 시간 초과')))
           }
           setNav('모험')                                              // 포기·실패·클리어 모두 모험 탭으로
           setAdvSel(CONTINENTS.find(c => c.key === a.key) || null)   // 진입창 복귀
@@ -2466,7 +2546,7 @@ export default function App() {
           if (w.bossBattle) {
             // 보스 처치: 보상 크게 + 다음 웨이브 블록으로 진행
             setMeat(m => m + 100 + w.waveNum * 20)
-            setClearMsg('보스 격파!')
+            setClearMsg(T('보스 격파!'))
             w.bossBattle = false
             w.bossPrompted = false
             setBossReady(false)
@@ -2667,7 +2747,7 @@ export default function App() {
     function draw(ctx, now) {
       ctx.clearRect(0, 0, w.W, w.H)
       ctx.save()
-      if (!w.paused && w.shake > 0.3) ctx.translate((Math.random() - 0.5) * w.shake, (Math.random() - 0.5) * w.shake)   // 일시정지 중엔 흔들지 않음(dt=0이라 shake가 안 줄어 계속 떨렸음)
+      if (w.shake > 0.3) ctx.translate((Math.random() - 0.5) * w.shake, (Math.random() - 0.5) * w.shake)   // 일시정지 중엔 흔들지 않음(dt=0이라 shake가 안 줄어 계속 떨렸음)
 
       // 배경: 가로 무한 타일 스크롤 (10웨이브마다 테마 변경, 보스전투 시 보스 배경)
       const advBG = w.adv ? ADV_BG[w.adv.key] : (w.ev ? EV_BG[w.ev.key] : null)
@@ -2931,7 +3011,6 @@ export default function App() {
   const lvLive = useRef(lv); lvLive.current = lv
   const meatLive = useRef(meat); meatLive.current = meat
   const spLive = useRef(sp); spLive.current = sp
-  useEffect(() => { world.current.paused = paused }, [paused])
   useEffect(() => { setBest(b => Math.max(b, wave)) }, [wave])
   // ── 퀘스트: 이벤트 카운트 / 진행 계산 / 보상 수령 ──
   function qEv(ev, n = 1) {
@@ -3105,6 +3184,10 @@ export default function App() {
   useEffect(() => () => holdEnd(), [])
   // ── 클라우드 세이브: 로그인 시 웨이브 높은 쪽 채택, 이후 60초/백그라운드 전환 시 업로드 ──
   const [fbUser, setFbUser] = useState(null)
+  const [authReady, setAuthReady] = useState(!NEED_LOGIN)   // 로그인 여부 확인 끝(그 전엔 시작 화면에 '확인 중')
+  const [syncDone, setSyncDone] = useState(!NEED_LOGIN)     // 로그인 후 클라우드와 맞추기 끝
+  const wasIn = useRef(false)
+  const syncOk = useRef(false)                        // 들어갈 때 클라우드와 맞추기 성공 — 실패(오프라인 등)했으면 자동 업로드 안 함(더 좋은 클라우드 세이브를 덮지 않게)
   const [cloudMsg, setCloudMsg] = useState('')
   const [rankInfo, setRankInfo] = useState(null)          // { me, total } — 최고 웨이브 기준 순위
   const refreshRank = async myBest => {
@@ -3127,6 +3210,7 @@ export default function App() {
   const lastPush = useRef({ raw: null, rank: null })
   async function pushCloud(force) {
     if (!FB_ON || !fbAuth.currentUser) return
+    if (!force && !syncOk.current) return
     const raw = localStorage.getItem(SAVE_KEY)
     if (!force && raw === lastPush.current.raw) return
     try {
@@ -3135,7 +3219,7 @@ export default function App() {
       // 진행도가 크게 줄어드는 업로드는 막는다(저장소 초기화 사고 방지). 메뉴의 '클라우드에 저장'으로는 강제 가능
       const myBest = sv.best || sv.wave || 0
       if (!force && cloudBestRef.current > 5 && myBest < cloudBestRef.current * 0.5) {
-        setCloudMsg(`업로드 보류 — 내 기록 ${myBest} < 클라우드 ${cloudBestRef.current}`)
+        setCloudMsg(TF('업로드 보류 — 내 기록 {0} < 클라우드 {1}', myBest, cloudBestRef.current))
         return
       }
       // 세이브 전체를 문자열 필드로 저장 (skillSets 같은 중첩 배열을 Firestore가 거부 → invalid-argument 방지)
@@ -3159,14 +3243,19 @@ export default function App() {
         refreshRank(myBest)
       }
       cloudBestRef.current = Math.max(cloudBestRef.current, myBest)
-      setCloudMsg('저장됨 ' + new Date().toLocaleTimeString())
-    } catch (e) { lastPush.current.raw = null; setCloudMsg('저장 실패: ' + (e.code || e.message)) }
+      setCloudMsg(TF('저장됨 {0}', new Date().toLocaleTimeString()))
+    } catch (e) { lastPush.current.raw = null; setCloudMsg(TF('저장 실패: {0}', e.code || e.message)) }
   }
   useEffect(() => {
     if (!FB_ON) return
     return onAuthStateChanged(fbAuth, async u => {
-      setFbUser(u)
-      if (!u) { setRankInfo(null); return }
+      setFbUser(u); setAuthReady(true)
+      if (!u) {
+        setRankInfo(null)
+        if (NEED_LOGIN && wasIn.current) { cloudBusy.current = true; location.reload() }   // 게임 중 로그아웃되면 시작 화면(로그인)으로
+        return
+      }
+      wasIn.current = true
       refreshRank(bestRef.current || 0)
       try {
         const snap = await getDoc(doc(fbDb, 'paleoSaves', u.uid))
@@ -3178,6 +3267,14 @@ export default function App() {
         }
         const local = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null')
         const cloudSaveStr = cloud && typeof cloud.data === 'string' ? cloud.data : null
+        // 이 기기 세이브가 다른 구글 계정 것이면 섞지 않는다: 이 계정 클라우드가 있으면 그걸 받고, 없으면 새로 시작
+        if (local && local.uid && local.uid !== u.uid) {
+          cloudBusy.current = true
+          if (cloudSaveStr) localStorage.setItem(SAVE_KEY, cloudSaveStr); else localStorage.removeItem(SAVE_KEY)
+          location.reload()
+          return
+        }
+        uidRef.current = u.uid
         let cloudSave = null; try { cloudSave = cloudSaveStr ? JSON.parse(cloudSaveStr) : null } catch {}
         const cloudTs = cloud ? (cloud.ts || (cloudSave && cloudSave.ts) || 0) : 0
         const cloudWave = cloud ? (cloud.wave || (cloudSave && cloudSave.wave) || 0) : 0
@@ -3197,9 +3294,11 @@ export default function App() {
           localStorage.setItem(SAVE_KEY, cloudSaveStr)
           location.reload()  // 클라우드 세이브로 재시작
         } else {
+          syncOk.current = true
+          setSyncDone(true)
           pushCloud()
         }
-      } catch (e) { setCloudMsg('동기화 실패: ' + (e.code || e.message)) }
+      } catch (e) { setCloudMsg(TF('동기화 실패: {0}', e.code || e.message)); setSyncDone(true) }
     })
   }, [])
   useEffect(() => {
@@ -3212,22 +3311,82 @@ export default function App() {
     window.addEventListener('beforeunload', onHide)
     return () => { document.removeEventListener('visibilitychange', onVis); window.removeEventListener('pagehide', onHide); window.removeEventListener('beforeunload', onHide) }
   }, [])
-  async function fbLogin() {
-    try { await signInWithPopup(fbAuth, new GoogleAuthProvider()) }
-    catch { try { await signInWithRedirect(fbAuth, new GoogleAuthProvider()) } catch (e) { setCloudMsg('로그인 실패: ' + (e.code || e.message)) } }
+  // 하단바 뒤로가기: 맨 위에 열린 창부터 하나씩 닫고 → 영웅 탭으로 → 영웅 탭에서는 게임 종료 확인
+  function handleBack() {
+    if (needNick) return                              // 처음 닉네임 정하기는 뒤로가기로 못 닫는다
+    if (nickOpen) return setNickOpen(null)
+    if (exitOpen) return setExitOpen(false)
+    if (gacha) return setGacha(null)
+    if (cardRes) return setCardRes(null)
+    if (offOpen) return setOffOpen(false)
+    if (evPick) return setEvPick(null)
+    if (evOpen) return setEvOpen(false)
+    if (allyPick) return setAllyPick(null)
+    if (advSel) return setAdvSel(null)
+    if (questOpen) return setQuestOpen(false)
+    if (waveJump != null) return setWaveJump(null)
+    if (menuOpen) return setMenuOpen(false)
+    if (profileOpen) return setProfileOpen(false)
+    if (skillDetail != null) return setSkillDetail(null)
+    if (detailItem) return setDetailItem(null)
+    if (motEdit) return setMotEdit(false)
+    if (nav !== '영웅') return setNav('영웅')
+    setExitOpen(true)
   }
-  async function fbLogout() { await pushCloud(); await signOut(fbAuth) }
+  useEffect(() => { onBack = handleBack })
+  async function exitGame() {
+    setExitOpen(false)
+    try { await Promise.race([pushCloud(), new Promise(r => setTimeout(r, 1500))]) } catch {}   // 나가기 전에 클라우드 저장(최대 1.5초 기다림)
+    leaveGame()
+  }
+  async function fbLogin() {
+    setCloudMsg('')
+    try { await signInWithPopup(fbAuth, new GoogleAuthProvider()) }
+    catch (e) {
+      const c = (e && e.code) || ''
+      if (c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') { setCloudMsg(T('로그인을 취소했어요')); return }
+      // 팝업이 막힌 환경이면 페이지 이동 방식으로
+      try { await signInWithRedirect(fbAuth, new GoogleAuthProvider()) } catch (e2) { setCloudMsg(TF('로그인 실패: {0}', e2.code || e2.message)) }
+    }
+  }
+  async function fbLogout() { await pushCloud(); await signOut(fbAuth) }   // 로그인 필수라 로그아웃하면 시작 화면으로 돌아간다(위 onAuthStateChanged)
+  // ── 닉네임 정하기/바꾸기 ──
+  const needNick = NEED_LOGIN && !!fbUser && syncDone && !splash && !nickReg
+  async function submitNick() {
+    if (nickBusy) return
+    const n = nickIn.trim()
+    const bad = nickProblem(n)
+    if (bad) return setNickMsg(bad)
+    if (n === nickReg) { setNickOpen(null); return }
+    const u = fbAuth && fbAuth.currentUser
+    if (!u) return setNickMsg(T('로그인이 필요해요'))
+    setNickBusy(true); setNickMsg('')
+    try {
+      const ref = doc(fbDb, 'paleoNicks', nickKey(n))
+      const snap = await getDoc(ref)
+      if (snap.exists() && snap.data().uid !== u.uid) { setNickMsg(T('이미 쓰고 있는 닉네임이에요')); setNickBusy(false); return }
+      // 없을 때만 만들 수 있다(규칙). 그 사이 누가 먼저 만들면 여기서 거절된다
+      if (!snap.exists()) await setDoc(ref, { uid: u.uid, nick: n, ts: Date.now() })
+      // 예전 닉네임은 풀어 준다(실패해도 진행)
+      if (nickReg && nickKey(nickReg) !== nickKey(n)) { try { await deleteDoc(doc(fbDb, 'paleoNicks', nickKey(nickReg))) } catch {} }
+      setNick(n); setNickReg(n); setNickOpen(null); setNickBusy(false)
+      setTimeout(() => pushCloud(), 800)                  // 바뀐 닉네임을 세이브·랭킹에 바로 올린다
+    } catch (e) {
+      setNickBusy(false)
+      setNickMsg((e && e.code) === 'permission-denied' ? T('이미 쓰고 있는 닉네임이에요') : T('연결이 안 돼요. 잠시 후 다시 해 주세요'))
+    }
+  }
   async function pullCloud() {   // 클라우드 세이브를 무조건 로컬로 덮어써서 불러옴 (기기간 확실한 동기화용)
     if (!FB_ON || !fbAuth.currentUser) return
     try {
       const snap = await getDoc(doc(fbDb, 'paleoSaves', fbAuth.currentUser.uid))
       const cloud = snap.exists() ? snap.data() : null
-      if (!cloud || cloud.rel !== SAVE_REL || typeof cloud.data !== 'string') { setCloudMsg('클라우드에 저장이 없어요'); return }   // 출시 전 세이브는 안 받음
+      if (!cloud || cloud.rel !== SAVE_REL || typeof cloud.data !== 'string') { setCloudMsg(T('클라우드에 저장이 없어요')); return }   // 출시 전 세이브는 안 받음
       cloudBusy.current = true                                                       // 리로드 전 로컬 자동저장 차단
       localStorage.setItem(SAVE_KEY, cloud.data)                                     // 웨이브 등 진행도
       // 불러오기는 진행도만 — UI·모션은 코드값이 출처라 건드리지 않음
       location.reload()
-    } catch (e) { setCloudMsg('불러오기 실패: ' + (e.code || e.message)) }
+    } catch (e) { setCloudMsg(TF('불러오기 실패: {0}', e.code || e.message)) }
   }
 
   // 스크롤 엣지 페이드: 위/아래 끝에서는 해제, 넘침 없으면 페이드 없음
@@ -3287,7 +3446,7 @@ export default function App() {
     const stage = Math.min(ADV_STAGES, (advStage[advSel.key] || 0) + 1)
     setRuby(r => r - ADV_COST_RUBY)
     world.current.advStart = { key: advSel.key, boss: advSel.boss, name: advSel.name, stage, wave }
-    setAdvSel(null); setNav('영웅'); setPaused(false)
+    setAdvSel(null); setNav('영웅')
   }
   function unequipSkill(slot) {
     setSkillSets(sets => { const next = sets.map(a => a.slice()); next[activeSet][slot] = null; return next })
@@ -3326,10 +3485,19 @@ export default function App() {
     }}>
       {splash && (
         <div style={{ ...st.splashWrap, backgroundImage: `url(${SPLASH_BG})`, cursor: preReady ? 'pointer' : 'default' }}
-          onClick={() => { if (preReady) setSplash(false) }}>
-          {preReady ? <div style={st.splashTap}>TAP TO START</div> : (
+          onClick={() => { if (preReady && authReady && (!NEED_LOGIN || (fbUser && syncDone))) setSplash(false) }}>
+          {preReady && NEED_LOGIN && !authReady ? <div style={st.splashInfo}>{T('로그인 확인 중…')}</div>
+            : preReady && NEED_LOGIN && !fbUser ? (
+              <div style={st.splashLoginWrap}>
+                <button style={st.splashLoginBtn} onClick={e => { e.stopPropagation(); fbLogin() }}>
+                  <span style={st.splashLoginG}>G</span>{T('Google 계정으로 시작')}
+                </button>
+                {cloudMsg ? <div style={st.splashLoginMsg}>{cloudMsg}</div> : null}
+              </div>)
+            : preReady && NEED_LOGIN && !syncDone ? <div style={st.splashInfo}>{T('저장 기록 불러오는 중…')}</div>
+            : preReady ? <div style={st.splashTap}>TAP TO START</div> : (
             <div style={st.splashLoadWrap}>
-              <div style={st.splashLoadText}>게임 로드중… {Math.floor(preP * 100)}%</div>
+              <div style={st.splashLoadText}>{TF('게임 로드중… {0}%', Math.floor(preP * 100))}</div>
               <div style={st.splashBarOuter}><div style={{ ...st.splashBarInner, width: (preP * 100) + '%' }} /></div>
             </div>
           )}
@@ -3340,18 +3508,17 @@ export default function App() {
       {menuOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 80 }} onClick={() => setMenuOpen(false)}>
           <div data-edit="menu" style={st.menuPanel} onClick={e => e.stopPropagation()}>
-            <button style={{ ...st.menuItem, opacity: 0.5, display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => {}}><img data-edit="mailbox" src="/ui/mailbox.webp" alt="" style={st.mailImg} />우편함 <span style={{ fontSize: 11, opacity: 0.7 }}>준비 중</span></button>
             {EDITOR && <button style={st.menuItem} onClick={() => { setMotEdit(v => !v); setMenuOpen(false) }}>모션 편집 {motEdit ? '끄기' : '켜기'}</button>}
             <div style={{ borderTop: '1px solid #3a2a14', margin: '4px 0' }} />
             {FB_ON && (fbUser ? (
               <>
                 <div style={{ ...st.menuItem, opacity: 0.8 }}><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fbUser.email}</span></div>
-                <button style={st.menuItem} onClick={() => pushCloud(true)}>클라우드에 저장 <span style={{ fontSize: 11, opacity: 0.6 }}>{cloudMsg}</span></button>
-                <button style={st.menuItem} onClick={() => { if (confirm('클라우드 세이브를 불러와 현재 기기 데이터를 덮어씁니다. 계속할까요?')) pullCloud() }}>클라우드에서 불러오기</button>
-                <button style={st.menuItem} onClick={fbLogout}>로그아웃</button>
+                <button style={st.menuItem} onClick={() => pushCloud(true)}>{T('클라우드에 저장')} <span style={{ fontSize: 11, opacity: 0.6 }}>{cloudMsg}</span></button>
+                <button style={st.menuItem} onClick={() => { if (confirm(T('클라우드 세이브를 불러와 현재 기기 데이터를 덮어씁니다. 계속할까요?'))) pullCloud() }}>{T('클라우드에서 불러오기')}</button>
+                <button style={st.menuItem} onClick={fbLogout}>{T('로그아웃')}</button>
               </>
             ) : (
-              <button style={st.menuItem} onClick={fbLogin}>구글 로그인 · 저장 연동</button>
+              <button style={st.menuItem} onClick={fbLogin}>{T('구글 로그인 · 저장 연동')}</button>
             ))}
           </div>
         </div>
@@ -3359,11 +3526,11 @@ export default function App() {
       {waveJump != null && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'rgba(0,0,0,0.5)' }} onClick={() => setWaveJump(null)}>
           <div data-edit="wjump" style={st.wjPanel} onClick={e => e.stopPropagation()}>
-            <div style={{ marginBottom: 6 }}>웨이브 이동 <span style={{ opacity: 0.6, fontSize: 11 }}>(최고 {best})</span></div>
+            <div style={{ marginBottom: 6 }}>{T('웨이브 이동')} <span style={{ opacity: 0.6, fontSize: 11 }}>{TF('(최고 {0})', best)}</span></div>
             <div style={{ display: 'flex', gap: 6 }}>
               <input type="number" min={1} max={best} value={waveJump} onChange={e => setWaveJump(e.target.value)} style={st.wjInput} />
-              <button style={st.cloudBtn} onClick={() => jumpWave(waveJump)}>이동</button>
-              <button style={st.cloudBtn} onClick={() => jumpWave(best)}>최고로</button>
+              <button style={st.cloudBtn} onClick={() => jumpWave(waveJump)}>{T('이동')}</button>
+              <button style={st.cloudBtn} onClick={() => jumpWave(best)}>{T('최고로')}</button>
             </div>
           </div>
         </div>
@@ -3387,24 +3554,24 @@ export default function App() {
               <div style={st.dOverlay} onClick={e => { if (e.target === e.currentTarget) setDetailItem(null) }}>
                 <div style={st.dBox}>
                   <div style={st.dTabs}>
-                    <button data-edit="dtab" style={{ ...st.dTab, ...(detailTab === '강화' ? st.dTabOn : {}) }} onClick={() => setDetailTab('강화')}>강화</button>
-                    <button data-edit="dtab" style={{ ...st.dTab, ...(detailTab === '융합' ? st.dTabOn : {}) }} onClick={() => setDetailTab('융합')}>융합</button>
+                    <button data-edit="dtab" style={{ ...st.dTab, ...(detailTab === '강화' ? st.dTabOn : {}) }} onClick={() => setDetailTab('강화')}>{T('강화')}</button>
+                    <button data-edit="dtab" style={{ ...st.dTab, ...(detailTab === '융합' ? st.dTabOn : {}) }} onClick={() => setDetailTab('융합')}>{T('융합')}</button>
                   </div>
                   {detailTab === '강화' ? (
                     <div style={st.dBody}>
-                      <div data-edit="dtitle" style={{ ...st.dGrade, color: col }}>{gradeNameOf(i)}</div>
-                      <div data-edit="dtitle" style={st.dName}>{cat} {i}번</div>
+                      <div data-edit="dtitle" style={{ ...st.dGrade, color: col }}>{T(gradeNameOf(i))}</div>
+                      <div data-edit="dtitle" style={st.dName}>{TF('{0} {1}번', T(cat), i)}</div>
                       <div style={st.dIconRow}>
                         <button data-edit="darrow" style={st.dArrow} onClick={() => go(i - 1)}>◀</button>
                         <div data-edit="dicon" style={{ ...st.dIconWrap, borderColor: col }}>
                           <img src={equipImg(cat, i)} alt="" style={st.dIcon} />
                           {lv > 0 && <span style={st.dEnhLv}>+{lv}</span>}
-                          <span style={{ ...st.dIconTier, color: col }}>{tierOf(i)}등급</span>
+                          <span style={{ ...st.dIconTier, color: col }}>{TF('{0}등급', tierOf(i))}</span>
                         </div>
                         <button data-edit="darrow" style={st.dArrow} onClick={() => go(i + 1)}>▶</button>
                       </div>
                       <div style={st.dCnt}>{cnt}/5</div>
-                      <div style={st.dSecTitle}>장착 효과</div>
+                      <div style={st.dSecTitle}>{T('장착 효과')}</div>
                       <div style={st.dStatBox}>
                         {stats.map(([nm, val], x) => (
                           <div key={x} data-edit="dstat" style={st.dStatRow}>
@@ -3413,7 +3580,7 @@ export default function App() {
                           </div>
                         ))}
                       </div>
-                      <div style={st.dSecTitle}>보유 효과</div>
+                      <div style={st.dSecTitle}>{T('보유 효과')}</div>
                       <div style={st.dStatBox}>
                         <div data-edit="dstat" style={st.dStatRow}>
                           <span>{stats[0][0]}</span>
@@ -3424,29 +3591,29 @@ export default function App() {
                         <button data-edit="denh" style={{ ...st.dEnhBtn, ...(canEnh ? st.dEnhBtnOn : {}) }} onClick={() => { if (canEnh) { setMats(m => { const n = [...m]; n[4] -= cost; return n }); setEnh(e => ({ ...e, [key]: lv + 1 })); qEv('equip_enh') } }}>
                           <img src={MAT_IMG(4)} alt="" style={st.dEnhIc} /><span style={{ fontFamily: "'Do Hyeon',sans-serif" }}>{fmt(cost)}</span>
                         </button>
-                        <button data-edit="dequip" style={{ ...st.dEquipBtn, ...(isEq ? st.dEquipOn : {}) }} onClick={() => { if (cnt > 0 || isEq) setGearEq(g => ({ ...g, [cat]: isEq ? null : i })) }}>{isEq ? '장착중' : '장착'}</button>
+                        <button data-edit="dequip" style={{ ...st.dEquipBtn, ...(isEq ? st.dEquipOn : {}) }} onClick={() => { if (cnt > 0 || isEq) setGearEq(g => ({ ...g, [cat]: isEq ? null : i })) }}>{isEq ? T('장착중') : T('장착')}</button>
                       </div>
                     </div>
                   ) : (
                     <div style={st.dBody}>
-                      <div style={st.dFuseNote}>* 보유 {cat} 5개로 다음 단계 제작</div>
+                      <div style={st.dFuseNote}>{TF('* 보유 {0} 5개로 다음 단계 제작', T(cat))}</div>
                       {hasNext ? (
                         <>
-                          <div data-edit="dtitle" style={st.dName}>{cat} {i}번</div>
-                          <div data-edit="dicon" style={{ ...st.dIconWrap, borderColor: col }}><img src={equipImg(cat, i)} alt="" style={st.dIcon} /><span style={{ ...st.dIconTier, color: col }}>{tierOf(i)}등급</span></div>
+                          <div data-edit="dtitle" style={st.dName}>{TF('{0} {1}번', T(cat), i)}</div>
+                          <div data-edit="dicon" style={{ ...st.dIconWrap, borderColor: col }}><img src={equipImg(cat, i)} alt="" style={st.dIcon} /><span style={{ ...st.dIconTier, color: col }}>{TF('{0}등급', tierOf(i))}</span></div>
                           <div style={st.dCnt}>{cnt} <span style={{ color: '#ff6b6b' }}>(-{fuseQty * 5})</span></div>
                           <div style={st.dArrowDown}>▼</div>
-                          <div data-edit="dtitle" style={st.dName}>{cat} {i + 1}번</div>
-                          <div data-edit="dicon" style={{ ...st.dIconWrap, borderColor: gradeColorOf(i + 1) }}><img src={equipImg(cat, i + 1)} alt="" style={st.dIcon} /><span style={{ ...st.dIconTier, color: gradeColorOf(i + 1) }}>{tierOf(i + 1)}등급</span></div>
+                          <div data-edit="dtitle" style={st.dName}>{TF('{0} {1}번', T(cat), i + 1)}</div>
+                          <div data-edit="dicon" style={{ ...st.dIconWrap, borderColor: gradeColorOf(i + 1) }}><img src={equipImg(cat, i + 1)} alt="" style={st.dIcon} /><span style={{ ...st.dIconTier, color: gradeColorOf(i + 1) }}>{TF('{0}등급', tierOf(i + 1))}</span></div>
                           <div style={st.dCnt}>{nextCnt} <span style={{ color: '#8fe36b' }}>(+{fuseQty})</span></div>
                           <div style={st.dStepper}>
                             <button data-edit="dstep" style={st.dStepBtn} onClick={() => setFuseQty(q => Math.max(0, q - 1))}>-</button>
                             <span style={st.dStepVal}>{fuseQty}</span>
                             <button data-edit="dstep" style={st.dStepBtn} onClick={() => setFuseQty(q => Math.min(maxFuse, q + 1))}>+</button>
                           </div>
-                          <button data-edit="dfusebtn" style={st.dFuseBtn} onClick={() => { if (fuseQty > 0) { const use = Math.min(fuseQty, Math.floor((inv[invKey(cat, i)] || 0) / 5)); if (use > 0) qEv('fuse', use); setInv(v => { const k = invKey(cat, i), nk = invKey(cat, i + 1); const u = Math.min(fuseQty, Math.floor((v[k] || 0) / 5)); if (u <= 0) return v; return { ...v, [k]: v[k] - u * 5, [nk]: (v[nk] || 0) + u } }); setFuseQty(0) } }}>융합</button>
+                          <button data-edit="dfusebtn" style={st.dFuseBtn} onClick={() => { if (fuseQty > 0) { const use = Math.min(fuseQty, Math.floor((inv[invKey(cat, i)] || 0) / 5)); if (use > 0) qEv('fuse', use); setInv(v => { const k = invKey(cat, i), nk = invKey(cat, i + 1); const u = Math.min(fuseQty, Math.floor((v[k] || 0) / 5)); if (u <= 0) return v; return { ...v, [k]: v[k] - u * 5, [nk]: (v[nk] || 0) + u } }); setFuseQty(0) } }}>{T('융합')}</button>
                         </>
-                      ) : (<div style={st.dMaxNote}>최종 단계 장비입니다</div>)}
+                      ) : (<div style={st.dMaxNote}>{T('최종 단계 장비입니다')}</div>)}
                     </div>
                   )}
                   <button style={st.dClose} onClick={() => setDetailItem(null)}>✕</button>
@@ -3466,39 +3633,42 @@ export default function App() {
                 <div data-edit="skdicon" style={st.skdIconWrap}>
                   {skIcon(s, evo) ? <img src={skIcon(s, evo)} alt="" data-edit="skdimg" style={st.skdIconImg} /> : <span style={{ fontSize: 34 }}>{s.icon}</span>}
                   <span style={st.skdLv}>Lv.{skEnh[s.id] || 0}</span>
-                  <div style={st.skdMiniBar}><div style={{ ...st.skdMiniFill, width: (skEnh[s.id] || 0) >= SK_ENH_MAX ? '100%' : `${Math.min(100, (skCard[s.id] || 0) / CARD_ENH_CARDS * 100)}%` }} /><div style={st.skdMiniTxt}>{(skEnh[s.id] || 0) >= SK_ENH_MAX ? '최대' : `${skCard[s.id] || 0}/${CARD_ENH_CARDS}`}</div></div>
+                  <div style={st.skdMiniBar}><div style={{ ...st.skdMiniFill, width: (skEnh[s.id] || 0) >= SK_ENH_MAX ? '100%' : `${Math.min(100, (skCard[s.id] || 0) / CARD_ENH_CARDS * 100)}%` }} /><div style={st.skdMiniTxt}>{(skEnh[s.id] || 0) >= SK_ENH_MAX ? T('최대') : `${skCard[s.id] || 0}/${CARD_ENH_CARDS}`}</div></div>
                 </div>
                 <div style={st.skdHeadMid}>
-                  <div data-edit="skdtitle" style={st.skdTitle}><span style={{ color: s.passive ? '#c49bff' : '#7ce0ff' }}>[{s.passive ? '패시브' : '액티브'}]</span> {s.name}</div>
-                  <div data-edit="skddesc" style={st.skdDesc}>{s.desc2 || '설명 준비 중'}</div>
+                  <div data-edit="skdtitle" style={st.skdTitle}><span style={{ color: s.passive ? '#c49bff' : '#7ce0ff' }}>[{s.passive ? T('패시브') : T('액티브')}]</span> {s.name}</div>
+                  <div data-edit="skddesc" style={st.skdDesc}>{s.desc2 || ''}</div>
                 </div>
               </div>
               {s.passive ? (
               <div data-edit="skdeffect" style={st.skdEffect}>{passiveText(s.pkey, (PASSIVE_VAL[s.pkey] || 0) * skEnhMult(skEnh, s.id))}
-                {(skEnh[s.id] || 0) < SK_ENH_MAX && <><br /><span style={{ color: '#7cb35c' }}>강화하면 → {passiveText(s.pkey, (PASSIVE_VAL[s.pkey] || 0) * (skEnhMult(skEnh, s.id) + SK_ENH_STEP))}</span></>}</div>
+                {(skEnh[s.id] || 0) < SK_ENH_MAX && <><br /><span style={{ color: '#7cb35c' }}>{T('강화하면 →')} {passiveText(s.pkey, (PASSIVE_VAL[s.pkey] || 0) * (skEnhMult(skEnh, s.id) + SK_ENH_STEP))}</span></>}</div>
               ) : (
-              <div data-edit="skdeffect" style={st.skdEffect}>{ef.aoe ? (ef.rangePx ? `${ef.rangePx}px 이내` : '화면 전체') + '의 적 모두에게' : '적 1명에게'}<br />공격력의 <b style={{ color: '#f0a830' }}>{Math.round(ef.dmgMult * skEnhMult(skEnh, s.id) * 100)}%</b>{skHits(s, motCfg) > 1 ? `를 ${skHits(s, motCfg)}회에 나눠 공격` : '로 1회 공격'}</div>
+              <div data-edit="skdeffect" style={st.skdEffect}>{ef.aoe ? (ef.rangePx ? TF('{0}px 이내의 적 모두에게', ef.rangePx) : T('화면 전체의 적 모두에게')) : T('적 1명에게')}<br />{(() => {
+                const pct = <b style={{ color: '#f0a830' }}>{Math.round(ef.dmgMult * skEnhMult(skEnh, s.id) * 100)}%</b>, hits = skHits(s, motCfg)
+                return EN_ON ? <>{pct} of Attack {hits > 1 ? `over ${hits} hits` : 'in 1 hit'}</> : <>공격력의 {pct}{hits > 1 ? `를 ${hits}회에 나눠 공격` : '로 1회 공격'}</>
+              })()}</div>
               )}
               {!s.passive && <div style={st.skdStatRow}>
-                <div data-edit="skdstat" style={st.skdStat}><span style={st.skdStatK}>쿨타임</span><span style={st.skdStatV}>{Math.round(ef.cd * skEnhCdMult(skEnh, s.id) * 10) / 10}초</span></div>
-                <div data-edit="skdstat" style={st.skdStat}><span style={st.skdStatK}>타격 수</span><span style={st.skdStatV}>{skHits(s, motCfg)}회</span></div>
+                <div data-edit="skdstat" style={st.skdStat}><span style={st.skdStatK}>{T('쿨타임')}</span><span style={st.skdStatV}>{TF('{0}초', Math.round(ef.cd * skEnhCdMult(skEnh, s.id) * 10) / 10)}</span></div>
+                <div data-edit="skdstat" style={st.skdStat}><span style={st.skdStatK}>{T('타격 수')}</span><span style={st.skdStatV}>{TF('{0}회', skHits(s, motCfg))}</span></div>
               </div>}
               <div style={st.skdBtns}>
                 {!isOpen(s.id) ? (
                   // 레벨이 되면 자동으로 열린다 — 버튼은 안내만
                   <button data-edit="skdenh" style={{ ...st.skdEnhBtn, flex: 1, opacity: 0.5 }}>
-                    <span>Lv.{SK_UNLOCK_LV[s.id]} 해금</span>
+                    <span>{TF('Lv.{0} 해금', SK_UNLOCK_LV[s.id])}</span>
                   </button>
                 ) : (<>
                   <button data-edit="skdenh" style={{ ...st.skdEnhBtn, ...((skCard[s.id] || 0) >= CARD_ENH_CARDS ? {} : { opacity: 0.5 }) }}
                     onClick={() => { if (!uiEdit) enhanceSkill(s.id) }}>
-                    <span>강화 {(skEnh[s.id] || 0) > 0 ? `+${skEnh[s.id]}` : ''}</span>
+                    <span>{T('강화')} {(skEnh[s.id] || 0) > 0 ? `+${skEnh[s.id]}` : ''}</span>
                     <span style={st.skdEnhCost}>
-                      {(skEnh[s.id] || 0) >= SK_ENH_MAX ? '최대' : <>{skCard[s.id] || 0}/{CARD_ENH_CARDS}
+                      {(skEnh[s.id] || 0) >= SK_ENH_MAX ? T('최대') : <>{skCard[s.id] || 0}/{CARD_ENH_CARDS}
                       <img src="/ui/pearl.webp" alt="" style={st.skdEnhIc} />{CARD_ENH_PEARL}</>}
                     </span>
                   </button>
-                  <button data-edit="skdequip" style={{ ...st.skdEquipBtn, ...(isEq ? st.skdEquipOn : {}) }} onClick={() => { if (isEq) unequipSkill(eqSlot); else equipSkill(skillDetail); setSkillDetail(null) }}>{isEq ? '해제' : '장착'}</button>
+                  <button data-edit="skdequip" style={{ ...st.skdEquipBtn, ...(isEq ? st.skdEquipOn : {}) }} onClick={() => { if (isEq) unequipSkill(eqSlot); else equipSkill(skillDetail); setSkillDetail(null) }}>{isEq ? T('해제') : T('장착')}</button>
                 </>)}
               </div>
               <button style={st.dClose} onClick={() => setSkillDetail(null)}>✕</button>
@@ -3509,42 +3679,39 @@ export default function App() {
       {profileOpen && (() => {
         const sc = S.current
         const statRows = [
-          ['공격력', fmt(Math.round(sc.atk))],
-          ['체력', fmt(Math.round(maxHp))],
-          ['체력 회복', fmt(Math.round(sc.regen)) + '/초'],
-          ['치명타 확률', (sc.critRate * 100).toFixed(1) + '%'],
-          ['치명타 공격력', Math.round(sc.critMult * 100) + '%'],
-          ['고기 획득량', Math.round(sc.meatMult * 100) + '%'],
-          ['경험치 획득량', Math.round(sc.expMult * 100) + '%'],
-          ['명중률', Math.round(sc.acc * 100) + '%'],
-          ['공격 속도', Math.round(aspdMult * 1000) / 10 + '%'],
-          ['이동 속도', Math.round(mspdMult * 1000) / 10 + '%'],
+          [T('공격력'), fmt(Math.round(sc.atk))],
+          [T('체력'), fmt(Math.round(maxHp))],
+          [T('체력 회복'), fmt(Math.round(sc.regen)) + T('/초')],
+          [T('치명타 확률'), (sc.critRate * 100).toFixed(1) + '%'],
+          [T('치명타 공격력'), Math.round(sc.critMult * 100) + '%'],
+          [T('고기 획득량'), Math.round(sc.meatMult * 100) + '%'],
+          [T('경험치 획득량'), Math.round(sc.expMult * 100) + '%'],
+          [T('명중률'), Math.round(sc.acc * 100) + '%'],
+          [T('공격 속도'), Math.round(aspdMult * 1000) / 10 + '%'],
+          [T('이동 속도'), Math.round(mspdMult * 1000) / 10 + '%'],
         ]
         const curRows = [
-          ['/ui/ic_meat.webp', '고기', fmt(meat)],
-          ['/ui/gem.webp', '다이아', fmt(gem)],
-          ['/ui/ruby.webp', '루비', fmt(ruby)],
-          ['/ui/pearl.webp', '진주', fmt(pearl)],
-          ['/ui/mat4.webp', '강화 큐브', fmt(mats[4])],
-          [MAT_IMG(0), '동료 재료 1', fmt(mats[0])],
-          [MAT_IMG(1), '동료 재료 2', fmt(mats[1])],
-          [MAT_IMG(2), '동료 재료 3', fmt(mats[2])],
-          [MAT_IMG(3), '동료 재료 4', fmt(mats[3])],
+          ['/ui/ic_meat.webp', T('고기'), fmt(meat)],
+          ['/ui/gem.webp', T('다이아'), fmt(gem)],
+          ['/ui/ruby.webp', T('루비'), fmt(ruby)],
+          ['/ui/pearl.webp', T('진주'), fmt(pearl)],
+          ['/ui/mat4.webp', T('강화 큐브'), fmt(mats[4])],
+          [MAT_IMG(0), T('동료 재료 1'), fmt(mats[0])],
+          [MAT_IMG(1), T('동료 재료 2'), fmt(mats[1])],
+          [MAT_IMG(2), T('동료 재료 3'), fmt(mats[2])],
+          [MAT_IMG(3), T('동료 재료 4'), fmt(mats[3])],
         ]
         return (
-          <div style={st.dOverlay} onClick={e => { if (!uiEdit && e.target === e.currentTarget) { setProfileOpen(false); setNickEdit(false) } }}>
+          <div style={st.dOverlay} onClick={e => { if (!uiEdit && e.target === e.currentTarget) { setProfileOpen(false) } }}>
             <div style={st.profBox}>
               <div style={st.profTabs}>
-                <button style={{ ...st.profTab, ...(profTab === 'info' ? st.profTabOn : {}) }} onClick={() => setProfTab('info')}>기본 정보</button>
-                <button style={{ ...st.profTab, ...(profTab === 'look' ? st.profTabOn : {}) }} onClick={() => setProfTab('look')}>외형</button>
+                <div style={{ ...st.profTab, ...st.profTabOn, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{T('기본 정보')}</div>
               </div>
-              {profTab === 'info' ? (
+              {(
                 <div style={st.profScroll}>
                   <div style={st.profLv}>Lv.{hlv}</div>
                   <div style={st.profNickRow}>
-                    {nickEdit
-                      ? <input autoFocus value={nick} onChange={e => setNick(e.target.value.slice(0, 16))} onBlur={() => setNickEdit(false)} onKeyDown={e => { if (e.key === 'Enter') setNickEdit(false) }} style={st.profNickInput} />
-                      : <><span style={st.profNickTxt}>{nick}</span><button style={st.profPencil} onClick={() => setNickEdit(true)}>✎</button></>}
+                    <span style={st.profNickTxt}>{nick}</span><button style={st.profPencil} onClick={() => { if (!uiEdit) { setNickIn(nick); setNickMsg(''); setNickOpen('change') } }}>✎</button>
                   </div>
                   <div data-edit="profhero" style={st.profHeroWrap}><img src={heroProfileSrc(EVOS[evo].mode)} alt="" data-edit="profheroimg" style={st.profHeroImg} /></div>
                   <div style={st.profStage}>{EVOS[evo].name}</div>
@@ -3553,28 +3720,26 @@ export default function App() {
                       const n = gearEq[cat]
                       return (
                         <div key={cat} style={st.profGearCol}>
-                          <div style={st.profGearLbl}>{cat}</div>
+                          <div style={st.profGearLbl}>{T(cat)}</div>
                           <div style={{ ...st.profGearCell, borderColor: n ? gradeColorOf(n) : '#4a3a22' }}>
-                            {n ? <img src={gearSrc(cat, n)} alt="" style={st.profGearImg} /> : <span style={{ opacity: 0.3, fontSize: 10 }}>미장착</span>}
+                            {n ? <img src={gearSrc(cat, n)} alt="" style={st.profGearImg} /> : <span style={{ opacity: 0.3, fontSize: 10 }}>{T('미장착')}</span>}
                           </div>
-                          <div style={{ ...st.profGearName, color: n ? gradeColorOf(n) : '#7a6a4c' }}>{n ? `${gradeNameOf(n)} ${n}` : '-'}</div>
+                          <div style={{ ...st.profGearName, color: n ? gradeColorOf(n) : '#7a6a4c' }}>{n ? `${T(gradeNameOf(n))} ${n}` : '-'}</div>
                         </div>
                       )
                     })}
                   </div>
-                  <div data-edit="profstat" style={st.profSecTitle}>능력치</div>
+                  <div data-edit="profstat" style={st.profSecTitle}>{T('능력치')}</div>
                   <div data-edit="profstat" style={st.profPanel}>
                     {statRows.map(([k, v]) => <div key={k} style={st.profStatRow}><span style={st.profStatK}>{k}</span><span style={st.profStatV}>{v}</span></div>)}
                   </div>
-                  <div data-edit="profcur" style={st.profSecTitle}>보유 재화</div>
+                  <div data-edit="profcur" style={st.profSecTitle}>{T('보유 재화')}</div>
                   <div data-edit="profcur" style={st.profPanel}>
                     {curRows.map(([ic, nm, v], i) => <div key={i} style={st.profStatRow}><span style={st.profCurK}><img src={ic} alt="" style={st.profCurIc} />{nm}</span><span style={st.profCurV}>{v}</span></div>)}
                   </div>
                 </div>
-              ) : (
-                <div style={{ ...st.profScroll, textAlign: 'center', color: '#9c8a6c', padding: '50px 20px' }}>외형 변경은 준비 중이에요.</div>
               )}
-              <button style={st.dClose} onClick={() => { setProfileOpen(false); setNickEdit(false) }}>✕</button>
+              <button style={st.dClose} onClick={() => setProfileOpen(false)}>✕</button>
             </div>
           </div>
         )
@@ -3592,11 +3757,11 @@ export default function App() {
             <div style={st.advTop}>
               <div style={st.advInfoCol}>
                 <div data-edit="advmonb" style={{ ...st.advBoxBase, ...st.advMonBox }}>
-                  <div data-edit="advmonk" style={st.advMonK}>몬스터 정보</div>
+                  <div data-edit="advmonk" style={st.advMonK}>{T('몬스터 정보')}</div>
                   <div data-edit="advmonv" style={st.advMonV}>{advSel.mon}</div>
                 </div>
                 <div data-edit="advregb" style={{ ...st.advBoxBase, ...st.advRegBox }}>
-                  <div data-edit="advregk" style={st.advRegK}>지역 정보</div>
+                  <div data-edit="advregk" style={st.advRegK}>{T('지역 정보')}</div>
                   <div data-edit="advregv" style={st.advRegV}>{advSel.name}</div>
                 </div>
               </div>
@@ -3606,7 +3771,7 @@ export default function App() {
             </div>
 
             <div data-edit="advrewb" style={st.advRewRow}>
-              <span data-edit="advrewk" style={st.advRewK}>탐험 보상</span>
+              <span data-edit="advrewk" style={st.advRewK}>{T('탐험 보상')}</span>
               <span data-edit="advrewd" style={st.advRewD}><img src="/ui/gem.webp" alt="" style={st.advRewIc} />{fmt(rw.dia)}</span>
               <span data-edit="advrewm" style={st.advRewM}><img src="/ui/mat4.webp" alt="" style={st.advRewIc} />{fmt(rw.mat)}</span>
             </div>
@@ -3622,9 +3787,9 @@ export default function App() {
 
             <div style={st.advWinBtns}>
               <button data-edit="adventer" style={{ ...st.advEnterBtn, ...(canEnter ? null : st.advBtnOff) }} onClick={enterAdventure}>
-                {allDone ? '완료' : <>진입 <img src="/ui/ruby.webp" alt="" style={st.advRuby} />{fmt(ruby) + '/' + ADV_COST_RUBY}</>}
+                {allDone ? T('완료') : <>{T('진입')} <img src="/ui/ruby.webp" alt="" style={st.advRuby} />{fmt(ruby) + '/' + ADV_COST_RUBY}</>}
               </button>
-              <button data-edit="advclose" style={st.advCloseBtn} onClick={() => { if (!uiEdit) setAdvSel(null) }}>닫기</button>
+              <button data-edit="advclose" style={st.advCloseBtn} onClick={() => { if (!uiEdit) setAdvSel(null) }}>{T('닫기')}</button>
             </div>
           </div>
         </div>
@@ -3641,8 +3806,8 @@ export default function App() {
         const mi = ALLY_MAT[allyPick], cost = ALLY_LV_MAT * stg         // 레벨업 1회 = 전용 재료 45 × 전직 단계
         const canLv = lv < ALLY_LV_MAX && (mats[mi] || 0) >= cost
         const selfRows = at
-          ? [['공격', `히어로 공격력의 ${pc(at.mult * G)}%`], ['현재 피해', num((S.current.atk || 0) * at.mult * G)], ['공격 주기', `${at.cd}초${at.aoe ? ' · 광역' : ''}`]]
-          : [['공격', '직접 공격 없음']]
+          ? [[T('공격'), TF('히어로 공격력의 {0}%', pc(at.mult * G))], [T('현재 피해'), num((S.current.atk || 0) * at.mult * G)], [T('공격 주기'), at.aoe ? TF('{0}초 · 광역', at.cd) : TF('{0}초', at.cd)]]
+          : [[T('공격'), T('직접 공격 없음')]]
         const giveRows = Object.keys(gv).map(g => [ALLY_GIVE_LABEL[g], g === 'dmgRed' ? `-${pc(gv[g] * G / ALLY_G_MAX)}%` : `+${pc(gv[g] * G / ALLY_G_MAX)}%`])
         const rows = list => list.map(([nm, v]) => (
           <div key={nm} data-edit="alstat" style={st.alRow}>
@@ -3654,14 +3819,14 @@ export default function App() {
         <div style={st.evpOverlay} onClick={() => { if (!uiEdit) setAllyPick(null) }}>
           <div data-edit="alwin" style={st.alWin} onClick={e => e.stopPropagation()}>
             <button data-edit="alclose" style={st.alClose} onClick={() => { if (!uiEdit) setAllyPick(null) }}>✕</button>
-            <div data-edit="alname" style={st.alName}>{d.name} <span style={{ color: GOLD_D }}>{stg}단계</span></div>
+            <div data-edit="alname" style={st.alName}>{d.name} <span style={{ color: GOLD_D }}>{TF('{0}단계', stg)}</span></div>
             <img data-edit="alimg" src={ALLY_EVO_IMG(allyPick, stg)} alt="" style={st.alImg} />
             <div style={st.alLv}>Lv.{lv} / {ALLY_LV_MAX}</div>
             <div style={st.alBarOuter}><div style={{ ...st.alBarInner, width: (lv / ALLY_LV_MAX * 100) + '%' }} /></div>
 
-            <div style={st.alSecT}>동료 능력치</div>
+            <div style={st.alSecT}>{T('동료 능력치')}</div>
             {rows(selfRows)}
-            <div style={st.alSecT}>히어로에게 부여</div>
+            <div style={st.alSecT}>{T('히어로에게 부여')}</div>
             {rows(giveRows)}
 
             <div style={st.alBtns}>
@@ -3670,11 +3835,11 @@ export default function App() {
                   if (uiEdit || !canLv) return
                   setMats(m => { const n = [...m]; n[mi] = (n[mi] || 0) - cost; return n })
                   setAllyLv(v => ({ ...v, [allyPick]: Math.min(ALLY_LV_MAX, (v[allyPick] || 1) + 1) }))
-                }}>{lv >= ALLY_LV_MAX ? '최대 레벨' : <>레벨 +1<span style={{ display: 'block', fontSize: '0.8em', opacity: 0.85 }}>재료{mi + 1} ×{cost}</span></>}</button>
+                }}>{lv >= ALLY_LV_MAX ? T('최대 레벨') : <>{T('레벨 +1')}<span style={{ display: 'block', fontSize: '0.8em', opacity: 0.85 }}>{TF('재료{0} ×{1}', mi + 1, cost)}</span></>}</button>
               <button data-edit="albtn" style={{ ...st.alBtn, opacity: canEvo ? 1 : 0.4 }}
-                onClick={() => { if (!uiEdit && canEvo) { setAllyEvo(v => ({ ...v, [allyPick]: stg + 1 })); setAllyLv(v => ({ ...v, [allyPick]: 1 })) } }}>전직</button>
+                onClick={() => { if (!uiEdit && canEvo) { setAllyEvo(v => ({ ...v, [allyPick]: stg + 1 })); setAllyLv(v => ({ ...v, [allyPick]: 1 })) } }}>{T('전직')}</button>
             </div>
-            <div style={st.alHint}>레벨 {ALLY_LV_MAX} 달성 시 다음 단계로 전직할 수 있습니다 (전직 비용 없음)</div>
+            <div style={st.alHint}>{TF('레벨 {0} 달성 시 다음 단계로 전직할 수 있습니다 (전직 비용 없음)', ALLY_LV_MAX)}</div>
           </div>
         </div>
         )
@@ -3694,7 +3859,7 @@ export default function App() {
             <img data-edit="evpimg" src={`/boss/boss${evPick.no}/boss${evPick.no}_1.webp`} alt="" style={st.evpImg} />
             <div data-edit="evpbn" style={st.evpBname}>{evPick.name}</div>
             <div data-edit="evprew" style={st.evpRew}>
-              <span style={st.evpRewK}>던전 보상</span>
+              <span style={st.evpRewK}>{T('던전 보상')}</span>
               <span style={st.evpRewV}><img src="/ui/gem.webp" alt="" style={st.evpRewIc} />{fmt(EV_REWARD.dia)}</span>
               <span style={st.evpRewV}><img src="/ui/pearl.webp" alt="" style={st.evpRewIc} />{fmt(EV_REWARD.pearl)}</span>
             </div>
@@ -3711,9 +3876,9 @@ export default function App() {
                 if (uiEdit || !canEnter) return
                 world.current.evStart = { key: dkey, dname: evPick.dname, no: evPick.no, name: evPick.name, stage, isNew: stage > cleared }
                 setEvDay(d => { const t = questDayStr(); const b = d.day === t ? d : { day: t, n: {} }; return { ...b, n: { ...b.n, [dkey]: (b.n[dkey] || 0) + 1 } } })
-                setEvPick(null); setEvOpen(false); setNav('영웅'); setPaused(false)
-              }}>{allDone ? '완료' : `진입 ${left}/${EV_DAILY}`}</button>
-              <button data-edit="evpclose" style={st.evpClose} onClick={() => { if (!uiEdit) setEvPick(null) }}>닫기</button>
+                setEvPick(null); setEvOpen(false); setNav('영웅')
+              }}>{allDone ? T('완료') : TF('진입 {0}/{1}', left, EV_DAILY)}</button>
+              <button data-edit="evpclose" style={st.evpClose} onClick={() => { if (!uiEdit) setEvPick(null) }}>{T('닫기')}</button>
             </div>
           </div>
         </div>
@@ -3723,7 +3888,7 @@ export default function App() {
       {cardRes && (
         <div style={st.evpOverlay} onClick={() => { if (cShown < cardCells.length) setCShown(cardCells.length); else setCardRes(null) }}>
           <div data-edit="cardwin" style={st.cardResWin} onClick={e => { e.stopPropagation(); if (cShown < cardCells.length) setCShown(cardCells.length) }}>
-            <div data-edit="cardtitle" style={st.cardResTitle}>스킬 카드 {cardRes.ids.length}장</div>
+            <div data-edit="cardtitle" style={st.cardResTitle}>{TF('스킬 카드 {0}장', cardRes.ids.length)}</div>
             <div style={st.cardResGrid}>
               {cardCells.slice(0, cShown).map(([id, cnt]) => {
                 const sk = SKILLS.find(k => k.id === Number(id))
@@ -3745,7 +3910,7 @@ export default function App() {
                 )
               })}
             </div>
-            <button data-edit="cardclose" style={st.cardResClose} onClick={() => setCardRes(null)}>확인</button>
+            <button data-edit="cardclose" style={st.cardResClose} onClick={() => setCardRes(null)}>{T('확인')}</button>
           </div>
         </div>
       )}
@@ -3754,7 +3919,7 @@ export default function App() {
         <div style={st.advOverlay} onClick={() => { if (!uiEdit) setQuestOpen(false) }}>
           <div data-edit="qwin" style={st.qWin} onClick={e => e.stopPropagation()}>
             <div style={st.qTitleRow}>
-              <div data-edit="qtitle" style={st.qTitle}>퀘스트</div>
+              <div data-edit="qtitle" style={st.qTitle}>{T('퀘스트')}</div>
               <button data-edit="qclose" style={st.qCloseBtn} onClick={() => { if (!uiEdit) setQuestOpen(false) }}>✕</button>
             </div>
             <div style={st.qTabs}>
@@ -3775,7 +3940,7 @@ export default function App() {
                     <div data-edit="qname" style={st.qName}>{q.name}</div>
                     <div data-edit="qbar" style={st.qBarOuter}>
                       <div style={{ ...st.qBarFill, width: `${Math.min(100, p.cur / p.goal * 100)}%` }} />
-                      <div data-edit="qbart" style={st.qBarTxt}>{p.claimed ? '수령 완료' : `${fmt(p.cur)}/${fmt(p.goal)}`}</div>
+                      <div data-edit="qbart" style={st.qBarTxt}>{p.claimed ? T('수령 완료') : `${fmt(p.cur)}/${fmt(p.goal)}`}</div>
                     </div>
                   </div>
                   <button data-edit="qrew" style={{ ...st.qRew, ...(p.canClaim ? st.qRewOn : st.qRewOff) }} onClick={() => qClaim(questTab, i)}>
@@ -3807,18 +3972,18 @@ export default function App() {
                     animationDelay: hi ? '0ms, 350ms' : '0ms',   // 등장 직후 번쩍임 시작 (순서는 위 타이머가 제어)
                     boxShadow: hi ? '0 0 14px 3px rgba(255,200,80,0.6)' : 'none',
                   }}>
-                    <span data-edit="ggrade" style={{ ...st.gachaGrade, color: col }}>{gr}</span>
+                    <span data-edit="ggrade" style={{ ...st.gachaGrade, color: col }}>{T(gr)}</span>
                     <img src={equipImg(gacha.cat, it.i)} alt="" data-edit="gimg" style={st.gachaImg} />
-                    <span data-edit="gtier" style={st.gachaTier}>{it.lvUp ? '레벨 보상' : `${tierOf(it.i)}등급`}</span>
+                    <span data-edit="gtier" style={st.gachaTier}>{it.lvUp ? T('레벨 보상') : TF('{0}등급', tierOf(it.i))}</span>
                   </div>
                 )
               })}
             </div>
           </div>
           <div style={st.gachaBtns}>
-            <button data-edit="gbtn" style={st.gachaBtn} onClick={() => setGacha(null)}><span data-edit="gbtntext" style={st.gachaBtnText}>확인</span></button>
-            <button data-edit="gbtn" style={st.gachaBtn} onClick={() => { if (!uiEdit) pullGacha(gacha.cat, 10) }}><span data-edit="gbtntext" style={st.gachaBtnText}>10회 소환 <span style={st.shopCost}><img src="/ui/gem.webp" alt="" data-edit="shopgem" style={st.shopGemIc} />100</span></span></button>
-            <button data-edit="gbtn" style={st.gachaBtn} onClick={() => { if (!uiEdit) pullGacha(gacha.cat, 30) }}><span data-edit="gbtntext" style={st.gachaBtnText}>30회 소환 <span style={st.shopCost}><img src="/ui/gem.webp" alt="" data-edit="shopgem" style={st.shopGemIc} />300</span></span></button>
+            <button data-edit="gbtn" style={st.gachaBtn} onClick={() => setGacha(null)}><span data-edit="gbtntext" style={st.gachaBtnText}>{T('확인')}</span></button>
+            <button data-edit="gbtn" style={st.gachaBtn} onClick={() => { if (!uiEdit) pullGacha(gacha.cat, 10) }}><span data-edit="gbtntext" style={st.gachaBtnText}>{T('10회 소환')}<br /><span style={st.shopCost}><img src="/ui/gem.webp" alt="" data-edit="shopgem" style={st.shopGemIc} />100</span></span></button>
+            <button data-edit="gbtn" style={st.gachaBtn} onClick={() => { if (!uiEdit) pullGacha(gacha.cat, 30) }}><span data-edit="gbtntext" style={st.gachaBtnText}>{T('30회 소환')}<br /><span style={st.shopCost}><img src="/ui/gem.webp" alt="" data-edit="shopgem" style={st.shopGemIc} />300</span></span></button>
           </div>
         </div>
       )}
@@ -3851,7 +4016,7 @@ export default function App() {
           <span className="pd-num" style={st.hpText}>{fmt(Math.min(heroHpUI, Math.ceil(maxHp)))} / {fmt(Math.ceil(maxHp))}</span>
         </div>
         <div data-edit="waveband" style={st.waveBanner} onClick={() => { if (!uiEdit) setWaveJump(String(wave)) }}>
-          <div data-edit="wavetitle" style={st.waveTitle}>웨이브 {wave}</div>
+          <div data-edit="wavetitle" style={st.waveTitle}>{TF('웨이브 {0}', wave)}</div>
           <div data-edit="diarow" style={st.diaRow}>
             {Array.from({ length: 10 }, (_, i) => (
               <img key={i} src={i < (wave - 1) % 10 + 1 ? '/ui/dia_on.webp' : '/ui/dia_off.webp'} alt="" style={st.dia} />
@@ -3860,7 +4025,7 @@ export default function App() {
         </div>
         <div data-edit="bossbtn" style={st.bossWrap}>
           <button style={{ ...st.bossBtn, opacity: bossReady && phase === 'fighting' ? 1 : 0.45, animation: bossReady && phase === 'fighting' ? 'pdPulse 1.2s ease-in-out infinite' : 'none' }} disabled={!uiEdit && !(bossReady && phase === 'fighting')} onClick={() => { if (!uiEdit) challengeBoss() }}>
-            <span data-edit="bosstext" style={st.bossText}>보스 도전</span>
+            <span data-edit="bosstext" style={st.bossText}>{T('보스 도전')}</span>
           </button>
         </div>
       </div>
@@ -3869,7 +4034,7 @@ export default function App() {
         <div style={st.advOverlay} onClick={() => { if (!uiEdit) setEvOpen(false) }}>
           <div data-edit="evwin" style={st.evWin} onClick={e => e.stopPropagation()}>
             <div style={st.qTitleRow}>
-              <div data-edit="evtitle" style={st.evTitle}>이벤트 던전</div>
+              <div data-edit="evtitle" style={st.evTitle}>{T('이벤트 던전')}</div>
               <button data-edit="evclose" style={st.evCloseBtn} onClick={() => { if (!uiEdit) setEvOpen(false) }}>✕</button>
             </div>
             <div style={st.evTabs}>
@@ -3881,7 +4046,7 @@ export default function App() {
               {(() => {
                 const k = EV_DUNGEONS[evSel].key
                 const ei = evExt[k] ?? 0
-                if (ei >= EV_EXTS.length) return <div data-edit="evprevimg" style={{ ...st.evPrevImg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#9c8a6c', textAlign: 'center', padding: 8 }}>배경 파일 없음<br />/bg/event/{k} · .jpg · .png · .jpeg · .webp<br />전부 404</div>
+                if (ei >= EV_EXTS.length) return <div data-edit="evprevimg" style={{ ...st.evPrevImg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#9c8a6c', textAlign: 'center', padding: 8 }}>{T('배경 파일 없음')}<br />/bg/event/{k} · .jpg · .png · .jpeg · .webp<br />{T('전부 404')}</div>
                 return <img key={`${k}-${ei}`} src={EV_EXTS[ei] ? `/bg/event/${k}.${EV_EXTS[ei]}` : `/bg/event/${k}`} alt="" data-edit="evprevimg" style={st.evPrevImg}
                   onError={() => setEvExt(m => (m[k] ?? 0) >= EV_EXTS.length ? m : { ...m, [k]: (m[k] ?? 0) + 1 })} />
               })()}
@@ -3897,7 +4062,7 @@ export default function App() {
                   <button data-edit="evgo" style={st.evGo} onClick={() => {
                     if (uiEdit) return
                     setEvPick({ di: evSel, no: EV_DUNGEONS[evSel].from + i, name: b.name, dname: EV_DUNGEONS[evSel].name })
-                  }}>도전</button>
+                  }}>{T('도전')}</button>
                 </div>
               ))}
             </div>
@@ -3906,22 +4071,21 @@ export default function App() {
       )}
       <div ref={wrapRef} style={{ ...st.canvasWrap, height: Math.round(BASE_H * 0.42) + (view.h - BASE_H), ...(nav === '모험' ? { display: 'none' } : {}) }}>
         <canvas ref={canvasRef} />
-        <button data-edit="pausebtn" style={{ ...st.pauseBtn, opacity: paused ? 1 : 0.65 }} onClick={() => { if (!uiEdit) setPaused(p => !p) }}>{paused ? '▶' : 'II'}</button>
         <button data-edit="quest" style={st.questBtn} onClick={() => { if (!uiEdit) setQuestOpen(true) }}><img src="/ui/quest.webp" alt="" style={st.iconImg} /></button>
         <button data-edit="evbtn" style={st.evBtn} onClick={() => { if (!uiEdit) setEvOpen(true) }}>
           <img src="/ui/evdungeon.webp" alt="" style={st.evBtnImg} />
-          <span data-edit="evbtnt" style={st.evBtnText}>이벤트 던전</span>
+          <span data-edit="evbtnt" style={st.evBtnText}>{T('이벤트 던전')}</span>
         </button>
         {(rankInfo || uiEdit) && (
           <div data-edit="rankpill" style={st.rankPill}>
-            <span style={st.rankK}>랭킹</span>
+            <span style={st.rankK}>{T('랭킹')}</span>
             <span className="pd-num" style={st.rankV}>{rankInfo ? `${rankInfo.me} / ${rankInfo.total}` : '– / –'}</span>
           </div>
         )}
         <button data-edit="fevbtn" style={st.fevBtn}>
           <img src="/ui/fever_off.webp" alt="" style={{ ...st.fevBtnImg, ...(feverOn ? { visibility: 'hidden' } : null) }} />
           {feverOn && <img data-edit="fevon" src="/ui/fever_on.webp" alt="" style={st.fevBtnOn} />}
-          <span data-edit="fevbtnt" style={st.fevBtnText}>(광고 시청 {feverAds}/3)</span>
+          <span data-edit="fevbtnt" style={st.fevBtnText}>{TF('(광고 시청 {0}/3)', feverAds)}</span>
         </button>
         {bossUI && (
           <div style={st.bossBars}>
@@ -3937,27 +4101,27 @@ export default function App() {
         )}
         {uiEdit && <div data-edit="warn" style={st.warnPrev}>WARNING</div>}
         {(evUI || uiEdit) && (
-          <button data-edit="evexit" style={st.evExitBtn} onClick={() => { if (!uiEdit) world.current.evGiveUp = true }}>던전 포기</button>
+          <button data-edit="evexit" style={st.evExitBtn} onClick={() => { if (!uiEdit) world.current.evGiveUp = true }}>{T('던전 포기')}</button>
         )}
         {(advUI || uiEdit) && (
-          <button data-edit="advexit" style={st.advExitBtn} onClick={() => { if (!uiEdit) world.current.advGiveUp = true }}>나가기</button>
+          <button data-edit="advexit" style={st.advExitBtn} onClick={() => { if (!uiEdit) world.current.advGiveUp = true }}>{T('나가기')}</button>
         )}
         {((bossUI && bossUI.wave) || uiEdit) && (
-          <button data-edit="wbexit" style={st.wbExitBtn} onClick={() => { if (!uiEdit) world.current.bossGiveUp = true }}>나가기</button>
+          <button data-edit="wbexit" style={st.wbExitBtn} onClick={() => { if (!uiEdit) world.current.bossGiveUp = true }}>{T('나가기')}</button>
         )}
         <div data-edit="gain" style={{ ...st.gainWrap, ...(uiEdit ? { pointerEvents: 'auto' } : {}) }}>
           {(gains.length ? gains : (uiEdit ? [{ id: '__s', exp: 1234, meat: 567 }] : [])).map(g => (
             <div key={g.id} style={st.gainItem}>
-              <span style={st.gainCell}><img data-edit="gainicon" src="/ui/ic_exp.webp" alt="" style={st.gainIcon} /><span data-edit="gaintext" style={{ ...st.gainNum, color: '#6ec4ff' }}>+{g.exp}</span></span>
-              <span style={st.gainCell}><img data-edit="gainicon" src="/ui/ic_meat.webp" alt="" style={st.gainIcon} /><span data-edit="gaintext" style={{ ...st.gainNum, color: '#ff9d6a' }}>+{g.meat}</span></span>
+              <span style={st.gainCell}><img data-edit="gainicon" src="/ui/ic_exp.webp" alt="" style={st.gainIcon} /><span data-edit="gaintext" style={{ ...st.gainNum, color: '#6ec4ff' }}>+{fmt(g.exp)}</span></span>
+              <span style={st.gainCell}><img data-edit="gainicon" src="/ui/ic_meat.webp" alt="" style={st.gainIcon} /><span data-edit="gaintext" style={{ ...st.gainNum, color: '#ff9d6a' }}>+{fmt(g.meat)}</span></span>
             </div>
           ))}
         </div>
-        {clearMsg != null && <div data-edit="clearmsg" style={{ ...st.overlayText, ...(uiEdit ? { pointerEvents: 'auto' } : {}) }}>{typeof clearMsg === 'number' ? `웨이브 ${clearMsg} 클리어!` : clearMsg}</div>}
+        {clearMsg != null && <div data-edit="clearmsg" style={{ ...st.overlayText, ...(uiEdit ? { pointerEvents: 'auto' } : {}) }}>{typeof clearMsg === 'number' ? TF('웨이브 {0} 클리어!', clearMsg) : clearMsg}</div>}
         {phase === 'gameover' && (
           <div style={st.overlay}>
-            <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 12 }}>쓰러졌다...</div>
-            <button style={st.retryBtn} onClick={retry}>다시 도전</button>
+            <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 12 }}>{T('쓰러졌다...')}</div>
+            <button style={st.retryBtn} onClick={retry}>{T('다시 도전')}</button>
           </div>
         )}
       </div>
@@ -4005,7 +4169,7 @@ export default function App() {
       <div data-edit="tab" style={st.tabsInner}>
         {['강화', '성장', '진화'].map(t => (
           <button key={t} style={{ ...st.tabBtn, ...(tab === t ? st.tabActive : {}) }} onClick={() => setTab(t)}>
-            {t}{t === '성장' && sp > 0 && <span style={st.spDot}>{sp}</span>}
+            {T(t)}{t === '성장' && sp > 0 && <span style={st.spDot}>{sp}</span>}
           </button>
         ))}
       </div>
@@ -4039,18 +4203,18 @@ export default function App() {
             <div style={{ flex: 1, marginLeft: 12 }}>
               <div data-edit="name" style={st.rowName}>{EVOS[evo].name}</div>
               <div data-edit="val" style={st.rowVal}>
-                공격력 ×{EVOS[evo].mult}
-                {evo < EVOS.length - 1 && <span style={{ color: '#7cb35c' }}> → ×{EVOS[evo + 1].mult}</span>}
+                {TF('공격력 ×{0}', EVOS[evo].mult.toLocaleString())}
+                {evo < EVOS.length - 1 && <span style={{ color: '#7cb35c' }}> → ×{EVOS[evo + 1].mult.toLocaleString()}</span>}
               </div>
             </div>
             {evo < EVOS.length - 1
               ? <button data-edit="cost" style={{ ...st.costBtn, opacity: hlv >= (EVOS[evo + 1].lv || 0) ? 1 : 0.4 }} onClick={evolve}>{`Lv.${EVOS[evo + 1].lv}`}</button>
-              : <div style={{ fontSize: 12, opacity: 0.6 }}>최종 단계</div>}
+              : <div style={{ fontSize: 12, opacity: 0.6 }}>{T('최종 단계')}</div>}
           </div>
         )}
         {tab === '성장' && (
           <>
-            <div data-edit="spbarC" style={{ ...st.spBar, transform: 'translate(var(--pd-spbarC-x), var(--pd-spbarC-y))' }}>스킬포인트 <b style={{ color: '#7ce0ff', fontSize: 'calc(var(--pd-spbarfz) + 2px)' }}>{sp}</b></div>
+            <div data-edit="spbarC" style={{ ...st.spBar, transform: 'translate(var(--pd-spbarC-x), var(--pd-spbarC-y))' }}>{T('스킬포인트')} <b style={{ color: '#7ce0ff', fontSize: 'calc(var(--pd-spbarfz) + 2px)' }}>{sp}</b></div>
             {SP_KEYS.map(k => {
               const d = SL(k)
               const ok = sp > 0
@@ -4075,7 +4239,7 @@ export default function App() {
         <div data-edit="panel" style={st.panel}>
           <div style={st.skillFixed}>
           <div style={st.skHeadRow}>
-            <div data-edit="skhtitle" style={st.skHeadTitle}>스킬</div>
+            <div data-edit="skhtitle" style={st.skHeadTitle}>{T('스킬')}</div>
           </div>
           </div>
           <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.skillScroll}>
@@ -4092,7 +4256,7 @@ export default function App() {
                 <div data-edit="skcell" style={st.skCellIconWrap}>
                   {skIcon(s, evo) ? <img src={skIcon(s, evo)} alt="" data-edit="skimg" style={{ ...st.skCellIconImg, ...skIconFit(s.id), ...(isOpen(s.id) ? null : st.skLockedImg) }} /> : <span style={{ fontSize: 22 }}>{s.icon}</span>}
                   {!isOpen(s.id) && <img src="/ui/lock.webp" alt="" data-edit="sklock" style={st.skLockIc} />}
-                  {isEq && isOpen(s.id) && <div style={st.skCellEq}>장착{!ready && ` ${cd.toFixed(1)}`}</div>}
+                  {isEq && isOpen(s.id) && <div style={st.skCellEq}>{L('장착', 'Equipped')}{!ready && ` ${cd.toFixed(1)}`}</div>}
                 </div>
                 <div data-edit="skbar" style={st.skCellBarOuter}>
                   <div style={{ ...st.skCellBarFill, width: `${Math.min(100, (skCard[s.id] || 0) / CARD_ENH_CARDS * 100)}%` }} />
@@ -4111,7 +4275,7 @@ export default function App() {
         <div data-edit="panel" style={st.frameBox}>
           <div data-edit="tab" style={st.tabsInner}>
             {['무기', '방어구', '유물'].map(t => (
-              <button key={t} style={{ ...st.tabBtn, ...(equipTab === t ? st.tabActive : {}) }} onClick={() => setEquipTab(t)}>{t}</button>
+              <button key={t} style={{ ...st.tabBtn, ...(equipTab === t ? st.tabActive : {}) }} onClick={() => setEquipTab(t)}>{T(t)}</button>
             ))}
           </div>
           <div className="pd-fade" ref={updFade} onScroll={e => updFade(e.currentTarget)} style={st.panelInner}>
@@ -4124,10 +4288,10 @@ export default function App() {
                 const canFuse = cnt >= 5 && i < EQUIP_MAX
                 return (
                   <div key={i} data-edit="equip" style={{ ...st.equipCell, borderColor: col + '99' }} onClick={() => { if (!uiEdit) { setDetailItem({ cat: equipTab, i }); setDetailTab('강화'); setFuseQty(0) } }}>
-                    <span data-edit="eqtier" style={{ ...st.equipTier, color: col }}>{tierOf(i)}등급</span>
+                    <span data-edit="eqtier" style={{ ...st.equipTier, color: col }}>{TF('{0}등급', tierOf(i))}</span>
                     <img src={equipImg(equipTab, i)} alt="" data-edit="eqimg" style={st.equipImg} />
                     <span style={{ ...st.eqCount, color: canFuse ? '#ffd24a' : '#d8ccb3' }}>{cnt}/5</span>
-                    {canFuse && <span style={st.fuseBadge}>융합</span>}
+                    {canFuse && <span style={st.fuseBadge}>{T('융합')}</span>}
                   </div>
                 )
               })}
@@ -4137,7 +4301,7 @@ export default function App() {
           {EQUIP_CATS.includes(equipTab) && (
             <div style={st.equipBottomBar}>
               <div data-edit="matchip" style={st.matChip}><img src={MAT_IMG(4)} alt="" style={st.matChipIc} /><span style={{ fontFamily: "'Do Hyeon',sans-serif" }}>{fmt(mats[4])}</span></div>
-              <button data-edit="fuseall" style={st.fuseAllBtn} onClick={() => { if (!uiEdit) fuseAll(equipTab) }}>일괄 융합</button>
+              <button data-edit="fuseall" style={st.fuseAllBtn} onClick={() => { if (!uiEdit) fuseAll(equipTab) }}>{T('일괄 융합')}</button>
             </div>
           )}
         </div>
@@ -4149,31 +4313,31 @@ export default function App() {
             <div style={st.shopTabRow}>
               {['장비', '스킬 카드'].map(t => (
                 <button key={t} data-edit="shoptab" style={{ ...st.shopTab, ...(shopTab === t ? st.shopTabOn : {}) }}
-                  onClick={() => { if (!uiEdit) setShopTab(t) }}><span data-edit="shoptabt" style={st.shopTabText}>{t}</span></button>
+                  onClick={() => { if (!uiEdit) setShopTab(t) }}><span data-edit="shoptabt" style={st.shopTabText}>{T(t)}</span></button>
               ))}
             </div>
             {shopTab === '스킬 카드' && (
               <div data-edit="shoprow" style={{ ...st.row, minHeight: 'var(--pd-shoprowmin)', transform: 'translate(var(--pd-shoprow-x), var(--pd-shoprow-y))' }}>
                 <img src="/ui/skillcard.webp" alt="" data-edit="shopic3" style={{ width: 'var(--pd-shopic3w)', height: 'var(--pd-shopic3h)', objectFit: 'fill', transform: 'translate(var(--pd-shopic3-x), var(--pd-shopic3-y))' }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div data-edit="shopt3" style={{ fontWeight: 700, fontSize: 'var(--pd-shopt3fz)', transform: 'translate(var(--pd-shopt3-x), var(--pd-shopt3-y))' }}>스킬 카드 소환</div>
+                  <div data-edit="shopt3" style={{ fontWeight: 700, fontSize: 'var(--pd-shopt3fz)', transform: 'translate(var(--pd-shopt3-x), var(--pd-shopt3-y))' }}>{T('스킬 카드 소환')}</div>
                 </div>
-                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullCard(1) }}><span data-edit="shopbtext" style={st.shopBtnText}>1회<br /><span style={st.shopCost}><img src="/ui/gem.webp" alt="" data-edit="shopgem" style={st.shopGemIc} />{CARD_COST[1]}</span></span></button>
-                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullCard(10) }}><span data-edit="shopbtext" style={st.shopBtnText}>10회<br /><span style={st.shopCost}><img src="/ui/gem.webp" alt="" data-edit="shopgem" style={st.shopGemIc} />{CARD_COST[10]}</span></span></button>
+                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullCard(1) }}><span data-edit="shopbtext" style={st.shopBtnText}>{T('1회')}<br /><span style={st.shopCost}><img src="/ui/gem.webp" alt="" data-edit="shopgem" style={st.shopGemIc} />{CARD_COST[1]}</span></span></button>
+                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullCard(10) }}><span data-edit="shopbtext" style={st.shopBtnText}>{T('10회')}<br /><span style={st.shopCost}><img src="/ui/gem.webp" alt="" data-edit="shopgem" style={st.shopGemIc} />{CARD_COST[10]}</span></span></button>
               </div>
             )}
             {shopTab === '장비' && Object.keys(GACHA_CATS).map((cat, ci) => (
               <div key={cat} data-edit="shoprow" style={{ ...st.row, minHeight: 'var(--pd-shoprowmin)', transform: 'translate(var(--pd-shoprow-x), var(--pd-shoprow-y))' }}>
                 <img src={equipImg(cat, EQUIP_MAX)} alt="" data-edit={`shopic${ci}`} style={{ height: `var(--pd-shopic${ci})`, objectFit: 'contain', transform: `translate(var(--pd-shopic${ci}-x), var(--pd-shopic${ci}-y))` }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div data-edit={`shopt${ci}`} style={{ fontWeight: 700, fontSize: `var(--pd-shopt${ci}fz)`, transform: `translate(var(--pd-shopt${ci}-x), var(--pd-shopt${ci}-y))` }}>{cat} 소환</div>
+                  <div data-edit={`shopt${ci}`} style={{ fontWeight: 700, fontSize: `var(--pd-shopt${ci}fz)`, transform: `translate(var(--pd-shopt${ci}-x), var(--pd-shopt${ci}-y))` }}>{TF('{0} 소환', T(cat))}</div>
                   {(() => {
                     const lv = gachaLv[cat] || 1
                     const cur = gachaCnt[cat] || 0
                     const need = gachaNeed(lv)
                     const max = lv >= GACHA_MAXLV
                     return (<>
-                      <div data-edit={`glv${ci}`} style={{ ...st.gLvTxt, fontSize: `var(--pd-glv${ci}fz)`, transform: `translate(var(--pd-glv${ci}-x), var(--pd-glv${ci}-y))` }}>소환 레벨 {lv}{max ? ' (MAX)' : ''}</div>
+                      <div data-edit={`glv${ci}`} style={{ ...st.gLvTxt, fontSize: `var(--pd-glv${ci}fz)`, transform: `translate(var(--pd-glv${ci}-x), var(--pd-glv${ci}-y))` }}>{TF('소환 레벨 {0}', lv)}{max ? ' (MAX)' : ''}</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <div data-edit={`glvbar${ci}`} style={{ ...st.gLvBar, width: `var(--pd-glvbar${ci}w)`, height: `var(--pd-glvbar${ci}h)`, transform: `translate(var(--pd-glvbar${ci}-x), var(--pd-glvbar${ci}-y))` }}>
                           <div style={{ ...st.gLvFill, width: max ? '100%' : `${Math.min(100, cur / need * 100)}%` }} />
@@ -4190,9 +4354,9 @@ export default function App() {
                     </>)
                   })()}
                 </div>
-                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullGacha(cat, 1) }}><span data-edit="shopbtext" style={st.shopBtnText}>1회<br /><span style={st.shopCost}><img src="/ui/gem.webp" alt="" data-edit="shopgem" style={st.shopGemIc} />10</span></span></button>
-                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullGacha(cat, 10) }}><span data-edit="shopbtext" style={st.shopBtnText}>10회<br /><span style={st.shopCost}><img src="/ui/gem.webp" alt="" data-edit="shopgem" style={st.shopGemIc} />100</span></span></button>
-                <button data-edit="shopad" style={st.shopAdBtn}><span data-edit="shopadt" style={st.shopAdText}>광고 (10회)</span></button>
+                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullGacha(cat, 1) }}><span data-edit="shopbtext" style={st.shopBtnText}>{T('1회')}<br /><span style={st.shopCost}><img src="/ui/gem.webp" alt="" data-edit="shopgem" style={st.shopGemIc} />10</span></span></button>
+                <button data-edit="shopbtn" style={st.shopBtn} onClick={() => { if (!uiEdit) pullGacha(cat, 10) }}><span data-edit="shopbtext" style={st.shopBtnText}>{T('10회')}<br /><span style={st.shopCost}><img src="/ui/gem.webp" alt="" data-edit="shopgem" style={st.shopGemIc} />100</span></span></button>
+                <button data-edit="shopad" style={st.shopAdBtn}><span data-edit="shopadt" style={st.shopAdText}>{T('광고 (10회)')}</span></button>
               </div>
             ))}
           </div>
@@ -4202,7 +4366,7 @@ export default function App() {
         <div data-edit="panel" style={st.frameBox}>
           <div style={st.allySubRow}>
             {['동료', '전직'].map(t => (
-              <button key={t} data-edit="allytab" style={{ ...st.allySubTab, ...(allySub === t ? st.allySubOn : {}) }} onClick={() => setAllySub(t)}>{t}</button>
+              <button key={t} data-edit="allytab" style={{ ...st.allySubTab, ...(allySub === t ? st.allySubOn : {}) }} onClick={() => setAllySub(t)}>{T(t)}</button>
             ))}
             <div style={st.allyMats}>
               {[0, 1, 2, 3].map(mi => (
@@ -4221,7 +4385,7 @@ export default function App() {
                       <>
                         <div data-edit="allyname" style={st.allyName}>{a.name}</div>
                         <img data-edit="allyimg" src={a.walk[0]} alt="" style={st.allyImg} />
-                        <button data-edit="allybtn" style={{ ...st.allyBtn, ...(on ? st.allyBtnOn : {}) }} onClick={() => setAlliesOn(v => ({ ...v, [ak]: !v[ak] }))}>{on ? '해제' : '장착'}</button>
+                        <button data-edit="allybtn" style={{ ...st.allyBtn, ...(on ? st.allyBtnOn : {}) }} onClick={() => setAlliesOn(v => ({ ...v, [ak]: !v[ak] }))}>{on ? T('해제') : T('장착')}</button>
                       </>
                     ) : (
                       <span style={{ opacity: 0.5, fontSize: 18 }}>?</span>
@@ -4240,7 +4404,7 @@ export default function App() {
                 const cur = (allyEvo[ak] || 1) >= st2                  // 도달한 단계는 밝게, 나머지는 어둡게
                 return (
                   <div key={ak + st2} data-edit="evocell" onClick={() => { if (!uiEdit) setAllyPick(ak) }} style={{ ...st.evoCell, cursor: 'pointer', opacity: cur ? 1 : 0.78, borderColor: cur ? GOLD : '#5a4028' }}>
-                    <div data-edit="evoname" style={st.evoName}>{ALLY_DEFS[ak].name} {st2}단계</div>
+                    <div data-edit="evoname" style={st.evoName}>{TF('{0} {1}단계', ALLY_DEFS[ak].name, st2)}</div>
                     <img data-edit={`evochr${ak}${st2}`} src={ALLY_EVO_IMG(ak, st2)} alt=""
                       style={{ ...st.evoImg, height: `var(--pd-evochr${ak}${st2})`, transform: `translate(var(--pd-evochr${ak}${st2}-x), var(--pd-evochr${ak}${st2}-y))`,
                         filter: cur ? 'none' : 'brightness(0.82)' }} />
@@ -4257,9 +4421,9 @@ export default function App() {
             <div ref={advTrackRef} style={{ ...st.advTrack, transform: `translateX(${advOffset}px)`, transition: advLoaded ? st.advTrack.transition : 'none', opacity: advLoaded ? 1 : 0 }}>
               <img src="/adventure/worldmap.jpg" alt="" style={st.advMap} draggable={false} onLoad={() => { recalcAdv(); requestAnimationFrame(() => setAdvLoaded(true)) }} />
               {CONTINENTS.map((ct, i) => (
-                <button key={ct.key} data-edit={`advbtn${i}`} style={{ ...st.advContBtn, left: `${ct.x}%`, top: `${ct.y}%`, transform: `translate(calc(-50% + var(--pd-advbtn${i}-x)), calc(-50% + var(--pd-advbtn${i}-y)))`, ...(advLocked(ct.key) ? { filter: 'grayscale(1) brightness(0.5)' } : null) }} onClick={() => { if (!uiEdit && !advLocked(ct.key)) setAdvSel(ct) }}>
+                <button key={ct.key} data-edit={`advbtn${i}`} style={{ ...st.advContBtn, ...(EN_ON ? st.advContBtnEn : null), left: `${ct.x}%`, top: `${ct.y}%`, transform: `translate(calc(-50% + var(--pd-advbtn${i}-x)), calc(-50% + var(--pd-advbtn${i}-y)))`, ...(advLocked(ct.key) ? { filter: 'grayscale(1) brightness(0.5)' } : null) }} onClick={() => { if (!uiEdit && !advLocked(ct.key)) setAdvSel(ct) }}>
                   {advLocked(ct.key) && <img src="/ui/lock.webp" alt="" data-edit="advlock" style={st.advLockIc} />}
-                  <span data-edit={`advtxt${i}`} style={{ ...st.advContName, transform: `translate(var(--pd-advtxt${i}-x), var(--pd-advtxt${i}-y))` }}>{ct.name}</span>
+                  <span data-edit={`advtxt${i}`} style={{ ...st.advContName, transform: EN_ON ? `translateY(var(--pd-advtxt${i}-y))` : `translate(var(--pd-advtxt${i}-x), var(--pd-advtxt${i}-y))` }}>{ct.name}</span>
                 </button>
               ))}
             </div>
@@ -4278,20 +4442,40 @@ export default function App() {
         </div>
       )}
       {nav === '모험' && view.h > BASE_H && <div style={{ height: view.h - BASE_H, flexShrink: 0, background: '#1a1109' }} />}
-      {nav !== '영웅' && nav !== '스킬' && nav !== '장비' && nav !== '상점' && nav !== '동료' && nav !== '모험' && (
-        <div style={st.comingSoon}>
-          <div style={{ fontSize: 40, marginBottom: 10 }}>🔒</div>
-          <div style={{ fontSize: 16, fontWeight: 700 }}>{nav}</div>
-          <div style={{ fontSize: 13, opacity: 0.6, marginTop: 6 }}>준비 중입니다</div>
+
+      {(needNick || nickOpen) && (
+        <div style={st.nkOverlay}>
+          <div data-edit="nkwin" style={st.nkWin}>
+            <div data-edit="nktitle" style={st.nkTitle}>{needNick ? T('닉네임 정하기') : T('닉네임 바꾸기')}</div>
+            <div data-edit="nkdesc" style={st.nkDesc}>{TF('{0}~{1}자 · 한글, 영문, 숫자', NICK_MIN, NICK_MAX)}</div>
+            <input data-edit="nkinput" style={st.nkInput} value={nickIn} maxLength={NICK_MAX + 4} placeholder={T('닉네임')}
+              onChange={e => { setNickIn(e.target.value); setNickMsg('') }} onKeyDown={e => { if (e.key === 'Enter') submitNick() }} />
+            <div data-edit="nkmsg" style={st.nkMsg}>{nickMsg}</div>
+            <div style={st.xtBtns}>
+              {!needNick && <button data-edit="nkno" style={st.nkNo} onClick={() => { if (!uiEdit) setNickOpen(null) }}>{T('취소')}</button>}
+              <button data-edit="nkok" style={{ ...st.nkOk, opacity: nickBusy ? 0.5 : 1 }} onClick={() => { if (!uiEdit) submitNick() }}>{nickBusy ? T('확인 중…') : T('확인')}</button>
+            </div>
+          </div>
         </div>
       )}
-
+      {exitOpen && (
+        <div style={st.xtOverlay} onClick={e => { if (!uiEdit && e.target === e.currentTarget) setExitOpen(false) }}>
+          <div data-edit="xtwin" style={st.xtWin}>
+            <div data-edit="xttitle" style={st.xtTitle}>{T('게임 종료')}</div>
+            <div data-edit="xtmsg" style={st.xtMsg}>{T('게임을 종료할까요?')}</div>
+            <div style={st.xtBtns}>
+              <button data-edit="xtno" style={st.xtNo} onClick={() => { if (!uiEdit) setExitOpen(false) }}>{T('취소')}</button>
+              <button data-edit="xtok" style={st.xtOk} onClick={() => { if (!uiEdit) exitGame() }}>{T('종료')}</button>
+            </div>
+          </div>
+        </div>
+      )}
       {offData && offOpen && (
         <div style={st.offOverlay}>
           <div style={st.offWin}>
             <button style={st.offClose} onClick={() => setOffOpen(false)}>✕</button>
-            <div data-edit="offtitle" style={st.offTitle}>자동 사냥 오프라인 보상</div>
-            <div data-edit="offinfo" style={st.offInfo}>{offData.wave}wave · {Math.floor(offData.sec / 3600)}시간 {Math.floor(offData.sec % 3600 / 60)}분 · {fmt(offData.kills)}마리</div>
+            <div data-edit="offtitle" style={st.offTitle}>{T('자동 사냥 오프라인 보상')}</div>
+            <div data-edit="offinfo" style={st.offInfo}>{TF('{0}wave · {1}시간 {2}분 · {3}마리', offData.wave, Math.floor(offData.sec / 3600), Math.floor(offData.sec % 3600 / 60), fmt(offData.kills))}</div>
             {(() => {
               // 오프라인 보상 항목 — 나중에 항목이 늘면(동료 재화 등) 이 배열에만 추가하면 칸 수·크기가 알아서 바뀐다
               const offList = [['/ui/ic_meat.webp', offData.meat, offData.meatRate, '#ff9d6a'],
@@ -4308,7 +4492,7 @@ export default function App() {
                     ? <div data-edit="offitemic" style={{ ...st.offItemIc, width: px('--pd-offcic'), height: px('--pd-offcic'), display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gridTemplateRows: 'repeat(2, minmax(0, 1fr))' }}>{[0, 1, 2, 3].map(m => <img key={m} src={MAT_IMG(m)} alt="" style={{ width: '100%', height: '100%', minWidth: 0, minHeight: 0, objectFit: 'contain' }} />)}</div>
                     : <img data-edit="offitemic" src={ic} alt="" style={{ ...st.offItemIc, width: px('--pd-offcic'), height: px('--pd-offcic') }} />}
                   <span data-edit="offitemval" style={{ ...st.offItemVal, fontSize: px('--pd-offcvfz'), color: col }}>+{fmt(v)}</span>
-                  <span data-edit="offitemrate" style={{ ...st.offItemRate, fontSize: px('--pd-offcrfz') }}>{fmt(rate)}/분</span>
+                  <span data-edit="offitemrate" style={{ ...st.offItemRate, fontSize: px('--pd-offcrfz') }}>{TF('{0}/분', fmt(rate))}</span>
                 </div>
               ))}
             </div>
@@ -4316,10 +4500,10 @@ export default function App() {
             })()}
             <div style={st.offBtns}>
               <button data-edit="offclaim" style={st.offBtnClaim} onClick={() => { if (uiEdit) return; if (offReward) { setMeat(m => m + offReward.meat); setHexp(x => x + offReward.exp); if (offReward.gem) setGem(g => g + offReward.gem); if (offReward.mats) setMats(m => { const n = [...m]; offReward.mats.forEach((v, k) => { n[k] = (n[k] || 0) + v }); return n }) } setOffReward(null); setOffOpen(false) }}>
-                <span style={st.offBtnClaimText}>받기</span>
+                <span style={st.offBtnClaimText}>{T('받기')}</span>
               </button>
               <button data-edit="offbtn" style={st.offBtnAd} onClick={() => { if (!uiEdit) { /* TODO: 광고 시청 → 오프라인 보상 +50% */ } }}>
-                <span style={st.offBtnAdText}>추가 보상<br />(광고)</span>
+                <span style={st.offBtnAdText}>{T('추가 보상')}<br />{T('(광고)')}</span>
               </button>
             </div>
           </div>
@@ -4333,7 +4517,7 @@ export default function App() {
           <button key={n} style={{ ...st.navBtn, ...(nav === n ? st.navActive : {}) }} onClick={() => { if (!lk) setNav(n) }}>
             <img src={`/icon/${ic}.webp`} alt="" style={{ ...st.navIconImg, ...(lk ? st.skLockedImg : null) }} />
             {lk && <img src="/ui/lock.webp" alt="" data-edit="navlock" style={st.navLockIc} />}
-            <div style={{ fontSize: 'var(--pd-navfz)', ...(lk ? { opacity: 0.5 } : null) }}>{lk ? `${need}웨이브` : n}</div>
+            <div style={{ fontSize: 'var(--pd-navfz)', ...(lk ? { opacity: 0.5 } : null) }}>{lk ? TF('{0}웨이브', need) : T(n)}</div>
           </button>
           )
         })}
@@ -4712,7 +4896,7 @@ export default function App() {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => { setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) })); localStorage.setItem('paleoUiTs', String(Date.now())) }
             const nbtn = { width: 26, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
-            const rng = k => k.startsWith('alwin') ? 420 : k.startsWith('al') ? (k.endsWith('fz') ? 40 : 220) : k.startsWith('evo') ? (k === 'evonamefz' ? 40 : 120) : k.startsWith('wbexit') ? (k.endsWith('fz') ? 60 : 300) : (k.startsWith('shop') || k.startsWith('card')) ? (k.endsWith('fz') ? 60 : (k.endsWith('gap') ? 40 : 400)) : k.startsWith('fev') ? (k.endsWith('fz') ? 40 : k === 'fevonzoom' ? 300 : 300) : k.startsWith('ev') ? (k.endsWith('fz') ? 60 : (k === 'evww' || k === 'evwh' || k === 'evpww' || k === 'evpwh') ? 600 : 300) : k.startsWith('profhero') ? 300 : k.startsWith('prof') ? (k.endsWith('fz') ? 40 : 160) : k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
+            const rng = k => (k.startsWith('xt') || k.startsWith('nk')) ? (k.endsWith('fz') ? 60 : 420) : k.startsWith('alwin') ? 420 : k.startsWith('al') ? (k.endsWith('fz') ? 40 : 220) : k.startsWith('evo') ? (k === 'evonamefz' ? 40 : 120) : k.startsWith('wbexit') ? (k.endsWith('fz') ? 60 : 300) : (k.startsWith('shop') || k.startsWith('card')) ? (k.endsWith('fz') ? 60 : (k.endsWith('gap') ? 40 : 400)) : k.startsWith('fev') ? (k.endsWith('fz') ? 40 : k === 'fevonzoom' ? 300 : 300) : k.startsWith('ev') ? (k.endsWith('fz') ? 60 : (k === 'evww' || k === 'evwh' || k === 'evpww' || k === 'evpwh') ? 600 : 300) : k.startsWith('profhero') ? 300 : k.startsWith('prof') ? (k.endsWith('fz') ? 40 : 160) : k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
             const rmin = k => k === 'equipcols' ? 3 : 0
             return <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -4801,7 +4985,7 @@ const UI_DEFAULT = {
   skqlock: 16, skqlockX: 0, skqlockY: 0,
   navlock: 20, navlockX: 0, navlockY: 0,
   advlock: 24, advlockX: 0, advlockY: 0,
-  pbsz: 30, wjfz: 13, caslot: 81, caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 160, bth: 26, bhpw: 159, bhph: 30, pmw: 70, pmh: 23, pmfz: 11, pgw: 70, pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 39, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
+  wjfz: 13, caslot: 81, caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 160, bth: 26, bhpw: 159, bhph: 30, pmw: 70, pmh: 23, pmfz: 11, pgw: 70, pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 39, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
   // 위치 이동(px): 요소별 X/Y
   avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: -1, pillY: 2, iconX: -3, iconY: 1,
   panelX: 0, panelY: 0, rowX: 0, rowY: -7, nameX: -3, nameY: 1, valX: -2, valY: 0,
@@ -4810,7 +4994,7 @@ const UI_DEFAULT = {
   hpX: -1, hpY: 1, bossX: 2, bossY: -6, clearX: 0, clearY: 0, waveX: -1, waveY: 0, gachaX: 0, gachaY: 0, eqtierX: -1, eqtierY: 1, eqimgX: 0, eqimgY: 0,
   shoprowX: 0, shoprowY: -11, shopicX: 0, shopicY: 0, shopic0X: -7, shopic0Y: 0, shopic1X: -2, shopic1Y: 0, shopic2X: -2, shopic2Y: 0, shoptX: -5, shoptY: 2, shopsubX: 0, shopsubY: 0,
   shopbX: 1, shopbY: 1, shopbtX: 0, shopbtY: 1, shopgemX: 0, shopgemY: 0, gainicX: 0, gainicY: 0, gaintX: 0, gaintY: 0,
-  gbtnX: 0, gbtnY: 0, gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0, hambX: 1, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: -3, bhpX: -1, bhpY: -7, pbX: 0, pbY: 0, wjX: 0, wjY: 0, caslotX: 3, caslotY: 16, caimgX: 0, caimgY: 0, canameX: 0, canameY: 0, catabX: 15, catabY: 14, cabtnX: 0, cabtnY: 0, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: 0, btextY: 7,
+  gbtnX: 0, gbtnY: 0, gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0, hambX: 1, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: -3, bhpX: -1, bhpY: -7, wjX: 0, wjY: 0, caslotX: 3, caslotY: 16, caimgX: 0, caimgY: 0, canameX: 0, canameY: 0, catabX: 15, catabY: 14, cabtnX: 0, cabtnY: 0, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: 0, btextY: 7,
   // 오프라인 보상: 보물상자 + 창(헤더/항목/버튼)
   trsz: 34, offw: 322, offtfz: 14, offnfz: 13, offcw: 92, offch: 84, offcgap: 12, offcic: 34, offcvfz: 14, offcrfz: 11,
   offbtw: 135, offbth: 51, offbfz: 14, offclw: 100, offclh: 50, offcfz: 15,
@@ -4832,7 +5016,7 @@ const UI_DEFAULT = {
   advmonkX: -1, advmonkY: 2, advmonvX: -1, advmonvY: 2, advregkX: -3, advregkY: 2, advregvX: -4, advregvY: 2,
   advrewkX: -28, advrewkY: 0, advrewdX: 0, advrewdY: -1, advrewmX: 0, advrewmY: -1,
   adventerX: 0, adventerY: 4, advcloseX: 0, advcloseY: 4, advtxt0X: 47, advtxt0Y: 1, advtxt1X: 39, advtxt1Y: 1, advtxt2X: 43, advtxt2Y: 2, advtxt3X: 39, advtxt3Y: 1, advtxt4X: 50, advtxt4Y: 1, advtxt5X: 51, advtxt5Y: 2, advtxt6X: 50, advtxt6Y: 2, advtxt7X: 47, advtxt7Y: 2, advbtn0X: 172, advbtn0Y: -13, advbtn1X: 251, advbtn1Y: 0, advbtn2X: 326, advbtn2Y: -5, advbtn3X: 200, advbtn3Y: 27, advbtn4X: 66, advbtn4Y: 11, advbtn5X: 121, advbtn5Y: 4, advbtn6X: 305, advbtn6Y: 36, advbtn7X: 188, advbtn7Y: 0,
-  mailsz: 26, questsz: 39, mailboxX: 0, mailboxY: 0, questX: 10, questY: -7,
+  questsz: 39, questX: 10, questY: -7,
   matchipX: 23, matchipY: -14, allymatX: -19, allymatY: 14, dtabX: 0, dtabY: 0, dtitleX: 0, dtitleY: 0, darrowX: 0, darrowY: 0, diconX: 0, diconY: 0, dstatX: 0, dstatY: 0, denhX: 0, denhY: 0, dequipX: 0, dequipY: 0, dfusebtnX: 0, dfusebtnY: 0, dstepX: 0, dstepY: 0,
 }
 // 진입창 보스 그림: 종별 개별 크기·위치 (사용자 확정값 2026-07-25)
@@ -4906,7 +5090,7 @@ Object.assign(UI_DEFAULT, {
   exph: 11, pillfz: 72, wavefz: 11, evoimg0: 56, evoimg1: 56, evoimg2: 56, evoimg3: 56, evoimg4: 56, evoimg5: 56, evoimg0X: 0, evoimg0Y: 1, evoimg1X: 0,
   evoimg1Y: 1, evoimg2X: 0, evoimg2Y: 1, evoimg3X: 0, evoimg3Y: 1, evoimg4X: 0, evoimg4Y: 1, evoimg5X: 0, evoimg5Y: 1, gachacell: 62, gachafz: 10, gtierfz: 10,
   gachaimg: 74, gainfz: 10, shoprowmin: 46, shopic: 43, shopic0: 44, shopic1: 57, shopic2: 43, shoptfz: 13, shopsubfz: 11, shopbw: 1, shopbh: 36, shopbbv: 0,
-  shopbbh: 21, shopbfz: 10, shopgem: 12, gainic: 14, gainpv: 0, gainph: 6, gbtnfz: 13, gbtnpw: 16, gbtnph: 10, pbsz: 30, wjfz: 13, caslot: 81,
+  shopbbh: 21, shopbfz: 10, shopgem: 12, gainic: 14, gainpv: 0, gainph: 6, gbtnfz: 13, gbtnpw: 16, gbtnph: 10, wjfz: 13, caslot: 81,
   caimg: 50, canamefz: 12, catabfz: 11, cabtnfz: 10, btw: 160, bth: 26, bhpw: 159, bhph: 27, pmw: 70, pmh: 23, pmfz: 11, pgw: 70,
   pgh: 23, pgfz: 15, hambsz: 26, menufz: 13, hph: 10, hpfz: 10, bossfz: 12, bossh: 39, wavebh: 44, clearfz: 24, navfz: 10, diasz: 10,
   avatarX: 0, avatarY: 0, tabX: -1, tabY: 0, navX: 0, navY: 0, costX: 0, costY: 0, pillX: -1, pillY: 2, iconX: -3, iconY: 1,
@@ -4917,7 +5101,7 @@ Object.assign(UI_DEFAULT, {
   shopicX: 0, shopicY: 0, shopic0X: -7, shopic0Y: 0, shopic1X: -2, shopic1Y: 0, shopic2X: -2, shopic2Y: 0, shoptX: -5, shoptY: 2, shopsubX: 0, shopsubY: 0,
   shopbX: 1, shopbY: 1, shopbtX: 0, shopbtY: 1, shopgemX: 0, shopgemY: 0, gainicX: 0, gainicY: 0, gaintX: 0, gaintY: 0, gbtnX: 0, gbtnY: 0,
   gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0,
-  hambX: 1, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: -3, bhpX: -1, bhpY: -7, pbX: 0, pbY: 0, wjX: 0, wjY: 0,
+  hambX: 1, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: -3, bhpX: -1, bhpY: -7, wjX: 0, wjY: 0,
   caslotX: 3, caslotY: 16, caimgX: 0, caimgY: 0, canameX: 0, canameY: 0, catabX: 15, catabY: 14, cabtnX: 0, cabtnY: 0, wtitleX: 0, wtitleY: 1,
   diaX: 0, diaY: 0, btextX: 0, btextY: 7, trsz: 35, offw: 322, offtfz: 14, offnfz: 13,
   offbtw: 135, offbth: 51, offbfz: 14, offclw: 100, offclh: 50, offcfz: 15, trX: -3, trY: 14, offtX: -1, offtY: 66,
@@ -4933,7 +5117,7 @@ Object.assign(UI_DEFAULT, {
   advrewdY: -1, advrewmX: 0, advrewmY: -1, adventerX: 0, adventerY: 4, advcloseX: 0, advcloseY: 4, advtxt0X: 47, advtxt0Y: 1, advtxt1X: 39, advtxt1Y: 1, advtxt2X: 43,
   advtxt2Y: 2, advtxt3X: 39, advtxt3Y: 1, advtxt4X: 50, advtxt4Y: 1, advtxt5X: 51, advtxt5Y: 2, advtxt6X: 50, advtxt6Y: 2, advtxt7X: 47, advtxt7Y: 2, advbtn0X: 172,
   advbtn0Y: -13, advbtn1X: 251, advbtn1Y: 0, advbtn2X: 326, advbtn2Y: -5, advbtn3X: 200, advbtn3Y: 27, advbtn4X: 66, advbtn4Y: 11, advbtn5X: 121, advbtn5Y: 4, advbtn6X: 305,
-  advbtn6Y: 36, advbtn7X: 188, advbtn7Y: 0, mailsz: 26, questsz: 39, mailboxX: 0, mailboxY: 0, questX: 9, questY: -7, matchipX: 23, matchipY: -14, allymatX: -19,
+  advbtn6Y: 36, advbtn7X: 188, advbtn7Y: 0, questsz: 39, questX: 9, questY: -7, matchipX: 23, matchipY: -14, allymatX: -19,
   allymatY: 14, dtabX: 0, dtabY: 0, dtitleX: 0, dtitleY: 0, darrowX: 0, darrowY: 0, diconX: 0, diconY: 0, dstatX: 0, dstatY: 0, denhX: 0,
   denhY: 0, dequipX: 0, dequipY: 0, dfusebtnX: 0, dfusebtnY: 0, dstepX: 0, dstepY: 0, skqbarw: 194, skqbarX: 153, skqbarY: 39, skqslotsz: 29, skqsetw: 16,
   skqseth: 19, skqsetfz: 8, skqsetX: 149, skqsetY: 46, skhtfz: 14, skhtitleX: 25, skhtitleY: 9, skfusew: 54, skfuseh: 20, skfusefz: 12, skfuseX: -24, skfuseY: 11,
@@ -4955,6 +5139,18 @@ Object.assign(UI_DEFAULT, {
   avafaceX: 0, avafaceY: -1, profheroimgX: 3, profheroimgY: -22,
 })
 const EDIT_GROUPS = {
+  nkwin: { label: '닉네임 창 틀', size: ['nkww', 'nkwh'], pos: 'nkwin' },
+  nktitle: { label: '닉네임 창 제목', size: ['nktitlefz'], pos: 'nktitle' },
+  nkdesc: { label: '닉네임 창 규칙 안내', size: ['nkdescfz'], pos: 'nkdesc' },
+  nkinput: { label: '닉네임 입력칸', size: ['nkinw', 'nkinh', 'nkinfz'], pos: 'nkinput' },
+  nkmsg: { label: '닉네임 창 오류 문구', size: ['nkmsgfz'], pos: 'nkmsg' },
+  nkno: { label: '닉네임 창 취소 버튼', size: ['nknow', 'nknoh', 'nknofz'], pos: 'nkno' },
+  nkok: { label: '닉네임 창 확인 버튼', size: ['nkokw', 'nkokh', 'nkokfz'], pos: 'nkok' },
+  xtwin: { label: '게임 종료 창 틀', size: ['xtww', 'xtwh'], pos: 'xtwin' },
+  xttitle: { label: '게임 종료 창 제목', size: ['xttitlefz'], pos: 'xttitle' },
+  xtmsg: { label: '게임 종료 창 문구', size: ['xtmsgfz'], pos: 'xtmsg' },
+  xtno: { label: '게임 종료 창 취소 버튼', size: ['xtnow', 'xtnoh', 'xtnofz'], pos: 'xtno' },
+  xtok: { label: '게임 종료 창 종료 버튼', size: ['xtokw', 'xtokh', 'xtokfz'], pos: 'xtok' },
   avatar: { label: '아바타 틀', size: ['avatar'], pos: 'avatar' },
   avaface: { label: '아바타 안 그림', size: ['avafacesz'], pos: 'avaface' },
   pill: { label: '자원 표시', size: ['pillfz', 'wavefz'], pos: 'pill' },
@@ -5037,9 +5233,7 @@ const EDIT_GROUPS = {
   adventer: { label: '진입 버튼', size: ['advew', 'adveh', 'advefz'], pos: 'adventer' },
   advclose: { label: '진입창 닫기', size: ['advcw', 'advch', 'advcfz'], pos: 'advclose' },
   slicon: { label: '슬롯 아이콘 그림', size: ['slicon'], pos: 'slicon' },
-  mailbox: { label: '우편함', size: ['mailsz'], pos: 'mailbox' },
   quest: { label: '퀘스트 아이콘', size: ['questsz'], pos: 'quest' },
-  pausebtn: { label: '일시정지 버튼', size: ['pbsz'], pos: 'pb' },
   allytab: { label: '동료 서브탭', size: ['catabfz'], pos: 'catab' },
   alwin: { label: '동료 상세창', size: ['alwinw'], pos: 'alwin' },
   alname: { label: '동료 상세 이름', size: ['alnamefz'], pos: 'alname' },
@@ -5173,6 +5367,10 @@ Object.assign(EDIT_GROUPS, {
   qlv: { label: '퀘스트 레벨', size: ['qlvfz'], pos: 'qlv' },
 })
 const UI_LABELS = {
+  nkww: '창 너비', nkwh: '창 높이', nktitlefz: '글자 크기', nkdescfz: '글자 크기', nkinw: '칸 너비', nkinh: '칸 높이', nkinfz: '글자 크기', nkmsgfz: '글자 크기',
+  nknow: '버튼 너비', nknoh: '버튼 높이', nknofz: '글씨 크기', nkokw: '버튼 너비', nkokh: '버튼 높이', nkokfz: '글씨 크기',
+  xtww: '창 너비', xtwh: '창 높이', xttitlefz: '글자 크기', xtmsgfz: '글자 크기',
+  xtnow: '버튼 너비', xtnoh: '버튼 높이', xtnofz: '글씨 크기', xtokw: '버튼 너비', xtokh: '버튼 높이', xtokfz: '글씨 크기',
   panelbwV: '패널 테두리(상하)', panelbwH: '패널 테두리(좌우)', rowbwV: '항목 테두리(상하)', rowbwH: '항목 테두리(좌우)',
   rowmin: '항목 최소높이', rowgap: '항목 간격', icon: '아이콘 크기', name: '이름 글자', lv: 'Lv 글자', val: '수치 글자',
   costw: '+1버튼 너비', costh: '+1버튼 높이', costfz: '+1버튼 글자',
@@ -5184,7 +5382,7 @@ const UI_LABELS = {
   shoprowmin: '박스 높이', shopic0: '무기 아이콘', shopic1: '방어구 아이콘', shopic2: '유물 아이콘', shoptfz: '제목 글자', shopsubfz: '부제 글자',
   shopbw: '버튼 너비', shopbh: '버튼 높이', shopbbv: '프레임 두께↕', shopbbh: '프레임 두께↔', shopbfz: '버튼 글자',
   gainic: '아이콘 크기', gainpv: '판 두께↕', gainph: '판 두께↔', shopgem: '다이아 크기', gbtnfz: '버튼 글자', gbtnpw: '판 가로', gbtnph: '판 세로',
-  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', skicon: '아이콘 크기%', slicon: '아이콘 크기%', advbw: '버튼 너비', advbh: '버튼 높이', advbfz: '버튼 글자', advww: '창 너비', advwh: '창 높이', adviw: '그림 너비', advih: '그림 높이', advibw: '틀 너비', advibh: '틀 높이', advmbw: '틀 너비', advmbh: '틀 높이', advrbw: '틀 너비', advrbh: '틀 높이', advwbw: '틀 너비', advwbh: '틀 높이', advsw: '표지판 너비', advsh: '표지판 높이', advsfz: '글자 크기', advbarw: '바 너비', advbarh: '바 높이', advmonkfz: '글자 크기', advmonvfz: '글자 크기', advregkfz: '글자 크기', advregvfz: '글자 크기', advrewkfz: '글자 크기', advrewvfz: '숫자 크기', advrewic: '아이콘 크기', advmfz: '글자 크기', advrfz: '글자 크기', advwfz: '글자 크기', advew: '버튼 너비', adveh: '버튼 높이', advefz: '버튼 글자', advcw: '버튼 너비', advch: '버튼 높이', advcfz: '버튼 글자', mailsz: '우편함 크기', questsz: '퀘스트 크기', menufz: '메뉴 글자', pbsz: '버튼 크기', wjfz: '창 글자', sklock: '자물쇠 크기', navlock: '자물쇠 크기', skqlock: '자물쇠 크기', advlock: '자물쇠 크기',
+  pmw: '알약 너비', pmh: '알약 높이', pmfz: '알약 글자', pgw: '알약 너비', pgh: '알약 높이', pgfz: '알약 글자', hambsz: '버튼 크기', skicon: '아이콘 크기%', slicon: '아이콘 크기%', advbw: '버튼 너비', advbh: '버튼 높이', advbfz: '버튼 글자', advww: '창 너비', advwh: '창 높이', adviw: '그림 너비', advih: '그림 높이', advibw: '틀 너비', advibh: '틀 높이', advmbw: '틀 너비', advmbh: '틀 높이', advrbw: '틀 너비', advrbh: '틀 높이', advwbw: '틀 너비', advwbh: '틀 높이', advsw: '표지판 너비', advsh: '표지판 높이', advsfz: '글자 크기', advbarw: '바 너비', advbarh: '바 높이', advmonkfz: '글자 크기', advmonvfz: '글자 크기', advregkfz: '글자 크기', advregvfz: '글자 크기', advrewkfz: '글자 크기', advrewvfz: '숫자 크기', advrewic: '아이콘 크기', advmfz: '글자 크기', advrfz: '글자 크기', advwfz: '글자 크기', advew: '버튼 너비', adveh: '버튼 높이', advefz: '버튼 글자', advcw: '버튼 너비', advch: '버튼 높이', advcfz: '버튼 글자', questsz: '퀘스트 크기', menufz: '메뉴 글자', wjfz: '창 글자', sklock: '자물쇠 크기', navlock: '자물쇠 크기', skqlock: '자물쇠 크기', advlock: '자물쇠 크기',
   caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', rankh: '높이', rankfz: '글자 크기',
   evocell: '칸 크기', evonamefz: '이름 글자', evofade: '흐려지는 높이', evopadb: '아래 여백',
   alwinw: '창 너비', alnamefz: '이름 글자', alimg: '그림 크기', alstatfz: '글자 크기', albtnw: '버튼 너비', albtnh: '버튼 높이', albtnfz: '버튼 글자', alclosesz: '버튼 크기', alclosefz: '글자 크기', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
@@ -5264,6 +5462,10 @@ Object.assign(UI_LABELS, {
 const uiVars = c => `:root{
 ${[0, 1, 2, 3].map(i => `--pd-shopt${i}fz:${c[`shopt${i}fz`] ?? 13}px;--pd-shopt${i}-x:${c[`shopt${i}X`] ?? -5}px;--pd-shopt${i}-y:${c[`shopt${i}Y`] ?? 2}px;--pd-glv${i}fz:${c[`glv${i}fz`] ?? 11}px;--pd-glv${i}-x:${c[`glv${i}X`] ?? -4}px;--pd-glv${i}-y:${c[`glv${i}Y`] ?? 1}px;` + (i < 3 ? `--pd-gift${i}w:${c[`gift${i}w`] ?? 26}px;--pd-gift${i}h:${c[`gift${i}h`] ?? 26}px;--pd-gift${i}-x:${c[`gift${i}X`] ?? 0}px;--pd-gift${i}-y:${c[`gift${i}Y`] ?? 0}px;--pd-glvbar${i}w:${c[`glvbar${i}w`] ?? 120}px;--pd-glvbar${i}h:${c[`glvbar${i}h`] ?? 11}px;--pd-glvbar${i}-x:${c[`glvbar${i}X`] ?? -5}px;--pd-glvbar${i}-y:${c[`glvbar${i}Y`] ?? 0}px;` : '')).join('')}
 ${SKILLS.map(k => `--pd-cardic${k.id}w:${c[`cardic${k.id}w`] ?? 46}px;--pd-cardic${k.id}h:${c[`cardic${k.id}h`] ?? 46}px;--pd-cardic${k.id}-x:${c[`cardic${k.id}X`] ?? 0}px;--pd-cardic${k.id}-y:${c[`cardic${k.id}Y`] ?? 0}px;`).join('')}
+--pd-nkww:${c.nkww}px;--pd-nkwh:${c.nkwh}px;--pd-nktitlefz:${c.nktitlefz}px;--pd-nkdescfz:${c.nkdescfz}px;--pd-nkinw:${c.nkinw}px;--pd-nkinh:${c.nkinh}px;--pd-nkinfz:${c.nkinfz}px;--pd-nkmsgfz:${c.nkmsgfz}px;--pd-nknow:${c.nknow}px;--pd-nknoh:${c.nknoh}px;--pd-nknofz:${c.nknofz}px;--pd-nkokw:${c.nkokw}px;--pd-nkokh:${c.nkokh}px;--pd-nkokfz:${c.nkokfz}px;
+${['nkwin', 'nktitle', 'nkdesc', 'nkinput', 'nkmsg', 'nkno', 'nkok'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+--pd-xtww:${c.xtww}px;--pd-xtwh:${c.xtwh}px;--pd-xttitlefz:${c.xttitlefz}px;--pd-xtmsgfz:${c.xtmsgfz}px;--pd-xtnow:${c.xtnow}px;--pd-xtnoh:${c.xtnoh}px;--pd-xtnofz:${c.xtnofz}px;--pd-xtokw:${c.xtokw}px;--pd-xtokh:${c.xtokh}px;--pd-xtokfz:${c.xtokfz}px;
+${['xtwin', 'xttitle', 'xtmsg', 'xtno', 'xtok'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 --pd-panelbw-v:${c.panelbwV}px;--pd-panelbw-h:${c.panelbwH}px;--pd-rowbw-v:${c.rowbwV}px;--pd-rowbw-h:${c.rowbwH}px;
 --pd-rowmin:${c.rowmin}px;--pd-rowgap:${c.rowgap}px;--pd-icon:${c.icon}px;--pd-name:${c.name}px;--pd-lv:${c.lv}px;--pd-val:${c.val}px;
 --pd-costw:${c.costw}px;--pd-costh:${c.costh}px;--pd-costfz:${c.costfz}px;
@@ -5290,9 +5492,9 @@ ${DINO_KEYS.map(k => `--pd-advico${k}w:${c['advico' + k + 'w']}px;--pd-advico${k
 --pd-shoptfz:${c.shoptfz}px;--pd-shopsubfz:${c.shopsubfz}px;--pd-shopbw:${c.shopbw}px;--pd-shopbh:${c.shopbh}px;--pd-shopbbv:${c.shopbbv}px;--pd-shopbbh:${c.shopbbh}px;--pd-shopbfz:${c.shopbfz}px;
 --pd-gainic:${c.gainic}px;--pd-gainpv:${c.gainpv}px;--pd-gainph:${c.gainph}px;--pd-gainic-x:${c.gainicX}px;--pd-gainic-y:${c.gainicY}px;--pd-gaint-x:${c.gaintX}px;--pd-gaint-y:${c.gaintY}px;--pd-shopgem:${c.shopgem}px;
 --pd-gbtnfz:${c.gbtnfz}px;--pd-gbtnpw:${c.gbtnpw}px;--pd-gbtnph:${c.gbtnph}px;
---pd-pmw:${c.pmw}px;--pd-pmh:${c.pmh}px;--pd-pmfz:${c.pmfz}px;--pd-pgw:${c.pgw}px;--pd-pgh:${c.pgh}px;--pd-pgfz:${c.pgfz}px;--pd-hambsz:${c.hambsz}px;--pd-menufz:${c.menufz}px;--pd-pbsz:${c.pbsz}px;--pd-wjfz:${c.wjfz}px;--pd-costmeatic:${c.costmeatic}px;--pd-sklock:${c.sklock}px;--pd-navlock:${c.navlock}px;--pd-skqlock:${c.skqlock}px;--pd-advlock:${c.advlock}px;--pd-caslot:${c.caslot}px;--pd-caimg:${c.caimg}px;--pd-canamefz:${c.canamefz}px;--pd-rankh:${c.rankh}px;--pd-rankfz:${c.rankfz}px;--pd-evocell:${c.evocell}px;--pd-evonamefz:${c.evonamefz}px;--pd-evofade:${c.evofade}px;--pd-evopadb:${c.evopadb}px;--pd-alwinw:${c.alwinw}px;--pd-alnamefz:${c.alnamefz}px;--pd-alimg:${c.alimg}px;--pd-alstatfz:${c.alstatfz}px;--pd-albtnw:${c.albtnw}px;--pd-albtnh:${c.albtnh}px;--pd-albtnfz:${c.albtnfz}px;--pd-alclosesz:${c.alclosesz}px;--pd-alclosefz:${c.alclosefz}px;${ALLY_EVO_KEYS.flatMap(k => [1, 2, 3, 4, 5].map(n => `--pd-evochr${k}${n}:${c[`evochr${k}${n}`]}px;--pd-evochr${k}${n}-x:${c[`evochr${k}${n}X`]}px;--pd-evochr${k}${n}-y:${c[`evochr${k}${n}Y`]}px;`)).join('')}--pd-catabfz:${c.catabfz}px;
+--pd-pmw:${c.pmw}px;--pd-pmh:${c.pmh}px;--pd-pmfz:${c.pmfz}px;--pd-pgw:${c.pgw}px;--pd-pgh:${c.pgh}px;--pd-pgfz:${c.pgfz}px;--pd-hambsz:${c.hambsz}px;--pd-menufz:${c.menufz}px;--pd-wjfz:${c.wjfz}px;--pd-costmeatic:${c.costmeatic}px;--pd-sklock:${c.sklock}px;--pd-navlock:${c.navlock}px;--pd-skqlock:${c.skqlock}px;--pd-advlock:${c.advlock}px;--pd-caslot:${c.caslot}px;--pd-caimg:${c.caimg}px;--pd-canamefz:${c.canamefz}px;--pd-rankh:${c.rankh}px;--pd-rankfz:${c.rankfz}px;--pd-evocell:${c.evocell}px;--pd-evonamefz:${c.evonamefz}px;--pd-evofade:${c.evofade}px;--pd-evopadb:${c.evopadb}px;--pd-alwinw:${c.alwinw}px;--pd-alnamefz:${c.alnamefz}px;--pd-alimg:${c.alimg}px;--pd-alstatfz:${c.alstatfz}px;--pd-albtnw:${c.albtnw}px;--pd-albtnh:${c.albtnh}px;--pd-albtnfz:${c.albtnfz}px;--pd-alclosesz:${c.alclosesz}px;--pd-alclosefz:${c.alclosefz}px;${ALLY_EVO_KEYS.flatMap(k => [1, 2, 3, 4, 5].map(n => `--pd-evochr${k}${n}:${c[`evochr${k}${n}`]}px;--pd-evochr${k}${n}-x:${c[`evochr${k}${n}X`]}px;--pd-evochr${k}${n}-y:${c[`evochr${k}${n}Y`]}px;`)).join('')}--pd-catabfz:${c.catabfz}px;
 --pd-cabtnfz:${c.cabtnfz}px;
-${['caslot', 'caimg', 'caname', 'catab', 'cabtn'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}--pd-pb-x:${c.pbX}px;--pd-pb-y:${c.pbY}px;--pd-wj-x:${c.wjX}px;--pd-wj-y:${c.wjY}px;--pd-btw:${c.btw}px;--pd-bth:${c.bth}px;--pd-bhpw:${c.bhpw}px;--pd-bhph:${c.bhph}px;
+${['caslot', 'caimg', 'caname', 'catab', 'cabtn'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}--pd-wj-x:${c.wjX}px;--pd-wj-y:${c.wjY}px;--pd-btw:${c.btw}px;--pd-bth:${c.bth}px;--pd-bhpw:${c.bhpw}px;--pd-bhph:${c.bhph}px;
 ${['bt', 'bhp'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 ${['pm', 'pg', 'hamb', 'menu'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt', 'shopgem', 'gbtn', 'gbtnt', 'ggrade', 'gtier', 'gimg'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
@@ -5300,8 +5502,8 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-gain-x:${c.gainX}px;--pd-gain-y:${c.gainY}px;
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
 --pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offcw:${c.offcw}px;--pd-offch:${c.offch}px;--pd-offcgap:${c.offcgap}px;--pd-offcic:${c.offcic}px;--pd-offcvfz:${c.offcvfz}px;--pd-offcrfz:${c.offcrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
---pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offgrid', 'offcic', 'offcv', 'offcr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evexit', 'advexit', 'wbexit', 'rank', 'sklock', 'navlock', 'skqlock', 'advlock', 'evocell', 'evoname', 'alwin', 'alname', 'alimg', 'alstat', 'albtn', 'alclose', 'shoptab', 'shoptabt', 'shopad', 'shopadt', 'shopgift', 'cardwin', 'cardtitle', 'cardcell', 'cardname', 'cardcnt', 'cardclose', 'glv', 'glvbar', 'glvbart', 'warn', 'evpwin', 'evptitle', 'evpimg', 'evpbn', 'evprew', 'evpsign', 'evpsignt', 'evpbar', 'evpenter', 'evpclose', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+--pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
+${['tr', 'offt', 'offn', 'offgrid', 'offcic', 'offcv', 'offcr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evexit', 'advexit', 'wbexit', 'rank', 'sklock', 'navlock', 'skqlock', 'advlock', 'evocell', 'evoname', 'alwin', 'alname', 'alimg', 'alstat', 'albtn', 'alclose', 'shoptab', 'shoptabt', 'shopad', 'shopadt', 'shopgift', 'cardwin', 'cardtitle', 'cardcell', 'cardname', 'cardcnt', 'cardclose', 'glv', 'glvbar', 'glvbart', 'warn', 'evpwin', 'evptitle', 'evpimg', 'evpbn', 'evprew', 'evpsign', 'evpsignt', 'evpbar', 'evpenter', 'evpclose', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -5326,7 +5528,6 @@ const st = {
   profNickRow: { flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, minHeight: 30 },
   profNickTxt: { fontSize: 15, fontWeight: 700, color: '#fff5df' },
   profPencil: { padding: '2px 6px', fontSize: 13, color: '#c9b596', border: '1px solid #5a4630', borderRadius: 6, background: 'rgba(0,0,0,0.3)', cursor: 'pointer' },
-  profNickInput: { width: 200, height: 28, fontSize: 15, fontWeight: 700, textAlign: 'center', color: '#fff', background: 'rgba(0,0,0,0.5)', border: '1px solid #d09340', borderRadius: 6, outline: 'none' },
   profHeroWrap: { flexShrink: 0, width: 'var(--pd-profherow)', height: 'var(--pd-profheroh)', margin: '10px auto 0', borderRadius: 10, overflow: 'hidden', transform: 'translate(var(--pd-profhero-x), var(--pd-profhero-y))', border: 'none', boxShadow: '0 3px 10px rgba(0,0,0,0.5)', background: '#1a0f06', position: 'relative' },
   profHeroImg: { width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', transform: 'translate(var(--pd-profheroimg-x), var(--pd-profheroimg-y)) scale(calc(var(--pd-profherozoom) / 100))', transformOrigin: 'top center', imageRendering: 'pixelated' },
   profStage: { flexShrink: 0, fontSize: 12, fontWeight: 700, color: '#c9b596', marginTop: 4 },
@@ -5370,12 +5571,6 @@ const st = {
     transform: 'translate(var(--pd-pg-x), var(--pd-pg-y))',
     backgroundImage: 'url(/ui/pill_gem.webp)', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat',
     textShadow: '0 1px 2px #000',
-  },
-  pauseBtn: {
-    position: 'absolute', left: 8, top: 6, width: 'var(--pd-pbsz)', height: 'var(--pd-pbsz)', padding: 0,
-    border: '1px solid #5a4028', borderRadius: 8, background: 'rgba(24,16,8,0.8)', color: GOLD,
-    fontSize: 'calc(var(--pd-pbsz) * 0.45)', lineHeight: 1,
-    transform: 'translate(var(--pd-pb-x), var(--pd-pb-y))',
   },
   wjPanel: {
     position: 'fixed', left: '50%', top: 243, transform: 'translate(calc(-50% + var(--pd-wj-x)), var(--pd-wj-y))',
@@ -5479,7 +5674,7 @@ const st = {
     color: '#f3e6d0',
     transform: 'translate(var(--pd-gbtn-x), var(--pd-gbtn-y))',
   },
-  gachaBtnText: { display: 'inline-block', fontSize: 'var(--pd-gbtnfz)', transform: 'translate(var(--pd-gbtnt-x), var(--pd-gbtnt-y))' },
+  gachaBtnText: { display: 'inline-block', whiteSpace: 'nowrap', fontSize: 'var(--pd-gbtnfz)', transform: 'translate(var(--pd-gbtnt-x), var(--pd-gbtnt-y))' },
   allySubRow: { display: 'flex', gap: 6, padding: '6px 8px 2px', flexShrink: 0, position: 'relative', zIndex: 2 },   // 목록이 길어져도 안 눌리고 위에 고정
   allySubTab: {
     padding: '5px 16px', borderRadius: 7, border: '1px solid #3a2a14', background: 'transparent',
@@ -5573,6 +5768,21 @@ const st = {
   splashBarInner: {
     height: '100%', background: 'linear-gradient(180deg,#e8b962,#a85f1f)', transition: 'width 0.2s linear',
   },
+  splashInfo: {
+    position: 'absolute', left: 0, right: 0, bottom: '18%', textAlign: 'center', pointerEvents: 'none',
+    color: '#f0dfae', fontSize: 16, fontWeight: 700, textShadow: '0 2px 10px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.9)',
+  },
+  splashLoginWrap: { position: 'absolute', left: 0, right: 0, bottom: '15%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 },
+  splashLoginBtn: {
+    display: 'flex', alignItems: 'center', gap: 10, height: 48, padding: '0 22px 0 8px', borderRadius: 24,
+    border: `2px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#fff7e6,#e8d5b0)', color: '#2a1c0a',
+    fontSize: 17, fontWeight: 800, boxShadow: '0 4px 14px rgba(0,0,0,0.6)', cursor: 'pointer',
+  },
+  splashLoginG: {
+    width: 32, height: 32, borderRadius: 16, background: '#fff', border: '1px solid #ddd', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 18, fontWeight: 900, color: '#4285F4', fontFamily: 'Arial, sans-serif',
+  },
+  splashLoginMsg: { color: '#ffb08a', fontSize: 13, fontWeight: 700, textShadow: '0 1px 6px rgba(0,0,0,0.9)' },
   splashTap: {
     position: 'absolute', left: 0, right: 0, bottom: '18%', textAlign: 'center',
     color: '#fff', fontSize: 22, fontWeight: 700, letterSpacing: '0.15em',
@@ -5583,6 +5793,7 @@ const st = {
   advViewport: { position: 'relative', flex: 1, minHeight: 0, borderRadius: 10, overflow: 'hidden', border: '2px solid #4a3418', background: '#0d0904' },
   advTrack: { position: 'relative', height: '100%', display: 'flex', transition: 'transform 0.45s cubic-bezier(0.4,0,0.2,1)' },
   advContBtn: { position: 'absolute', width: 'var(--pd-advbw)', height: 'var(--pd-advbh)', padding: 0, border: 'none', background: 'url(/ui/off_header.webp) center / 100% 100% no-repeat', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', boxSizing: 'border-box', paddingRight: '14%', zIndex: 3 },
+  advContBtnEn: { width: 'auto', minWidth: 'var(--pd-advbw)', background: 'none', borderStyle: 'solid', borderWidth: '0 calc(var(--pd-advbw) * 60 / 957) 0 calc(var(--pd-advbw) * 230 / 957)', borderImage: 'url(/ui/off_header.webp) 0 60 0 230 fill stretch', justifyContent: 'center', paddingLeft: 2, paddingRight: 4 },   // 영어 전용: 글자 길이만큼 가운데만 늘어남
   advOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.68)', zIndex: 55, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   advWin: {
     position: 'relative', width: 'var(--pd-advww)', height: 'var(--pd-advwh)',
@@ -5698,7 +5909,7 @@ const st = {
   skdMiniFill: { position: 'absolute', left: 0, top: 0, bottom: 0, background: 'linear-gradient(180deg,#5ac0ff,#2a80c0)' },
   skdMiniTxt: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: '#fff' },
   skdHeadMid: { flex: 1, minWidth: 0, paddingTop: 2 },
-  skdTitle: { fontSize: 'var(--pd-skdtitlefz)', fontWeight: 800, color: '#fff5df', textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-skdtitle-x), var(--pd-skdtitle-y))' },
+  skdTitle: { paddingRight: 24, fontSize: 'var(--pd-skdtitlefz)', fontWeight: 800, color: '#fff5df', textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-skdtitle-x), var(--pd-skdtitle-y))' },
   skdDesc: { marginTop: 4, fontSize: 'var(--pd-skddescfz)', color: '#cbb894', lineHeight: 1.4, wordBreak: 'keep-all', transform: 'translate(var(--pd-skddesc-x), var(--pd-skddesc-y))' },
   skdAuto: { flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, padding: '5px 8px', fontSize: 'var(--pd-skdautofz)', fontWeight: 800, color: '#9fb0c0', border: 'none', background: 'transparent', cursor: 'pointer', transform: 'translate(var(--pd-skdauto-x), var(--pd-skdauto-y))' },
   skdAutoOn: { color: '#4aa8ff' },
@@ -5760,6 +5971,53 @@ const st = {
     fontFamily: "'Do Hyeon', sans-serif", textShadow: '0 2px 4px #000', zIndex: 7,
   },
   // ── 이벤트 던전 도전 확인창 ── (던전 목록창보다 위에 떠야 함 → zIndex 55 → 58)
+  // ── 닉네임 창 ──
+  nkOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', zIndex: 96, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  nkWin: {
+    position: 'relative', width: 'var(--pd-nkww)', height: 'var(--pd-nkwh)',
+    transform: 'translate(var(--pd-nkwin-x), var(--pd-nkwin-y))',
+    background: 'linear-gradient(180deg,#2a1d10,#160f07)', border: `2px solid ${GOLD_D}`, borderRadius: 12,
+    padding: 14, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+  },
+  nkTitle: { flexShrink: 0, fontSize: 'var(--pd-nktitlefz)', fontWeight: 800, color: GOLD, transform: 'translate(var(--pd-nktitle-x), var(--pd-nktitle-y))' },
+  nkDesc: { flexShrink: 0, fontSize: 'var(--pd-nkdescfz)', color: '#a8946e', transform: 'translate(var(--pd-nkdesc-x), var(--pd-nkdesc-y))' },
+  nkInput: {
+    flexShrink: 0, width: 'var(--pd-nkinw)', height: 'var(--pd-nkinh)', fontSize: 'var(--pd-nkinfz)', boxSizing: 'border-box',
+    transform: 'translate(var(--pd-nkinput-x), var(--pd-nkinput-y))', textAlign: 'center', fontFamily: 'inherit',
+    background: '#120b05', border: '1px solid #6b4a24', borderRadius: 8, color: '#f3e6d0', outline: 'none', userSelect: 'text', WebkitUserSelect: 'text',
+  },
+  nkMsg: { flex: 1, minHeight: 16, fontSize: 'var(--pd-nkmsgfz)', color: '#ff8a6a', textAlign: 'center', wordBreak: 'keep-all', transform: 'translate(var(--pd-nkmsg-x), var(--pd-nkmsg-y))' },
+  nkNo: {
+    width: 'var(--pd-nknow)', height: 'var(--pd-nknoh)', fontSize: 'var(--pd-nknofz)',
+    transform: 'translate(var(--pd-nkno-x), var(--pd-nkno-y))',
+    borderRadius: 8, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontWeight: 700, padding: 0,
+  },
+  nkOk: {
+    width: 'var(--pd-nkokw)', height: 'var(--pd-nkokh)', fontSize: 'var(--pd-nkokfz)',
+    transform: 'translate(var(--pd-nkok-x), var(--pd-nkok-y))',
+    borderRadius: 8, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontWeight: 800, padding: 0,
+  },
+  // ── 게임 종료 확인 박스 ──
+  xtOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 95, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  xtWin: {
+    position: 'relative', width: 'var(--pd-xtww)', height: 'var(--pd-xtwh)',
+    transform: 'translate(var(--pd-xtwin-x), var(--pd-xtwin-y))',
+    background: 'linear-gradient(180deg,#2a1d10,#160f07)', border: `2px solid ${GOLD_D}`, borderRadius: 12,
+    padding: 14, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+  },
+  xtTitle: { flexShrink: 0, fontSize: 'var(--pd-xttitlefz)', fontWeight: 800, color: GOLD, transform: 'translate(var(--pd-xttitle-x), var(--pd-xttitle-y))' },
+  xtMsg: { flex: 1, display: 'flex', alignItems: 'center', fontSize: 'var(--pd-xtmsgfz)', color: '#e8d5b0', textAlign: 'center', wordBreak: 'keep-all', transform: 'translate(var(--pd-xtmsg-x), var(--pd-xtmsg-y))' },
+  xtBtns: { flexShrink: 0, display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'center' },
+  xtNo: {
+    width: 'var(--pd-xtnow)', height: 'var(--pd-xtnoh)', fontSize: 'var(--pd-xtnofz)',
+    transform: 'translate(var(--pd-xtno-x), var(--pd-xtno-y))',
+    borderRadius: 8, border: '1px solid #5a4028', background: '#2c2013', color: '#cbb89a', fontWeight: 700, padding: 0,
+  },
+  xtOk: {
+    width: 'var(--pd-xtokw)', height: 'var(--pd-xtokh)', fontSize: 'var(--pd-xtokfz)',
+    transform: 'translate(var(--pd-xtok-x), var(--pd-xtok-y))',
+    borderRadius: 8, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontWeight: 800, padding: 0,
+  },
   evpOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.68)', zIndex: 58, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   evpWin: {
     position: 'relative', width: 'var(--pd-evpww)', height: 'var(--pd-evpwh)',
@@ -5967,7 +6225,7 @@ const st = {
     imageRendering: 'pixelated', display: 'block',
     transform: 'translate(var(--pd-evnoimg-x), var(--pd-evnoimg-y))',
   },
-  evBossName: { flex: 1, minWidth: 0, fontSize: 'var(--pd-evbnamefz)', fontWeight: 700, color: '#e6d7b0', transform: 'translate(var(--pd-evbname-x), var(--pd-evbname-y))' },
+  evBossName: { flex: 1, minWidth: 0, marginRight: 'var(--pd-evbname-x)', lineHeight: 1.15, fontSize: 'var(--pd-evbnamefz)', fontWeight: 700, color: '#e6d7b0', transform: 'translate(var(--pd-evbname-x), var(--pd-evbname-y))' },
   evGo: {
     flexShrink: 0, width: 'var(--pd-evgow)', height: 'var(--pd-evgoh)', fontSize: 'var(--pd-evgofz)', fontWeight: 700,
     borderRadius: 6, border: `1px solid ${GOLD}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff',
@@ -6164,7 +6422,6 @@ const st = {
   offBtnAdText: { fontSize: 'var(--pd-offbfz)', lineHeight: 1.1, textAlign: 'center', textShadow: '0 1px 1px rgba(255,220,150,0.4)' },
   offBtnClaim: { width: 'var(--pd-offclw)', height: 'var(--pd-offclh)', background: 'url(/ui/off_claim.webp) center / 100% 100% no-repeat', border: 'none', color: '#f0f0f0', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0, transform: 'translate(var(--pd-offcl-x), var(--pd-offcl-y))' },
   offBtnClaimText: { fontSize: 'var(--pd-offcfz)', textShadow: '0 1px 2px #000' },
-  mailImg: { width: 'var(--pd-mailsz)', height: 'var(--pd-mailsz)', objectFit: 'contain', flexShrink: 0, transform: 'translate(var(--pd-mailbox-x), var(--pd-mailbox-y))' },
   questBtn: { position: 'absolute', top: 8, right: 8, width: 'var(--pd-questsz)', height: 'var(--pd-questsz)', padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', zIndex: 5, transform: 'translate(var(--pd-quest-x), var(--pd-quest-y))' },
   iconImg: { width: '100%', height: '100%', objectFit: 'contain' },
   // ── 장비 상세창 ──
@@ -6245,6 +6502,24 @@ Object.assign(UI_DEFAULT, { skhtitleX: 27, skhtitleY: 11, shopt0Y: 1, glv0Y: 0, 
 
 // 사용자 확정 UI 값 (zxz.txt)
 Object.assign(UI_DEFAULT, { shopbX: -2, shopt3fz: 15, shopt3Y: 0, shoptabtY: -1 })
+// 닉네임 창 (2026-10-26 신규)
+Object.assign(UI_DEFAULT, {
+  nkww: 290, nkwh: 230, nkwinX: 0, nkwinY: 0,
+  nktitlefz: 18, nktitleX: 0, nktitleY: 0,
+  nkdescfz: 12, nkdescX: 0, nkdescY: 0,
+  nkinw: 220, nkinh: 40, nkinfz: 17, nkinputX: 0, nkinputY: 0,
+  nkmsgfz: 12, nkmsgX: 0, nkmsgY: 0,
+  nknow: 100, nknoh: 38, nknofz: 15, nknoX: 0, nknoY: 0,
+  nkokw: 100, nkokh: 38, nkokfz: 15, nkokX: 0, nkokY: 0,
+})
+// 게임 종료 확인 박스 (2026-10-26 신규)
+Object.assign(UI_DEFAULT, {
+  xtww: 270, xtwh: 170, xtwinX: 0, xtwinY: 0,
+  xttitlefz: 18, xttitleX: 0, xttitleY: 0,
+  xtmsgfz: 14, xtmsgX: 0, xtmsgY: 0,
+  xtnow: 100, xtnoh: 38, xtnofz: 15, xtnoX: 0, xtnoY: 0,
+  xtokw: 100, xtokh: 38, xtokfz: 15, xtokX: 0, xtokY: 0,
+})
 
 // 사용자 확정 UI 값 (adad.txt)
 Object.assign(UI_DEFAULT, { cardic33w: 46, cardic33h: 46, cardic33X: 0, cardic33Y: 0 })
