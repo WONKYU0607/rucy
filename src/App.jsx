@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { initializeApp } from 'firebase/app'
 import { LANG, EN_ON, T, TF, L, enUnit } from './i18n.js'
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut } from 'firebase/auth'
-import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query, where, getCountFromServer } from 'firebase/firestore'
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query, where, getCountFromServer, runTransaction, onSnapshot } from 'firebase/firestore'
 
 // ── Firebase 클라우드 세이브 설정: 콘솔 웹앱 구성값 붙여넣기 ──
 const FIREBASE_CONFIG = {
@@ -688,7 +688,8 @@ const gearSrc = (cat, n) => `${CAT_DIR[cat]}${n}.webp`
 
 // ── 오프라인 보상 설정 (직접 수정 가능) ─────────────────────────
 const OFFLINE_MIN_SEC = 0           // 부재 시간 조건 없음 (잠깐 나갔다 와도 지급)
-const RESUME_MIN_SEC = 60           // 앱을 내렸다 돌아올 때는 1분 이상 비웠을 때만 (2026-10-26)
+const SYNC_TIMEOUT_MS = 12000       // 들어갈 때 클라우드 읽기 제한 시간 — 넘으면 '다시 시도'
+const RESUME_MIN_SEC = 1            // 앱을 내렸다 돌아올 때: 1초 이상 비우면 비운 초만큼 (2026-10-26 초 단위로)
 const OFFLINE_CAP_SEC = 4 * 3600    // 최대 인정 시간 (4시간) — 2026-10-21 8시간에서 낮춤
 const OFFLINE_RATE = 0.5            // 온라인 대비 효율 (50%)
 // 오프라인 처치 수 = 부재 시간 × 50% × '최근 온라인 처치 속도'(일반 웨이브를 깬 속도의 이동평균, 세이브에 저장).
@@ -1493,7 +1494,7 @@ export default function App() {
     addOffline(calcOffline(away, init.wave, init.best || init.wave || 1))
   }, [])
   // 앱을 내렸다 돌아올 때: 내린 동안은 게임이 멈춰 있으므로(화면 갱신 정지) 그 시간을 오프라인 보상으로 준다.
-  // 1분 미만은 주지 않는다(잠깐 다른 앱 보고 올 때마다 상자가 뜨지 않게). 대기 중인 보상과 합쳐 최대 4시간
+  // 비운 초만큼 준다(1초 이상). 대기 중인 보상과 합쳐 최대 4시간
   const hiddenAt = useRef(null)
   const offPendSec = useRef(0); offPendSec.current = offReward ? offReward.sec : 0
   useEffect(() => {
@@ -3182,12 +3183,20 @@ export default function App() {
     onPointerCancel: holdEnd, onContextMenu: e => e.preventDefault(),
   })
   useEffect(() => () => holdEnd(), [])
-  // ── 클라우드 세이브: 로그인 시 웨이브 높은 쪽 채택, 이후 60초/백그라운드 전환 시 업로드 ──
+  // ── 클라우드 세이브 (2026-10-26 단순화): 클라우드가 원본, 이 기기 세이브는 임시 사본 ──
+  // 1) 들어갈 때 클라우드를 꼭 읽는다. 못 읽으면 게임에 안 들어간다(시작 화면에 '다시 시도'). 읽지 않은 채 플레이하는 길이 없다.
+  // 2) 이 기기 사본은 같은 계정 것이고 클라우드보다 최신일 때만 쓴다(나갈 때 저장 못 하고 꺼진 경우). 그 밖엔 클라우드를 받는다.
+  // 3) 한 계정은 한 기기에서만: 들어갈 때 이 기기를 '지금 기기(sid)'로 적는다. 다른 기기가 나중에 들어오면 이 기기는 로그아웃.
+  //    읽기와 표시는 한 트랜잭션, 저장도 '지금 기기'일 때만(트랜잭션) — 두 기기가 서로 덮어쓸 틈이 없다.
   const [fbUser, setFbUser] = useState(null)
   const [authReady, setAuthReady] = useState(!NEED_LOGIN)   // 로그인 여부 확인 끝(그 전엔 시작 화면에 '확인 중')
   const [syncDone, setSyncDone] = useState(!NEED_LOGIN)     // 로그인 후 클라우드와 맞추기 끝
   const wasIn = useRef(false)
-  const syncOk = useRef(false)                        // 들어갈 때 클라우드와 맞추기 성공 — 실패(오프라인 등)했으면 자동 업로드 안 함(더 좋은 클라우드 세이브를 덮지 않게)
+  const syncOk = useRef(false)                        // 들어갈 때 클라우드와 맞추기 성공 — 이 기기만 올릴 수 있다
+  const [syncErr, setSyncErr] = useState('')          // 클라우드를 못 읽음 → 시작 화면에 '다시 시도'
+  const [kicked, setKicked] = useState(false)         // 다른 기기에서 같은 계정으로 들어옴 → 이 기기는 로그아웃
+  const kickedRef = useRef(false)
+  const mySid = useRef(Math.random().toString(36).slice(2) + Date.now().toString(36))   // 이번 접속 표시
   const [cloudMsg, setCloudMsg] = useState('')
   const [rankInfo, setRankInfo] = useState(null)          // { me, total } — 최고 웨이브 기준 순위
   const refreshRank = async myBest => {
@@ -3202,103 +3211,117 @@ export default function App() {
       setRankInfo({ me: above.data().count + 1, total: tot.data().count })
     } catch (e) { setRankInfo(null) }
   }
-  const cloudBestRef = useRef(0)                      // 마지막으로 확인한 클라우드 진행도
   const cloudLegacy = useRef(null)                    // 출시 전(디버그) 클라우드 세이브 — 첫 저장 때 legacy 필드로 옮겨 남긴다
   // 클라우드 저장은 들어갈 때(로그인 확인 직후)와 나갈 때(앱을 내리거나 닫을 때)만 (2026-10-26).
   // Firestore 는 담는 양이 아니라 쓰기 횟수로 과금 — 15초마다 올리던 걸 없앴다.
   // 같은 세이브를 또 올리지 않고(나갈 때 이벤트가 2~3개 겹쳐 온다), 랭킹 문서는 최고 기록·닉네임이 바뀔 때만 쓴다.
   const lastPush = useRef({ raw: null, rank: null })
-  async function pushCloud(force) {
-    if (!FB_ON || !fbAuth.currentUser) return
-    if (!force && !syncOk.current) return
+  async function pushCloud() {
+    if (!FB_ON || !fbAuth.currentUser || !syncOk.current || kickedRef.current) return   // 들어갈 때 클라우드와 맞춘 '지금 기기'만 올린다
     const raw = localStorage.getItem(SAVE_KEY)
-    if (!force && raw === lastPush.current.raw) return
+    if (raw === lastPush.current.raw) return
+    let sv = null; try { sv = JSON.parse(raw || 'null') } catch {}
+    if (!sv) return
+    const uid = fbAuth.currentUser.uid
+    const myBest = sv.best || sv.wave || 0
+    // 세이브 전체를 문자열 필드로 저장 (skillSets 같은 중첩 배열을 Firestore가 거부 → invalid-argument 방지)
+    const payload = { data: raw, ts: sv.ts || 0, wave: sv.wave || 0, best: myBest, rel: SAVE_REL, sid: mySid.current }
+    if (cloudLegacy.current) payload.legacy = cloudLegacy.current
+    lastPush.current.raw = raw                     // 올리는 중에 같은 세이브로 또 불려도 건너뛰게 먼저 표시
     try {
-      const sv = JSON.parse(raw || 'null')
-      if (!sv) return
-      // 진행도가 크게 줄어드는 업로드는 막는다(저장소 초기화 사고 방지). 메뉴의 '클라우드에 저장'으로는 강제 가능
-      const myBest = sv.best || sv.wave || 0
-      if (!force && cloudBestRef.current > 5 && myBest < cloudBestRef.current * 0.5) {
-        setCloudMsg(TF('업로드 보류 — 내 기록 {0} < 클라우드 {1}', myBest, cloudBestRef.current))
-        return
-      }
-      // 세이브 전체를 문자열 필드로 저장 (skillSets 같은 중첩 배열을 Firestore가 거부 → invalid-argument 방지)
-      const payload = {
-        data: raw,
-        ts: sv.ts || 0,
-        wave: sv.wave || 0,
-        best: sv.best || sv.wave || 0,   // 참고용(랭킹은 paleoRank 컬렉션으로 계산)
-        rel: SAVE_REL,                   // 출시판 표시
-      }
-      if (cloudLegacy.current) payload.legacy = cloudLegacy.current
-      lastPush.current.raw = raw                     // 올리는 중에 같은 세이브로 또 불려도 건너뛰게 먼저 표시
+      const ref = doc(fbDb, 'paleoSaves', uid)
       // merge: 한 번 옮겨 둔 legacy 는 이후 저장에서도 그대로 남는다
-      await setDoc(doc(fbDb, 'paleoSaves', fbAuth.currentUser.uid), payload, { merge: true })
+      const mine = await runTransaction(fbDb, async tx => {
+        const cur = await tx.get(ref)
+        const d = cur.exists() ? cur.data() : null
+        if (d && d.sid && d.sid !== mySid.current) return false   // 다른 기기가 나중에 들어왔다 → 안 올린다
+        tx.set(ref, payload, { merge: true })
+        return true
+      })
+      if (!mine) { lastPush.current.raw = null; kick(); return }
       cloudLegacy.current = null
       // 랭킹용 요약(최고 웨이브·닉네임)만 따로 — 이 컬렉션만 읽기를 열면 세이브 본문은 잠긴 채로 순위가 돈다
       const rankKey = myBest + '|' + (sv.nick || '')
-      if (force || rankKey !== lastPush.current.rank) {
-        await setDoc(doc(fbDb, 'paleoRank', fbAuth.currentUser.uid), { best: myBest, nick: sv.nick || '', ts: Date.now() })
+      if (rankKey !== lastPush.current.rank) {
+        await setDoc(doc(fbDb, 'paleoRank', uid), { best: myBest, nick: sv.nick || '', ts: Date.now() })
         lastPush.current.rank = rankKey
         refreshRank(myBest)
       }
-      cloudBestRef.current = Math.max(cloudBestRef.current, myBest)
       setCloudMsg(TF('저장됨 {0}', new Date().toLocaleTimeString()))
     } catch (e) { lastPush.current.raw = null; setCloudMsg(TF('저장 실패: {0}', e.code || e.message)) }
   }
+  // 다른 기기에서 같은 계정으로 들어옴 → 이 기기는 더 저장하지 않고 로그아웃(다시 하려면 구글 로그인부터 — 다른 기기를 곧바로 다시 밀어내지 않게)
+  function kick() {
+    if (kickedRef.current) return
+    kickedRef.current = true; syncOk.current = false
+    cloudBusy.current = true                        // 이 기기 세이브도 더 쓰지 않는다
+    setKicked(true)
+    if (fbAuth) signOut(fbAuth).catch(() => {})
+  }
+  // 들어갈 때 클라우드와 맞추기 — 위 규칙 1)·2)
+  async function startSync(u) {
+    if (!u || kickedRef.current) return
+    setSyncErr(''); setSyncDone(false)
+    try {
+      const ref = doc(fbDb, 'paleoSaves', u.uid)
+      // 읽기와 '지금 기기' 표시를 한 번에. 정해진 시간 안에 안 되면 연결 실패로 본다
+      let cloud = await Promise.race([
+        runTransaction(fbDb, async tx => {
+          const snap = await tx.get(ref)
+          tx.set(ref, { sid: mySid.current }, { merge: true })
+          return snap.exists() ? snap.data() : null
+        }),
+        new Promise((_, rej) => setTimeout(() => rej(Object.assign(new Error('timeout'), { code: 'timeout' })), SYNC_TIMEOUT_MS)),
+      ])
+      // 출시판 표시(rel)가 없으면 출시 전 디버그 세이브 — 받지 않고, 다음 저장 때 legacy 필드로 옮겨 남긴다
+      if (cloud && cloud.rel !== SAVE_REL) {
+        if (cloud.data != null || cloud.wave != null) cloudLegacy.current = typeof cloud.data === 'string' ? cloud.data : JSON.stringify(cloud)
+        cloud = null
+      }
+      const cloudStr = cloud && typeof cloud.data === 'string' ? cloud.data : null
+      const cloudTs = cloud ? (cloud.ts || 0) : 0
+      const mine = !init.uid || init.uid === u.uid          // 이 기기 사본이 이 계정 것(계정 표시 전 세이브 포함)
+      const localTs = mine ? (init.ts || 0) : 0              // 켤 때 읽은 사본의 저장 시각(켠 뒤 자동 저장된 시각이 아니라)
+      if (cloudStr && (!init.ts || localTs < cloudTs)) {     // 클라우드가 최신(또는 이 기기에 세이브 없음) → 받아서 다시 시작
+        cloudBusy.current = true
+        localStorage.setItem(SAVE_KEY, cloudStr)
+        location.reload()
+        return
+      }
+      if (!mine) {                                           // 다른 계정 사본 + 이 계정 클라우드 세이브 없음 → 새로 시작
+        cloudBusy.current = true
+        localStorage.removeItem(SAVE_KEY)
+        location.reload()
+        return
+      }
+      uidRef.current = u.uid
+      syncOk.current = true
+      setSyncDone(true)
+      pushCloud()                                            // 이 기기 사본이 최신이거나 첫 세이브면 올린다(같으면 내용만 같고 시각 갱신)
+    } catch (e) {
+      setSyncErr(T('서버에 연결할 수 없어요. 인터넷 연결을 확인해 주세요'))
+    }
+  }
+  // 게임 중에 다른 기기가 들어오면 바로 알기
+  useEffect(() => {
+    if (!FB_ON || !fbUser || !syncDone || !syncOk.current) return
+    return onSnapshot(doc(fbDb, 'paleoSaves', fbUser.uid), snap => {
+      const d = snap.exists() ? snap.data() : null
+      if (d && d.sid && d.sid !== mySid.current) kick()
+    }, () => {})
+  }, [fbUser, syncDone])
   useEffect(() => {
     if (!FB_ON) return
     return onAuthStateChanged(fbAuth, async u => {
       setFbUser(u); setAuthReady(true)
       if (!u) {
         setRankInfo(null)
-        if (NEED_LOGIN && wasIn.current) { cloudBusy.current = true; location.reload() }   // 게임 중 로그아웃되면 시작 화면(로그인)으로
+        if (NEED_LOGIN && wasIn.current && !kickedRef.current) { cloudBusy.current = true; location.reload() }   // 게임 중 로그아웃되면 시작 화면(로그인)으로(다른 기기 접속 때는 안내창의 확인에서)
         return
       }
       wasIn.current = true
       refreshRank(bestRef.current || 0)
-      try {
-        const snap = await getDoc(doc(fbDb, 'paleoSaves', u.uid))
-        let cloud = snap.exists() ? snap.data() : null
-        // 출시판 표시(rel)가 없으면 출시 전 디버그 세이브 — 받지 않고, 다음 저장 때 legacy 필드로 옮겨 남긴다
-        if (cloud && cloud.rel !== SAVE_REL) {
-          cloudLegacy.current = typeof cloud.data === 'string' ? cloud.data : JSON.stringify(cloud)
-          cloud = null
-        }
-        const local = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null')
-        const cloudSaveStr = cloud && typeof cloud.data === 'string' ? cloud.data : null
-        // 이 기기 세이브가 다른 구글 계정 것이면 섞지 않는다: 이 계정 클라우드가 있으면 그걸 받고, 없으면 새로 시작
-        if (local && local.uid && local.uid !== u.uid) {
-          cloudBusy.current = true
-          if (cloudSaveStr) localStorage.setItem(SAVE_KEY, cloudSaveStr); else localStorage.removeItem(SAVE_KEY)
-          location.reload()
-          return
-        }
-        uidRef.current = u.uid
-        let cloudSave = null; try { cloudSave = cloudSaveStr ? JSON.parse(cloudSaveStr) : null } catch {}
-        const cloudTs = cloud ? (cloud.ts || (cloudSave && cloudSave.ts) || 0) : 0
-        const cloudWave = cloud ? (cloud.wave || (cloudSave && cloudSave.wave) || 0) : 0
-        // UI·모션 편집값은 클라우드에서 다루지 않는다.
-        // PC에서 편집 → 코드(UI_DEFAULT/MOTION_DEFAULT + CFG_STAMP)에 박아 배포 → 모든 기기가 그대로 받음.
-        // 기기끼리 최신 여부를 비교할 일이 없어 "누가 먼저" 문제 자체가 생기지 않는다.
-        // 진행도 동기화: 저장 시각(ts) 최신쪽 채택 (init.ts=로드시점 원래값과 비교). ts 둘 다 없으면 웨이브 폴백
-        const bootTs = init.ts || 0
-        cloudBestRef.current = cloud ? (cloud.best || (cloudSave && cloudSave.best) || cloudWave || 0) : 0
-        // 어느 기기든 같은 규칙: 저장 시각이 더 최신인 쪽을 쓴다(둘 다 없으면 웨이브).
-        // 단, 이 기기 기록이 클라우드의 절반도 안 되면(새로 깔았거나 저장소가 초기화된 경우) 클라우드를 받는다
-        const localBest = local ? (local.best || local.wave || 0) : 0
-        const behind = cloudBestRef.current > 5 && localBest < cloudBestRef.current * 0.5
-        const cloudNewer = behind || ((cloudTs !== 0 || bootTs !== 0) ? cloudTs > bootTs : cloudWave > (local?.wave || 0))
-        if (cloudSaveStr && cloudNewer) {
-          cloudBusy.current = true                 // 리로드 전 로컬 자동저장 차단(덮어쓰기 방지)
-          localStorage.setItem(SAVE_KEY, cloudSaveStr)
-          location.reload()  // 클라우드 세이브로 재시작
-        } else {
-          syncOk.current = true
-          setSyncDone(true)
-          pushCloud()
-        }
-      } catch (e) { setCloudMsg(TF('동기화 실패: {0}', e.code || e.message)); setSyncDone(true) }
+      startSync(u)
     })
   }, [])
   useEffect(() => {
@@ -3313,6 +3336,7 @@ export default function App() {
   }, [])
   // 하단바 뒤로가기: 맨 위에 열린 창부터 하나씩 닫고 → 영웅 탭으로 → 영웅 탭에서는 게임 종료 확인
   function handleBack() {
+    if (kicked) return                                // 다른 기기 접속 안내는 확인으로만
     if (needNick) return                              // 처음 닉네임 정하기는 뒤로가기로 못 닫는다
     if (nickOpen) return setNickOpen(null)
     if (exitOpen) return setExitOpen(false)
@@ -3376,19 +3400,6 @@ export default function App() {
       setNickMsg((e && e.code) === 'permission-denied' ? T('이미 쓰고 있는 닉네임이에요') : T('연결이 안 돼요. 잠시 후 다시 해 주세요'))
     }
   }
-  async function pullCloud() {   // 클라우드 세이브를 무조건 로컬로 덮어써서 불러옴 (기기간 확실한 동기화용)
-    if (!FB_ON || !fbAuth.currentUser) return
-    try {
-      const snap = await getDoc(doc(fbDb, 'paleoSaves', fbAuth.currentUser.uid))
-      const cloud = snap.exists() ? snap.data() : null
-      if (!cloud || cloud.rel !== SAVE_REL || typeof cloud.data !== 'string') { setCloudMsg(T('클라우드에 저장이 없어요')); return }   // 출시 전 세이브는 안 받음
-      cloudBusy.current = true                                                       // 리로드 전 로컬 자동저장 차단
-      localStorage.setItem(SAVE_KEY, cloud.data)                                     // 웨이브 등 진행도
-      // 불러오기는 진행도만 — UI·모션은 코드값이 출처라 건드리지 않음
-      location.reload()
-    } catch (e) { setCloudMsg(TF('불러오기 실패: {0}', e.code || e.message)) }
-  }
-
   // 스크롤 엣지 페이드: 위/아래 끝에서는 해제, 넘침 없으면 페이드 없음
   function updFade(el) {
     if (!el) return
@@ -3494,6 +3505,11 @@ export default function App() {
                 </button>
                 {cloudMsg ? <div style={st.splashLoginMsg}>{cloudMsg}</div> : null}
               </div>)
+            : preReady && NEED_LOGIN && syncErr ? (
+              <div style={st.splashLoginWrap}>
+                <div style={st.splashLoginMsg}>{syncErr}</div>
+                <button style={st.splashLoginBtn} onClick={e => { e.stopPropagation(); startSync(fbAuth.currentUser) }}>{T('다시 시도')}</button>
+              </div>)
             : preReady && NEED_LOGIN && !syncDone ? <div style={st.splashInfo}>{T('저장 기록 불러오는 중…')}</div>
             : preReady ? <div style={st.splashTap}>TAP TO START</div> : (
             <div style={st.splashLoadWrap}>
@@ -3513,8 +3529,6 @@ export default function App() {
             {FB_ON && (fbUser ? (
               <>
                 <div style={{ ...st.menuItem, opacity: 0.8 }}><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fbUser.email}</span></div>
-                <button style={st.menuItem} onClick={() => pushCloud(true)}>{T('클라우드에 저장')} <span style={{ fontSize: 11, opacity: 0.6 }}>{cloudMsg}</span></button>
-                <button style={st.menuItem} onClick={() => { if (confirm(T('클라우드 세이브를 불러와 현재 기기 데이터를 덮어씁니다. 계속할까요?'))) pullCloud() }}>{T('클라우드에서 불러오기')}</button>
                 <button style={st.menuItem} onClick={fbLogout}>{T('로그아웃')}</button>
               </>
             ) : (
@@ -4458,6 +4472,17 @@ export default function App() {
           </div>
         </div>
       )}
+      {kicked && (
+        <div style={{ ...st.xtOverlay, zIndex: 300 }}>
+          <div data-edit="xtwin" style={st.xtWin}>
+            <div data-edit="xttitle" style={st.xtTitle}>{T('다른 기기에서 접속')}</div>
+            <div data-edit="xtmsg" style={st.xtMsg}>{T('같은 계정으로 다른 기기에서 접속해서 이 기기는 로그아웃됩니다')}</div>
+            <div style={st.xtBtns}>
+              <button data-edit="xtok" style={st.xtOk} onClick={() => { if (!uiEdit) location.reload() }}>{T('확인')}</button>
+            </div>
+          </div>
+        </div>
+      )}
       {exitOpen && (
         <div style={st.xtOverlay} onClick={e => { if (!uiEdit && e.target === e.currentTarget) setExitOpen(false) }}>
           <div data-edit="xtwin" style={st.xtWin}>
@@ -4475,7 +4500,7 @@ export default function App() {
           <div style={st.offWin}>
             <button style={st.offClose} onClick={() => setOffOpen(false)}>✕</button>
             <div data-edit="offtitle" style={st.offTitle}>{T('자동 사냥 오프라인 보상')}</div>
-            <div data-edit="offinfo" style={st.offInfo}>{TF('{0}wave · {1}시간 {2}분 · {3}마리', offData.wave, Math.floor(offData.sec / 3600), Math.floor(offData.sec % 3600 / 60), fmt(offData.kills))}</div>
+            <div data-edit="offinfo" style={st.offInfo}>{TF('{0}wave · {1} · {2}마리', offData.wave, (h => h > 0 ? TF('{0}시간 {1}분', h, Math.floor(offData.sec % 3600 / 60)) : offData.sec >= 60 ? TF('{0}분 {1}초', Math.floor(offData.sec / 60), Math.floor(offData.sec % 60)) : TF('{0}초', Math.floor(offData.sec)))(Math.floor(offData.sec / 3600)), fmt(offData.kills))}</div>
             {(() => {
               // 오프라인 보상 항목 — 나중에 항목이 늘면(동료 재화 등) 이 배열에만 추가하면 칸 수·크기가 알아서 바뀐다
               const offList = [['/ui/ic_meat.webp', offData.meat, offData.meatRate, '#ff9d6a'],
@@ -5782,7 +5807,7 @@ const st = {
     width: 32, height: 32, borderRadius: 16, background: '#fff', border: '1px solid #ddd', display: 'flex', alignItems: 'center', justifyContent: 'center',
     fontSize: 18, fontWeight: 900, color: '#4285F4', fontFamily: 'Arial, sans-serif',
   },
-  splashLoginMsg: { color: '#ffb08a', fontSize: 13, fontWeight: 700, textShadow: '0 1px 6px rgba(0,0,0,0.9)' },
+  splashLoginMsg: { maxWidth: '80%', textAlign: 'center', wordBreak: 'keep-all', lineHeight: 1.4, color: '#ffb08a', fontSize: 13, fontWeight: 700, textShadow: '0 1px 6px rgba(0,0,0,0.9)' },
   splashTap: {
     position: 'absolute', left: 0, right: 0, bottom: '18%', textAlign: 'center',
     color: '#fff', fontSize: 22, fontWeight: 700, letterSpacing: '0.15em',

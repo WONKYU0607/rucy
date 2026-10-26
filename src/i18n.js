@@ -12,6 +12,9 @@ export const LANG = (() => {
 export const EN_ON = LANG === 'en'
 
 const EN = {
+  // 클라우드(2026-10-26 단순화)
+  '서버에 연결할 수 없어요. 인터넷 연결을 확인해 주세요': "Can't reach the server. Please check your internet connection", '다시 시도': 'Retry',
+  '다른 기기에서 접속': 'Signed In Elsewhere', '같은 계정으로 다른 기기에서 접속해서 이 기기는 로그아웃됩니다': 'This account signed in on another device, so this device has been signed out',
   // 게임 이름
   '오스트랄로피테쿠스 키우기': 'Australopithecus Idle RPG',
   // 패시브
@@ -128,14 +131,12 @@ const EN = {
   '모험 실패 — 시간 초과': 'Adventure failed — time up', '보스 격파!': 'Boss defeated!', '웨이브 {0} 클리어!': 'Wave {0} clear!',
   '쓰러졌다...': 'You fell...', '다시 도전': 'Try Again', '나가기': 'Exit',
   // 클라우드·로그인
-  '업로드 보류 — 내 기록 {0} < 클라우드 {1}': 'Upload held — yours {0} < cloud {1}', '저장됨 {0}': 'Saved {0}', '저장 실패: {0}': 'Save failed: {0}',
-  '동기화 실패: {0}': 'Sync failed: {0}', '로그인을 취소했어요': 'Sign-in canceled', '로그인 실패: {0}': 'Sign-in failed: {0}',
-  '클라우드에 저장이 없어요': 'No cloud save found', '불러오기 실패: {0}': 'Load failed: {0}',
+  '저장됨 {0}': 'Saved {0}', '저장 실패: {0}': 'Save failed: {0}',
+  '로그인을 취소했어요': 'Sign-in canceled', '로그인 실패: {0}': 'Sign-in failed: {0}',
   '로그인 확인 중…': 'Checking sign-in…', 'Google 계정으로 시작': 'Sign in with Google', '저장 기록 불러오는 중…': 'Loading your save…',
   '게임 로드중… {0}%': 'Loading… {0}%',
   // 메뉴
-  '클라우드에 저장': 'Save to Cloud', '클라우드 세이브를 불러와 현재 기기 데이터를 덮어씁니다. 계속할까요?': "This loads your cloud save and overwrites this device's data. Continue?",
-  '클라우드에서 불러오기': 'Load from Cloud', '로그아웃': 'Sign Out', '구글 로그인 · 저장 연동': 'Sign in with Google · Cloud Save',
+  '로그아웃': 'Sign Out', '구글 로그인 · 저장 연동': 'Sign in with Google · Cloud Save',
   // 웨이브 이동
   '웨이브 이동': 'Go to Wave', '(최고 {0})': '(Best {0})', '이동': 'Go', '최고로': 'Best',
   // 장비 상세
@@ -174,7 +175,7 @@ const EN = {
   // 종료 창
   '게임 종료': 'Exit Game', '게임을 종료할까요?': 'Exit the game?', '취소': 'Cancel', '종료': 'Exit',
   // 오프라인 보상
-  '자동 사냥 오프라인 보상': 'Offline Hunting Rewards', '{0}wave · {1}시간 {2}분 · {3}마리': 'Wave {0} · {1}h {2}m · {3} kills',
+  '자동 사냥 오프라인 보상': 'Offline Hunting Rewards', '{0}wave · {1} · {2}마리': 'Wave {0} · {1} · {2} kills', '{0}시간 {1}분': '{0}h {1}m', '{0}분 {1}초': '{0}m {1}s', 
   '{0}/분': '{0}/min', '받기': 'Claim', '추가 보상': 'Bonus', '(광고)': '(Ad)',
   // 하단 탭
   '모험': 'Adventure', '상점': 'Shop', '{0}웨이브': 'Wave {0}',
