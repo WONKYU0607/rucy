@@ -547,6 +547,45 @@ const SK_CD_DMG = {
   46: [5, 2], 47: [7, 3], 43: [5, 4], 44: [8, 10], 45: [10, 15], 48: [13, 20],   // 인간
 }
 const SK_DOT_SHARE = 0.2                             // 독 스킬: 총 피해 중 독 비중
+// 액티브 스킬 설명(2026-10-26 사용자 확인) — 수치(대상·피해·쿨타임·타격 수)는 상세창이 따로 보여 주므로 동작·특수 효과만
+const SK_DESC = {
+  7: '적을 날카롭게 할퀸다',
+  15: '적에게 발차기를 한다',
+  8: '두 팔로 땅을 내리쳐 주변 적들에게 충격을 준다',
+  13: '몸을 말아 굴러 들어가 앞의 적들을 들이받는다',
+  17: '크게 포효해 주변 적들을 뒤흔든다',
+  16: '땅을 내려쳐 솟구친 바위로 주변 적들을 친다',
+  18: '땅을 내려쳐 불붙은 바위를 터뜨린다',
+  22: '푸른 번개를 두르고 돌진해 앞의 적들을 휩쓴다',
+  1: '바위를 내리쳐 주변 적들에게 벼락을 떨어뜨린다',
+  2: '전기를 두른 작살을 던져 날아가는 길의 적을 모두 꿰뚫는다',
+  20: '바위 회오리를 날려 지나가는 적을 모두 휩쓴다',
+  23: '등 뒤의 사신과 함께 주먹을 퍼부어 주변 적들을 몰아친다',
+  25: '번개를 두르고 질주하며 앞의 적들을 후려친다',
+  24: '어둠을 실은 몽둥이로 바로 앞의 적들을 내려친다',
+  27: '불타는 몽둥이를 연달아 휘둘러 주변 적들을 벤다',
+  26: '몽둥이를 들고 회전해 폭풍처럼 주변 적들을 연달아 친다',
+  29: '기를 모아 먹구름을 부르고 벼락을 연달아 떨어뜨린다',
+  28: '붉은 폭발을 일으켜 화면 안의 적 모두를 휩쓴다',
+  31: '불꽃 고리를 두른 도끼를 던져 지나가는 적을 모두 꿰뚫는다',
+  32: '얼음 도끼를 두 번 내려찍어 얼음 파편을 터뜨린다',
+  36: '불길을 휘감고 돌며 주변 적들을 연달아 태운다',
+  34: '던져 올린 도끼가 거대한 칼날이 되어 내리꽂히며 폭발한다',
+  33: '뛰어올라 도끼로 땅을 찍어 바위 가시를 솟구치게 한다',
+  35: '거대한 회오리를 일으켜 주변 적들을 계속 휘감는다',
+  37: '눈에 보이지 않는 속도로 오가며 주변 적들을 벤다',
+  38: '쌍칼을 휘몰아쳐 가까운 적들을 마구 벤다',
+  39: '독 묻은 칼로 주변 적들을 베고, 베인 적은 5초 동안 중독된다',
+  42: '분신들을 불러내 주변 적들을 사방에서 벤다',
+  40: '하늘로 던진 단검을 비처럼 쏟아부어 주변 적들을 꿰뚫는다',
+  41: '초승달 같은 칼날로 가까운 적들을 쉴 새 없이 벤다',
+  46: '푸른 기운을 실어 앞으로 멀리 찔러 들어간다',
+  47: '검을 휘두르며 회전해 주변 적들을 벤다',
+  43: '찌르고 내려벤 자리에 피의 십자가를 터뜨린다',
+  44: '번개를 모아 벤 뒤 번개 기둥으로 주변 적들을 연달아 친다',
+  45: '한 적에게 쉴 새 없이 검을 퍼붓는다',
+  48: '소용돌이로 주변 적을 보스까지 끌어당긴 뒤 한 번에 벤다',
+}
 const SK_ENH_MAX = 10                                // 스킬 강화 상한(단계)
 const SK_ENH_STEP = 0.1                              // 강화 1단계당 피해 +10%
 const skEnhMult = (enh, id) => 1 + SK_ENH_STEP * Math.min(SK_ENH_MAX, (enh || {})[id] || 0)
@@ -641,7 +680,7 @@ const SKILLS = SKILL_SHEET.map(c => {
   for (const t of ft) { acc += t; ends.push(acc) }
   return {
     key: 's' + c.id, id: c.id, name: c.title || ('스킬 ' + c.id), anim: 's_' + c.id, icon: String(c.id), stage: c.stage,
-    stages: c.stages || null, passive: !!c.passive, pkey: c.pkey || null, icon2: c.ic || null, desc2: c.desc2 || null,
+    stages: c.stages || null, passive: !!c.passive, pkey: c.pkey || null, icon2: c.ic || null, desc2: c.desc2 || SK_DESC[c.id] || null,
     h: c.h, fx: c.fx || null, frameEnds: ends, frameT: ft,
     rank: SK_RANK[c.id] || 0,
     cd: SK_CD_DMG[c.id] ? SK_CD_DMG[c.id][0] : (c.cd ?? 2), cast: acc, hitAt: c.hitAt ?? 0.55,
@@ -5660,7 +5699,7 @@ const st = {
   skdMiniTxt: { position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: '#fff' },
   skdHeadMid: { flex: 1, minWidth: 0, paddingTop: 2 },
   skdTitle: { fontSize: 'var(--pd-skdtitlefz)', fontWeight: 800, color: '#fff5df', textShadow: '0 1px 2px #000', transform: 'translate(var(--pd-skdtitle-x), var(--pd-skdtitle-y))' },
-  skdDesc: { marginTop: 4, fontSize: 'var(--pd-skddescfz)', color: '#cbb894', lineHeight: 1.4, transform: 'translate(var(--pd-skddesc-x), var(--pd-skddesc-y))' },
+  skdDesc: { marginTop: 4, fontSize: 'var(--pd-skddescfz)', color: '#cbb894', lineHeight: 1.4, wordBreak: 'keep-all', transform: 'translate(var(--pd-skddesc-x), var(--pd-skddesc-y))' },
   skdAuto: { flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5, padding: '5px 8px', fontSize: 'var(--pd-skdautofz)', fontWeight: 800, color: '#9fb0c0', border: 'none', background: 'transparent', cursor: 'pointer', transform: 'translate(var(--pd-skdauto-x), var(--pd-skdauto-y))' },
   skdAutoOn: { color: '#4aa8ff' },
   skdAutoDot: { width: 30, height: 16, borderRadius: 9, background: '#4a4a4a', position: 'relative', transition: 'background 0.15s' },
