@@ -4389,20 +4389,28 @@ export default function App() {
             <button style={st.offClose} onClick={() => setOffOpen(false)}>✕</button>
             <div data-edit="offtitle" style={st.offTitle}>자동 사냥 오프라인 보상</div>
             <div data-edit="offinfo" style={st.offInfo}>{offData.wave}wave · {Math.floor(offData.sec / 3600)}시간 {Math.floor(offData.sec % 3600 / 60)}분 · {fmt(offData.kills)}마리</div>
-            <div style={st.offItems}>
-              {[['/ui/ic_meat.webp', offData.meat, offData.meatRate, '#ff9d6a'],
+            {(() => {
+              // 오프라인 보상 항목 — 나중에 항목이 늘면(동료 재화 등) 이 배열에만 추가하면 칸 수·크기가 알아서 바뀐다
+              const offList = [['/ui/ic_meat.webp', offData.meat, offData.meatRate, '#ff9d6a'],
                 ['/ui/ic_exp.webp', offData.exp, offData.expRate, '#6ec4ff'],
                 ['/ui/gem.webp', offData.gem, offData.gemRate, '#cfe8ff'],
-                ['mats', offData.mat || 0, offData.matRate || 0, '#d9f0b8']].map(([ic, v, rate, col], i) => (
+                ['mats', offData.mat || 0, offData.matRate || 0, '#d9f0b8']]
+              const n = offList.length, cols = n <= 4 ? 2 : 3, k = n <= 4 ? 1 : n <= 6 ? 0.75 : 0.72
+              const px = v => `calc(var(${v}) * ${k})`
+              return (
+            <div style={{ ...st.offItems, gridTemplateColumns: `repeat(${cols}, ${px('--pd-offcw')})`, gridAutoRows: px('--pd-offch'), gap: px('--pd-offcgap') }}>
+              {offList.map(([ic, v, rate, col], i) => (
                 <div key={i} data-edit="offitem" style={st.offItem}>
                   {ic === 'mats'
-                    ? <div data-edit="offitemic" style={{ ...st.offItemIc, display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr' }}>{[0, 1, 2, 3].map(m => <img key={m} src={MAT_IMG(m)} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />)}</div>
-                    : <img data-edit="offitemic" src={ic} alt="" style={st.offItemIc} />}
-                  <span data-edit="offitemval" style={{ ...st.offItemVal, color: col }}>+{fmt(v)}</span>
-                  <span data-edit="offitemrate" style={st.offItemRate}>{fmt(rate)}/분</span>
+                    ? <div data-edit="offitemic" style={{ ...st.offItemIc, width: px('--pd-offcic'), height: px('--pd-offcic'), display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gridTemplateRows: 'repeat(2, minmax(0, 1fr))' }}>{[0, 1, 2, 3].map(m => <img key={m} src={MAT_IMG(m)} alt="" style={{ width: '100%', height: '100%', minWidth: 0, minHeight: 0, objectFit: 'contain' }} />)}</div>
+                    : <img data-edit="offitemic" src={ic} alt="" style={{ ...st.offItemIc, width: px('--pd-offcic'), height: px('--pd-offcic') }} />}
+                  <span data-edit="offitemval" style={{ ...st.offItemVal, fontSize: px('--pd-offcvfz'), color: col }}>+{fmt(v)}</span>
+                  <span data-edit="offitemrate" style={{ ...st.offItemRate, fontSize: px('--pd-offcrfz') }}>{fmt(rate)}/분</span>
                 </div>
               ))}
             </div>
+              )
+            })()}
             <div style={st.offBtns}>
               <button data-edit="offclaim" style={st.offBtnClaim} onClick={() => { if (uiEdit) return; if (offReward) { setMeat(m => m + offReward.meat); setHexp(x => x + offReward.exp); if (offReward.gem) setGem(g => g + offReward.gem); if (offReward.mats) setMats(m => { const n = [...m]; offReward.mats.forEach((v, k) => { n[k] = (n[k] || 0) + v }); return n }) } setOffReward(null); setOffOpen(false) }}>
                 <span style={st.offBtnClaimText}>받기</span>
@@ -4901,9 +4909,9 @@ const UI_DEFAULT = {
   shopbX: 1, shopbY: 1, shopbtX: 0, shopbtY: 1, shopgemX: 0, shopgemY: 0, gainicX: 0, gainicY: 0, gaintX: 0, gaintY: 0,
   gbtnX: 0, gbtnY: 0, gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0, hambX: 1, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: -3, bhpX: -1, bhpY: -7, pbX: 0, pbY: 0, wjX: 0, wjY: 0, caslotX: 3, caslotY: 16, caimgX: 0, caimgY: 0, canameX: 0, canameY: 0, catabX: 15, catabY: 14, cabtnX: 0, cabtnY: 0, wtitleX: 0, wtitleY: 1, diaX: 0, diaY: 0, btextX: 0, btextY: 7,
   // 오프라인 보상: 보물상자 + 창(헤더/항목/버튼)
-  trsz: 34, offw: 322, offtfz: 14, offnfz: 13, offiw: 56, offih: 50, offgap: 9, offic: 24, offifz: 11, offrfz: 11,
+  trsz: 34, offw: 322, offtfz: 14, offnfz: 13, offcw: 92, offch: 84, offcgap: 12, offcic: 34, offcvfz: 14, offcrfz: 11,
   offbtw: 135, offbth: 51, offbfz: 14, offclw: 100, offclh: 50, offcfz: 15,
-  trX: -2, trY: 14, offtX: -1, offtY: 66, offnX: 1, offnY: 76, offitX: -29, offitY: 80, offitiX: 0, offitiY: 6, offvX: 0, offvY: 2, offrX: 0, offrY: -3, offbtX: 0, offbtY: -15, offclX: 2, offclY: -15,
+  trX: -2, trY: 14, offtX: -1, offtY: 66, offnX: 1, offnY: 76, offgridX: 0, offgridY: 0, offcicX: 0, offcicY: 0, offcvX: 0, offcvY: 0, offcrX: 0, offcrY: 0, offbtX: 0, offbtY: -15, offclX: 2, offclY: -15,
   fuseallw: 94, fuseallh: 26, fuseallfz: 15, fuseallX: -36, fuseallY: -10,
   matchipic: 17, matchipfz: 13, allychipic: 15, allychipfz: 10,
   dtabh: 40, dtabfz: 15, dgradefz: 14, dtitlefz: 17, darrowfz: 26, diconsz: 92, dtierfz: 12, dstatfz: 14, denhh: 48, denhfz: 14, denhic: 22, dequiph: 48, dequipfz: 15, dfuseh: 50, dfusefz: 17, dstepsz: 46, dstepfz: 20,
@@ -5008,9 +5016,9 @@ Object.assign(UI_DEFAULT, {
   gbtntX: 0, gbtntY: 0, ggradeX: 0, ggradeY: 0, gtierX: 0, gtierY: 0, gimgX: 0, gimgY: 0, pmX: 0, pmY: 0, pgX: 0, pgY: 0,
   hambX: 1, hambY: 0, menuX: 0, menuY: 0, btX: 0, btY: -3, bhpX: -1, bhpY: -7, pbX: 0, pbY: 0, wjX: 0, wjY: 0,
   caslotX: 3, caslotY: 16, caimgX: 0, caimgY: 0, canameX: 0, canameY: 0, catabX: 15, catabY: 14, cabtnX: 0, cabtnY: 0, wtitleX: 0, wtitleY: 1,
-  diaX: 0, diaY: 0, btextX: 0, btextY: 7, trsz: 35, offw: 322, offtfz: 14, offnfz: 13, offiw: 56, offih: 50, offgap: 9, offic: 24,
-  offifz: 11, offrfz: 11, offbtw: 135, offbth: 51, offbfz: 14, offclw: 100, offclh: 50, offcfz: 15, trX: -3, trY: 14, offtX: -1, offtY: 66,
-  offnX: 1, offnY: 76, offitX: -29, offitY: 80, offitiX: 0, offitiY: 6, offvX: 0, offvY: 2, offrX: 0, offrY: -3, offbtX: 0, offbtY: -15,
+  diaX: 0, diaY: 0, btextX: 0, btextY: 7, trsz: 35, offw: 322, offtfz: 14, offnfz: 13,
+  offbtw: 135, offbth: 51, offbfz: 14, offclw: 100, offclh: 50, offcfz: 15, trX: -3, trY: 14, offtX: -1, offtY: 66,
+  offnX: 1, offnY: 76, offbtX: 0, offbtY: -15,
   offclX: 2, offclY: -15, fuseallw: 94, fuseallh: 26, fuseallfz: 15, fuseallX: -36, fuseallY: -10, matchipic: 17, matchipfz: 13, allychipic: 15, allychipfz: 10, dtabh: 40,
   dtabfz: 15, dgradefz: 14, dtitlefz: 17, darrowfz: 26, diconsz: 92, dtierfz: 12, dstatfz: 14, denhh: 48, denhfz: 14, denhic: 22, dequiph: 48, dequipfz: 15,
   dfuseh: 50, dfusefz: 17, dstepsz: 46, dstepfz: 20, skicon: 120, skiconX: 0, skiconY: 0, slicon: 100, sliconX: 0, sliconY: 0, advbw: 40, advbh: 20,
@@ -5160,10 +5168,10 @@ const EDIT_GROUPS = {
   offframe: { label: '오프 창틀', size: ['offw'], pos: null },
   offtitle: { label: '오프 제목', size: ['offtfz'], pos: 'offt' },
   offinfo: { label: '오프 정보', size: ['offnfz'], pos: 'offn' },
-  offitem: { label: '오프 항목틀', size: ['offiw', 'offih', 'offgap'], pos: 'offit' },
-  offitemic: { label: '오프 항목 아이콘', size: ['offic'], pos: 'offiti' },
-  offitemval: { label: '오프 획득량', size: ['offifz'], pos: 'offv' },
-  offitemrate: { label: '오프 분당량', size: ['offrfz'], pos: 'offr' },
+  offitem: { label: '오프 항목틀', size: ['offcw', 'offch', 'offcgap'], pos: 'offgrid' },
+  offitemic: { label: '오프 항목 아이콘', size: ['offcic'], pos: 'offcic' },
+  offitemval: { label: '오프 획득량', size: ['offcvfz'], pos: 'offcv' },
+  offitemrate: { label: '오프 분당량', size: ['offcrfz'], pos: 'offcr' },
   offbtn: { label: '추가보상 버튼', size: ['offbtw', 'offbth', 'offbfz'], pos: 'offbt' },
   offclaim: { label: '받기 버튼', size: ['offclw', 'offclh', 'offcfz'], pos: 'offcl' },
   fuseall: { label: '일괄융합 버튼', size: ['fuseallw', 'fuseallh', 'fuseallfz'], pos: 'fuseall' },
@@ -5278,7 +5286,7 @@ const UI_LABELS = {
   caslot: '칸 크기', caimg: '캐릭 크기', canamefz: '이름 글자', rankh: '높이', rankfz: '글자 크기',
   evocell: '칸 크기', evonamefz: '이름 글자', evofade: '흐려지는 높이', evopadb: '아래 여백',
   alwinw: '창 너비', alnamefz: '이름 글자', alimg: '그림 크기', alstatfz: '글자 크기', albtnw: '버튼 너비', albtnh: '버튼 높이', albtnfz: '버튼 글자', alclosesz: '버튼 크기', alclosefz: '글자 크기', catabfz: '탭 글자', cabtnfz: '장착 글자', btw: '타이머 너비', bth: '타이머 높이', bhpw: '체력바 너비', bhph: '체력바 높이',
-  trsz: '상자 크기', offw: '창 너비', offtfz: '제목 글자', offnfz: '정보 글자', offiw: '항목 너비', offih: '항목 높이', offgap: '항목 간격', offic: '아이콘 크기', offifz: '획득 글자', offrfz: '분당 글자', offbtw: '버튼 너비', offbth: '버튼 높이', offbfz: '버튼 글자', offclw: '버튼 너비', offclh: '버튼 높이', offcfz: '버튼 글자', fuseallw: '융합버튼 너비', fuseallh: '융합버튼 높이', fuseallfz: '융합버튼 글자',
+  trsz: '상자 크기', offw: '창 너비', offtfz: '제목 글자', offnfz: '정보 글자', offcw: '항목 너비', offch: '항목 높이', offcgap: '항목 간격', offcic: '아이콘 크기', offcvfz: '획득 글자', offcrfz: '분당 글자', offbtw: '버튼 너비', offbth: '버튼 높이', offbfz: '버튼 글자', offclw: '버튼 너비', offclh: '버튼 높이', offcfz: '버튼 글자', fuseallw: '융합버튼 너비', fuseallh: '융합버튼 높이', fuseallfz: '융합버튼 글자',
   matchipic: '아이콘 크기', matchipfz: '글자 크기', allychipic: '동료 아이콘', allychipfz: '동료 글자', dtabh: '탭 높이', dtabfz: '탭 글자', dgradefz: '등급 글자', dtitlefz: '이름 글자', darrowfz: '화살표 크기', diconsz: '아이콘틀 크기', dtierfz: '등급표시 글자', dstatfz: '능력치 글자', denhh: '강화버튼 높이', denhfz: '강화버튼 글자', denhic: '강화 재화아이콘', dequiph: '장착버튼 높이', dequipfz: '장착버튼 글자', dfuseh: '융합버튼 높이', dfusefz: '융합버튼 글자', dstepsz: '조절버튼 크기', dstepfz: '수량 글자',
 }
 
@@ -5389,9 +5397,9 @@ ${['eqtier', 'eqimg', 'shoprow', 'shopic', 'shopt', 'shopsub', 'shopb', 'shopbt'
 --pd-nick-x:${c.nickX}px;--pd-nick-y:${c.nickY}px;--pd-exp-x:${c.expX}px;--pd-exp-y:${c.expY}px;
 --pd-gain-x:${c.gainX}px;--pd-gain-y:${c.gainY}px;
 --pd-hp-x:${c.hpX}px;--pd-hp-y:${c.hpY}px;--pd-boss-x:${c.bossX}px;--pd-boss-y:${c.bossY}px;--pd-clear-x:${c.clearX}px;--pd-clear-y:${c.clearY}px;--pd-wave-x:${c.waveX}px;--pd-wave-y:${c.waveY}px;--pd-wtitle-x:${c.wtitleX}px;--pd-wtitle-y:${c.wtitleY}px;--pd-dia-x:${c.diaX}px;--pd-dia-y:${c.diaY}px;--pd-btext-x:${c.btextX}px;--pd-btext-y:${c.btextY}px;
---pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offiw:${c.offiw}px;--pd-offih:${c.offih}px;--pd-offgap:${c.offgap}px;--pd-offic:${c.offic}px;--pd-offifz:${c.offifz}px;--pd-offrfz:${c.offrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
+--pd-trsz:${c.trsz}px;--pd-offw:${c.offw}px;--pd-offtfz:${c.offtfz}px;--pd-offnfz:${c.offnfz}px;--pd-offcw:${c.offcw}px;--pd-offch:${c.offch}px;--pd-offcgap:${c.offcgap}px;--pd-offcic:${c.offcic}px;--pd-offcvfz:${c.offcvfz}px;--pd-offcrfz:${c.offcrfz}px;--pd-offbtw:${c.offbtw}px;--pd-offbth:${c.offbth}px;--pd-offbfz:${c.offbfz}px;--pd-offclw:${c.offclw}px;--pd-offclh:${c.offclh}px;--pd-offcfz:${c.offcfz}px;--pd-fuseallw:${c.fuseallw}px;--pd-fuseallh:${c.fuseallh}px;--pd-fuseallfz:${c.fuseallfz}px;
 --pd-skicon:${c.skicon}%;--pd-slicon:${c.slicon}%;--pd-advbw:${c.advbw}px;--pd-advbh:${c.advbh}px;--pd-advbfz:${c.advbfz}px;--pd-advww:${c.advww}px;--pd-advwh:${c.advwh}px;--pd-adviw:${c.adviw}px;--pd-advih:${c.advih}px;--pd-advibw:${c.advibw}px;--pd-advibh:${c.advibh}px;--pd-advmbw:${c.advmbw}px;--pd-advmbh:${c.advmbh}px;--pd-advrbw:${c.advrbw}px;--pd-advrbh:${c.advrbh}px;--pd-advwbw:${c.advwbw}px;--pd-advwbh:${c.advwbh}px;--pd-advsw:${c.advsw}px;--pd-advsh:${c.advsh}px;--pd-advsfz:${c.advsfz}px;--pd-advbarw:${c.advbarw}px;--pd-advbarh:${c.advbarh}px;--pd-advmonkfz:${c.advmonkfz}px;--pd-advmonvfz:${c.advmonvfz}px;--pd-advregkfz:${c.advregkfz}px;--pd-advregvfz:${c.advregvfz}px;--pd-advrewkfz:${c.advrewkfz}px;--pd-advrewvfz:${c.advrewvfz}px;--pd-advrewic:${c.advrewic}px;--pd-advmfz:${c.advmfz}px;--pd-advrfz:${c.advrfz}px;--pd-advwfz:${c.advwfz}px;--pd-advew:${c.advew}px;--pd-adveh:${c.adveh}px;--pd-advefz:${c.advefz}px;--pd-advcw:${c.advcw}px;--pd-advch:${c.advch}px;--pd-advcfz:${c.advcfz}px;--pd-mailsz:${c.mailsz}px;--pd-questsz:${c.questsz}px;--pd-matchipic:${c.matchipic}px;--pd-matchipfz:${c.matchipfz}px;--pd-allychipic:${c.allychipic}px;--pd-allychipfz:${c.allychipfz}px;--pd-dtabh:${c.dtabh}px;--pd-dtabfz:${c.dtabfz}px;--pd-dgradefz:${c.dgradefz}px;--pd-dtitlefz:${c.dtitlefz}px;--pd-darrowfz:${c.darrowfz}px;--pd-diconsz:${c.diconsz}px;--pd-dtierfz:${c.dtierfz}px;--pd-dstatfz:${c.dstatfz}px;--pd-denhh:${c.denhh}px;--pd-denhfz:${c.denhfz}px;--pd-denhic:${c.denhic}px;--pd-dequiph:${c.dequiph}px;--pd-dequipfz:${c.dequipfz}px;--pd-dfuseh:${c.dfuseh}px;--pd-dfusefz:${c.dfusefz}px;--pd-dstepsz:${c.dstepsz}px;--pd-dstepfz:${c.dstepfz}px;
-${['tr', 'offt', 'offn', 'offit', 'offiti', 'offv', 'offr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evexit', 'advexit', 'wbexit', 'rank', 'sklock', 'navlock', 'skqlock', 'advlock', 'evocell', 'evoname', 'alwin', 'alname', 'alimg', 'alstat', 'albtn', 'alclose', 'shoptab', 'shoptabt', 'shopad', 'shopadt', 'shopgift', 'cardwin', 'cardtitle', 'cardcell', 'cardname', 'cardcnt', 'cardclose', 'glv', 'glvbar', 'glvbart', 'warn', 'evpwin', 'evptitle', 'evpimg', 'evpbn', 'evprew', 'evpsign', 'evpsignt', 'evpbar', 'evpenter', 'evpclose', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+${['tr', 'offt', 'offn', 'offgrid', 'offcic', 'offcv', 'offcr', 'offbt', 'offcl', 'fuseall', 'skicon', 'slicon', 'advbtn0', 'advbtn1', 'advbtn2', 'advbtn3', 'advbtn4', 'advbtn5', 'advbtn6', 'advbtn7', 'advtxt0', 'advtxt1', 'advtxt2', 'advtxt3', 'advtxt4', 'advtxt5', 'advtxt6', 'advtxt7', 'advwin', 'advicon', 'adviconb', 'advmonb', 'advregb', 'advrewb', 'advsign', 'advsignt', 'advbar', 'advmonk', 'advmonv', 'advregk', 'advregv', 'advrewk', 'advrewd', 'advrewm', 'adventer', 'advclose', 'mailbox', 'quest', 'shopic0', 'shopic1', 'shopic2', 'matchip', 'allymat', 'dtab', 'dtitle', 'darrow', 'dicon', 'dstat', 'denh', 'dequip', 'dfusebtn', 'dstep', 'qwin', 'qtitle', 'qclose', 'qtab', 'qrow', 'qicon', 'qname', 'qbar', 'qbart', 'qrew', 'qrewi', 'qrewv', 'qlv', 'skhtitle', 'skfuse', 'sklearn', 'skqbar', 'skqset', 'skcell', 'skimg', 'skname', 'skbar', 'skdicon', 'skdimg', 'avaface', 'profheroimg', 'evbtn', 'evbtnt', 'evexit', 'advexit', 'wbexit', 'rank', 'sklock', 'navlock', 'skqlock', 'advlock', 'evocell', 'evoname', 'alwin', 'alname', 'alimg', 'alstat', 'albtn', 'alclose', 'shoptab', 'shoptabt', 'shopad', 'shopadt', 'shopgift', 'cardwin', 'cardtitle', 'cardcell', 'cardname', 'cardcnt', 'cardclose', 'glv', 'glvbar', 'glvbart', 'warn', 'evpwin', 'evptitle', 'evpimg', 'evpbn', 'evprew', 'evpsign', 'evpsignt', 'evpbar', 'evpenter', 'evpclose', 'fevbtn', 'fevon', 'fevbtnt', 'evwin', 'evtitle', 'evclose', 'evtab', 'evprev', 'evprevimg', 'evname', 'evrow', 'evno', 'evbname', 'evgo', 'evnoimg', 'skdtitle', 'skddesc', 'skdeffect', 'skdstat', 'skdauto', 'skdenh', 'skdequip', 'profhero'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 }`
 const st = {
   outer: { position: 'fixed', inset: 0, background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflow: 'hidden' },
@@ -6252,11 +6260,13 @@ const st = {
   offClose: { position: 'absolute', top: '2.5%', right: '4%', width: 26, height: 26, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.35)', color: '#f3e6d0', fontSize: 14, lineHeight: 1, cursor: 'pointer', zIndex: 2, padding: 0 },
   offTitle: { flexShrink: 0, textAlign: 'center', fontSize: 'var(--pd-offtfz)', color: '#f3e6d0', fontWeight: 800, textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-offt-x), var(--pd-offt-y))' },
   offInfo: { flexShrink: 0, textAlign: 'center', fontSize: 'var(--pd-offnfz)', color: '#e8d5b0', fontWeight: 700, textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-offn-x), var(--pd-offn-y))' },
-  offItems: { flexShrink: 0, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', width: '100%', gap: 'var(--pd-offgap)', marginTop: '2%', transform: 'translate(var(--pd-offit-x), var(--pd-offit-y))' },
-  offItem: { position: 'relative', width: 'var(--pd-offiw)', height: 'var(--pd-offih)', background: 'url(/ui/off_item.webp) center / 100% 100% no-repeat', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, flexShrink: 0 },
-  offItemIc: { width: 'var(--pd-offic)', height: 'var(--pd-offic)', objectFit: 'contain', transform: 'translate(var(--pd-offiti-x), var(--pd-offiti-y))' },
-  offItemVal: { fontSize: 'var(--pd-offifz)', fontWeight: 800, textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-offv-x), var(--pd-offv-y))' },
-  offItemRate: { fontSize: 'var(--pd-offrfz)', color: '#c9b596', textShadow: '0 1px 1px #000', whiteSpace: 'nowrap', transform: 'translate(var(--pd-offr-x), var(--pd-offr-y))' },
+  // 항목 영역: 창 그림(off_frame)의 큰 갈색 판 안쪽(가로 11~89%, 세로 37.5%~버튼 위 78%)에 두고 가운데 정렬.
+  // 항목 수에 따라 4개까지 2칸, 6개까지 3칸, 9개까지 3칸 3줄 — 칸이 늘면 크기·글자를 같이 줄인다
+  offItems: { position: 'absolute', left: '11%', right: '11%', top: '37.5%', bottom: '22%', display: 'grid', justifyContent: 'center', alignContent: 'center', transform: 'translate(var(--pd-offgrid-x), var(--pd-offgrid-y))' },
+  offItem: { position: 'relative', background: 'url(/ui/off_item.webp) center / 100% 100% no-repeat', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, boxSizing: 'border-box', padding: '0 8%', overflow: 'hidden' },
+  offItemIc: { objectFit: 'contain', transform: 'translate(var(--pd-offcic-x), var(--pd-offcic-y))' },
+  offItemVal: { fontWeight: 800, textShadow: '0 1px 2px #000', whiteSpace: 'nowrap', lineHeight: 1.1, transform: 'translate(var(--pd-offcv-x), var(--pd-offcv-y))' },
+  offItemRate: { color: '#c9b596', textShadow: '0 1px 1px #000', whiteSpace: 'nowrap', lineHeight: 1.1, transform: 'translate(var(--pd-offcr-x), var(--pd-offcr-y))' },
   offBtns: { display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4%', marginTop: 'auto' },
   offBtnAd: { width: 'var(--pd-offbtw)', height: 'var(--pd-offbth)', background: 'url(/ui/off_btn.webp) center / 100% 100% no-repeat', border: 'none', color: '#4a2e0e', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0, transform: 'translate(var(--pd-offbt-x), var(--pd-offbt-y))' },
   offBtnAdText: { fontSize: 'var(--pd-offbfz)', lineHeight: 1.1, textAlign: 'center', textShadow: '0 1px 1px rgba(255,220,150,0.4)' },
