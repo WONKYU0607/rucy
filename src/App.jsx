@@ -3082,10 +3082,15 @@ export default function App() {
   }
   const cloudBestRef = useRef(0)                      // 마지막으로 확인한 클라우드 진행도
   const cloudLegacy = useRef(null)                    // 출시 전(디버그) 클라우드 세이브 — 첫 저장 때 legacy 필드로 옮겨 남긴다
+  // 클라우드 저장은 들어갈 때(로그인 확인 직후)와 나갈 때(앱을 내리거나 닫을 때)만 (2026-10-26).
+  // Firestore 는 담는 양이 아니라 쓰기 횟수로 과금 — 15초마다 올리던 걸 없앴다.
+  // 같은 세이브를 또 올리지 않고(나갈 때 이벤트가 2~3개 겹쳐 온다), 랭킹 문서는 최고 기록·닉네임이 바뀔 때만 쓴다.
+  const lastPush = useRef({ raw: null, rank: null })
   async function pushCloud(force) {
     if (!FB_ON || !fbAuth.currentUser) return
+    const raw = localStorage.getItem(SAVE_KEY)
+    if (!force && raw === lastPush.current.raw) return
     try {
-      const raw = localStorage.getItem(SAVE_KEY)
       const sv = JSON.parse(raw || 'null')
       if (!sv) return
       // 진행도가 크게 줄어드는 업로드는 막는다(저장소 초기화 사고 방지). 메뉴의 '클라우드에 저장'으로는 강제 가능
@@ -3103,15 +3108,20 @@ export default function App() {
         rel: SAVE_REL,                   // 출시판 표시
       }
       if (cloudLegacy.current) payload.legacy = cloudLegacy.current
+      lastPush.current.raw = raw                     // 올리는 중에 같은 세이브로 또 불려도 건너뛰게 먼저 표시
       // merge: 한 번 옮겨 둔 legacy 는 이후 저장에서도 그대로 남는다
       await setDoc(doc(fbDb, 'paleoSaves', fbAuth.currentUser.uid), payload, { merge: true })
       cloudLegacy.current = null
       // 랭킹용 요약(최고 웨이브·닉네임)만 따로 — 이 컬렉션만 읽기를 열면 세이브 본문은 잠긴 채로 순위가 돈다
-      await setDoc(doc(fbDb, 'paleoRank', fbAuth.currentUser.uid), { best: sv.best || sv.wave || 0, nick: sv.nick || '', ts: Date.now() })
+      const rankKey = myBest + '|' + (sv.nick || '')
+      if (force || rankKey !== lastPush.current.rank) {
+        await setDoc(doc(fbDb, 'paleoRank', fbAuth.currentUser.uid), { best: myBest, nick: sv.nick || '', ts: Date.now() })
+        lastPush.current.rank = rankKey
+        refreshRank(myBest)
+      }
       cloudBestRef.current = Math.max(cloudBestRef.current, myBest)
       setCloudMsg('저장됨 ' + new Date().toLocaleTimeString())
-      refreshRank(myBest)
-    } catch (e) { setCloudMsg('저장 실패: ' + (e.code || e.message)) }
+    } catch (e) { lastPush.current.raw = null; setCloudMsg('저장 실패: ' + (e.code || e.message)) }
   }
   useEffect(() => {
     if (!FB_ON) return
@@ -3155,13 +3165,13 @@ export default function App() {
   }, [])
   useEffect(() => {
     if (!FB_ON) return
-    const iv = setInterval(() => { pushCloud() }, 15000)   // 60초→15초: 기기 전환 시 클라우드 최신화
+    // 나갈 때: 앱을 내림(홈·다른 앱·화면 끔) / 페이지 이탈. 셋이 겹쳐 와도 같은 세이브는 한 번만 올라간다
     const onVis = () => { if (document.visibilityState === 'hidden') pushCloud() }
-    const onHide = () => { pushCloud() }            // 페이지 이탈/전환 즉시 저장 (모바일 Safari는 pagehide가 신뢰성 높음)
+    const onHide = () => { pushCloud() }            // 모바일 Safari는 pagehide가 신뢰성 높음
     document.addEventListener('visibilitychange', onVis)
     window.addEventListener('pagehide', onHide)
     window.addEventListener('beforeunload', onHide)
-    return () => { clearInterval(iv); document.removeEventListener('visibilitychange', onVis); window.removeEventListener('pagehide', onHide); window.removeEventListener('beforeunload', onHide) }
+    return () => { document.removeEventListener('visibilitychange', onVis); window.removeEventListener('pagehide', onHide); window.removeEventListener('beforeunload', onHide) }
   }, [])
   async function fbLogin() {
     try { await signInWithPopup(fbAuth, new GoogleAuthProvider()) }
