@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>계정 삭제 안내 · Account Deletion — 오스트랄로피테쿠스 키우기</title>
+<style>
+  :root { color-scheme: dark; }
+  html { background: #1a1109; }
+  body { margin: 0; background: #1a1109; word-break: keep-all; color: #e8d5b0; font: 15px/1.7 -apple-system, "Segoe UI", "Noto Sans KR", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; color: #e8b962; margin: 8px 0 4px; }
+  h2 { font-size: 17px; color: #e8b962; margin: 28px 0 6px; }
+  p, li { margin: 6px 0; }
+  ol, ul { padding-left: 22px; }
+  a { color: #8fd0ff; }
+  .lang { display: flex; gap: 12px; justify-content: flex-end; font-size: 14px; }
+  .meta { color: #a8957a; font-size: 13px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <div class="lang"><a href="#ko" data-l="ko">한국어</a><a href="#en" data-l="en">English</a></div>
+
+  <section id="ko" lang="ko">
+    <h1>계정 삭제 안내</h1>
+    <p class="meta">오스트랄로피테쿠스 키우기 · 운영자 김원규</p>
+
+    <h2>게임 안에서 바로 삭제</h2>
+    <ol>
+      <li>게임(앱 또는 <a href="/">rucy.vercel.app</a>)에 구글 계정으로 로그인합니다.</li>
+      <li>오른쪽 위 메뉴(☰) → <b>계정 삭제</b>를 누릅니다.</li>
+      <li>확인 창에서 <b>삭제</b>를 누릅니다. 로그인한 지 오래됐으면 구글 확인을 한 번 더 거칩니다.</li>
+    </ol>
+
+    <h2>게임에 들어갈 수 없을 때</h2>
+    <p><a href="mailto:dnjsrb980607@gmail.com?subject=%EA%B3%84%EC%A0%95%20%EC%82%AD%EC%A0%9C%20%EC%9A%94%EC%B2%AD">dnjsrb980607@gmail.com</a> 으로 게임에 쓰는 구글 계정 이메일을 적어 삭제를 요청해 주세요. 본인 확인 후 지체 없이 삭제하고 결과를 알려 드립니다.</p>
+
+    <h2>삭제되는 정보</h2>
+    <ul>
+      <li>구글 로그인 계정 정보(이메일, 계정 고유번호)</li>
+      <li>게임 진행 기록 전체(웨이브·재화·장비·스킬·동료 등)</li>
+      <li>랭킹 기록과 닉네임</li>
+    </ul>
+    <p>삭제는 즉시 이루어지며 되돌릴 수 없습니다. 따로 보관하는 정보는 없습니다. 호스팅·클라우드 사업자의 서버 접속 기록은 각 사업자의 정책에 따라 처리됩니다. 자세한 내용은 <a href="/privacy.html">개인정보처리방침</a>을 보세요.</p>
+  </section>
+
+  <section id="en" lang="en" hidden>
+    <h1>Account Deletion</h1>
+    <p class="meta">Australopithecus Idle RPG · Developer: Wonkyu Kim</p>
+
+    <h2>Delete in the game</h2>
+    <ol>
+      <li>Sign in to the game (the app or <a href="/">rucy.vercel.app</a>) with your Google account.</li>
+      <li>Open the menu (☰, top right) and tap <b>Delete Account</b>.</li>
+      <li>Tap <b>Delete</b> to confirm. If you signed in a while ago, Google may ask you to confirm once more.</li>
+    </ol>
+
+    <h2>If you can't open the game</h2>
+    <p>Email <a href="mailto:dnjsrb980607@gmail.com?subject=Account%20deletion%20request">dnjsrb980607@gmail.com</a> from, or mentioning, the Google account you use in the game. We will verify the request, delete your data without delay, and let you know.</p>
+
+    <h2>What is deleted</h2>
+    <ul>
+      <li>Your Google sign-in account record (email and account ID)</li>
+      <li>All game progress (waves, currencies, gear, skills, allies, etc.)</li>
+      <li>Your ranking entry and nickname</li>
+    </ul>
+    <p>Deletion is immediate and cannot be undone. We do not keep any of this data afterwards. Server access logs kept by our hosting and cloud providers are handled under their own policies. See the <a href="/privacy.html#en">Privacy Policy</a>.</p>
+  </section>
+</main>
+<script>
+  (function () {
+    var pick = function (l) { document.getElementById('ko').hidden = l !== 'ko'; document.getElementById('en').hidden = l !== 'en'; document.documentElement.lang = l }
+    var h = location.hash.replace('#', '')
+    pick(h === 'en' || h === 'ko' ? h : (/^ko/i.test(navigator.language || '') ? 'ko' : 'en'))
+    document.querySelectorAll('[data-l]').forEach(function (a) { a.addEventListener('click', function (e) { e.preventDefault(); pick(a.getAttribute('data-l')); history.replaceState(null, '', '#' + a.getAttribute('data-l')) }) })
+  })()
+</script>
+</body>
+</html>

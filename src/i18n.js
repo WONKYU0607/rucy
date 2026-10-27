@@ -14,6 +14,8 @@ export const EN_ON = LANG === 'en'
 const EN = {
   // 클라우드(2026-10-26 단순화)
   '서버에 연결할 수 없어요. 인터넷 연결을 확인해 주세요': "Can't reach the server. Please check your internet connection", '다시 시도': 'Retry',
+  '개인정보처리방침': 'Privacy Policy', '계정 삭제': 'Delete Account', '계정과 게임 기록(진행·랭킹·닉네임)을 모두 지웁니다. 되돌릴 수 없어요.': 'This deletes your account and all game data (progress, ranking, nickname). This cannot be undone.',
+  '삭제': 'Delete', '지우는 중…': 'Deleting…', '삭제를 다 마치지 못했어요. 다시 시도해 주세요': "Couldn't finish deleting. Please try again.",
   '다른 기기에서 접속': 'Signed In Elsewhere', '같은 계정으로 다른 기기에서 접속해서 이 기기는 로그아웃됩니다': 'This account signed in on another device, so this device has been signed out',
   // 게임 이름
   '오스트랄로피테쿠스 키우기': 'Australopithecus Idle RPG',

@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { initializeApp } from 'firebase/app'
 import { LANG, EN_ON, T, TF, L, enUnit } from './i18n.js'
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut } from 'firebase/auth'
-import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query, where, getCountFromServer, runTransaction, onSnapshot } from 'firebase/firestore'
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, deleteUser, reauthenticateWithPopup } from 'firebase/auth'
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query, where, getCountFromServer, runTransaction, onSnapshot, serverTimestamp } from 'firebase/firestore'
 
 // ── Firebase 클라우드 세이브 설정: 콘솔 웹앱 구성값 붙여넣기 ──
 const FIREBASE_CONFIG = {
@@ -615,7 +615,7 @@ const skEnhCdMult = (enh, id) => 1 - SK_ENH_CD_STEP * Math.min(SK_ENH_MAX, (enh 
 const tickCount = (total, tick) => { if (!(tick > 0)) return 1; let n = 0; for (let t = 0; t < total && n < 500; t += tick) n++; return Math.max(1, n) }
 
 const CARD_ENH_CARDS = 2                      // 스킬 강화에 쓰는 카드 수
-const CARD_ENH_PEARL = 10                     // 스킬 강화에 쓰는 강화 진주 (수치는 추후 조정)
+const CARD_ENH_PEARL = 10                     // 스킬 강화에 쓰는 강화 진주 (2026-10-23 확정)
 const EQUIP_MAX = 30
 // 등급: 5개 묶음이 한 등급대(줄), 줄 안에서 5등급(약)→1등급(강)
 const GRADE_NAMES = ['일반', '고급', '레어', '영웅', '전설', '신화']
@@ -972,7 +972,7 @@ const WAVE_CYCLE = ['rabbit', 'antelope', 'deer', 'boar', 'wolf', 'hyena', 'bear
   'camel', 'horse', 'panda', 'scorpion', 'tarantula', 'cobra', 'zebra', 'cheetah', 'koala', 'kangaroo',
   'cat', 'dog', 'hippo', 'gorilla', 'gator', 'squirrel', 'penguin', 'seal', 'cow', 'tiger2']
 
-// ── 퀘스트 (내용은 임시 플레이스홀더 — 목록·보상·진행 연동은 추후 확정) ──
+// ── 퀘스트 ──
 const QUEST_TABS = ['일일 퀘스트', '반복 퀘스트', '업적'].map(T)
 // ev: 이벤트 키(진행 카운트 소스), ric: 보상 재화 아이콘 (gem=다이아, ruby=루비 수정, pearl=진주)
 const QUEST_LIST = [
@@ -1000,7 +1000,14 @@ const QUEST_LIST = [
     { ev: 'adv_clear', name: T('모험 클리어'), base: 0, ric: '/ui/pearl.webp', rv: 10 },
   ],
 ]
-const questDayStr = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}` }
+// ── 서버 시각 (2026-10-27): 폰 시계를 바꿔도 오프라인 보상·일일 초기화가 늘지 않게 ──
+// 접속할 때와 앱을 10초 넘게 내렸다 올 때 서버 시각을 받아 폰 시계와의 차이(SRV_OFF)를 잰다. 게임 시간 계산은 전부 nowS()
+let SRV_OFF = 0
+const nowS = () => Date.now() + SRV_OFF
+const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(Object.assign(new Error('timeout'), { code: 'timeout' })), ms))])
+const questDayStr = () => { const d = new Date(nowS()); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}` }
+const dayNum = s => { const m = /^(\d+)-(\d+)-(\d+)$/.exec(s || ''); return m ? +m[1] * 10000 + +m[2] * 100 + +m[3] : -1 }
+const isNewDay = d => dayNum(questDayStr()) > dayNum(d)   // 날짜가 앞으로 갔을 때만 일일 초기화(시계를 뒤로 돌렸다 다시 앞으로 해도 또 안 열림)
 const questInit = () => ({ qv: 2, day: questDayStr(), ev: {}, dEv: {}, dClaim: {}, rLv: {}, rBase: {}, aLv: {} })
 // 광고 퀘스트(일일 2번) 삭제로 소환·융합이 한 칸씩 당겨졌다 — 오늘 받은 표시도 같이 옮긴다
 const questMig = q => q.qv >= 2 ? q : { ...q, qv: 2, dClaim: { 0: q.dClaim?.[0], 1: q.dClaim?.[1], 2: q.dClaim?.[3], 3: q.dClaim?.[4] } }
@@ -1129,6 +1136,8 @@ const SAVE_KEY = 'paleoDefSave_r1'
 const SAVE_REL = 1          // 클라우드 세이브의 출시판 표시 — 이 표시가 없는(출시 전) 클라우드 세이브는 받지 않는다
 // 게스트·익명 플레이 막음: 구글 로그인해야 시작하고, 처음엔 닉네임부터 정한다 (2026-10-26)
 const NEED_LOGIN = FB_ON
+const SRV_TIME = FB_ON && NEED_LOGIN          // 서버 시각 기준(로그인 필수 판). 아니면 폰 시계
+const RESUME_TRUST_SEC = 10                   // 이보다 짧게 내렸다 온 건 폰 시계로(바꿔도 이득이 몇 초뿐), 길면 서버 시각으로 다시 잰다
 // ── 닉네임 규칙 ──
 // 2~8자, 한글(완성형)·영문·숫자만. 중복은 Firestore paleoNicks/{소문자 닉네임} 문서로 막는다(규칙: 없을 때만 만들 수 있음)
 const NICK_MIN = 2, NICK_MAX = 8
@@ -1335,7 +1344,7 @@ export default function App() {
     return () => clearInterval(iv)
   }, [splash])
   const preReady = preP >= 0.98
-  const [alliesOn, setAlliesOn] = useState(init.alliesOn || {})  // 장착된 동료 (보유/성장 시스템은 추후)
+  const [alliesOn, setAlliesOn] = useState(init.alliesOn || {})  // 장착된 동료
   const [allySub, setAllySub] = useState('동료')
   const [allyEvo, setAllyEvo] = useState(init.allyEvo || { hunter: 1, shaman: 1, healer: 1, giant: 1 })   // 동료별 전직 단계(1~5)
   const [allyLv, setAllyLv] = useState(init.allyLv || { hunter: 1, shaman: 1, healer: 1, giant: 1 })
@@ -1484,30 +1493,45 @@ export default function App() {
     const mins = Math.max(1, t.sec / 60)
     return { ...t, meatRate: Math.floor(t.meat / mins), expRate: Math.floor(t.exp / mins), gemRate: Math.floor(t.gem / mins), matRate: Math.floor(t.mat / mins) }
   })
-  useEffect(() => {
+  // 켤 때 오프라인 보상. 로그인 판은 클라우드와 맞추고 서버 시각을 받은 뒤(startSync)에 부른다
+  // stsMs: 마지막으로 클라우드에 저장된 서버 시각 — 비운 시간은 이보다 길 수 없다(세이브 시각을 조작해도)
+  const grantStartOffline = stsMs => {
     if (offDone.current) return
     offDone.current = true
     if (!init.ts) return                             // 새로 시작한 플레이어는 비운 시간이 없다(예전엔 1분으로 쳐서 첫 화면에 보물상자가 떴음)
-    const away = Math.min(OFFLINE_CAP_SEC, (Date.now() - init.ts) / 1000)
-    if (away < OFFLINE_MIN_SEC) return
+    let away = (nowS() - init.ts) / 1000
+    if (stsMs) away = Math.min(away, (nowS() - stsMs) / 1000)
+    away = Math.min(OFFLINE_CAP_SEC, away)
+    if (!(away > 0) || away < OFFLINE_MIN_SEC) return
     // 지급은 보물상자 → 받기 버튼에서. 여기선 대기 보상만 저장
     addOffline(calcOffline(away, init.wave, init.best || init.wave || 1))
-  }, [])
+  }
+  useEffect(() => { if (!SRV_TIME) grantStartOffline(0) }, [])
   // 앱을 내렸다 돌아올 때: 내린 동안은 게임이 멈춰 있으므로(화면 갱신 정지) 그 시간을 오프라인 보상으로 준다.
   // 비운 초만큼 준다(1초 이상). 대기 중인 보상과 합쳐 최대 4시간
-  const hiddenAt = useRef(null)
+  const hiddenAt = useRef(null)                     // { dev: 폰 시계, srv: 서버 기준 } — 내린 순간
   const offPendSec = useRef(0); offPendSec.current = offReward ? offReward.sec : 0
+  const grantResume = away => {
+    away = Math.min(OFFLINE_CAP_SEC - offPendSec.current, away)
+    if (!(away >= RESUME_MIN_SEC)) return
+    addOffline(calcOffline(away, waveRef.current, bestRef.current || waveRef.current))
+  }
   useEffect(() => {
+    let retry = null
+    const verify = async srvHidden => {              // 서버 시각을 다시 받아 비운 시간을 잰다(내린 사이 폰 시계를 바꿨어도 그대로)
+      try { await syncServerTime(); grantResume((nowS() - srvHidden) / 1000) }
+      catch { if (document.visibilityState === 'visible') retry = setTimeout(() => verify(srvHidden), 5000) }   // 연결이 안 되면 될 때까지(보상은 그때)
+    }
     const onVis = () => {
-      if (document.visibilityState === 'hidden') { if (hiddenAt.current == null) hiddenAt.current = Date.now(); return }
-      const t0 = hiddenAt.current; hiddenAt.current = null
-      if (t0 == null) return
-      const away = Math.min(OFFLINE_CAP_SEC - offPendSec.current, (Date.now() - t0) / 1000)
-      if (away < RESUME_MIN_SEC) return
-      addOffline(calcOffline(away, waveRef.current, bestRef.current || waveRef.current))
+      if (document.visibilityState === 'hidden') { clearTimeout(retry); if (hiddenAt.current == null) hiddenAt.current = { dev: Date.now(), srv: nowS() }; return }
+      const h = hiddenAt.current; hiddenAt.current = null
+      if (!h) return
+      const devAway = (Date.now() - h.dev) / 1000
+      if (!SRV_TIME || (devAway >= 0 && devAway < RESUME_TRUST_SEC)) grantResume(devAway)
+      else verify(h.srv)                               // 오래 비웠거나 폰 시계가 뒤로 갔다 → 서버 시각으로
     }
     document.addEventListener('visibilitychange', onVis)
-    return () => document.removeEventListener('visibilitychange', onVis)
+    return () => { clearTimeout(retry); document.removeEventListener('visibilitychange', onVis) }
   }, [])
   // 스킬 아이콘 확대·오프셋 — 전신 컷이라 등배로 두면 스킬끼리 구분이 안 된다
   const skIconFit = id => {
@@ -1603,10 +1627,14 @@ export default function App() {
   }, [maxHp])
 
   const cloudBusy = useRef(false)   // 어댑트/불러오기 중 로컬 저장 차단
-  useEffect(() => {
+  // 이 기기 세이브 쓰기 — 상태가 바뀔 때마다, 그리고 클라우드와 맞춘 직후 한 번(startSync 에서 바로 올리게)
+  const writeSave = () => {
     if (cloudBusy.current) return
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, evDay, gachaLv, gachaCnt, gachaRw, skCard, skEnh, quest, nickReg, uid: uidRef.current, killRate: killRate.current, ts: Date.now() }))
-  }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, evDay, gachaLv, gachaCnt, gachaRw, skCard, skEnh, quest, nickReg])
+    if (SRV_TIME && !syncOk.current) return          // 로그인 판: 클라우드와 맞추기(서버 시각 포함) 전에는 안 쓴다 — 켜기만 하고 못 들어간 경우 저장 시각이 앞당겨지지 않게
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, evDay, gachaLv, gachaCnt, gachaRw, skCard, skEnh, quest, nickReg, uid: uidRef.current, killRate: killRate.current, ts: nowS() }))
+  }
+  const writeSaveRef = useRef(null); writeSaveRef.current = writeSave
+  useEffect(() => { writeSave() }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, evDay, gachaLv, gachaCnt, gachaRw, skCard, skEnh, quest, nickReg])
 
   // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제 — 패시브는 단계 공용이라 유지(예전엔 stage -1이라 불러올 때마다 빠졌음)
   useEffect(() => {
@@ -3016,15 +3044,14 @@ export default function App() {
   // ── 퀘스트: 이벤트 카운트 / 진행 계산 / 보상 수령 ──
   function qEv(ev, n = 1) {
     setQuest(q => {
-      const day = questDayStr()
-      const b = q.day === day ? q : { ...q, day, dEv: {}, dClaim: {} }   // 자정 넘으면 일일 리셋
+      const b = isNewDay(q.day) ? { ...q, day: questDayStr(), dEv: {}, dClaim: {} } : q   // 자정 넘으면 일일 리셋
       return { ...b, ev: { ...b.ev, [ev]: (b.ev[ev] || 0) + n }, dEv: { ...b.dEv, [ev]: (b.dEv[ev] || 0) + n } }
     })
   }
   useEffect(() => { const iv = setInterval(() => qEv('playtime', 1), 1000); return () => clearInterval(iv) }, [])
   function qProg(tab, i) {
     const item = QUEST_LIST[tab][i]
-    const today = quest.day === questDayStr()
+    const today = !isNewDay(quest.day)
     if (tab === 0) {
       const cur = today ? (quest.dEv[item.ev] || 0) : 0
       const claimed = today ? !!quest.dClaim[i] : false
@@ -3196,6 +3223,9 @@ export default function App() {
   const [syncErr, setSyncErr] = useState('')          // 클라우드를 못 읽음 → 시작 화면에 '다시 시도'
   const [kicked, setKicked] = useState(false)         // 다른 기기에서 같은 계정으로 들어옴 → 이 기기는 로그아웃
   const kickedRef = useRef(false)
+  const [delOpen, setDelOpen] = useState(false)       // 계정 삭제 확인창
+  const [delBusy, setDelBusy] = useState(false)
+  const [delMsg, setDelMsg] = useState('')
   const mySid = useRef(Math.random().toString(36).slice(2) + Date.now().toString(36))   // 이번 접속 표시
   const [cloudMsg, setCloudMsg] = useState('')
   const [rankInfo, setRankInfo] = useState(null)          // { me, total } — 최고 웨이브 기준 순위
@@ -3225,7 +3255,7 @@ export default function App() {
     const uid = fbAuth.currentUser.uid
     const myBest = sv.best || sv.wave || 0
     // 세이브 전체를 문자열 필드로 저장 (skillSets 같은 중첩 배열을 Firestore가 거부 → invalid-argument 방지)
-    const payload = { data: raw, ts: sv.ts || 0, wave: sv.wave || 0, best: myBest, rel: SAVE_REL, sid: mySid.current }
+    const payload = { data: raw, ts: sv.ts || 0, wave: sv.wave || 0, best: myBest, rel: SAVE_REL, sid: mySid.current, sts: serverTimestamp() }   // sts: 서버가 받은 시각(다음 접속 오프라인 보상 상한)
     if (cloudLegacy.current) payload.legacy = cloudLegacy.current
     lastPush.current.raw = raw                     // 올리는 중에 같은 세이브로 또 불려도 건너뛰게 먼저 표시
     try {
@@ -3258,6 +3288,21 @@ export default function App() {
     setKicked(true)
     if (fbAuth) signOut(fbAuth).catch(() => {})
   }
+  // 서버 시각: 세이브 문서의 at(서버가 적은 시각)을 읽어 폰 시계와의 차이를 잰다
+  async function readServerTime(ref) {
+    const t1 = Date.now()
+    const snap = await withTimeout(getDoc(ref), SYNC_TIMEOUT_MS)
+    const at = snap.exists() ? snap.data().at : null
+    if (!at || !at.toMillis) throw Object.assign(new Error('no server time'), { code: 'no-server-time' })
+    SRV_OFF = at.toMillis() - t1
+  }
+  async function syncServerTime() {                  // 앱 복귀 때: 지금 서버 시각을 적고 읽는다(쓰기 1·읽기 1)
+    const u = fbAuth && fbAuth.currentUser
+    if (!u || !syncOk.current || kickedRef.current) throw new Error('not synced')
+    const ref = doc(fbDb, 'paleoSaves', u.uid)
+    await withTimeout(setDoc(ref, { at: serverTimestamp() }, { merge: true }), 8000)
+    await readServerTime(ref)
+  }
   // 들어갈 때 클라우드와 맞추기 — 위 규칙 1)·2)
   async function startSync(u) {
     if (!u || kickedRef.current) return
@@ -3265,14 +3310,12 @@ export default function App() {
     try {
       const ref = doc(fbDb, 'paleoSaves', u.uid)
       // 읽기와 '지금 기기' 표시를 한 번에. 정해진 시간 안에 안 되면 연결 실패로 본다
-      let cloud = await Promise.race([
-        runTransaction(fbDb, async tx => {
-          const snap = await tx.get(ref)
-          tx.set(ref, { sid: mySid.current }, { merge: true })
-          return snap.exists() ? snap.data() : null
-        }),
-        new Promise((_, rej) => setTimeout(() => rej(Object.assign(new Error('timeout'), { code: 'timeout' })), SYNC_TIMEOUT_MS)),
-      ])
+      let cloud = await withTimeout(runTransaction(fbDb, async tx => {
+        const snap = await tx.get(ref)
+        tx.set(ref, { sid: mySid.current, at: serverTimestamp() }, { merge: true })   // at: 지금 서버 시각(아래에서 읽어 폰 시계와 맞춘다)
+        return snap.exists() ? snap.data() : null
+      }), SYNC_TIMEOUT_MS)
+      const stsMs = cloud && cloud.rel === SAVE_REL && cloud.sts && cloud.sts.toMillis ? cloud.sts.toMillis() : 0
       // 출시판 표시(rel)가 없으면 출시 전 디버그 세이브 — 받지 않고, 다음 저장 때 legacy 필드로 옮겨 남긴다
       if (cloud && cloud.rel !== SAVE_REL) {
         if (cloud.data != null || cloud.wave != null) cloudLegacy.current = typeof cloud.data === 'string' ? cloud.data : JSON.stringify(cloud)
@@ -3294,8 +3337,11 @@ export default function App() {
         location.reload()
         return
       }
+      await readServerTime(ref)                              // 방금 적은 서버 시각 → 폰 시계와의 차이
       uidRef.current = u.uid
       syncOk.current = true
+      grantStartOffline(stsMs)
+      writeSaveRef.current()                                 // 지금 상태를 서버 기준 시각으로 저장해 두고 바로 올린다
       setSyncDone(true)
       pushCloud()                                            // 이 기기 사본이 최신이거나 첫 세이브면 올린다(같으면 내용만 같고 시각 갱신)
     } catch (e) {
@@ -3337,6 +3383,7 @@ export default function App() {
   // 하단바 뒤로가기: 맨 위에 열린 창부터 하나씩 닫고 → 영웅 탭으로 → 영웅 탭에서는 게임 종료 확인
   function handleBack() {
     if (kicked) return                                // 다른 기기 접속 안내는 확인으로만
+    if (delOpen) { if (!delBusy) { if (delMsg) location.reload(); else setDelOpen(false) } return }
     if (needNick) return                              // 처음 닉네임 정하기는 뒤로가기로 못 닫는다
     if (nickOpen) return setNickOpen(null)
     if (exitOpen) return setExitOpen(false)
@@ -3374,6 +3421,29 @@ export default function App() {
     }
   }
   async function fbLogout() { await pushCloud(); await signOut(fbAuth) }   // 로그인 필수라 로그아웃하면 시작 화면으로 돌아간다(위 onAuthStateChanged)
+  // 계정 삭제(2026-10-27, 구글 플레이 정책): 이 기기 세이브 → 닉네임·랭킹·클라우드 세이브 → 로그인 계정 순으로 지운다.
+  // 이 기기 세이브부터 지워서, 중간에 실패해도 지운 건 다시 살아나지 않는다(다시 켜면 클라우드에 남은 것만 받음)
+  async function deleteAccount() {
+    const u = fbAuth && fbAuth.currentUser
+    if (!u || delBusy) return
+    setDelBusy(true); setDelMsg('')
+    syncOk.current = false; kickedRef.current = true; cloudBusy.current = true   // 지우는 동안·뒤에 이 기기가 다시 올리거나 저장하지 않게
+    try {
+      localStorage.removeItem(SAVE_KEY)
+      if (nickReg) { try { await deleteDoc(doc(fbDb, 'paleoNicks', nickKey(nickReg))) } catch {} }
+      await deleteDoc(doc(fbDb, 'paleoRank', u.uid))
+      await deleteDoc(doc(fbDb, 'paleoSaves', u.uid))
+      try { await deleteUser(u) }
+      catch (e) {
+        if ((e && e.code) !== 'auth/requires-recent-login') throw e
+        await reauthenticateWithPopup(u, new GoogleAuthProvider())   // 로그인한 지 오래됐으면 구글 확인 한 번 더
+        await deleteUser(u)
+      }
+      location.reload()
+    } catch (e) {
+      setDelBusy(false); setDelMsg(T('삭제를 다 마치지 못했어요. 다시 시도해 주세요'))
+    }
+  }
   // ── 닉네임 정하기/바꾸기 ──
   const needNick = NEED_LOGIN && !!fbUser && syncDone && !splash && !nickReg
   async function submitNick() {
@@ -3530,6 +3600,8 @@ export default function App() {
               <>
                 <div style={{ ...st.menuItem, opacity: 0.8 }}><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fbUser.email}</span></div>
                 <button style={st.menuItem} onClick={fbLogout}>{T('로그아웃')}</button>
+                <button style={st.menuItem} onClick={() => window.open('/privacy.html', '_blank')}>{T('개인정보처리방침')}</button>
+                <button style={{ ...st.menuItem, color: '#e08a7a' }} onClick={() => { setMenuOpen(false); setDelMsg(''); setDelOpen(true) }}>{T('계정 삭제')}</button>
               </>
             ) : (
               <button style={st.menuItem} onClick={fbLogin}>{T('구글 로그인 · 저장 연동')}</button>
@@ -3862,7 +3934,7 @@ export default function App() {
         const cleared = evStage[evPick.no] || 0
         const stage = Math.min(EV_STAGES, cleared + 1)
         const dkey = EV_DUNGEONS[evPick.di].key
-        const used = evDay.day === questDayStr() ? (evDay.n[dkey] || 0) : 0
+        const used = !isNewDay(evDay.day) ? (evDay.n[dkey] || 0) : 0
         const left = Math.max(0, EV_DAILY - used)
         const allDone = cleared >= EV_STAGES                  // 10단계를 다 깼으면 끝 — 다시 못 들어간다
         const canEnter = !allDone && left > 0
@@ -3889,7 +3961,7 @@ export default function App() {
               <button data-edit="evpenter" style={{ ...st.evpEnter, ...(canEnter ? null : { opacity: 0.45 }) }} onClick={() => {
                 if (uiEdit || !canEnter) return
                 world.current.evStart = { key: dkey, dname: evPick.dname, no: evPick.no, name: evPick.name, stage, isNew: stage > cleared }
-                setEvDay(d => { const t = questDayStr(); const b = d.day === t ? d : { day: t, n: {} }; return { ...b, n: { ...b.n, [dkey]: (b.n[dkey] || 0) + 1 } } })
+                setEvDay(d => { const b = isNewDay(d.day) ? { day: questDayStr(), n: {} } : d; return { ...b, n: { ...b.n, [dkey]: (b.n[dkey] || 0) + 1 } } })
                 setEvPick(null); setEvOpen(false); setNav('영웅')
               }}>{allDone ? T('완료') : TF('진입 {0}/{1}', left, EV_DAILY)}</button>
               <button data-edit="evpclose" style={st.evpClose} onClick={() => { if (!uiEdit) setEvPick(null) }}>{T('닫기')}</button>
@@ -4468,6 +4540,18 @@ export default function App() {
             <div style={st.xtBtns}>
               {!needNick && <button data-edit="nkno" style={st.nkNo} onClick={() => { if (!uiEdit) setNickOpen(null) }}>{T('취소')}</button>}
               <button data-edit="nkok" style={{ ...st.nkOk, opacity: nickBusy ? 0.5 : 1 }} onClick={() => { if (!uiEdit) submitNick() }}>{nickBusy ? T('확인 중…') : T('확인')}</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {delOpen && (
+        <div style={{ ...st.xtOverlay, zIndex: 250 }}>
+          <div data-edit="xtwin" style={{ ...st.xtWin, height: 'auto', minHeight: 'var(--pd-xtwh)' }}>
+            <div data-edit="xttitle" style={st.xtTitle}>{T('계정 삭제')}</div>
+            <div data-edit="xtmsg" style={st.xtMsg}>{delMsg || T('계정과 게임 기록(진행·랭킹·닉네임)을 모두 지웁니다. 되돌릴 수 없어요.')}</div>
+            <div style={st.xtBtns}>
+              <button data-edit="xtno" style={{ ...st.xtNo, opacity: delBusy ? 0.5 : 1 }} onClick={() => { if (uiEdit || delBusy) return; if (delMsg) location.reload(); else setDelOpen(false) }}>{delMsg ? T('닫기') : T('취소')}</button>
+              <button data-edit="xtok" style={{ ...st.xtOk, opacity: delBusy ? 0.5 : 1 }} onClick={() => { if (!uiEdit) deleteAccount() }}>{delBusy ? T('지우는 중…') : delMsg ? T('다시 시도') : T('삭제')}</button>
             </div>
           </div>
         </div>
