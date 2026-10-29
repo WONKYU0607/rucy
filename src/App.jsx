@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { initializeApp } from 'firebase/app'
 import { LANG, EN_ON, T, TF, L, enUnit } from './i18n.js'
+import { CrashScreen } from './Crash.jsx'
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, deleteUser, reauthenticateWithPopup } from 'firebase/auth'
 import { getFirestore, doc, getDoc, setDoc, deleteDoc, collection, query, where, getCountFromServer, runTransaction, onSnapshot, serverTimestamp } from 'firebase/firestore'
 
@@ -1218,10 +1219,10 @@ function loadSave() {
       mats: Array.isArray(s.mats) ? s.mats : [0, 0, 0, 0, 0], enh: s.enh && typeof s.enh === 'object' ? s.enh : {},
       ruby: typeof s.ruby === 'number' ? s.ruby : 0, advStage: s.advStage && typeof s.advStage === 'object' ? s.advStage : {},   // 시작 루비 0(2026-10-23 확정)
       pearl: typeof s.pearl === 'number' ? s.pearl : 0, quest: s.quest && typeof s.quest === 'object' && s.quest.ev ? questMig(s.quest) : questInit(),
-      nickReg: typeof s.nickReg === 'string' ? s.nickReg : '', uid: typeof s.uid === 'string' ? s.uid : null,   // 등록된(중복 확인 끝난) 닉네임, 이 세이브의 구글 계정
+      nickReg: typeof s.nickReg === 'string' ? s.nickReg : '', uid: typeof s.uid === 'string' ? s.uid : null, tut: typeof s.tut === 'number' ? s.tut : 0,   // 등록된(중복 확인 끝난) 닉네임, 이 세이브의 구글 계정
     }
   } catch (e) {}
-  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, alliesOn: {}, allyEvo: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, allyLv: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, nick: 'Slayer_' + Math.floor(Math.random() * 9000000 + 1000000), mats: [0, 0, 0, 0, 0], enh: {}, ruby: 0, killRate: 0, advStage: {}, pearl: 0, evStage: {}, evDay: { day: '', n: {} }, gachaLv: { 무기: 1, 방어구: 1, 유물: 1 }, gachaCnt: { 무기: 0, 방어구: 0, 유물: 0 }, gachaRw: {}, skCard: {}, skEnh: {}, quest: questInit(), nickReg: '', uid: null }
+  return { meat: 0, wave: 1, lv: statInit(), evo: 0, hlv: 1, hexp: 0, sp: 0, skill: statInit(), skillSets: emptySets(), activeSet: 0, alliesOn: {}, allyEvo: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, allyLv: { hunter: 1, shaman: 1, healer: 1, giant: 1 }, gem: 0, inv: {}, best: 1, ts: null, gearEq: { 무기: null, 방어구: null, 유물: null }, nick: 'Slayer_' + Math.floor(Math.random() * 9000000 + 1000000), mats: [0, 0, 0, 0, 0], enh: {}, ruby: 0, killRate: 0, advStage: {}, pearl: 0, evStage: {}, evDay: { day: '', n: {} }, gachaLv: { 무기: 1, 방어구: 1, 유물: 1 }, gachaCnt: { 무기: 0, 방어구: 0, 유물: 0 }, gachaRw: {}, skCard: {}, skEnh: {}, quest: questInit(), nickReg: '', uid: null, tut: 0 }
 }
 // 큰 숫자: 만(10^4)부터 4자리마다 한 단위, 무량대수(10^68)를 넘으면 지수 표기
 const NUM_UNITS = ['', '만', '억', '조', '경', '해', '자', '양', '구', '간', '정', '재', '극', '항하사', '아승기', '나유타', '불가사의', '무량대수']
@@ -1240,6 +1241,10 @@ export default function App() {
   const wrapRef = useRef(null)
   const skqDrag = useRef({ down: false, x: 0, sl: 0, moved: false })   // 퀵바 마우스 드래그 스크롤
   const init = useRef(loadSave()).current
+  const [crashed, setCrashed] = useState(false)       // 게임 루프 오류가 계속되면 안내 화면(Crash.jsx)
+  const [tut, setTut] = useState(init.tut || 0)       // 튜토리얼 본 적 있음(세이브·클라우드에 남는다)
+  const [tutStep, setTutStep] = useState(-1)          // 튜토리얼 지금 단계(-1 = 닫힘)
+  const [tutRect, setTutRect] = useState(null)        // 강조할 칸 위치(게임 화면 좌표)
 
   const [meat, setMeat] = useState(init.meat)
   const [wave, setWave] = useState(init.wave)
@@ -1631,10 +1636,10 @@ export default function App() {
   const writeSave = () => {
     if (cloudBusy.current) return
     if (SRV_TIME && !syncOk.current) return          // 로그인 판: 클라우드와 맞추기(서버 시각 포함) 전에는 안 쓴다 — 켜기만 하고 못 들어간 경우 저장 시각이 앞당겨지지 않게
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, evDay, gachaLv, gachaCnt, gachaRw, skCard, skEnh, quest, nickReg, uid: uidRef.current, killRate: killRate.current, ts: nowS() }))
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, evDay, gachaLv, gachaCnt, gachaRw, skCard, skEnh, quest, nickReg, tut, uid: uidRef.current, killRate: killRate.current, ts: nowS() }))
   }
   const writeSaveRef = useRef(null); writeSaveRef.current = writeSave
-  useEffect(() => { writeSave() }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, evDay, gachaLv, gachaCnt, gachaRw, skCard, skEnh, quest, nickReg])
+  useEffect(() => { writeSave() }, [meat, wave, lv, evo, hlv, hexp, sp, skill, skillSets, activeSet, gem, inv, best, alliesOn, allyEvo, allyLv, gearEq, nick, mats, enh, ruby, advStage, pearl, evStage, evDay, gachaLv, gachaCnt, gachaRw, skCard, skEnh, quest, nickReg, tut])
 
   // 진화 시 현재 단계가 아닌 장착 스킬 자동 해제 — 패시브는 단계 공용이라 유지(예전엔 stage -1이라 불러올 때마다 빠졌음)
   useEffect(() => {
@@ -1718,7 +1723,7 @@ export default function App() {
       w.spawnIdx = 0                 // 일렬 배치 순번 (웨이브마다 리셋)
       w.waveNum = n
       w.clearedFlag = false
-      w.waveT0 = w.clk || 0            // 처치 속도 측정용(일시정지 제외 실제 시간)
+      w.waveT0 = w.clk || 0            // 처치 속도 측정용(게임 안 경과 시간)
     }
 
     function startAdventure(cfg) {
@@ -1938,11 +1943,21 @@ export default function App() {
       if (t.hp <= 0 && !t.dead) killEnemy(t, S.current)
     }
 
+    // 한 프레임에서 오류가 나도 다음 프레임은 돈다(예전엔 그 자리에서 화면이 굳었다). 2초 넘게 계속 나면 멈추고 안내 화면
+    let errRun = 0
     function loop(now) {
+      try { loopBody(now); errRun = 0 }
+      catch (e) {
+        if (errRun === 0) { try { console.error('[paleo] loop', e) } catch {} }
+        if (++errRun > 120) { setCrashed(true); return }
+        raf = requestAnimationFrame(loop)
+      }
+    }
+    function loopBody(now) {
       const rawDt = Math.min((now - last) / 1000, 0.05)
       last = now
       let dt = rawDt
-      w.clk = (w.clk || 0) + dt              // 일시정지 제외 실제 경과 시간(히트스톱 포함)
+      w.clk = (w.clk || 0) + dt              // 게임 안 경과 시간(히트스톱 포함)
       if (dt > 0 && w.hitstop > 0) { w.hitstop -= rawDt; dt = 0 }  // 히트스톱: 세계 정지, 렌더 유지
       w.hsCd = Math.max(0, (w.hsCd || 0) - rawDt)  // 기본공격 히트스톱 재발동 쿨
       const st = S.current
@@ -2776,7 +2791,7 @@ export default function App() {
     function draw(ctx, now) {
       ctx.clearRect(0, 0, w.W, w.H)
       ctx.save()
-      if (w.shake > 0.3) ctx.translate((Math.random() - 0.5) * w.shake, (Math.random() - 0.5) * w.shake)   // 일시정지 중엔 흔들지 않음(dt=0이라 shake가 안 줄어 계속 떨렸음)
+      if (w.shake > 0.3) ctx.translate((Math.random() - 0.5) * w.shake, (Math.random() - 0.5) * w.shake)   // 화면 흔들림(작은 값은 무시)
 
       // 배경: 가로 무한 타일 스크롤 (10웨이브마다 테마 변경, 보스전투 시 보스 배경)
       const advBG = w.adv ? ADV_BG[w.adv.key] : (w.ev ? EV_BG[w.ev.key] : null)
@@ -3385,6 +3400,7 @@ export default function App() {
     if (kicked) return                                // 다른 기기 접속 안내는 확인으로만
     if (delOpen) { if (!delBusy) { if (delMsg) location.reload(); else setDelOpen(false) } return }
     if (needNick) return                              // 처음 닉네임 정하기는 뒤로가기로 못 닫는다
+    if (tutStep >= 0) return endTut()                 // 튜토리얼 중 뒤로가기 = 건너뛰기
     if (nickOpen) return setNickOpen(null)
     if (exitOpen) return setExitOpen(false)
     if (gacha) return setGacha(null)
@@ -3446,6 +3462,40 @@ export default function App() {
   }
   // ── 닉네임 정하기/바꾸기 ──
   const needNick = NEED_LOGIN && !!fbUser && syncDone && !splash && !nickReg
+  // ── 튜토리얼(2026-10-29): 처음 시작한 사람에게 한 번 — 칸을 하나씩 밝혀 짚어 준다. 화면을 누르면 다음, 건너뛰기 가능 ──
+  const tutBtn = label => () => [...document.querySelectorAll('button')].find(b => b.innerText.trim() === label && b.getBoundingClientRect().width > 0)
+  const TUT_STEPS = [
+    { t: T('환영해요, 원시인 용사님!'), d: T('사냥은 자동으로 해요. 고기와 경험치를 모아 점점 강해지면 돼요.') },
+    { t: T('강화'), d: T('고기로 공격력·체력 같은 능력을 올려요. 버튼을 누르고 있으면 계속 올라가요.'), el: () => document.querySelector('[data-edit="cost"]') },
+    { t: T('성장'), d: T('레벨이 오르면 스킬 포인트가 생겨요. 성장 탭에서 치명타·명중 같은 능력을 올리세요.'), el: tutBtn(T('성장')) },
+    { t: T('보스'), d: T('웨이브 10마다 보스가 기다려요. 이 버튼이 반짝이면 눌러서 보스를 잡고 다음 구간으로 가세요.'), el: () => document.querySelector('[data-edit="bossbtn"]') },
+    { t: T('스킬'), d: T('레벨이 오르면 스킬이 하나씩 열려요. 스킬 칸에 넣어 두면 싸울 때 알아서 써요.'), el: tutBtn(T('스킬')) },
+    { t: T('장비'), d: T('상점에서 다이아로 장비를 뽑고, 장비 탭에서 착용하거나 합쳐서 더 좋은 장비로 만드세요.'), el: tutBtn(T('상점')) },
+    { t: T('퀘스트'), d: T('퀘스트를 깨면 다이아·루비·진주를 받아요. 자주 확인하세요.'), el: () => document.querySelector('[data-edit="quest"]') },
+    { t: T('쉬는 동안에도'), d: T('게임을 꺼 두거나 앱을 내려 둬도 최대 4시간까지 사냥한 만큼 보물상자에 쌓여요. 이제 시작해 볼까요?') },
+  ]
+  function endTut() { setTutStep(-1); setTutRect(null); setTut(1) }
+  function nextTut() { if (tutStep >= TUT_STEPS.length - 1) endTut(); else setTutStep(n => n + 1) }
+  // 처음 들어온 사람: 닉네임까지 정하고 게임 화면이 뜨면 시작. 이미 한참 한 세이브(최고 30웨이브 이상)는 보여 주지 않는다
+  useEffect(() => {
+    if (tut || tutStep >= 0 || splash || needNick || kicked || crashed || (NEED_LOGIN && !syncDone)) return
+    if ((best || 1) >= 30) { setTut(1); return }
+    const t = setTimeout(() => setTutStep(0), 800)
+    return () => clearTimeout(t)
+  }, [tut, tutStep, splash, needNick, kicked, crashed, syncDone, best])
+  // 강조할 칸의 위치를 게임 화면 좌표로(화면 크기가 바뀌어도 따라가게 계속 잰다)
+  useEffect(() => {
+    if (tutStep < 0) return
+    const measure = () => {
+      const st0 = TUT_STEPS[tutStep], el = st0 && st0.el ? st0.el() : null, root = rootRef.current
+      if (!el || !root) return setTutRect(null)
+      const r = el.getBoundingClientRect(), rr = root.getBoundingClientRect(), k = rr.width / BASE_W
+      const nr = { x: (r.left - rr.left) / k, y: (r.top - rr.top) / k, w: r.width / k, h: r.height / k }
+      setTutRect(o => (o && Math.abs(o.x - nr.x) < 0.5 && Math.abs(o.y - nr.y) < 0.5 && Math.abs(o.w - nr.w) < 0.5 && Math.abs(o.h - nr.h) < 0.5) ? o : nr)
+    }
+    measure(); const iv = setInterval(measure, 250)
+    return () => clearInterval(iv)
+  }, [tutStep])
   async function submitNick() {
     if (nickBusy) return
     const n = nickIn.trim()
@@ -3537,12 +3587,12 @@ export default function App() {
   return (
     <div style={st.outer}>
     <style>{`
-      @import url('https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Jua&display=swap');
       * { box-sizing: border-box; scrollbar-width: none; }
       *::-webkit-scrollbar { width: 0; height: 0; display: none; }
       button { cursor: pointer; font-family: inherit; }
       .pd-num { font-family: 'Do Hyeon', sans-serif; letter-spacing: 0.02em; }
       @keyframes pdPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+      @keyframes pdTutGlow { 0%,100% { box-shadow: 0 0 0 2px #e8b962, 0 0 10px 2px rgba(232,185,98,0.4), 0 0 0 9999px rgba(0,0,0,0.62); } 50% { box-shadow: 0 0 0 3px #e8b962, 0 0 20px 6px rgba(232,185,98,0.75), 0 0 0 9999px rgba(0,0,0,0.62); } }
       @keyframes pdGachaPop { 0% { transform: scale(0.2); opacity: 0; } 70% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
       .pd-gacha-pop { animation: pdGachaPop 0.35s ease-out backwards; }
       /* 전설·신화 금빛 번쩍임 — 0.4초 × 5회 = 약 2초, 끝나면 은은한 잔광으로 정착 */
@@ -3594,6 +3644,7 @@ export default function App() {
       {menuOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 80 }} onClick={() => setMenuOpen(false)}>
           <div data-edit="menu" style={st.menuPanel} onClick={e => e.stopPropagation()}>
+            {DEV && <button style={st.menuItem} onClick={() => { setMenuOpen(false); setTutStep(0) }}>튜토리얼 보기(개발자)</button>}
             {EDITOR && <button style={st.menuItem} onClick={() => { setMotEdit(v => !v); setMenuOpen(false) }}>모션 편집 {motEdit ? '끄기' : '켜기'}</button>}
             <div style={{ borderTop: '1px solid #3a2a14', margin: '4px 0' }} />
             {FB_ON && (fbUser ? (
@@ -4556,6 +4607,29 @@ export default function App() {
           </div>
         </div>
       )}
+      {tutStep >= 0 && TUT_STEPS[tutStep] && (() => {
+        const sp = TUT_STEPS[tutStep], r = tutRect, pad = 6
+        const rootH = view.h
+        const below = r && (r.y + r.h / 2) < rootH * 0.5                  // 칸이 위쪽이면 설명은 아래, 아래쪽이면 위
+        const boxPos = !r ? { top: '50%', transform: 'translate(-50%, -50%) translate(var(--pd-tutwin-x), var(--pd-tutwin-y))' }
+          : below ? { top: r.y + r.h + pad + 14 } : { bottom: rootH - r.y + pad + 14 }
+        return (
+          <div style={{ ...st.tutLayer, background: r ? 'transparent' : 'rgba(0,0,0,0.62)' }} onClick={() => { if (!uiEdit) nextTut() }}>
+            {r && (() => { const x0 = Math.max(3, r.x - pad), y0 = Math.max(3, r.y - pad), x1 = Math.min(BASE_W - 3, r.x + r.w + pad), y1 = Math.min(rootH - 3, r.y + r.h + pad)   // 화면 가장자리 칸도 테두리가 안 잘리게
+              return <div style={{ ...st.tutSpot, left: x0, top: y0, width: x1 - x0, height: y1 - y0 }} /> })()}
+            <div data-edit="tutwin" style={{ ...st.tutWin, ...boxPos }}>
+              <img data-edit="tutface" src="/ui/tut_guide.webp" alt="" style={st.tutFace} />
+              <div style={st.tutBody}>
+                <div style={st.tutTitle}>{sp.t}</div>
+                <div style={st.tutDesc}>{sp.d}</div>
+                <div style={st.tutFoot}>{tutStep >= TUT_STEPS.length - 1 ? T('눌러서 시작') : T('눌러서 다음')} · {tutStep + 1}/{TUT_STEPS.length}</div>
+              </div>
+            </div>
+            {tutStep < TUT_STEPS.length - 1 && <button data-edit="tutskip" style={st.tutSkip} onClick={e => { e.stopPropagation(); if (!uiEdit) endTut() }}>{T('건너뛰기')}</button>}
+          </div>
+        )
+      })()}
+      {crashed && <CrashScreen />}
       {kicked && (
         <div style={{ ...st.xtOverlay, zIndex: 300 }}>
           <div data-edit="xtwin" style={st.xtWin}>
@@ -5005,7 +5079,7 @@ export default function App() {
             const g = EDIT_GROUPS[editSel]; if (!g) return null
             const nudge = (k, d, lo, hi) => { setUiCfg(c => ({ ...c, [k]: Math.min(hi, Math.max(lo, Math.round((c[k] + d) * 2) / 2)) })); localStorage.setItem('paleoUiTs', String(Date.now())) }
             const nbtn = { width: 26, height: 26, flexShrink: 0, borderRadius: 6, border: '1px solid #5a4028', background: '#2c2013', color: GOLD, fontSize: 14, lineHeight: 1, padding: 0 }
-            const rng = k => (k.startsWith('xt') || k.startsWith('nk')) ? (k.endsWith('fz') ? 60 : 420) : k.startsWith('alwin') ? 420 : k.startsWith('al') ? (k.endsWith('fz') ? 40 : 220) : k.startsWith('evo') ? (k === 'evonamefz' ? 40 : 120) : k.startsWith('wbexit') ? (k.endsWith('fz') ? 60 : 300) : (k.startsWith('shop') || k.startsWith('card')) ? (k.endsWith('fz') ? 60 : (k.endsWith('gap') ? 40 : 400)) : k.startsWith('fev') ? (k.endsWith('fz') ? 40 : k === 'fevonzoom' ? 300 : 300) : k.startsWith('ev') ? (k.endsWith('fz') ? 60 : (k === 'evww' || k === 'evwh' || k === 'evpww' || k === 'evpwh') ? 600 : 300) : k.startsWith('profhero') ? 300 : k.startsWith('prof') ? (k.endsWith('fz') ? 40 : 160) : k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
+            const rng = k => (k.startsWith('xt') || k.startsWith('nk') || k.startsWith('tut')) ? (k.endsWith('fz') ? 60 : 420) : k.startsWith('alwin') ? 420 : k.startsWith('al') ? (k.endsWith('fz') ? 40 : 220) : k.startsWith('evo') ? (k === 'evonamefz' ? 40 : 120) : k.startsWith('wbexit') ? (k.endsWith('fz') ? 60 : 300) : (k.startsWith('shop') || k.startsWith('card')) ? (k.endsWith('fz') ? 60 : (k.endsWith('gap') ? 40 : 400)) : k.startsWith('fev') ? (k.endsWith('fz') ? 40 : k === 'fevonzoom' ? 300 : 300) : k.startsWith('ev') ? (k.endsWith('fz') ? 60 : (k === 'evww' || k === 'evwh' || k === 'evpww' || k === 'evpwh') ? 600 : 300) : k.startsWith('profhero') ? 300 : k.startsWith('prof') ? (k.endsWith('fz') ? 40 : 160) : k.startsWith('q') && k !== 'questsz' ? (k.endsWith('fz') ? 60 : (k === 'qww' || k === 'qwh') ? 600 : 300) : k.startsWith('adv') ? (k.endsWith('fz') ? 60 : k === 'advbw' || k === 'advbh' ? 200 : 600) : k === 'offw' ? 400 : k === 'fuseallw' ? 400 : k === 'offbtw' ? 260 : k === 'equipcols' ? 8 : k === 'equipimg' ? 100 : k === 'hph' ? 60 : k === 'btw' || k === 'bhpw' ? 320 : k === 'bth' || k === 'bhph' ? 70 : k === 'equipcell' ? 160 : (k.startsWith('sk') && k !== 'skicon' ? (k === 'skqbarw' ? 420 : k.endsWith('fz') ? 60 : k.endsWith('gap') ? 40 : (k.endsWith('w') || k.endsWith('h') || k.endsWith('sz')) ? 200 : 120) : k === 'exph' || k.includes('bw') || k.includes('gap') || k === 'sph' || k.startsWith('nav') || k.startsWith('tab') ? 40 : (k === 'rowmin' ? 80 : 120))
             const rmin = k => k === 'equipcols' ? 3 : 0
             return <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -5256,6 +5330,9 @@ const EDIT_GROUPS = {
   nkno: { label: '닉네임 창 취소 버튼', size: ['nknow', 'nknoh', 'nknofz'], pos: 'nkno' },
   nkok: { label: '닉네임 창 확인 버튼', size: ['nkokw', 'nkokh', 'nkokfz'], pos: 'nkok' },
   xtwin: { label: '게임 종료 창 틀', size: ['xtww', 'xtwh'], pos: 'xtwin' },
+  tutwin: { label: '튜토리얼 상자', size: ['tutww', 'tuttfz', 'tutfz'], pos: 'tutwin' },
+  tutface: { label: '튜토리얼 얼굴', size: ['tutface'], pos: 'tutface' },
+  tutskip: { label: '튜토리얼 건너뛰기', size: ['tutskipfz'], pos: 'tutskip' },
   xttitle: { label: '게임 종료 창 제목', size: ['xttitlefz'], pos: 'xttitle' },
   xtmsg: { label: '게임 종료 창 문구', size: ['xtmsgfz'], pos: 'xtmsg' },
   xtno: { label: '게임 종료 창 취소 버튼', size: ['xtnow', 'xtnoh', 'xtnofz'], pos: 'xtno' },
@@ -5479,6 +5556,7 @@ const UI_LABELS = {
   nkww: '창 너비', nkwh: '창 높이', nktitlefz: '글자 크기', nkdescfz: '글자 크기', nkinw: '칸 너비', nkinh: '칸 높이', nkinfz: '글자 크기', nkmsgfz: '글자 크기',
   nknow: '버튼 너비', nknoh: '버튼 높이', nknofz: '글씨 크기', nkokw: '버튼 너비', nkokh: '버튼 높이', nkokfz: '글씨 크기',
   xtww: '창 너비', xtwh: '창 높이', xttitlefz: '글자 크기', xtmsgfz: '글자 크기',
+  tutww: '상자 너비', tuttfz: '제목 글자', tutfz: '설명 글자', tutface: '얼굴 크기', tutskipfz: '글자 크기',
   xtnow: '버튼 너비', xtnoh: '버튼 높이', xtnofz: '글씨 크기', xtokw: '버튼 너비', xtokh: '버튼 높이', xtokfz: '글씨 크기',
   panelbwV: '패널 테두리(상하)', panelbwH: '패널 테두리(좌우)', rowbwV: '항목 테두리(상하)', rowbwH: '항목 테두리(좌우)',
   rowmin: '항목 최소높이', rowgap: '항목 간격', icon: '아이콘 크기', name: '이름 글자', lv: 'Lv 글자', val: '수치 글자',
@@ -5575,6 +5653,8 @@ ${SKILLS.map(k => `--pd-cardic${k.id}w:${c[`cardic${k.id}w`] ?? 46}px;--pd-cardi
 ${['nkwin', 'nktitle', 'nkdesc', 'nkinput', 'nkmsg', 'nkno', 'nkok'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 --pd-xtww:${c.xtww}px;--pd-xtwh:${c.xtwh}px;--pd-xttitlefz:${c.xttitlefz}px;--pd-xtmsgfz:${c.xtmsgfz}px;--pd-xtnow:${c.xtnow}px;--pd-xtnoh:${c.xtnoh}px;--pd-xtnofz:${c.xtnofz}px;--pd-xtokw:${c.xtokw}px;--pd-xtokh:${c.xtokh}px;--pd-xtokfz:${c.xtokfz}px;
 ${['xtwin', 'xttitle', 'xtmsg', 'xtno', 'xtok'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
+--pd-tutww:${c.tutww}px;--pd-tutfz:${c.tutfz}px;--pd-tuttfz:${c.tuttfz}px;--pd-tutface:${c.tutface}px;--pd-tutskipfz:${c.tutskipfz}px;
+${['tutwin', 'tutface', 'tutskip'].map(k => `--pd-${k}-x:${c[k + 'X']}px;--pd-${k}-y:${c[k + 'Y']}px;`).join('')}
 --pd-panelbw-v:${c.panelbwV}px;--pd-panelbw-h:${c.panelbwH}px;--pd-rowbw-v:${c.rowbwV}px;--pd-rowbw-h:${c.rowbwH}px;
 --pd-rowmin:${c.rowmin}px;--pd-rowgap:${c.rowgap}px;--pd-icon:${c.icon}px;--pd-name:${c.name}px;--pd-lv:${c.lv}px;--pd-val:${c.val}px;
 --pd-costw:${c.costw}px;--pd-costh:${c.costh}px;--pd-costfz:${c.costfz}px;
@@ -6107,6 +6187,30 @@ const st = {
     borderRadius: 8, border: `1px solid ${GOLD_D}`, background: 'linear-gradient(180deg,#d4872e,#a85f1f)', color: '#fff', fontWeight: 800, padding: 0,
   },
   // ── 게임 종료 확인 박스 ──
+  // 튜토리얼: 밝힌 칸 바깥은 어둡게(큰 그림자), 설명 상자는 게임 창과 같은 갈색·금테
+  tutLayer: { position: 'fixed', inset: 0, zIndex: 120 },
+  tutSpot: {
+    position: 'absolute', borderRadius: 10, pointerEvents: 'none',
+    boxShadow: `0 0 0 2px ${GOLD}, 0 0 16px 4px rgba(232,185,98,0.55), 0 0 0 9999px rgba(0,0,0,0.62)`,
+    animation: 'pdTutGlow 1.4s ease-in-out infinite',
+  },
+  tutWin: {
+    position: 'absolute', left: '50%', width: 'var(--pd-tutww)', maxWidth: '94%', boxSizing: 'border-box',
+    transform: 'translateX(-50%) translate(var(--pd-tutwin-x), var(--pd-tutwin-y))',
+    display: 'flex', gap: 10, alignItems: 'flex-start', padding: '12px 14px 10px 10px',
+    background: 'linear-gradient(180deg,#2e2011,#170f07)', border: `2px solid ${GOLD_D}`, borderRadius: 12,
+    boxShadow: '0 8px 28px rgba(0,0,0,0.7), inset 0 0 12px rgba(0,0,0,0.5)',
+  },
+  tutFace: { flexShrink: 0, width: 'var(--pd-tutface)', height: 'var(--pd-tutface)', objectFit: 'contain', transform: 'translate(var(--pd-tutface-x), var(--pd-tutface-y))' },
+  tutBody: { flex: 1, minWidth: 0 },
+  tutTitle: { fontSize: 'var(--pd-tuttfz)', fontWeight: 800, color: GOLD, textShadow: '0 1px 2px #000', marginBottom: 4 },
+  tutDesc: { fontSize: 'var(--pd-tutfz)', color: '#e8d5b0', lineHeight: 1.45, wordBreak: 'keep-all' },
+  tutFoot: { marginTop: 8, fontSize: 11, color: '#a8957a', textAlign: 'right' },
+  tutSkip: {
+    position: 'absolute', top: 10, right: 10, padding: '6px 12px', borderRadius: 16,
+    border: '1px solid #5a4028', background: 'rgba(20,13,7,0.85)', color: '#cbb89a', fontSize: 'var(--pd-tutskipfz)', fontWeight: 700,
+    transform: 'translate(var(--pd-tutskip-x), var(--pd-tutskip-y))', zIndex: 2,
+  },
   xtOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 95, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   xtWin: {
     position: 'relative', width: 'var(--pd-xtww)', height: 'var(--pd-xtwh)',
@@ -6628,6 +6732,13 @@ Object.assign(UI_DEFAULT, {
   xtmsgfz: 14, xtmsgX: 0, xtmsgY: 0,
   xtnow: 100, xtnoh: 38, xtnofz: 15, xtnoX: 0, xtnoY: 0,
   xtokw: 100, xtokh: 38, xtokfz: 15, xtokX: 0, xtokY: 0,
+})
+
+// 튜토리얼 상자 (2026-10-29 신규)
+Object.assign(UI_DEFAULT, {
+  tutww: 310, tutfz: 14, tuttfz: 18, tutwinX: 0, tutwinY: 0,
+  tutface: 62, tutfaceX: 0, tutfaceY: 0,
+  tutskipfz: 13, tutskipX: 0, tutskipY: 0,
 })
 
 // 사용자 확정 UI 값 (adad.txt)

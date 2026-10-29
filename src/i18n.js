@@ -16,6 +16,17 @@ const EN = {
   '서버에 연결할 수 없어요. 인터넷 연결을 확인해 주세요': "Can't reach the server. Please check your internet connection", '다시 시도': 'Retry',
   '개인정보처리방침': 'Privacy Policy', '계정 삭제': 'Delete Account', '계정과 게임 기록(진행·랭킹·닉네임)을 모두 지웁니다. 되돌릴 수 없어요.': 'This deletes your account and all game data (progress, ranking, nickname). This cannot be undone.',
   '삭제': 'Delete', '지우는 중…': 'Deleting…', '삭제를 다 마치지 못했어요. 다시 시도해 주세요': "Couldn't finish deleting. Please try again.",
+  '문제가 생겼어요': 'Something Went Wrong', '게임을 다시 시작해 주세요. 진행 기록은 그대로 남아 있어요.': 'Please restart the game. Your progress is safe.', '다시 시작': 'Restart',
+  // 튜토리얼(2026-10-29)
+  '환영해요, 원시인 용사님!': 'Welcome, brave caveman!', '사냥은 자동으로 해요. 고기와 경험치를 모아 점점 강해지면 돼요.': 'Hunting happens on its own. Collect meat and EXP to grow stronger.',
+  '고기로 공격력·체력 같은 능력을 올려요. 버튼을 누르고 있으면 계속 올라가요.': 'Spend meat to raise Attack, HP and more. Hold the button to keep upgrading.',
+  '레벨이 오르면 스킬 포인트가 생겨요. 성장 탭에서 치명타·명중 같은 능력을 올리세요.': 'Leveling up gives skill points. Use them in the Growth tab for Crit Rate, Accuracy and more.',
+  '보스': 'Boss', '웨이브 10마다 보스가 기다려요. 이 버튼이 반짝이면 눌러서 보스를 잡고 다음 구간으로 가세요.': 'A boss waits every 10 waves. When this button glows, tap it to fight the boss and move on.',
+  '레벨이 오르면 스킬이 하나씩 열려요. 스킬 칸에 넣어 두면 싸울 때 알아서 써요.': 'New skills unlock as you level up. Put them in your skill slots and they are used automatically in battle.',
+  '상점에서 다이아로 장비를 뽑고, 장비 탭에서 착용하거나 합쳐서 더 좋은 장비로 만드세요.': 'Summon gear with diamonds in the Shop, then equip it or fuse it into better gear in the Gear tab.',
+  '퀘스트를 깨면 다이아·루비·진주를 받아요. 자주 확인하세요.': 'Complete quests for diamonds, rubies and pearls. Check them often.',
+  '쉬는 동안에도': 'Even While You Rest', '게임을 꺼 두거나 앱을 내려 둬도 최대 4시간까지 사냥한 만큼 보물상자에 쌓여요. 이제 시작해 볼까요?': 'Even with the game closed, your hunting rewards pile up in the treasure chest for up to 4 hours. Ready to begin?',
+  '눌러서 다음': 'Tap to continue', '눌러서 시작': 'Tap to start', '건너뛰기': 'Skip',
   '다른 기기에서 접속': 'Signed In Elsewhere', '같은 계정으로 다른 기기에서 접속해서 이 기기는 로그아웃됩니다': 'This account signed in on another device, so this device has been signed out',
   // 게임 이름
   '오스트랄로피테쿠스 키우기': 'Australopithecus Idle RPG',
