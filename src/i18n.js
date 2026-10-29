@@ -25,7 +25,8 @@ const EN = {
   '레벨이 오르면 스킬이 하나씩 열려요. 스킬 칸에 넣어 두면 싸울 때 알아서 써요.': 'New skills unlock as you level up. Put them in your skill slots and they are used automatically in battle.',
   '상점에서 다이아로 장비를 뽑고, 장비 탭에서 착용하거나 합쳐서 더 좋은 장비로 만드세요.': 'Summon gear with diamonds in the Shop, then equip it or fuse it into better gear in the Gear tab.',
   '퀘스트를 깨면 다이아·루비·진주를 받아요. 자주 확인하세요.': 'Complete quests for diamonds, rubies and pearls. Check them often.',
-  '쉬는 동안에도': 'Even While You Rest', '게임을 꺼 두거나 앱을 내려 둬도 최대 4시간까지 사냥한 만큼 보물상자에 쌓여요. 이제 시작해 볼까요?': 'Even with the game closed, your hunting rewards pile up in the treasure chest for up to 4 hours. Ready to begin?',
+  '보물상자': 'Treasure Chest', '게임을 꺼 두거나 앱을 내려 둬도 그동안 사냥한 보상이 최대 4시간까지 이 상자에 쌓여요. 눌러서 받으세요.': 'Even with the game closed or in the background, your hunting rewards pile up here for up to 4 hours. Tap to claim them.',
+  '준비 끝!': 'All Set!', '이제 사냥을 시작해 볼까요?': 'Ready to start hunting?',
   '눌러서 다음': 'Tap to continue', '눌러서 시작': 'Tap to start', '건너뛰기': 'Skip',
   '다른 기기에서 접속': 'Signed In Elsewhere', '같은 계정으로 다른 기기에서 접속해서 이 기기는 로그아웃됩니다': 'This account signed in on another device, so this device has been signed out',
   // 게임 이름

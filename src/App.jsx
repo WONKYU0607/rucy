@@ -3472,9 +3472,15 @@ export default function App() {
     { t: T('스킬'), d: T('레벨이 오르면 스킬이 하나씩 열려요. 스킬 칸에 넣어 두면 싸울 때 알아서 써요.'), el: tutBtn(T('스킬')) },
     { t: T('장비'), d: T('상점에서 다이아로 장비를 뽑고, 장비 탭에서 착용하거나 합쳐서 더 좋은 장비로 만드세요.'), el: tutBtn(T('상점')) },
     { t: T('퀘스트'), d: T('퀘스트를 깨면 다이아·루비·진주를 받아요. 자주 확인하세요.'), el: () => document.querySelector('[data-edit="quest"]') },
-    { t: T('쉬는 동안에도'), d: T('게임을 꺼 두거나 앱을 내려 둬도 최대 4시간까지 사냥한 만큼 보물상자에 쌓여요. 이제 시작해 볼까요?') },
+    { t: T('보물상자'), d: T('게임을 꺼 두거나 앱을 내려 둬도 그동안 사냥한 보상이 최대 4시간까지 이 상자에 쌓여요. 눌러서 받으세요.'), el: () => document.querySelector('[data-edit="treasure"]'), chest: true },
+    { t: T('준비 끝!'), d: T('이제 사냥을 시작해 볼까요?') },
   ]
-  function endTut() { setTutStep(-1); setTutRect(null); setTut(1) }
+  const tutChestNow = tutStep >= 0 && !!(TUT_STEPS[tutStep] && TUT_STEPS[tutStep].chest)   // 보물상자 단계: 받을 보상이 없어도 상자를 잠깐 보여 준다
+  // 강조: 짚는 칸을 그대로 복사해 어두운 막 위에 똑같은 자리·크기로 올리고, 그 그림 윤곽을 따라 금빛 테두리(.pd-tut-hl).
+  // 화면 전체는 고르게 어둡고 그 칸 모양만 밝게 빛난다(사각 틀 없음)
+  const tutCloneBox = useRef(null), tutClone = useRef(null)
+  const tutCloneClear = () => { if (tutClone.current) { tutClone.current.remove(); tutClone.current = null } }
+  function endTut() { tutCloneClear(); setTutStep(-1); setTutRect(null); setTut(1) }
   function nextTut() { if (tutStep >= TUT_STEPS.length - 1) endTut(); else setTutStep(n => n + 1) }
   // 처음 들어온 사람: 닉네임까지 정하고 게임 화면이 뜨면 시작. 이미 한참 한 세이브(최고 30웨이브 이상)는 보여 주지 않는다
   useEffect(() => {
@@ -3488,13 +3494,24 @@ export default function App() {
     if (tutStep < 0) return
     const measure = () => {
       const st0 = TUT_STEPS[tutStep], el = st0 && st0.el ? st0.el() : null, root = rootRef.current
-      if (!el || !root) return setTutRect(null)
+      if (!el || !root) { tutCloneClear(); return setTutRect(null) }
       const r = el.getBoundingClientRect(), rr = root.getBoundingClientRect(), k = rr.width / BASE_W
       const nr = { x: (r.left - rr.left) / k, y: (r.top - rr.top) / k, w: r.width / k, h: r.height / k }
       setTutRect(o => (o && Math.abs(o.x - nr.x) < 0.5 && Math.abs(o.y - nr.y) < 0.5 && Math.abs(o.w - nr.w) < 0.5 && Math.abs(o.h - nr.h) < 0.5) ? o : nr)
+      const box = tutCloneBox.current
+      if (!box) return
+      if (!tutClone.current || tutClone.current.__src !== el) {   // 칸이 바뀌면 새로 복사(그림·글자 그대로)
+        tutCloneClear()
+        const c = el.cloneNode(true); c.__src = el
+        c.removeAttribute('data-edit'); c.querySelectorAll('[data-edit]').forEach(x => x.removeAttribute('data-edit'))
+        c.classList.add('pd-tut-hl')
+        Object.assign(c.style, { position: 'absolute', margin: '0', transform: 'none', boxSizing: 'border-box', pointerEvents: 'none', zIndex: '1', flex: 'none', alignSelf: 'auto' })
+        box.appendChild(c); tutClone.current = c
+      }
+      Object.assign(tutClone.current.style, { left: nr.x + 'px', top: nr.y + 'px', width: nr.w + 'px', height: nr.h + 'px' })
     }
     measure(); const iv = setInterval(measure, 250)
-    return () => clearInterval(iv)
+    return () => { clearInterval(iv); tutCloneClear() }
   }, [tutStep])
   async function submitNick() {
     if (nickBusy) return
@@ -3592,7 +3609,12 @@ export default function App() {
       button { cursor: pointer; font-family: inherit; }
       .pd-num { font-family: 'Do Hyeon', sans-serif; letter-spacing: 0.02em; }
       @keyframes pdPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
-      @keyframes pdTutGlow { 0%,100% { box-shadow: 0 0 0 2px #e8b962, 0 0 10px 2px rgba(232,185,98,0.4), 0 0 0 9999px rgba(0,0,0,0.62); } 50% { box-shadow: 0 0 0 3px #e8b962, 0 0 20px 6px rgba(232,185,98,0.75), 0 0 0 9999px rgba(0,0,0,0.62); } }
+      /* 튜토리얼 강조: 칸 그림의 윤곽을 그대로 따라 금빛 테두리 + 숨 쉬듯 빛남 */
+      .pd-tut-hl { animation: pdTutHl 1.3s ease-in-out infinite !important; }
+      @keyframes pdTutHl {
+        0%,100% { filter: drop-shadow(1.5px 0 0 #ffd36e) drop-shadow(-1.5px 0 0 #ffd36e) drop-shadow(0 1.5px 0 #ffd36e) drop-shadow(0 -1.5px 0 #ffd36e) drop-shadow(0 0 3px rgba(255,190,70,0.75)); }
+        50% { filter: drop-shadow(1.5px 0 0 #ffe7a3) drop-shadow(-1.5px 0 0 #ffe7a3) drop-shadow(0 1.5px 0 #ffe7a3) drop-shadow(0 -1.5px 0 #ffe7a3) drop-shadow(0 0 9px rgba(255,190,70,1)); }
+      }
       @keyframes pdGachaPop { 0% { transform: scale(0.2); opacity: 0; } 70% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
       .pd-gacha-pop { animation: pdGachaPop 0.35s ease-out backwards; }
       /* 전설·신화 금빛 번쩍임 — 0.4초 × 5회 = 약 2초, 끝나면 은은한 잔광으로 정착 */
@@ -4263,7 +4285,7 @@ export default function App() {
         )}
       </div>
 
-      {offData && !offOpen && nav !== '모험' && canvasBox.h > 0 && (
+      {(offData || tutChestNow) && !offOpen && nav !== '모험' && canvasBox.h > 0 && (
         <button data-edit="treasure" style={{ ...st.treasureBtn, top: canvasBox.top + canvasBox.h - 47, bottom: 'auto' }} onClick={() => { if (!uiEdit) setOffOpen(true) }}>
           <img src="/ui/treasure.webp" alt="" style={st.treasureImg} />
           <span style={st.treasureDot} />
@@ -4608,15 +4630,14 @@ export default function App() {
         </div>
       )}
       {tutStep >= 0 && TUT_STEPS[tutStep] && (() => {
-        const sp = TUT_STEPS[tutStep], r = tutRect, pad = 6
+        const sp = TUT_STEPS[tutStep], r = tutRect, pad = 8
         const rootH = view.h
         const below = r && (r.y + r.h / 2) < rootH * 0.5                  // 칸이 위쪽이면 설명은 아래, 아래쪽이면 위
         const boxPos = !r ? { top: '50%', transform: 'translate(-50%, -50%) translate(var(--pd-tutwin-x), var(--pd-tutwin-y))' }
           : below ? { top: r.y + r.h + pad + 14 } : { bottom: rootH - r.y + pad + 14 }
         return (
-          <div style={{ ...st.tutLayer, background: r ? 'transparent' : 'rgba(0,0,0,0.62)' }} onClick={() => { if (!uiEdit) nextTut() }}>
-            {r && (() => { const x0 = Math.max(3, r.x - pad), y0 = Math.max(3, r.y - pad), x1 = Math.min(BASE_W - 3, r.x + r.w + pad), y1 = Math.min(rootH - 3, r.y + r.h + pad)   // 화면 가장자리 칸도 테두리가 안 잘리게
-              return <div style={{ ...st.tutSpot, left: x0, top: y0, width: x1 - x0, height: y1 - y0 }} /> })()}
+          <div style={st.tutLayer} onClick={() => { if (!uiEdit) nextTut() }}>
+            <div ref={tutCloneBox} style={st.tutCloneBox} />
             <div data-edit="tutwin" style={{ ...st.tutWin, ...boxPos }}>
               <img data-edit="tutface" src="/ui/tut_guide.webp" alt="" style={st.tutFace} />
               <div style={st.tutBody}>
@@ -6188,12 +6209,8 @@ const st = {
   },
   // ── 게임 종료 확인 박스 ──
   // 튜토리얼: 밝힌 칸 바깥은 어둡게(큰 그림자), 설명 상자는 게임 창과 같은 갈색·금테
-  tutLayer: { position: 'fixed', inset: 0, zIndex: 120 },
-  tutSpot: {
-    position: 'absolute', borderRadius: 10, pointerEvents: 'none',
-    boxShadow: `0 0 0 2px ${GOLD}, 0 0 16px 4px rgba(232,185,98,0.55), 0 0 0 9999px rgba(0,0,0,0.62)`,
-    animation: 'pdTutGlow 1.4s ease-in-out infinite',
-  },
+  tutLayer: { position: 'fixed', inset: 0, zIndex: 120, background: 'rgba(0,0,0,0.62)' },
+  tutCloneBox: { position: 'absolute', inset: 0, pointerEvents: 'none' },   // 짚는 칸의 복사본이 올라가는 자리(어두운 막 위)
   tutWin: {
     position: 'absolute', left: '50%', width: 'var(--pd-tutww)', maxWidth: '94%', boxSizing: 'border-box',
     transform: 'translateX(-50%) translate(var(--pd-tutwin-x), var(--pd-tutwin-y))',
